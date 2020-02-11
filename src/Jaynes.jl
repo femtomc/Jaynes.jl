@@ -9,6 +9,8 @@ using Compose
 
 # A bit of meta-programming required :)
 using MacroTools
+using IRTools
+using IRTools: blocks
 using IRTools: @code_ir, @dynamo, IR, xcall, self, recurse!, Variable, var
 using Random
 
@@ -66,16 +68,36 @@ end
 # Applying an instance of MetaGraph stores all the dependencies in the graph.
 function (g::MetaGraph)(ir)
     ir == nothing && return
-    for (x, st) in ir
-        l = st.expr.args[1]
-        parents = filter(x -> x isa Variable && x in keys(ir) , st.expr.args)
-        for par in parents
-            par_st = ir[par]
-            par_l = par_st.expr.args[1]
-            if (par_l isa GlobalRef && par_l.name == :rand)
-                insert_vertex!(par, g)
-                insert_vertex!(x, g)
-                insert_edge!(par, x, g)
+    blocks = IRTools.blocks(ir)
+    for block in blocks
+
+        # This handles IR statements
+        for (x, st) in block
+            l = st.expr.args[1]
+            parents = filter(x -> x isa Variable && x in keys(ir) , st.expr.args)
+            for par in parents
+                par_st = ir[par]
+                par_l = par_st.expr.args[1]
+                par_l_type = typeof(eval(par_l))
+                if (par_l isa GlobalRef && (par_l_type == DataType && supertype(eval(par_l)) == Randomness) || par_l_type == typeof(rand))
+                    insert_vertex!(par, g)
+                    insert_vertex!(x, g)
+                    insert_edge!(par, x, g)
+                end
+            end
+        end
+
+        # This handles dependencies implied by branching on randomness
+        for succ_block in IRTools.successors(block)
+            branches = IRTools.branches(block, succ_block)
+            pars = collect(Iterators.flatten(map(y -> filter(x -> x isa Variable, IRTools.arguments(y)), branches)))
+            map(x -> insert_vertex!(x, g), pars)
+            ch = filter(x -> x isa Variable, IRTools.arguments(succ_block))
+            map(x -> insert_vertex!(x, g), ch)
+            for i in pars
+                for child in ch
+                    insert_edge!(i, child, g)
+                end
             end
         end
     end
@@ -115,6 +137,8 @@ end
 
 # Here's how you use this infrastructure.
 function hierarchical_normal(z::Float64)
+
+    # These are equivalent to 'traced' randomness sources.
     x = rand(Normal(z, 1.0))
     y = rand(Normal(x, 1.0))
     m = rand(Normal(y, 1.0)) + 5.0
@@ -123,7 +147,12 @@ function hierarchical_normal(z::Float64)
     else
         n = 0
     end
-    q = x + m + rand(Normal(n, 0.5))
+    q = 0
+
+    # This is 'untraced' but still can be caught by the static pass.
+    while rand(Normal(n, 10.0)) < 20.0
+        q += 1
+    end
     return q
 end
 
@@ -132,5 +161,10 @@ println(ir)
 
 result, trace = @probabilistic(hierarchical_normal, (5.0, ))
 labels = [props(trace.dependencies, i)[:name] for i in vertices(trace.dependencies)]
-draw(PDF("graphs/dependency_graph.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.2, layout=circular_layout))
+
+for i in edges(trace.dependencies)
+    println(i)
+end
+
+draw(PDF("graphs/dependency_graph.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.1, layout=circular_layout))
 end # module
