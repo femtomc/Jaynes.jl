@@ -11,7 +11,7 @@ using Compose
 using MacroTools
 using IRTools
 using IRTools: blocks
-using IRTools: @code_ir, @dynamo, IR, xcall, self, recurse!, Variable, var
+using IRTools: @code_ir, @dynamo, IR, recurse!, Variable
 using Random
 
 # Source of randomness with the right methods.
