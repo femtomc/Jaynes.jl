@@ -14,7 +14,7 @@ using IRTools: blocks
 using IRTools: @code_ir, @dynamo, IR, xcall, self, recurse!, Variable, var
 using Random
 
-# Source of randomness.
+# Source of randomness with the right methods.
 abstract type Randomness end
 struct Normal <: Randomness
     μ::Float64
@@ -136,7 +136,7 @@ macro probabilistic(fn, args)
 end
 
 # Here's how you use this infrastructure.
-function hierarchical_normal(z::Float64)
+function hierarchical_disgust(z::Float64)
 
     # These are equivalent to 'traced' randomness sources.
     x = rand(Normal(z, 1.0))
@@ -153,18 +153,22 @@ function hierarchical_normal(z::Float64)
     while rand(Normal(n, 10.0)) < 20.0
         q += 1
     end
-    return q
+
+    # Allocate an array and fill it with randomness!
+    p = []
+    push!(p, rand(Normal(0.0, 1.0)))
+    for i in 2:Int(floor(rand(Normal(100.0, 5.0))))
+        push!(p, rand(Normal(p[i-1], 1.0)))
+    end
+    return p
 end
 
-ir = @code_ir hierarchical_normal(5.0)
+ir = @code_ir hierarchical_disgust(5.0)
 println(ir)
 
-result, trace = @probabilistic(hierarchical_normal, (5.0, ))
+result, trace = @probabilistic(hierarchical_disgust, (5.0, ))
+println(trace.address_map)
 labels = [props(trace.dependencies, i)[:name] for i in vertices(trace.dependencies)]
-
-for i in edges(trace.dependencies)
-    println(i)
-end
 
 draw(PDF("graphs/dependency_graph.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.1, layout=circular_layout))
 end # module
