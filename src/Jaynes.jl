@@ -10,27 +10,61 @@ import Cairo
 # A bit of IR meta-programming required :)
 using IRTools
 using IRTools: blocks
-using IRTools: @code_ir, @dynamo, IR, recurse!, Variable
+using IRTools: @code_ir, @dynamo, IR, recurse!, Variable, isexpr
 using Random
 
 # Source of randomness with the right methods.
 abstract type Randomness end
 struct Normal <: Randomness
+    name::Symbol
     μ::Float64
     σ::Float64
+    Normal(μ::Float64, σ::Float64) = new(gensym(), μ, σ)
 end
 rand(x::Normal) = x.μ + rand()*x.σ
 logprob(x::Normal, pt::Float64) = -(1.0/2.0)*( (pt-x.μ)/x.σ )^2 - (log(x.σ) + log(2*pi))
 
-# Hierarchical addressing with a trie for use in trace.
+# Hierarchical addressing with a trie for use in trace. Implementation from Gen.jl.
 struct Trie{K,V}
     leaf_nodes::Dict{K, V}
     internal_nodes::Dict{K, Trie{K, V}}
 end
 Trie{K,V}() where {K,V} = Trie(Dict{K,V}(), Dict{K,Trie{K,V}}())
+Base.isempty(trie::Trie) = isempty(trie.leaf_nodes) && isempty(trie.internal_nodes)
 Base.println(trie::Trie) = JSON.print(trie, 4)
+Base.haskey(trie::Trie, key) = has_leaf_node(trie, key)
 
-function insert_leaf!(trie::Trie, addr, value)
+function has_leaf_node(trie::Trie, addr)
+    haskey(trie.leaf_nodes, addr)
+end
+
+function has_leaf_node(trie::Trie, addr::Pair)
+    (first, rest) = addr
+    if haskey(trie.internal_nodes, first)
+        has_leaf_node(trie.internal_nodes[first], rest)
+    else
+        false
+    end
+end
+
+function set_internal_node!(trie::Trie{K,V}, addr, new_node::Trie{K,V}) where {K,V}
+    if !isempty(new_node)
+        trie.internal_nodes[addr] = new_node
+    end
+end
+
+function set_internal_node!(trie::Trie{K,V}, addr::Pair, new_node::Trie{K,V}) where {K,V}
+    (first, rest) = addr
+    if haskey(trie.internal_nodes, first)
+        node = trie.internal_nodes[first]
+    else
+        node = Trie{K,V}()
+        trie.internal_nodes[first] = node
+    end
+    set_internal_node!(node, rest, new_node)
+end
+
+function set_leaf!(trie::Trie, addr, value)
     trie.leaf_nodes[addr] = value
 end
 
@@ -109,11 +143,14 @@ end
 
 # Multiple dispatch allows the recurse call in the Trace dynamo to easily implement probabilistic tracing.
 function (t::Trace)(::typeof(rand), a::T) where {T <: Randomness}
+    # This needs to be re-worked properly. The problem is similar to what happened with Cassette tagging - you need 'non-local' information in this call but the call only knows about overwriting rand(a). Thus, we need to do some IR insertion to make this work right.
+    #
     result = rand(a)
-
-    # These two lines need to be replaced with true Trie insertion.
-    label = gensym() # replace with addressing
-    insert_leaf!(t.address_map, label, result);
+    new_label = gensym()
+    label = Pair(a.name, new_label) # replace with addressing
+    new_map = AddressMap()
+    set_leaf!(new_map, new_label, result)
+    set_internal_node!(t.address_map, label, new_map)
 
     # Accumulate score.
     t.score += logprob(a, result)
@@ -124,6 +161,9 @@ end
 @dynamo function (t::Trace)(a...)
     ir = IR(a...)
     ir == nothing && return
+    for (x, st) in ir
+        println((st.line, st))
+    end
     recurse!(ir) # recurse into calls in the IR and apply (t::Trace) there.
     return ir
 end
@@ -180,9 +220,8 @@ end
 result, trace = @probabilistic(hierarchical_disgust, (5.0, ))
 
 ir = @code_ir hierarchical_disgust(5.0)
-println(ir)
-println(trace.address_map)
 labels = [props(trace.dependencies, i)[:name] for i in vertices(trace.dependencies)]
+println(trace.address_map)
 
 draw(PDF("graphs/dependency_graph.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.1, layout=circular_layout))
 
