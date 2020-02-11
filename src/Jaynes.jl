@@ -143,8 +143,10 @@ end
 
 # Multiple dispatch allows the recurse call in the Trace dynamo to easily implement probabilistic tracing.
 function (t::Trace)(::typeof(rand), a::T) where {T <: Randomness}
-    # This needs to be re-worked properly. The problem is similar to what happened with Cassette tagging - you need 'non-local' information in this call but the call only knows about overwriting rand(a). Thus, we need to do some IR insertion to make this work right.
-    #
+    # This needs to be re-worked properly. 
+    # The problem is similar to what happened with Cassette tagging - you need 'non-local' information in this call but the call only knows about overwriting rand(a). 
+    # Thus, we need to do some IR insertion to make this work right.
+
     result = rand(a)
     new_label = gensym()
     label = Pair(a.name, new_label) # replace with addressing
