@@ -9,7 +9,7 @@ using Compose
 
 # A bit of meta-programming required :)
 using MacroTools
-using IRTools: @code_ir, @dynamo, IR, xcall, self, recurse!, Variable
+using IRTools: @code_ir, @dynamo, IR, xcall, self, recurse!, Variable, var
 using Random
 
 # Source of randomness.
@@ -51,7 +51,7 @@ mutable struct Trace
         new(dependencies, trie, 0.0)
     end
 end
-insert_vertex!(addr::Variable, g::MetaGraph) = add_vertex!(g, :name, addr)
+insert_vertex!(addr::Variable, g::MetaGraph) = !(addr in [get_prop(g, i, :name) for i in vertices(g)]) && add_vertex!(g, :name, addr)
 insert_edge!(par::Variable, ch::Variable, g::MetaGraph) = add_edge!(g, g[par, :name], g[ch, :name])
 
 # Here begins the IR analysis section...
@@ -67,16 +67,15 @@ end
 function (g::MetaGraph)(ir)
     ir == nothing && return
     for (x, st) in ir
-        isexpr(st.expr, :call) || continue
         l = st.expr.args[1]
-        if (l isa GlobalRef && l.name == :rand)
-            insert_vertex!(x, g)
-            parents = filter(x -> x isa Variable, st.expr.args)
-            for par in parents
-                if par in keys(ir)
-                    insert_vertex!(par, g)
-                    insert_edge!(par, x, g)
-                end
+        parents = filter(x -> x isa Variable && x in keys(ir) , st.expr.args)
+        for par in parents
+            par_st = ir[par]
+            par_l = par_st.expr.args[1]
+            if (par_l isa GlobalRef && par_l.name == :rand)
+                insert_vertex!(par, g)
+                insert_vertex!(x, g)
+                insert_edge!(par, x, g)
             end
         end
     end
@@ -104,7 +103,7 @@ macro probabilistic(fn, args)
     return quote
         ir = @code_ir $fn($args...)
         tr = Trace()
-        
+
         # Construct dependency graph.
         tr.dependencies(ir)
 
