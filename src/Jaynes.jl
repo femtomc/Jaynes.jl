@@ -38,6 +38,8 @@ end
 # For now, the AddressMap (which uses the trie structure) has just Float64 values.
 const AddressMap = Trie{Symbol, Float64}
 const DependencyGraph = MetaGraph
+insert_vertex!(addr::Variable, g::DependencyGraph) = !(addr in [get_prop(g, i, :name) for i in vertices(g)]) && add_vertex!(g, :name, addr)
+insert_edge!(par::Variable, ch::Variable, g::DependencyGraph) = add_edge!(g, g[par, :name], g[ch, :name])
 
 # Trace to track score and dependency graph.
 mutable struct Trace
@@ -47,25 +49,18 @@ mutable struct Trace
     score::Float64
 
     function Trace()
-        dependencies = MetaGraph()
+        dependencies = DependencyGraph()
         set_indexing_prop!(dependencies, :name)
         trie = AddressMap()
         new(dependencies, trie, 0.0)
     end
 end
-insert_vertex!(addr::Variable, g::MetaGraph) = !(addr in [get_prop(g, i, :name) for i in vertices(g)]) && add_vertex!(g, :name, addr)
-insert_edge!(par::Variable, ch::Variable, g::MetaGraph) = add_edge!(g, g[par, :name], g[ch, :name])
 
-# Here begins the IR analysis section...
-function (t::Trace)(::typeof(rand), a::T) where {T <: Randomness}
-    result = rand(a)
-    label = gensym() # replace with addressing
-    insert_leaf!(t.address_map, label, result);
-    t.score += logprob(a, result)
-    result
-end
+##########################################
+# Here begins the IR analysis section... #
+##########################################
 
-# Applying an instance of MetaGraph stores all the dependencies in the graph.
+# Applying an instance of MetaGraph to the IR stores all the dependencies in the graph.
 function (g::MetaGraph)(ir)
     ir == nothing && return
     blocks = IRTools.blocks(ir)
@@ -74,11 +69,15 @@ function (g::MetaGraph)(ir)
         # This handles IR statements
         for (x, st) in block
             l = st.expr.args[1]
+
+            # Get all parents which are IR Variables
             parents = filter(x -> x isa Variable && x in keys(ir) , st.expr.args)
             for par in parents
                 par_st = ir[par]
                 par_l = par_st.expr.args[1]
                 par_l_type = typeof(eval(par_l))
+
+                # Check if it's a reference to randomness or a call to rand.
                 if (par_l isa GlobalRef && (par_l_type == DataType && supertype(eval(par_l)) == Randomness) || par_l_type == typeof(rand))
                     insert_vertex!(par, g)
                     insert_vertex!(x, g)
@@ -87,7 +86,8 @@ function (g::MetaGraph)(ir)
             end
         end
 
-        # This handles dependencies implied by branching on randomness
+        # This handles dependencies implied by branching on randomness.
+        # This has some edge cases which are missing in the analysis.
         for succ_block in IRTools.successors(block)
             branches = IRTools.branches(block, succ_block)
             pars = collect(Iterators.flatten(map(y -> filter(x -> x isa Variable, IRTools.arguments(y)), branches)))
@@ -106,21 +106,25 @@ end
 # Multiple dispatch allows the recurse call in the Trace dynamo to easily implement probabilistic tracing.
 function (t::Trace)(::typeof(rand), a::T) where {T <: Randomness}
     result = rand(a)
+
+    # These two lines need to be replaced with true Trie insertion.
     label = gensym() # replace with addressing
     insert_leaf!(t.address_map, label, result);
+
+    # Accumulate score.
     t.score += logprob(a, result)
     result
 end
 
-# This dynamo transforms the function into a probabilistic interpretation.
+# This dynamo transforms the function into a probabilistic interpretation by 'overdubbing' (Cassette lingo) using the above defined dispatched method.
 @dynamo function (t::Trace)(a...)
     ir = IR(a...)
     ir == nothing && return
-    recurse!(ir)
+    recurse!(ir) # recurse into calls in the IR and apply (t::Trace) there.
     return ir
 end
 
-# Automatically constructs the IR dependency graph and then produces the trace.
+# Convenience macro: automatically constructs the IR dependency graph and then produces the trace.
 macro probabilistic(fn, args)
     return quote
         ir = @code_ir $fn($args...)
@@ -135,13 +139,15 @@ macro probabilistic(fn, args)
     end
 end
 
-# Here's how you use this infrastructure.
+# Here's how you use this infrastructure on a particularly disgusting generative function...
 function hierarchical_disgust(z::Float64)
 
     # These are equivalent to 'traced' randomness sources.
     x = rand(Normal(z, 1.0))
     y = rand(Normal(x, 1.0))
     m = rand(Normal(y, 1.0)) + 5.0
+
+    # 'Simple' control flow from a probabilistic perspective.
     if 0 < x
         n = rand(Normal(m, 1.0))
     else
@@ -162,11 +168,10 @@ function hierarchical_disgust(z::Float64)
     end
     return p
 end
+result, trace = @probabilistic(hierarchical_disgust, (5.0, ))
 
 ir = @code_ir hierarchical_disgust(5.0)
 println(ir)
-
-result, trace = @probabilistic(hierarchical_disgust, (5.0, ))
 println(trace.address_map)
 labels = [props(trace.dependencies, i)[:name] for i in vertices(trace.dependencies)]
 
