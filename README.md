@@ -1,7 +1,9 @@
 <i><h1 style="color: purple">Jaynes</h1></i>
 
 
-<center><img src="img/jaynes.jpeg"></center>
+<p align="center">
+<img width="200px" src="img/jaynes.jpeg"/>
+</p>
 <br>
 
 Heavily inspired by <a href="https://probcomp.github.io/Gen/">Gen.jl</a> and <a href="https://github.com/MikeInnes/Poirot.jl">Poirot.jl</a>: <i><span style="color: purple">Jaynes</span></i> is a minimal trace-based PPL but includes the usage of IR manipulations for non-standard interpretation and analysis, which may help by providing information which can be used during inference programming.
