@@ -2,13 +2,12 @@ module Jaynes
 
 import Base.rand
 import JSON
-import Cairo
 using MetaGraphs, LightGraphs
 using GraphPlot
 using Compose
+import Cairo
 
-# A bit of meta-programming required :)
-using MacroTools
+# A bit of IR meta-programming required :)
 using IRTools
 using IRTools: blocks
 using IRTools: @code_ir, @dynamo, IR, recurse!, Variable
@@ -37,12 +36,17 @@ end
 
 # For now, the AddressMap (which uses the trie structure) has just Float64 values.
 const AddressMap = Trie{Symbol, Float64}
+
+# DependencyGraph is just a MetaGraph.
 const DependencyGraph = MetaGraph
+
+#TODO: These insertion functions for the DependencyGraph are inefficient, because they check all vertices before inserting.
 insert_vertex!(addr::Variable, g::DependencyGraph) = !(addr in [get_prop(g, i, :name) for i in vertices(g)]) && add_vertex!(g, :name, addr)
 insert_edge!(par::Variable, ch::Variable, g::DependencyGraph) = add_edge!(g, g[par, :name], g[ch, :name])
 
 # Trace to track score and dependency graph.
 mutable struct Trace
+
     # Initialized at construction.
     dependencies::DependencyGraph
     address_map::AddressMap
@@ -153,8 +157,8 @@ function hierarchical_disgust(z::Float64)
     else
         n = 0
     end
-    q = 0
 
+    q = 0
     # This is 'untraced' but still can be caught by the static pass.
     while rand(Normal(n, 10.0)) < 20.0
         q += 1
@@ -166,7 +170,12 @@ function hierarchical_disgust(z::Float64)
     for i in 2:Int(floor(rand(Normal(100.0, 5.0))))
         push!(p, rand(Normal(p[i-1], 1.0)))
     end
-    return p
+
+    if y > 0.5
+        return p
+    else
+        return q
+    end
 end
 result, trace = @probabilistic(hierarchical_disgust, (5.0, ))
 
@@ -176,4 +185,5 @@ println(trace.address_map)
 labels = [props(trace.dependencies, i)[:name] for i in vertices(trace.dependencies)]
 
 draw(PDF("graphs/dependency_graph.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.1, layout=circular_layout))
+
 end # module
