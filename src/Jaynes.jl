@@ -11,6 +11,7 @@ import Cairo
 using IRTools
 using IRTools: blocks
 using IRTools: @code_ir, @dynamo, IR, recurse!, Variable, isexpr
+using IRTracker
 using Random
 
 # Source of randomness with the right methods.
@@ -71,8 +72,8 @@ end
 # For now, the AddressMap (which uses the trie structure) has just Float64 values.
 const AddressMap = Trie{Symbol, Float64}
 
-# DependencyGraph is just a MetaGraph.
-const DependencyGraph = MetaGraph
+# DependencyGraph is just a MetaDiGraph.
+const DependencyGraph = MetaDiGraph
 
 #TODO: These insertion functions for the DependencyGraph are inefficient, because they check all vertices before inserting.
 insert_vertex!(addr::Variable, g::DependencyGraph) = !(addr in [get_prop(g, i, :name) for i in vertices(g)]) && add_vertex!(g, :name, addr)
@@ -98,34 +99,27 @@ end
 # Here begins the IR analysis section... #
 ##########################################
 
-# Applying an instance of MetaGraph to the IR stores all the dependencies in the graph.
-function (g::MetaGraph)(ir)
+# Applying an instance of DependencyGraph to the IR stores all the dependencies in the graph.
+function (g::DependencyGraph)(ir)
     ir == nothing && return
     blocks = IRTools.blocks(ir)
     for block in blocks
 
         # This handles IR statements
         for (x, st) in block
+            insert_vertex!(x, g)
+            set_prop!(g, g[x, :name], :ir, st)
             l = st.expr.args[1]
 
             # Get all parents which are IR Variables
             parents = filter(x -> x isa Variable && x in keys(ir) , st.expr.args)
             for par in parents
-                par_st = ir[par]
-                par_l = par_st.expr.args[1]
-                par_l_type = typeof(eval(par_l))
-
-                # Check if it's a reference to randomness or a call to rand.
-                if (par_l isa GlobalRef && (par_l_type == DataType && supertype(eval(par_l)) == Randomness) || par_l_type == typeof(rand))
-                    insert_vertex!(par, g)
-                    insert_vertex!(x, g)
-                    insert_edge!(par, x, g)
-                end
+                insert_vertex!(par, g)
+                insert_edge!(par, x, g)
             end
         end
 
-        # This handles dependencies implied by branching on randomness.
-        # This has some edge cases which are missing in the analysis.
+        # This handles dependencies implied by branching.
         for succ_block in IRTools.successors(block)
             branches = IRTools.branches(block, succ_block)
             pars = collect(Iterators.flatten(map(y -> filter(x -> x isa Variable, IRTools.arguments(y)), branches)))
@@ -135,6 +129,7 @@ function (g::MetaGraph)(ir)
             for i in pars
                 for child in ch
                     insert_edge!(i, child, g)
+                    insert_edge!(child, i, g)
                 end
             end
         end
@@ -163,9 +158,6 @@ end
 @dynamo function (t::Trace)(a...)
     ir = IR(a...)
     ir == nothing && return
-    for (x, st) in ir
-        println((st.line, st))
-    end
     recurse!(ir) # recurse into calls in the IR and apply (t::Trace) there.
     return ir
 end
@@ -184,6 +176,16 @@ macro probabilistic(fn, args)
         (result, tr)
     end
 end
+
+# A simple example.
+function simple(z::Float64)
+    x = rand(Normal(z, 1.0))
+    y = x + rand(Normal(x, 1.0))
+    return y
+end
+en_ir = track(simple, 5.0)
+printlevels(en_ir, 2)
+println(forward(en_ir))
 
 # Here's how you use this infrastructure on a particularly disgusting generative function...
 function hierarchical_disgust(z::Float64)
@@ -223,8 +225,6 @@ result, trace = @probabilistic(hierarchical_disgust, (5.0, ))
 
 ir = @code_ir hierarchical_disgust(5.0)
 labels = [props(trace.dependencies, i)[:name] for i in vertices(trace.dependencies)]
-println(trace.address_map)
 
-draw(PDF("graphs/dependency_graph.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.1, layout=circular_layout))
-
+draw(PDF("graphs/dependency_graph_irtools.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.1, layout=stressmajorize_layout))
 end # module
