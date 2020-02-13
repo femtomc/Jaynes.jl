@@ -11,7 +11,6 @@ import Cairo
 using IRTools
 using IRTools: blocks
 using IRTools: @code_ir, @dynamo, IR, recurse!, Variable, isexpr
-using IRTracker
 using Random
 
 # Source of randomness with the right methods.
@@ -183,9 +182,6 @@ function simple(z::Float64)
     y = x + rand(Normal(x, 1.0))
     return y
 end
-en_ir = track(simple, 5.0)
-printlevels(en_ir, 2)
-println(forward(en_ir))
 
 # Here's how you use this infrastructure on a particularly disgusting generative function...
 function hierarchical_disgust(z::Float64)
@@ -225,6 +221,7 @@ result, trace = @probabilistic(hierarchical_disgust, (5.0, ))
 
 ir = @code_ir hierarchical_disgust(5.0)
 labels = [props(trace.dependencies, i)[:name] for i in vertices(trace.dependencies)]
+println(ir)
 
-draw(PDF("graphs/dependency_graph_irtools.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.1, layout=stressmajorize_layout))
+#draw(PDF("graphs/dependency_graph_irtools.pdf", 16cm, 16cm), gplot(trace.dependencies, nodelabel = labels, arrowlengthfrac = 0.1, layout=stressmajorize_layout))
 end # module
