@@ -1,10 +1,3 @@
-module DeepExperiments
-
-using Zygote
-using CuArrays
-using CUDAnative
-using Distributions
-
 # GPUify :)
 GPU(x::Array{Float64, N}) where N = CuArray(x)
 
@@ -152,11 +145,3 @@ function send!(req::Request{K}, inf_comp::InferenceCompiler) where K
         return send!(req, inf_comp)
     end
 end
-
-# Let's create an inference compiler.
-inf_comp = InferenceCompiler(GPU(Recur(RNNCell(10, 10))))
-send!(GPU(Post(:new, [1.0])), inf_comp)
-request = send!(GPU(Request(:params, zeros(3))), inf_comp)
-println(request)
-
-end #module

@@ -1,24 +1,10 @@
-module Jaynes
-
-import Base.rand
-import JSON
-using MetaGraphs, LightGraphs
-using GraphPlot
-using Compose
-import Cairo
-
-# A bit of IR meta-programming required :)
-using IRTools
-using IRTools: blocks
-using IRTools: @code_ir, @dynamo, IR, recurse!, var, Variable, Statement, isexpr
-using Random
-
 # Source of randomness with the right methods.
 abstract type Randomness end
 struct Normal <: Randomness
     name::Symbol
     μ::Float64
     σ::Float64
+    Normal(sym::Symbol, μ::Float64, σ::Float64) = new(sym, μ, σ)
     Normal(μ::Float64, σ::Float64) = new(gensym(), μ, σ)
 end
 rand(x::Normal) = x.μ + rand()*x.σ
@@ -68,22 +54,3 @@ function track_rand(ir)::Array{Dict{Any, Any}}
     end
     return trees
 end
-
-# A simple example.
-function simple(z::Float64)
-    x = rand(Normal(z, 1.0))
-    y = x + rand(Normal(x, 1.0))
-    return y
-end
-
-ir = @code_ir simple(5.0)
-println(ir)
-for (var, st) in ir
-    println(dependents(var, ir))
-end
-
-mg = dependency_graph(ir)
-labels = [(l = get_prop(mg, i, :name); l) for i in vertices(mg)]
-draw(PDF("graphs/dependency_graph_irtools.pdf", 16cm, 16cm), gplot(mg, nodelabel = labels, arrowlengthfrac = 0.1, layout=stressmajorize_layout))
-
-end # module
