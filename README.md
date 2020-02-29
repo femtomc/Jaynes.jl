@@ -14,3 +14,9 @@ This might allow us to do cool things like:
 3. Belief propagation and trace-based inference in one PPL like whaaaaaaaaaa
 
 Work in progress :)
+
+---
+Update: 02/28/20
+
+As a first little experiment, I wrote the core of a deep neural network inference compiler. Using IR transformations, I'm working on automatically compiling a probabilistic program into an inference compiled proposal program.
+
