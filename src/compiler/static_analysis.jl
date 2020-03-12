@@ -1,15 +1,3 @@
-# Source of randomness with the right methods.
-abstract type Randomness end
-struct Normal <: Randomness
-    name::Symbol
-    μ::Float64
-    σ::Float64
-    Normal(sym::Symbol, μ::Float64, σ::Float64) = new(sym, μ, σ)
-    Normal(μ::Float64, σ::Float64) = new(gensym(), μ, σ)
-end
-rand(x::Normal) = x.μ + rand()*x.σ
-logprob(x::Normal, pt::Float64) = -(1.0/2.0)*( (pt-x.μ)/x.σ )^2 - (log(x.σ) + log(2*pi))
-
 # Dependency graph.
 const DependencyGraph = MetaDiGraph
 add_v!(n::Any, g::DependencyGraph) = !(n in [get_prop(g, i, :name) for i in vertices(g)]) && add_vertex!(g, :name, n)

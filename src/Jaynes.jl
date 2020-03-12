@@ -4,20 +4,32 @@ module Jaynes
 using ExportAll
 
 using MetaGraphs, LightGraphs
+
 using IRTools
-using IRTools: blocks
-using IRTools: @code_ir, @dynamo, IR, recurse!, Variable, Statement, isexpr
+using IRTools: blocks, var, delete!, arguments, argument!, insertafter!, isreturn, emptyargs!, branches, renumber
+using IRTools: @code_ir, @dynamo, IR, recurse!, Variable, Statement, isexpr, return!, func, evalir
+using IRTools: Pipe, finish, xcall, deletearg!
+using IRTools: prewalk
+
 using Random
+
+using Flux
+using Flux: Recur, RNNCell
 using Zygote
+using Zygote: gradient
+
 using Distributions
+using DistributionsAD
+
+using FunctionalCollections
+
+# GPU support.
 using CuArrays
 using CUDAnative
 
 import Base.rand
 
-include("static_analysis.jl")
-include("inference_compiler.jl")
-include("proposal_transform.jl")
+include("compiler/Compiler.jl")
 
 @exportAll()
 
