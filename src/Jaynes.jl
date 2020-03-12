@@ -18,7 +18,18 @@ using Flux: Recur, RNNCell
 using Zygote
 using Zygote: gradient
 
+using InteractiveUtils: subtypes
 using Distributions
+
+# Get all distributions in Distributions.jl
+typesofdist = subtypes(Distribution)
+typesofdist2 = filter(x->isa(x,Vector{Any}),subtypes.(typesofdist))
+for t in typesofdist2
+   global typesofdist # if in REPL
+   typesofdist = union(typesofdist, t)
+end
+dists = map(x -> Base.nameof(x), typesofdist)
+
 using DistributionsAD
 
 using FunctionalCollections

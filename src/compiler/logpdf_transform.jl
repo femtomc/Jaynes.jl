@@ -8,7 +8,7 @@
     # Pass.
     for (v, st) in pr
         x = st.expr.args[1]
-        if x isa GlobalRef && x.name in [:Normal, :MvNormal]
+        if x isa GlobalRef && x.name in dists
             vars = filter(x -> x isa Variable, st.expr.args)
             y = argument!(pr)
             var_map[v] = y
