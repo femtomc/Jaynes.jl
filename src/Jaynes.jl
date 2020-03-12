@@ -24,8 +24,6 @@ using DistributionsAD
 using FunctionalCollections
 
 # GPU support.
-using CuArrays
-using CUDAnative
 
 import Base.rand
 
