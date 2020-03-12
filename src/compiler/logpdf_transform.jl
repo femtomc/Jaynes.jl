@@ -5,10 +5,10 @@
     var_map = Dict()
     insertions = []
 
+    # Pass.
     for (v, st) in pr
         x = st.expr.args[1]
-
-        if x isa GlobalRef && x.name == :Normal
+        if x isa GlobalRef && x.name in [:Normal, :MvNormal]
             vars = filter(x -> x isa Variable, st.expr.args)
             y = argument!(pr)
             var_map[v] = y
@@ -22,9 +22,9 @@
         end
     end
     return!(pr, xcall(:+, insertions...))
+
+    # Finish.
     ir = finish(pr)
-    args = arguments(ir)
     deletearg!(ir, 1)
-    arg_map = Dict([arg => var(i) for (i, arg) in enumerate(args)])
     return renumber(ir)
 end

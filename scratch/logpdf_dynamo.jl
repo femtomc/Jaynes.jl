@@ -34,4 +34,22 @@ end
 grad = gradient((x, y, z, k) -> logprob(x, y, z, k), 0.3, 3.0, 5.0, 5.0)
 println("\nGradient:\n", grad)
 
+# Multi-variate stuff
+function foo2()
+    y = rand(Normal(0, 1))
+    z = rand(Normal(0, 1))
+    x = rand(MvNormal([y, z], [1.0 0.0; 0.0 1.0]))
+    return x
+end
+
+ir = @code_ir foo2()
+println("\nOriginal:\n", ir, "\n")
+
+transformed = @code_ir logpdf_transform! foo2()
+println("Transformed:\n", transformed, "\n")
+logprob = func(transformed)
+println(logprob(0.3, 0.3, [0.3, 3.0]))
+grad = gradient((x, y, z) -> logprob(x, y, z), 0.3, 0.3, [0.3, 3.0])
+println("\nGradient:\n", grad)
+
 end #module
