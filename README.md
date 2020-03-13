@@ -1,8 +1,5 @@
-<i><h1 style="color: purple">Jaynes</h1></i>
-
-
 <p align="center">
-<img width="200px" src="img/jaynes.jpeg"/>
+<img width="450px" src="img/jaynes_ascii.jpeg"/>
 </p>
 <br>
 
