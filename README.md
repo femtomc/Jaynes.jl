@@ -3,7 +3,7 @@
 </p>
 <br>
 
-Heavily inspired by <a href="https://probcomp.github.io/Gen/">Gen.jl</a> and <a href="https://github.com/MikeInnes/Poirot.jl">Poirot.jl</a>: <i><span style="color: purple">Jaynes</span></i> is a minimal trace-based PPL but includes the usage of IR manipulations for non-standard interpretation and analysis, which may help by providing information which can be used during inference programming.
+Heavily inspired by <a href="https://probcomp.github.io/Gen/">Gen.jl</a> and <a href="https://github.com/MikeInnes/Poirot.jl">Poirot.jl</a>: <i><span style="color: purple">Jaynes</span></i> is a minimal PPL utilizing IR manipulations for non-standard interpretation and analysis.
 
 This might allow us to do cool things like:
 1. Grab the dependency graph of a probabilistic program as a static pass and analyze it!
@@ -13,7 +13,3 @@ This might allow us to do cool things like:
 Work in progress :)
 
 ---
-Update: 02/28/20
-
-As a first little experiment, I wrote the core of a deep neural network inference compiler. Using IR transformations, I'm working on automatically compiling a probabilistic program into an inference compiled proposal program.
-
