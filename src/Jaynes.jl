@@ -3,10 +3,13 @@ module Jaynes
 # TODO: kill.
 using ExportAll
 
+using JSON
 using MetaGraphs, LightGraphs
 
+using MacroTools
+
 using IRTools
-using IRTools: blocks, var, delete!, arguments, argument!, insertafter!, isreturn, emptyargs!, branches, renumber
+using IRTools: blocks, var, delete!, arguments, argument!, insertafter!, isreturn, emptyargs!, branches, renumber, self
 using IRTools: @code_ir, @dynamo, IR, recurse!, Variable, Statement, isexpr, return!, func, evalir
 using IRTools: Pipe, finish, xcall, deletearg!
 using IRTools: prewalk
@@ -18,7 +21,7 @@ using Flux: Recur, RNNCell
 using Zygote
 using Zygote: gradient
 
-using InteractiveUtils: subtypes
+using InteractiveUtils: subtypes, @code_lowered
 using Distributions
 
 # Get all distributions in Distributions.jl

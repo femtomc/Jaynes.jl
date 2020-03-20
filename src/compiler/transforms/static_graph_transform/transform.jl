@@ -31,14 +31,3 @@ function dependency_graph(ir)::DependencyGraph
     end
     return g
 end
-
-function track_rand(ir)::Array{Dict{Any, Any}}
-    accounted_for = Array{Variable, 1}([])
-    trees = Array{Dict{Any, Any}}([])
-    for (var, st) in ir
-        if (eval(st.expr.args[1]) isa typeof(rand) && !(var in accounted_for))
-            push!(trees, grow_tree(var, ir, Dict{Any, Any}()))
-        end
-    end
-    return trees
-end

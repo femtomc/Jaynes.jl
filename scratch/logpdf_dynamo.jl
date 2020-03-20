@@ -1,6 +1,7 @@
 module LogPDFTransform
 
-using Jaynes
+include("../src/Jaynes.jl")
+using .Jaynes
 
 using IRTools
 using IRTools: func
@@ -41,28 +42,12 @@ function foo2()
     return x
 end
 
+# Test
+
 ir = @code_ir foo2()
 println("\nOriginal:\n", ir, "\n")
 
-transformed = @code_ir logpdf_transform! foo2()
-println("Transformed:\n", transformed, "\n")
-logprob = func(transformed)
-println(logprob(0.3, 0.3, [0.3, 3.0]))
-grad = gradient((x, y, z) -> logprob(x, y, z), 0.3, 0.3, [0.3, 3.0])
-println("\nGradient:\n", grad)
+call = @transform logpdf_transform! foo2()
 
-# Multi-variate stuff
-function foo3(x::Float64)
-    β = foo(x)
-    return β
-end
-
-ir = @code_ir foo3(3.0)
-println("\nOriginal:\n", ir, "\n")
-
-call = logpdf_transform!() do
-    3.0
-end
-
-println(call)
+println(call(0.1, 5.0, [0.3, 0.3]))
 end #module
