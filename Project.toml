@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 Cairo = "159f3aea-2a34-519c-b102-8c37f9878175"
+Cassette = "7057c7e9-c182-5462-911a-8362d720325c"
 Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
 Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"

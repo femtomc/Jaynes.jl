@@ -7,7 +7,9 @@ using JSON
 using MetaGraphs, LightGraphs
 
 using MacroTools
+using MacroTools: postwalk
 
+using Cassette
 using IRTools
 using IRTools: blocks, var, delete!, arguments, argument!, insertafter!, isreturn, emptyargs!, branches, renumber, self
 using IRTools: @code_ir, @dynamo, IR, recurse!, Variable, Statement, isexpr, return!, func, evalir

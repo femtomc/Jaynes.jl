@@ -12,6 +12,7 @@ using Distributions
 using DistributionsAD: logpdf
 
 using Zygote: gradient
+using Cassette
 
 function tester()
     x = rand(Normal(0.0, 1.0))
@@ -28,26 +29,16 @@ end
 
 function foo2()
     θ = rand(Beta(2, 2))
-    μ = rand(Normal(1.0, 0.0))
+    μ = rand(Normal(1.0, 0.1))
     z = rand(Normal(μ, θ))
     x = Array{Float64, 1}(undef, 50)
-    for i in 1:50
+    for i in 1:10
         x[i] = rand(Normal(z, 0.5))
     end
     return x
 end
 
-tr = Trace(foo, 4.0)
-tr() do
-    foo(4.0)
-end
-
+tr = @trace foo2
 println(tr)
-println(get_choices(tr))
-
-println(@code_ir foo2())
-lowered = @code_lowered foo2()
-println(lowered.slotnames)
-
 
 end #module
