@@ -9,22 +9,15 @@ using IRTools
 using IRTools: func
 
 using Distributions
-using DistributionsAD: logpdf
 
-using Zygote: gradient
 using Cassette
 
-function tester()
-    x = rand(Normal(0.0, 1.0))
-    return x
-end
-
 # Stochastic kung-foo!
-function foo(z::Float64)
-    x = rand(Normal(z, 6.0))
-    y = rand(Normal(x, 1.0))
-    l = rand(Normal(x + y, 3.0))
-    return y
+function foo1()
+    θ = rand(Beta(2, 2))
+    μ = rand(Normal(1.0, 0.1))
+    z = rand(Normal(μ, θ))
+    return z
 end
 
 function foo2()
@@ -37,6 +30,18 @@ function foo2()
     end
     return x
 end
+
+# Recursion.
+function foo3(z::Float64)
+    if rand(Normal(0.0, 1.0)) > 3.0
+        return z
+    else
+        return z + foo(z)
+    end
+end
+
+tr = @trace foo1
+println(tr)
 
 tr = @trace foo2
 println(tr)

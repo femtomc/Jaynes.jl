@@ -2,13 +2,14 @@
 
 mutable struct Trace
     call::Function
-    trie::Trie{Symbol,ChoiceRecord}
+    record_count::Int
+    trie::Trie{Symbol, Tuple{Int, ChoiceRecord}}
     score::Float64
     args::Tuple
     retval::Any
     function Trace(call::Function, args...)
-        trie = Trie{Symbol,ChoiceRecord}()
-        new(call, trie, 0.0, args, nothing)
+        trie = Trie{Symbol,Tuple{Int, ChoiceRecord}}()
+        new(call, 0, trie, 0.0, args, nothing)
     end
 end
 
@@ -17,10 +18,12 @@ function Base.println(tr::Trace)
     println("------------ trace -----------")
     println("| Call: $(tr.call)")
     println("| Args: $(tr.args)")
+    choices = map(x -> (x, tr.trie[x]), ks)
+    sort!(choices, by = x -> x[2][1])
     println("|\n| Choice map:")
-    map(x -> println("| ", x => tr.trie[x].val, " => Score: $(tr.trie[x].score)"), ks)
+    map(x -> println("| ", x[1] => x[2][2].val, " => Score: $(x[2][2].score)"), choices)
     println("|\n| Distributions:")
-    map(x -> println("| ", x => tr.trie[x].dist), ks)
+    map(x -> println("| ", x[1] => x[2][2].dist), choices)
     println("|\n| Score: $(tr.score)")
     println("|\n| Return value type: $(typeof(tr.retval))")
     println("------------------------------")
@@ -33,7 +36,8 @@ function record!(tr::Trace, addr::Symbol, dist, val, score::Float64)
         error("Value or subtrace already present at address $addr.
               Mutation is not allowed.")
     end
-    tr.trie[addr] = ChoiceRecord(val, score, dist)
+    tr.trie[addr] = (tr.record_count, ChoiceRecord(val, score, dist))
+    tr.record_count += 1
     tr.score += score
 end
 
