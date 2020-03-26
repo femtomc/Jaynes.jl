@@ -33,17 +33,31 @@ end
 
 # Recursion.
 function foo3(z::Float64)
-    if rand(Normal(0.0, 1.0)) > 3.0
+    if rand(Normal(0.0, 1.0)) > 1.0
         return z
     else
-        return z + foo(z)
+        return z + foo3(1.0)
     end
+end
+
+# Diamond.
+function foo4(z::Float64)
+    x = rand(Beta(2, 2))
+    y = rand(Beta(2, 2))
+    q = rand(Normal(z, x + y))
+    return q
 end
 
 tr = @trace foo1
 println(tr)
 
 tr = @trace foo2
+println(tr)
+
+tr = @trace foo3 5.0
+println(tr)
+
+tr = @trace foo4 5.0
 println(tr)
 
 end #module

@@ -1,6 +1,6 @@
 Cassette.@context TraceCtx;
 
-# -- Compiler pass  for lowered code-- #
+# -- Compiler pass  for lowered code -- #
 
 # Utility function for inserting arguments into function calls in lowered code.
 insert_addr_in_call = (expr, addr) -> postwalk(x -> @capture(x, f_(xs__)) ? (f isa GlobalRef && f.name == :rand ? :($f($addr, $(xs...))) : x) : x, expr)

@@ -26,7 +26,7 @@ function Base.println(tr::Trace)
     map(x -> println("| ", x[1] => x[2][2].dist), choices)
     println("|\n| Score: $(tr.score)")
     println("|\n| Return value type: $(typeof(tr.retval))")
-    println("------------------------------")
+    println("------------------------------\n")
 end
 
 get_choices(tr::Trace) = union(tr.args, map(x -> tr.trie[x].val, tr.static))
