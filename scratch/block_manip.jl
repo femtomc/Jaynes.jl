@@ -4,7 +4,7 @@ include("../src/Jaynes.jl")
 using .Jaynes
 
 using IRTools
-using IRTools: func, IR, block!, argument!, branch!, renumber, push!, Variable, blocks, xcall, insertafter!, @code_ir, Statement, branches, Block, Branch, isreturn
+using IRTools: func, IR, block!, argument!, branch!, renumber, push!, Variable, blocks, xcall, insertafter!, @code_ir, Statement, branches, Block, Branch, isreturn, func, deletearg!
 using MacroTools
 using MacroTools: postwalk
 
@@ -12,7 +12,6 @@ using Distributions
 using DistributionsAD: logpdf
 
 using Zygote: gradient
-
 
 function foo_det()
     if y > 1.0
@@ -113,12 +112,17 @@ function block_transform(ir)
             end
         end
     end
-    return renumber(ir)
+    deletearg!(ir, 1)
+    ir = renumber(ir)
+    ir
 end
 
 ir = @code_ir foo()
 println("--- IR (foo2) ---\n$(ir)\n")
 new_ir = block_transform(ir)
 println(new_ir)
+fn = func(new_ir)
+
+println(fn(3.0, 3.0, 3.0, 3.0, 5.0))
 
 end #module
