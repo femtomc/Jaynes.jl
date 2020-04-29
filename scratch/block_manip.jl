@@ -100,11 +100,9 @@ function block_transform(ir)
             
             bbranches = branches(bb)
             pass_in = []
-            if !(foldl((x, y) -> x && y, map(x -> isreturn(x), bbranches)))
+            if !(foldl((x, y) -> x && y, map(x -> isreturn(x), bbranches))) && bb.id > 1
                 pass_in = [argument!(bb)]
-                bb.id > 1 && begin
-                    ir[v] = xcall(:+, log_tracks..., pass_in...)
-                end
+                ir[v] = xcall(:+, log_tracks..., pass_in...)
             end
             for (i, bran) in enumerate(bbranches)
                 new_br = Branch(bran.condition, bran.block, [v])
@@ -123,6 +121,6 @@ new_ir = block_transform(ir)
 println(new_ir)
 fn = func(new_ir)
 
-println(fn(3.0, 3.0, 3.0, 3.0, 5.0))
+println(fn(3.0, 3.0, 3.0, 3.0))
 
 end #module
