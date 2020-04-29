@@ -50,4 +50,24 @@ println("\nOriginal:\n", ir, "\n")
 call = @transform logpdf_transform! foo2()
 
 println(call(0.1, 5.0, [0.3, 0.3]))
+
+# Simple control flow.
+function foo3()
+    y = rand(Normal(0, 1))
+    if y > 1.0
+        z = rand(Normal(0, 1))
+    else
+        z - rand(Normal(5, 10))
+    end
+    return z
+end
+
+ir = @code_ir foo3()
+println("\nOriginal:\n", ir, "\n")
+
+# Testing.
+transformed = @code_ir logpdf_transform! foo3()
+println("Transformed:\n", transformed, "\n")
+logprob = func(transformed)
+
 end #module
