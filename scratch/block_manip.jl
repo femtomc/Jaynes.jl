@@ -4,7 +4,7 @@ include("../src/Jaynes.jl")
 using .Jaynes
 
 using IRTools
-using IRTools: func, IR, block!, argument!, branch!, renumber, push!, Variable, blocks, xcall, insertafter!, @code_ir, Statement, branches, Block, Branch, isreturn, func, deletearg!, @typed_meta, TypedMeta
+using IRTools: func, IR, block!, argument!, branch!, renumber, push!, Variable, blocks, xcall, insertafter!, @code_ir, Statement, branches, Block, Branch, isreturn, func, deletearg!, @typed_meta, TypedMeta, @dynamo, recurse!
 using MacroTools
 using MacroTools: postwalk
 
@@ -29,7 +29,7 @@ println("--- IR (foo_det) ---\n$(ir)\n")
 function foo()
     y = rand(Normal(0, 1))
     if y > 1.0
-        z = rand(Normal(0, 1)) + foo()
+        z = foo()
     else
         z = rand(Normal(5, 10))
     end
@@ -65,8 +65,8 @@ function substitute_var(stmt::Statement, from::Variable, to::Variable)
     return stmt
 end
 
-function block_transform(typed_meta::TypedMeta)
-    ir = IR(typed_meta)
+function block_transform(ir)
+    ir = copy(ir)
     for bb in reverse(blocks(ir))
         log_tracks = Variable[]
         for (v, stmt) in bb
@@ -75,11 +75,7 @@ function block_transform(typed_meta::TypedMeta)
             stmt.expr.args[1].name == :rand &&
             begin
                 succ = block_successors(bb, v)
-                dist = ir[stmt.expr.args[2]].type.val
-                (dist isa Distribution) && begin
-                    type = eltype(dist) 
-                end
-                new = argument!(ir, type = type)
+                new = argument!(ir)
                 new_stmt = Statement(
                                   Expr(:call, 
                                        GlobalRef(stmt.expr.args[1].mod, :logpdf),
@@ -118,14 +114,29 @@ function block_transform(typed_meta::TypedMeta)
     ir
 end
 
-ir = @typed_meta foo()
+ir = @code_ir foo()
 println("--- IR (foo2) ---\n$(ir)\n")
 new_ir = block_transform(ir)
 println(new_ir)
-fn = func(new_ir)
 
-println(fn(3.0, 3.0, 3.0, 3.0))
-grad = gradient((x, y, z, k) -> fn(x, y, z, k), 0.3, 3.0, 5.0, 5.0)
-println("\nGradient:\n", grad)
+# ------ recursion -------
+
+struct recursion_context
+    global_ref_names::Array{DataType, 1}
+end
+
+(rc::recursion_context)(func::Function, args...) = !(typeof(func) in rc.global_ref_names) ? func(args...) : () -> func(args...)
+
+@dynamo function (rc::recursion_context)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    ir = block_transform(ir)
+    recurse!(ir)
+    return ir
+end
+
+ir = @code_ir recursion_context([typeof(foo)]) foo()
+println("\nRecursion: \n$(ir)")
+
 
 end #module
