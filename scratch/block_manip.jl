@@ -4,7 +4,7 @@ include("../src/Jaynes.jl")
 using .Jaynes
 
 using IRTools
-using IRTools: func, IR, block!, argument!, branch!, renumber, push!, Variable, blocks, xcall, insertafter!, @code_ir, Statement, branches, Block, Branch, isreturn, func, deletearg!
+using IRTools: func, IR, block!, argument!, branch!, renumber, push!, Variable, blocks, xcall, insertafter!, @code_ir, Statement, branches, Block, Branch, isreturn, func, deletearg!, @typed_meta, TypedMeta
 using MacroTools
 using MacroTools: postwalk
 
@@ -29,8 +29,7 @@ println("--- IR (foo_det) ---\n$(ir)\n")
 function foo()
     y = rand(Normal(0, 1))
     if y > 1.0
-        z = rand(Normal(0, 1))
-        rand(Normal(5.0, 10.5))
+        z = rand(Normal(0, 1)) + foo()
     else
         z = rand(Normal(5, 10))
     end
@@ -66,8 +65,8 @@ function substitute_var(stmt::Statement, from::Variable, to::Variable)
     return stmt
 end
 
-function block_transform(ir)
-    ir = copy(ir)
+function block_transform(typed_meta::TypedMeta)
+    ir = IR(typed_meta)
     for bb in reverse(blocks(ir))
         log_tracks = Variable[]
         for (v, stmt) in bb
@@ -76,7 +75,11 @@ function block_transform(ir)
             stmt.expr.args[1].name == :rand &&
             begin
                 succ = block_successors(bb, v)
-                new = argument!(ir)
+                dist = ir[stmt.expr.args[2]].type.val
+                (dist isa Distribution) && begin
+                    type = eltype(dist) 
+                end
+                new = argument!(ir, type = type)
                 new_stmt = Statement(
                                   Expr(:call, 
                                        GlobalRef(stmt.expr.args[1].mod, :logpdf),
@@ -101,7 +104,7 @@ function block_transform(ir)
             bbranches = branches(bb)
             pass_in = []
             if !(foldl((x, y) -> x && y, map(x -> isreturn(x), bbranches))) && bb.id > 1
-                pass_in = [argument!(bb)]
+                pass_in = [argument!(bb, type = Float64)]
                 ir[v] = xcall(:+, log_tracks..., pass_in...)
             end
             for (i, bran) in enumerate(bbranches)
@@ -115,12 +118,14 @@ function block_transform(ir)
     ir
 end
 
-ir = @code_ir foo()
+ir = @typed_meta foo()
 println("--- IR (foo2) ---\n$(ir)\n")
 new_ir = block_transform(ir)
 println(new_ir)
 fn = func(new_ir)
 
 println(fn(3.0, 3.0, 3.0, 3.0))
+grad = gradient((x, y, z, k) -> fn(x, y, z, k), 0.3, 3.0, 5.0, 5.0)
+println("\nGradient:\n", grad)
 
 end #module
