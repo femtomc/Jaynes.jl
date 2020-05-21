@@ -1,7 +1,7 @@
 module SimpleProposal
 
-include("../src/Jaynes.jl")
-using .Jaynes
+include("../src/Walkman.jl")
+using .Walkman
 using Distributions
 
 geo(p::Float64) = rand(:flip, Bernoulli, (p, )) == 1 ? 0 : 1 + rand(:geo, geo, p)

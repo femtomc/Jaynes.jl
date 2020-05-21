@@ -1,7 +1,7 @@
 module TimeSeries
 
-include("../src/Jaynes.jl")
-using .Jaynes
+include("../src/Walkman.jl")
+using .Walkman
 using Distributions
 
 transition(z::Float64, addr) = rand(addr, Normal(0.0, 1.0))

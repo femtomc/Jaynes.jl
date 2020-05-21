@@ -3,8 +3,8 @@ module TraceContext
 using Cassette
 using Cassette: recurse
 
-include("../src/Jaynes.jl")
-using .Jaynes
+include("../src/Walkman.jl")
+using .Walkman
 using Distributions
 
 # --------------------- TEST ---------------------- #

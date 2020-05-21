@@ -1,7 +1,7 @@
 module ProposalBenchmarks
 
-include("../src/Jaynes.jl")
-using .Jaynes
+include("../src/Walkman.jl")
+using .Walkman
 using Distributions
 using Gen
 using BenchmarkTools
@@ -29,13 +29,13 @@ end
 end
 
 obs = constraints([(:y, 1.0)])
-Jaynes.importance_sampling(foo1, (), obs, 1)
-println("Jaynes - proposal sampling from prior. Num_samples = 30000.")
-trs, lnw, lmle = @btime Jaynes.importance_sampling(foo1, (), obs, 30000)
+Walkman.importance_sampling(foo1, (), obs, 1)
+println("Walkman - proposal sampling from prior. Num_samples = 30000.")
+trs, lnw, lmle = @btime Walkman.importance_sampling(foo1, (), obs, 30000)
 println(lmle)
 println(sum(lnw)/length(lnw))
-println("Jaynes - proposal sampling from proposal. Num_samples = 30000.")
-trs, lnw, lmle = @btime Jaynes.importance_sampling(foo1, (), foo2, (), obs, 30000)
+println("Walkman - proposal sampling from proposal. Num_samples = 30000.")
+trs, lnw, lmle = @btime Walkman.importance_sampling(foo1, (), foo2, (), obs, 30000)
 println(lmle)
 println(sum(lnw)/length(lnw))
 obs = choicemap(:y => 1.0)

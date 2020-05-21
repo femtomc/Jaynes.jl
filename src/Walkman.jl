@@ -1,4 +1,4 @@
-module Jaynes
+module Walkman
 
 using IRTools
 using IRTools: IR, @dynamo, recurse!, xcall, self, insertafter!, insert!
