@@ -1,5 +1,5 @@
 import Base.rand
-rand(addr::T, d::Distribution) where T <: Union{Symbol, Pair} = rand(d)
+rand(addr::T, d::Type, args) where T <: Union{Symbol, Pair} = rand(d(args...))
 
 struct ChoiceOrCall{T}
     val::T
@@ -24,15 +24,18 @@ function Trace(chm::Dict{T, K}) where {T <: Union{Symbol, Pair}, K <: Real}
 end
 
 # Merge observations and a choice map.
-function merge(obs::Dict{Address, Real}, chm::Dict{Address, ChoiceOrCall})
-    obs_ks = keys(obs)
+function merge(obs::Dict{Address, Real}, 
+               chm::Dict{Address, ChoiceOrCall})
+    obs_ks = collect(keys(obs))
     chm_ks = collect(keys(chm))
-    setd = collect(setdiff(obs_ks, chm_ks))
+    map(chm_ks) do k
+        k in obs_ks && error("SupportError: proposal has address on observed value.")
+    end
     out = Dict{Address, Real}(map(chm_ks) do k
         k in obs_ks && return k => obs[k]
         return k => chm[k].val
     end)
-    map(setd) do k
+    map(obs_ks) do k
         out[k] = obs[k]
     end
     return out
@@ -41,10 +44,6 @@ end
 # Required to track nested calls in IR.
 import Base: push!, pop!
 function push!(tr::Trace, call::Symbol)
-    call == :rand && begin
-        push!(tr.stack, tr.stack[end])
-        return
-    end
     isempty(tr.stack) && begin
         push!(tr.stack, call)
         return
@@ -54,17 +53,4 @@ end
 
 function pop!(tr::Trace)
     pop!(tr.stack)
-end
-
-# Convenience macro.
-macro trace(call)
-    expr = quote
-        tr -> begin
-            tr() do
-                $call
-            end
-            tr
-        end
-    end
-    expr
 end

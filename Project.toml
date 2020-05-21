@@ -4,6 +4,7 @@ authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Cairo = "159f3aea-2a34-519c-b102-8c37f9878175"
 Cassette = "7057c7e9-c182-5462-911a-8362d720325c"
 Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
@@ -21,6 +22,7 @@ LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 Mjolnir = "1154507a-7ac2-44fe-9f15-34617bca9db5"
+ProfileView = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"

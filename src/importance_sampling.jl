@@ -1,16 +1,18 @@
 function importance_sampling(model::Function, 
                              args::Tuple,
-                             observations::Dict{Address, Real},
                              num_samples::Int)
-    trs = [Trace(observations) for i in 1:num_samples]
-    res = map(trs) do tr
-        tr() do
-            model(args...)
+    trs = Vector{Trace}(undef, num_samples)
+    lws = Vector{Float64}(undef, num_samples)
+    for i in 1:num_samples
+        ctx = TraceCtx(metadata = Trace())
+        if isempty(args)
+            Cassette.overdub(ctx, model)
+        else
+            Cassette.overdub(ctx, model, args...)
         end
-        (tr, tr.score)
-    end
-    lws = map(res) do (_, s)
-        s
+
+        lws[i] = ctx.metadata.score
+        trs[i] = ctx.metadata
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
@@ -20,17 +22,19 @@ end
 
 function importance_sampling(model::Function, 
                              args::Tuple,
+                             observations::Dict{Address, Real},
                              num_samples::Int)
-    trs = [Trace() for i in 1:num_samples]
+    trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    i = 1
-    res = map(trs) do tr
-        tr() do
-            model(args...)
+    for i in 1:num_samples
+        ctx = TraceCtx(metadata = Trace(observations))
+        if isempty(args)
+            Cassette.overdub(ctx, model)
+        else
+            Cassette.overdub(ctx, model, args...)
         end
-        lws[i] = tr.score
-        i += 1
-        tr
+        lws[i] = ctx.metadata.score
+        trs[i] = ctx.metadata
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
@@ -42,30 +46,37 @@ function importance_sampling(model::Function,
                              args::Tuple,
                              proposal::Function,
                              proposal_args::Tuple,
-                             obs::Dict{Address, Real},
+                             observations::Dict{Address, Real},
                              num_samples::Int)
-    trs = [Trace() for i in 1:num_samples]
+    trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    i = 1
-    res = map(trs) do prop
+    for i in 1:num_samples
         # Propose.
-        prop() do
-            proposal(proposal_args...)
+        prop_ctx = TraceCtx(metadata = Trace(observations))
+        if isempty(proposal_args)
+            Cassette.overdub(prop_ctx, proposal)
+        else
+            Cassette.overdub(prop_ctx, proposal, proposal_args...)
         end
 
         # Merge proposals and observations.
-        constraints = merge(obs, prop.chm)
-        tr = Trace(constraints)
+        prop_score = prop_ctx.metadata.score
+        prop_chm = prop_ctx.metadata.chm
+        constraints = merge(observations, prop_chm)
+
+        # New context.
+        model_ctx = TraceCtx(metadata = Trace(constraints))
 
         # Generate.
-        tr() do
-            model(args...)
+        if isempty(args)
+            Cassette.overdub(model_ctx, model)
+        else
+            Cassette.overdub(model_ctx, model, args...)
         end
 
         # Track score.
-        lws[i] = tr.score - prop.score
-        i += 1
-        tr
+        lws[i] = model_ctx.metadata.score - prop_score
+        trs[i] = model_ctx.metadata
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
