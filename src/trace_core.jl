@@ -11,7 +11,7 @@ const Address = Union{Symbol, Pair}
 mutable struct Trace
     chm::Dict{Address, ChoiceOrCall}
     obs::Dict{Address, Union{Int64, Float64}}
-    stack::Vector{Symbol}
+    stack::Vector{Union{Pair, Symbol}}
     score::Float64
     func::Function
     args::Tuple

@@ -7,7 +7,7 @@ function Cassette.overdub(ctx::TraceCtx,
                          args) where T <: Union{Symbol, Pair}
     # Check for support errors.
     !isempty(ctx.metadata.stack) && begin
-        addr = stack[end] => addr
+        addr = ctx.metadata.stack[end] => addr
     end
     addr in keys(ctx.metadata.chm) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
         
@@ -43,7 +43,7 @@ function Cassette.overdub(ctx::TraceCtx,
     return res
 end
 
-function trace(fn::Function, args)
+function trace(fn::Function, args::Tuple)
     ctx = TraceCtx(metadata = Trace())
     res = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.func = fn

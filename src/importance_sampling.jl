@@ -1,3 +1,7 @@
+# These functions closely follow the Gen inference library functions. Right now, they are specific to the dynamic DSL here.
+
+# ----------------------------------------------------------------------- #
+
 function importance_sampling(model::Function, 
                              args::Tuple,
                              num_samples::Int)

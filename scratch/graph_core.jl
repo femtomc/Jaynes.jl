@@ -29,7 +29,7 @@ end
 
 function foo2()
     x = rand(:x, Normal, (0.0, 1.0))
-    y = rand(:y, Normal(x, 5.0))
+    y = rand(:y, Normal, (x, 5.0))
     for i in 1:10
         println(i)
     end
@@ -55,10 +55,9 @@ end
 
 ir = @code_ir foo2()
 println("IR:\n$(ir)\n")
-println("Functional:\n$(functional(ir))\n")
-println("Relooper:\n$(reloop(ir))\n")
-println("CFG:\n$(CFG(ir))\n")
-println("Stackify:\n$(stackify(CFG(ir)))\n")
-println("Interference:\n$(interference(ir))")
+#println("Functional:\n$(functional(ir))\n")
+#println("CFG:\n$(CFG(ir))\n")
+#println("Stackify:\n$(stackify(CFG(ir)))\n")
+#println("Interference:\n$(interference(ir))")
 
 end # module
