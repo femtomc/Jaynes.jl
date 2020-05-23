@@ -1,4 +1,4 @@
-module Profiling
+module Simple
 
 include("../src/Walkman.jl")
 using .Walkman
