@@ -51,3 +51,12 @@ function trace(fn::Function, args::Tuple)
     ctx.metadata.retval = res
     return ctx.metadata
 end
+
+function trace(fn::Function, args::Tuple, obs::Dict{Address, Union{Float64, Int64}})
+    ctx = TraceCtx(metadata = Trace(obs))
+    res = Cassette.overdub(ctx, fn, args...)
+    ctx.metadata.func = fn
+    ctx.metadata.args = args
+    ctx.metadata.retval = res
+    return ctx.metadata
+end

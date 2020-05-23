@@ -1,4 +1,4 @@
-module ProposalBenchmarks
+module Profiling
 
 include("../src/Walkman.jl")
 using .Walkman
