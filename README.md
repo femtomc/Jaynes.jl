@@ -3,7 +3,7 @@
 </p>
 <br>
 
-_Walkman_ is an PP framework which uses IR transformations to implement the core routines for modeling and inference.
+_Walkman_ is a probabilistic programming framework which uses IR transformations to implement the core routines for modeling and inference.
 
 Currently, _Walkman_ supports a dynamic modeling DSL which is syntactically close (and semantically equivalent) to the dynamic DSL in [Gen](https://www.gen.dev/). It is _unoptimized_ and does not feature things like combinators (for those familiar with Gen) to improve performance. This will likely improve with time.
 
