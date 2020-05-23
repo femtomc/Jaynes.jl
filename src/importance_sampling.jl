@@ -3,16 +3,19 @@ function importance_sampling(model::Function,
                              num_samples::Int)
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
+    ctx = disablehooks(TraceCtx(metadata = Trace()))
     for i in 1:num_samples
-        ctx = TraceCtx(metadata = Trace())
         if isempty(args)
-            Cassette.overdub(ctx, model)
+            res = Cassette.overdub(ctx, model)
         else
-            Cassette.overdub(ctx, model, args...)
+            res = Cassette.overdub(ctx, model, args...)
         end
-
+        ctx.metadata.func = model
+        ctx.metadata.args = args
+        ctx.metadata.retval = res
         lws[i] = ctx.metadata.score
         trs[i] = ctx.metadata
+        ctx = similarcontext(ctx, metadata = Trace())
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
@@ -22,19 +25,23 @@ end
 
 function importance_sampling(model::Function, 
                              args::Tuple,
-                             observations::Dict{Address, Real},
+                             observations::Dict{Address, Union{Int64, Float64}},
                              num_samples::Int)
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
+    ctx = disablehooks(TraceCtx(metadata = Trace(observations)))
     for i in 1:num_samples
-        ctx = TraceCtx(metadata = Trace(observations))
         if isempty(args)
-            Cassette.overdub(ctx, model)
+            res = Cassette.overdub(ctx, model)
         else
-            Cassette.overdub(ctx, model, args...)
+            res = Cassette.overdub(ctx, model, args...)
         end
+        ctx.metadata.func = model
+        ctx.metadata.args = args
+        ctx.metadata.retval = res
         lws[i] = ctx.metadata.score
         trs[i] = ctx.metadata
+        ctx = similarcontext(ctx, metadata = Trace(observations))
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
@@ -46,13 +53,14 @@ function importance_sampling(model::Function,
                              args::Tuple,
                              proposal::Function,
                              proposal_args::Tuple,
-                             observations::Dict{Address, Real},
+                             observations::Dict{Address, Union{Int64, Float64}},
                              num_samples::Int)
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
+    prop_ctx = disablehooks(TraceCtx(metadata = Trace(observations)))
+    model_ctx = disablehooks(TraceCtx(metadata = Trace(observations)))
     for i in 1:num_samples
         # Propose.
-        prop_ctx = TraceCtx(metadata = Trace(observations))
         if isempty(proposal_args)
             Cassette.overdub(prop_ctx, proposal)
         else
@@ -63,20 +71,22 @@ function importance_sampling(model::Function,
         prop_score = prop_ctx.metadata.score
         prop_chm = prop_ctx.metadata.chm
         constraints = merge(observations, prop_chm)
-
-        # New context.
-        model_ctx = TraceCtx(metadata = Trace(constraints))
+        prop_ctx = similarcontext(prop_ctx, metadata = Trace(observations))
 
         # Generate.
         if isempty(args)
-            Cassette.overdub(model_ctx, model)
+            res = Cassette.overdub(model_ctx, model)
         else
-            Cassette.overdub(model_ctx, model, args...)
+            res = Cassette.overdub(model_ctx, model, args...)
         end
 
         # Track score.
+        model_ctx.metadata.func = model
+        model_ctx.metadata.args = args
+        model_ctx.metadata.retval = res
         lws[i] = model_ctx.metadata.score - prop_score
         trs[i] = model_ctx.metadata
+        model_ctx = similarcontext(model_ctx, metadata = Trace(observations))
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)

@@ -1,37 +1,48 @@
 import Base.rand
 rand(addr::T, d::Type, args) where T <: Union{Symbol, Pair} = rand(d(args...))
 
-struct ChoiceOrCall{T}
-    val::T
-    lpdf::Float64
-    d::Distribution
+struct ChoiceOrCall
+    val::Union{Int64, Float64}
+    score::Float64
 end
 
 const Address = Union{Symbol, Pair}
 
 mutable struct Trace
     chm::Dict{Address, ChoiceOrCall}
-    obs::Dict{Address, Real}
-    stack::Vector{Any}
+    obs::Dict{Address, Union{Int64, Float64}}
+    stack::Vector{Symbol}
     score::Float64
-    Trace() = new(Dict{Symbol, Any}(), Dict{Symbol, Any}(), Core.TypeName[], 0.0)
+    func::Function
+    args::Tuple
+    retval::Any
+    Trace() = new(Dict{Address, ChoiceOrCall}(), 
+                  Dict{Address, Union{Int64, Float64}}(), 
+                  Symbol[], 
+                  0.0)
 end
 
-function Trace(chm::Dict{T, K}) where {T <: Union{Symbol, Pair}, K <: Real}
+function Trace(obs::Dict{Address, Union{Int64, Float64}})
     tr = Trace()
-    tr.obs = chm
+    tr.obs = obs
     return tr
 end
 
+get_func(tr::Trace) = tr.func
+get_args(tr::Trace) = tr.args
+get_score(tr::Trace) = tr.score
+get_chm(tr::Trace) = tr.chm
+get_retval(tr::Trace) = tr.retval
+
 # Merge observations and a choice map.
-function merge(obs::Dict{Address, Real}, 
+function merge(obs::Dict{Address, Union{Int64, Float64}}, 
                chm::Dict{Address, ChoiceOrCall})
     obs_ks = collect(keys(obs))
     chm_ks = collect(keys(chm))
     map(chm_ks) do k
         k in obs_ks && error("SupportError: proposal has address on observed value.")
     end
-    out = Dict{Address, Real}(map(chm_ks) do k
+    out = Dict{Address, Union{Int64, Float64}}(map(chm_ks) do k
         k in obs_ks && return k => obs[k]
         return k => chm[k].val
     end)

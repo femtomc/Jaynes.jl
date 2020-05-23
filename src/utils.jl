@@ -66,8 +66,10 @@ function Base.println(tr::Trace, fields::Array{Symbol, 1})
 end
 
 # Make obs.
-function constraints(obs::Array{Tuple{T, K}}) where {T <: Union{Symbol, Pair}, K <: Real}
-    return Dict{Address, Real}(map(obs) do (k, v)
-                            k => v
-                        end)
+function constraints(obs::Array{Tuple{T, K}, 1}) where {T <: Address, K <: Union{Int64, Float64}}
+    d = Dict{Address, Union{Int64, Float64}}()
+    for (k, v) in obs 
+        d[k] = v
+    end
+    return d
 end

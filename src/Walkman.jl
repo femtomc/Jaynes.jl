@@ -3,7 +3,7 @@ module Walkman
 using IRTools
 using IRTools: IR, @dynamo, recurse!, xcall, self, insertafter!, insert!
 using Cassette
-using Cassette: recurse
+using Cassette: recurse, similarcontext, disablehooks
 using Distributions
 using ExportAll
 
