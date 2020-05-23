@@ -24,7 +24,8 @@ end
 function foo1(z)
     x = rand(:x, Normal, (z, 1.0))
     y = rand(:y, Normal, (x, 1.0))
-    return y
+    q = y + 10
+    return q
 end
 
 ctx = disablehooks(GradientContext(metadata = Accumulator(Dict{Symbol, Tuple}())))
