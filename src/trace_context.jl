@@ -5,19 +5,28 @@ function Cassette.overdub(ctx::TraceCtx,
                           addr::T, 
                           dist::Type,
                          args) where T <: Union{Symbol, Pair}
-    dist = dist(args...)
-    sample = rand(dist)
+    # Check for support errors.
     !isempty(ctx.metadata.stack) && begin
         addr = stack[end] => addr
     end
-    addr in keys(ctx.metadata.chm) && error("AddressError: each address within a call must be unique. Found duplicate $(addr).")
-    addr in keys(ctx.metadata.obs) && begin
+    addr in keys(ctx.metadata.chm) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
+        
+    dist = dist(args...)
+    # Constrained..
+    if addr in keys(ctx.metadata.obs)
         sample = ctx.metadata.obs[addr]
+        score = logpdf(dist, sample)
+        ctx.metadata.chm[addr] = ChoiceOrCall(sample, score)
+        ctx.metadata.score += score
+        return sample
+
+    # Unconstrained.
+    else
+        sample = rand(dist)
+        score = logpdf(dist, sample)
+        ctx.metadata.chm[addr] = ChoiceOrCall(sample, score)
+        return sample
     end
-    score = logpdf(dist, sample)
-    ctx.metadata.chm[addr] = ChoiceOrCall(sample, score)
-    ctx.metadata.score += score
-    return sample
 end
 
 function Cassette.overdub(ctx::TraceCtx,
