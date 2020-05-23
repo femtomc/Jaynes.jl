@@ -3,7 +3,9 @@
 </p>
 <br>
 
-_Walkman_ is a minimal Cassette-based PPL. Currently, _Walkman_ supports a modeling DSL which is equivalent to the dynamic DSL in _Gen.jl_.
+_Walkman_ is a Cassette-based PPL. 
+
+Currently, _Walkman_ supports a modeling DSL which is equivalent to the dynamic DSL in _Gen.jl_.
 
 Currently supported inference algorithms for this DSL:
 - [X] Importance sampling
