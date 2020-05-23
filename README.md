@@ -3,9 +3,9 @@
 </p>
 <br>
 
-_Walkman_ is an PP framework which uses IR transformation to implement the core routines for modeling and inference.
+_Walkman_ is an PP framework which uses IR transformations to implement the core routines for modeling and inference.
 
-Currently, _Walkman_ supports a modeling DSL which is syntactically close (and semantically equivalent) to the dynamic DSL in [Gen](https://www.gen.dev/). Currently supported inference algorithms for this DSL:
+Currently, _Walkman_ supports a dynamic modeling DSL which is syntactically close (and semantically equivalent) to the dynamic DSL in [Gen](https://www.gen.dev/). Currently supported inference algorithms for this DSL:
 - [X] Importance sampling
 - [ ] Programmable MCMC
 - [ ] HMC
