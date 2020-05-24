@@ -5,7 +5,7 @@
 
 _Walkman_ is a probabilistic programming framework which uses IR transformations to implement the core routines for modeling and inference.
 
-Currently, _Walkman_ supports a dynamic modeling DSL which is syntactically close (and semantically equivalent) to the dynamic DSL in [Gen](https://www.gen.dev/). It is _unoptimized_ and does not feature things like combinators (for those familiar with Gen) to improve performance. This will likely improve with time.
+Currently, _Walkman_ supports a dynamic modeling DSL which is syntactically close (and semantically equivalent) to the dynamic DSL in [Gen](https://www.gen.dev/). It is _unoptimized_. There are a few _effects_ (which are semantically similar to Gen's combinators) but their implementation is not complete nor stable. This will likely improve with time, as I settle on representations which allow the sort of analysis I'm aiming for.
 
 Currently supported inference algorithms for this DSL:
 - [X] Importance sampling
