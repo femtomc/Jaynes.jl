@@ -6,7 +6,7 @@ using Distributions
 
 geo(p::Float64) = rand(:flip, Bernoulli, (p, )) == 1 ? 0 : 1 + rand(:geo, geo, p)
 
-res, tr = trace(geo, (0.02, ))
+res, tr = trace(geo, (0.2, ))
 println(tr, [:val])
 
 end # module

@@ -37,37 +37,38 @@ end
 
 # Pretty printing.
 function Base.println(tr::Trace, fields::Array{Symbol, 1})
-    println("/---------------------------------------")
+    println("---------------------------------------")
+    println("              ⏵ Playback")
     map(fieldnames(Trace)) do f
         f == :stack && return
         val = getfield(tr, f)
-        typeof(val) <: Dict{Union{Symbol, Pair}, ChoiceOrCall} && begin 
+        typeof(val) <: Dict{Union{Symbol, Pair}, Choice} && begin 
             map(collect(val)) do (k, v)
-                println("| <> $(k) <>")
-                map(fieldnames(ChoiceOrCall)) do nm
+                println(" ⏺ $(k)")
+                map(fieldnames(Choice)) do nm
                     !(nm in fields) && return
-                    println("|          $(nm)  = $(getfield(v, nm))")
+                    println("          $(nm)  = $(getfield(v, nm))")
                 end
-                println("|")
+                println("")
             end
             return
         end
-        typeof(val) <: Dict{Union{Symbol, Pair}, Real} && begin 
-            println("| $(f) __________________________________")
+        typeof(val) <: Dict && begin 
+            println(" $(f) __________________________________")
             map(collect(val)) do (k, v)
-                println("|      $(k) : $(v)")
+                println("      $(k) : $(v)")
             end
-            println("|")
+            println("")
             return
         end
-        println("| $(f) : $(val)\n|")
+        println(" $(f) : $(val)\n")
     end
-    println("\\---------------------------------------")
+    println("---------------------------------------")
 end
 
 # Merge observations and a choice map.
 function merge(obs::Dict{Address, K},
-               chm::Dict{Address, ChoiceOrCall}) where K
+               chm::Dict{Address, Choice}) where K
     obs_ks = collect(keys(obs))
     chm_ks = collect(keys(chm))
     out = Dict{Address, K}()

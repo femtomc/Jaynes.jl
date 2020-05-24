@@ -1,50 +1,93 @@
 Cassette.@context TraceCtx
 
-mutable struct TraceMeta{T}
+# Structured metadata. This acts as dispatch on overdub - increases the efficiency of the system.
+abstract type Meta end
+
+mutable struct UnconstrainedGenerateMeta <: Meta
+    tr::Trace
+    stack::Vector{Symbol}
+    UnconstrainedGenerateMeta(tr::Trace) = new(tr, Symbol[])
+end
+
+mutable struct GenerateMeta{T} <: Meta
     tr::Trace
     constraints::T
     stack::Vector{Symbol}
-    TraceMeta(tr::Trace, constraints::T) where T = new{T}(tr, constraints, Symbol[])
+    GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, constraints, Symbol[])
+end
+
+mutable struct ProposalMeta <: Meta
+    tr::Trace
+    stack::Vector{Symbol}
+    ProposalMeta(tr::Trace) = new(tr, Symbol[])
 end
 
 # Required to track nested calls in IR.
 import Base: push!, pop!
 
-function push!(tr::Trace, call::Symbol)
-    push!(tr.stack, call)
+function push!(trm::T, call::Symbol) where T <: Meta
+    push!(trm.stack, call)
 end
 
-function pop!(tr::Trace)
-    pop!(tr.stack)
+function pop!(trm::T) where T <: Meta
+    pop!(trm.stack)
 end
 
-function reset_keep_constraints!(trm::TraceMeta)
+function reset_keep_constraints!(trm::T) where T <: Meta
     trm.tr = Trace()
     trm.stack = Symbol[]
 end
 
-function Cassette.overdub(ctx::TraceCtx, 
+# --------------- OVERDUB -------------------- #
+
+function Cassette.overdub(ctx::TraceCtx{M}, 
                           call::typeof(rand), 
                           addr::T, 
                           dist::Type,
-                         args) where T <: Union{Symbol, Pair}
+                          args) where {N, 
+                                       M <: UnconstrainedGenerateMeta, 
+                                       T <: Union{Symbol, Pair}}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
         addr = foldr((x, y) -> x => y, ctx.metadata.stack)
         pop!(ctx.metadata.stack)
     end
-    
+
     # Check for support errors.
     haskey(ctx.metadata.tr.chm, addr) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
-        
+
+    dist = dist(args...)
+    sample = rand(dist)
+    score = logpdf(dist, sample)
+    ctx.metadata.tr.chm[addr] = Choice(sample, score)
+    return sample
+end
+
+function Cassette.overdub(ctx::TraceCtx{M}, 
+                          call::typeof(rand), 
+                          addr::T, 
+                          dist::Type,
+                          args) where {N, 
+                                       M <: GenerateMeta, 
+                                       T <: Union{Symbol, Pair}}
+    # Check stack.
+    !isempty(ctx.metadata.stack) && begin
+        push!(ctx.metadata.stack, addr)
+        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        pop!(ctx.metadata.stack)
+    end
+
+    # Check for support errors.
+    haskey(ctx.metadata.tr.chm, addr) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
+
     dist = dist(args...)
 
     # Constrained..
     if haskey(ctx.metadata.constraints, addr)
         sample = ctx.metadata.constraints[addr]
         score = logpdf(dist, sample)
-        ctx.metadata.tr.chm[addr] = ChoiceOrCall(sample, score)
+        ctx.metadata.tr.chm[addr] = Choice(sample, score)
         ctx.metadata.tr.score += score
         return sample
 
@@ -52,9 +95,35 @@ function Cassette.overdub(ctx::TraceCtx,
     else
         sample = rand(dist)
         score = logpdf(dist, sample)
-        ctx.metadata.tr.chm[addr] = ChoiceOrCall(sample, score)
+        ctx.metadata.tr.chm[addr] = Choice(sample, score)
         return sample
     end
+end
+
+function Cassette.overdub(ctx::TraceCtx{M}, 
+                          call::typeof(rand), 
+                          addr::T, 
+                          dist::Type,
+                          args) where {N, 
+                                       M <: ProposalMeta, 
+                                       T <: Union{Symbol, Pair}}
+    # Check stack.
+    !isempty(ctx.metadata.stack) && begin
+        push!(ctx.metadata.stack, addr)
+        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        pop!(ctx.metadata.stack)
+    end
+
+    # Check for support errors.
+    haskey(ctx.metadata.tr.chm, addr) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
+
+    dist = dist(args...)
+    sample = rand(dist)
+    score = logpdf(dist, sample)
+    ctx.metadata.tr.chm[addr] = Choice(sample, score)
+    ctx.metadata.tr.score += score
+    return sample
+
 end
 
 function Cassette.overdub(ctx::TraceCtx,
@@ -75,7 +144,7 @@ end
 
 # Convenience.
 function trace(fn::Function)
-    ctx = disablehooks(TraceCtx(metadata = TraceMeta(Trace(), nothing)))
+    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
     res = Cassette.overdub(ctx, fn)
     ctx.metadata.tr.func = fn
     ctx.metadata.tr.args = ()
@@ -84,7 +153,7 @@ function trace(fn::Function)
 end
 
 function trace(fn::Function, constraints::Dict{Address, T}) where T
-    ctx = disablehooks(TraceCtx(metadata = TraceMeta(Trace(), constraints)))
+    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), constraints)))
     res = Cassette.overdub(ctx, fn)
     ctx.metadata.tr.func = fn
     ctx.metadata.tr.args = ()
@@ -93,7 +162,7 @@ function trace(fn::Function, constraints::Dict{Address, T}) where T
 end
 
 function trace(fn::Function, args::Tuple)
-    ctx = disablehooks(TraceCtx(metadata = TraceMeta(Trace(), nothing)))
+    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
     res = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.tr.func = fn
     ctx.metadata.tr.args = args
@@ -102,7 +171,7 @@ function trace(fn::Function, args::Tuple)
 end
 
 function trace(fn::Function, args::Tuple, constraints::Dict{Address, T}) where T
-    ctx = disablehooks(TraceCtx(metadata = TraceMeta(Trace(), constraints)))
+    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), constraints)))
     res = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.tr.func = fn
     ctx.metadata.tr.args = args
