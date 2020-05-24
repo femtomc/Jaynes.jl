@@ -5,21 +5,28 @@ abstract type Meta end
 
 mutable struct UnconstrainedGenerateMeta <: Meta
     tr::Trace
-    stack::Vector{Union{Symbol, Pair}}
-    UnconstrainedGenerateMeta(tr::Trace) = new(tr, Symbol[])
+    stack::Vector{Address}
+    UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[])
 end
 
 mutable struct GenerateMeta{T} <: Meta
     tr::Trace
     constraints::T
-    stack::Vector{Union{Symbol, Pair}}
-    GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, constraints, Symbol[])
+    stack::Vector{Address}
+    GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, constraints, Address[])
 end
 
 mutable struct ProposalMeta <: Meta
     tr::Trace
-    stack::Vector{Union{Symbol, Pair}}
-    ProposalMeta(tr::Trace) = new(tr, Symbol[])
+    stack::Vector{Address}
+    ProposalMeta(tr::Trace) = new(tr, Address[])
+end
+
+mutable struct RegenerateMeta <: Meta
+    tr::Trace
+    stack::Vector{Address}
+    selection::Vector{Address}
+    RegeneralMeta(tr::Trace, sel::Vector{Address}) = new(tr, sel)
 end
 
 # Required to track nested calls in overdubbing.
