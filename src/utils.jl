@@ -39,8 +39,8 @@ end
 function Base.display(tr::Trace; 
                       fields::Array{Symbol, 1} = [:val],
                       show_full = false)
-    println("--------------------------------------")
-    println("              ⏵ Playback")
+    println("  __________________________________\n")
+    println("              ⏵ Playback\n")
     map(fieldnames(Trace)) do f
         val = getfield(tr, f)
         typeof(val) <: Dict{Union{Symbol, Pair}, Choice} && begin 
@@ -54,6 +54,8 @@ function Base.display(tr::Trace;
                     end
                     println("")
                 end
+                println("                  ...\n")
+                println("  __________________________________\n")
             else
                 map(vals) do (k, v)
                     println(" ⏺ $(k)")
@@ -73,7 +75,7 @@ function Base.display(tr::Trace;
         end
         println(" $(f) : $(typeof(val))\n")
     end
-    println("--------------------------------------")
+    println("  __________________________________\n")
 end
 
 # Merge observations and a choice map.

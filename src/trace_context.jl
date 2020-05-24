@@ -5,27 +5,27 @@ abstract type Meta end
 
 mutable struct UnconstrainedGenerateMeta <: Meta
     tr::Trace
-    stack::Vector{Symbol}
+    stack::Vector{Union{Symbol, Pair}}
     UnconstrainedGenerateMeta(tr::Trace) = new(tr, Symbol[])
 end
 
 mutable struct GenerateMeta{T} <: Meta
     tr::Trace
     constraints::T
-    stack::Vector{Symbol}
+    stack::Vector{Union{Symbol, Pair}}
     GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, constraints, Symbol[])
 end
 
 mutable struct ProposalMeta <: Meta
     tr::Trace
-    stack::Vector{Symbol}
+    stack::Vector{Union{Symbol, Pair}}
     ProposalMeta(tr::Trace) = new(tr, Symbol[])
 end
 
 # Required to track nested calls in overdubbing.
 import Base: push!, pop!
 
-function push!(trm::T, call::Symbol) where T <: Meta
+function push!(trm::T, call::Address) where T <: Meta
     push!(trm.stack, call)
 end
 
@@ -35,7 +35,7 @@ end
 
 function reset_keep_constraints!(trm::T) where T <: Meta
     trm.tr = Trace()
-    trm.stack = Symbol[]
+    trm.stack = Union{Symbol, Pair}[]
 end
 
 # --------------- OVERDUB -------------------- #

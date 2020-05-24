@@ -11,6 +11,7 @@ include("trace_core.jl")
 include("trace_context.jl")
 include("utils.jl")
 include("importance_sampling.jl")
+include("effects.jl")
 
 @exportAll()
 
