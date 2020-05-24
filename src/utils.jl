@@ -36,34 +36,44 @@ function average(trs::Vector{Trace})
 end
 
 # Pretty printing.
-function Base.println(tr::Trace, fields::Array{Symbol, 1})
-    println("---------------------------------------")
+function Base.display(tr::Trace; 
+                      fields::Array{Symbol, 1} = [:val],
+                      show_full = false)
+    println("--------------------------------------")
     println("              ⏵ Playback")
     map(fieldnames(Trace)) do f
-        f == :stack && return
         val = getfield(tr, f)
         typeof(val) <: Dict{Union{Symbol, Pair}, Choice} && begin 
-            map(collect(val)) do (k, v)
-                println(" ⏺ $(k)")
-                map(fieldnames(Choice)) do nm
-                    !(nm in fields) && return
-                    println("          $(nm)  = $(getfield(v, nm))")
+            vals = collect(val)
+            if length(vals) > 5 || show_full
+                map(vals[1:5]) do (k, v)
+                    println(" ⏺ $(k)")
+                    map(fieldnames(Choice)) do nm
+                        !(nm in fields) && return
+                        println("          $(nm)  = $(getfield(v, nm))")
+                    end
+                    println("")
                 end
-                println("")
+            else
+                map(vals) do (k, v)
+                    println(" ⏺ $(k)")
+                    map(fieldnames(Choice)) do nm
+                        !(nm in fields) && return
+                        println("          $(nm)  = $(getfield(v, nm))")
+                    end
+                    println("")
+                end
+                println("  __________________________________\n")
+                return
             end
+        end
+        typeof(val) <: Real && begin
+            println(" $(f) : $(val)\n")
             return
         end
-        typeof(val) <: Dict && begin 
-            println(" $(f) __________________________________")
-            map(collect(val)) do (k, v)
-                println("      $(k) : $(v)")
-            end
-            println("")
-            return
-        end
-        println(" $(f) : $(val)\n")
+        println(" $(f) : $(typeof(val))\n")
     end
-    println("---------------------------------------")
+    println("--------------------------------------")
 end
 
 # Merge observations and a choice map.
