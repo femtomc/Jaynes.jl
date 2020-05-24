@@ -1,11 +1,11 @@
 module Walkman
 
-using IRTools
-using IRTools: IR, @dynamo, recurse!, xcall, self, insertafter!, insert!
 using Cassette
 using Cassette: recurse, similarcontext, disablehooks
 using Distributions
 using ExportAll
+
+const Address = Union{Symbol, Pair}
 
 include("trace_core.jl")
 include("trace_context.jl")

@@ -1,30 +1,58 @@
 Cassette.@context TraceCtx
 
+mutable struct TraceMeta{T}
+    tr::Trace
+    constraints::T
+    stack::Vector{Symbol}
+    TraceMeta(tr::Trace, constraints::T) where T = new{T}(tr, constraints, Symbol[])
+end
+
+# Required to track nested calls in IR.
+import Base: push!, pop!
+
+function push!(tr::Trace, call::Symbol)
+    push!(tr.stack, call)
+end
+
+function pop!(tr::Trace)
+    pop!(tr.stack)
+end
+
+function reset_keep_constraints!(trm::TraceMeta)
+    trm.tr = Trace()
+    trm.stack = Symbol[]
+end
+
 function Cassette.overdub(ctx::TraceCtx, 
                           call::typeof(rand), 
                           addr::T, 
                           dist::Type,
                          args) where T <: Union{Symbol, Pair}
-    # Check for support errors.
+    # Check stack.
     !isempty(ctx.metadata.stack) && begin
-        addr = ctx.metadata.stack[end] => addr
+        push!(ctx.metadata.stack, addr)
+        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        pop!(ctx.metadata.stack)
     end
-    addr in keys(ctx.metadata.chm) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
+    
+    # Check for support errors.
+    haskey(ctx.metadata.tr.chm, addr) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
         
     dist = dist(args...)
+
     # Constrained..
-    if addr in keys(ctx.metadata.obs)
-        sample = ctx.metadata.obs[addr]
+    if haskey(ctx.metadata.constraints, addr)
+        sample = ctx.metadata.constraints[addr]
         score = logpdf(dist, sample)
-        ctx.metadata.chm[addr] = ChoiceOrCall(sample, score)
-        ctx.metadata.score += score
+        ctx.metadata.tr.chm[addr] = ChoiceOrCall(sample, score)
+        ctx.metadata.tr.score += score
         return sample
 
     # Unconstrained.
     else
         sample = rand(dist)
         score = logpdf(dist, sample)
-        ctx.metadata.chm[addr] = ChoiceOrCall(sample, score)
+        ctx.metadata.tr.chm[addr] = ChoiceOrCall(sample, score)
         return sample
     end
 end
@@ -37,26 +65,47 @@ function Cassette.overdub(ctx::TraceCtx,
     push!(ctx.metadata, addr)
     !isempty(args) && begin
         res = recurse(ctx, call, args)
+        pop!(ctx.metadata)
         return res
     end
     res = recurse(ctx, call)
+    pop!(ctx.metadata)
     return res
 end
 
-function trace(fn::Function, args::Tuple)
-    ctx = TraceCtx(metadata = Trace())
-    res = Cassette.overdub(ctx, fn, args...)
-    ctx.metadata.func = fn
-    ctx.metadata.args = args
-    ctx.metadata.retval = res
-    return ctx.metadata
+# Convenience.
+function trace(fn::Function)
+    ctx = disablehooks(TraceCtx(metadata = TraceMeta(Trace(), nothing)))
+    res = Cassette.overdub(ctx, fn)
+    ctx.metadata.tr.func = fn
+    ctx.metadata.tr.args = ()
+    ctx.metadata.tr.retval = res
+    return ctx.metadata, ctx.metadata.tr
 end
 
-function trace(fn::Function, args::Tuple, obs::Dict{Address, Union{Float64, Int64}})
-    ctx = TraceCtx(metadata = Trace(obs))
+function trace(fn::Function, constraints::Dict{Address, T}) where T
+    ctx = disablehooks(TraceCtx(metadata = TraceMeta(Trace(), constraints)))
+    res = Cassette.overdub(ctx, fn)
+    ctx.metadata.tr.func = fn
+    ctx.metadata.tr.args = ()
+    ctx.metadata.tr.retval = res
+    return ctx.metadata, ctx.metadata.tr
+end
+
+function trace(fn::Function, args::Tuple)
+    ctx = disablehooks(TraceCtx(metadata = TraceMeta(Trace(), nothing)))
     res = Cassette.overdub(ctx, fn, args...)
-    ctx.metadata.func = fn
-    ctx.metadata.args = args
-    ctx.metadata.retval = res
-    return ctx.metadata
+    ctx.metadata.tr.func = fn
+    ctx.metadata.tr.args = args
+    ctx.metadata.tr.retval = res
+    return ctx.metadata, ctx.metadata.tr
+end
+
+function trace(fn::Function, args::Tuple, constraints::Dict{Address, T}) where T
+    ctx = disablehooks(TraceCtx(metadata = TraceMeta(Trace(), constraints)))
+    res = Cassette.overdub(ctx, fn, args...)
+    ctx.metadata.tr.func = fn
+    ctx.metadata.tr.args = args
+    ctx.metadata.tr.retval = res
+    return ctx.metadata, ctx.metadata.tr
 end
