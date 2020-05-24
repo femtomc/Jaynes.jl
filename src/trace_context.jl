@@ -22,7 +22,7 @@ mutable struct ProposalMeta <: Meta
     ProposalMeta(tr::Trace) = new(tr, Symbol[])
 end
 
-# Required to track nested calls in IR.
+# Required to track nested calls in overdubbing.
 import Base: push!, pop!
 
 function push!(trm::T, call::Symbol) where T <: Meta
