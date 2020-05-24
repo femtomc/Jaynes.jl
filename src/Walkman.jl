@@ -3,6 +3,7 @@ module Walkman
 using Cassette
 using Cassette: recurse, similarcontext, disablehooks
 using Distributions
+using FunctionalCollections: PersistentVector
 using ExportAll
 
 const Address = Union{Symbol, Pair}

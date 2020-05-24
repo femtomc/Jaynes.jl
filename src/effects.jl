@@ -1,24 +1,24 @@
 # These parallel the combinators of Gen. 
 # These effects are given a special semantics in using contexts in overdub.
 
-function chorus(call::Function)
+function Chorus(call::Function)
     call
 end
 
-function wavefolder(call::Function)
+function Wavefolder(call::Function)
     call
 end
 
 function Cassette.overdub(ctx::TraceCtx,
                           call::typeof(rand),
                           addr::T,
-                          m::typeof(chorus),
+                          m::typeof(Chorus),
                           args) where T <: Address
     isempty(args) && error("ChorusError: arguments are empty!")
     !(typeof(args[1]) <: Function) && error("ChorusError: first element of arguments tuple is not a function. Element type is $(typeof(args[1])).")
     call = args[1]
     func = () -> begin
-        arr = [rand(addr => i, call, a) for (i, a) in enumerate(args[2])]
+        arr = PersistentVector([rand(addr => i, call, a) for (i, a) in enumerate(args[2])])
         return arr
     end
     ret = recurse(ctx, func)
@@ -28,7 +28,7 @@ end
 function Cassette.overdub(ctx::TraceCtx,
                           call::typeof(rand),
                           addr::T,
-                          f::typeof(wavefolder),
+                          f::typeof(Wavefolder),
                           args) where T <: Address
     isempty(args) && error("LooperError: arguments are empty!")
     !(typeof(args[1]) <: Function) && error("LooperError: first element of arguments tuple is not a function. Element type is $(typeof(args[1])).")
