@@ -9,12 +9,12 @@ function bar(x)
     return rand(:bar, Normal, (z + x, 1.0))
 end
 
-tr, score = trace(bar, (5.0, ))
+ctx, tr, score = trace(bar, (5.0, ))
 display(tr)
 obs = map(collect(tr.chm)) do (k, v)
     (k, v.val)
 end
-tr, score = update(tr, (5.0,), constraints([obs[1]]))
+ctx, tr, score = update(tr, (5.0,), constraints([obs[1]]))
 display(tr)
 
 end # module

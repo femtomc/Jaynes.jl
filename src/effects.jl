@@ -1,11 +1,11 @@
 # These parallel the combinators of Gen. 
 # These effects are given a special semantics inside the TraceCtx in overdub.
-function Chorus(call::Function)
-    call
+function Chorus(call::Function, args)
+    call(args...)
 end
 
-function Wavefolder(call::Function)
-    call
+function Wavefolder(call::Function, args)
+    call(args...)
 end
 
 # TODO: rewrite these.

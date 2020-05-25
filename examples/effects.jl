@@ -21,7 +21,7 @@ function foo2(init::PersistentVector{Float64})
 end
 
 # wavefolder
-ctx, tr = trace(foo2, (PersistentVector([0.5, 3.0]), ))
+ctx, tr, weight = trace(foo2, (PersistentVector([3.0, 3.0]), ))
 display(tr)
 println(get_retval(tr))
 

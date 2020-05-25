@@ -7,6 +7,7 @@ using Distributions
 transition(z::Float64, addr) = rand(addr, Normal, (0.0, 1.0))
 observation(z::Float64, addr) = rand(addr, Normal, (0.0, 1.0))
 
+# TODO: re-write with Wavefolder.
 function simulate(init_z_params::Tuple{Float64, Float64}, T::Int)
     μ, σ = init_z_params
     observations = Vector{Float64}(undef, T)
@@ -19,7 +20,7 @@ function simulate(init_z_params::Tuple{Float64, Float64}, T::Int)
     return observations
 end
 
-tr, weight = trace(simulate, ((0.5, 5.0), 50))
+ctx, tr, weight = trace(simulate, ((0.5, 5.0), 50))
 display(tr)
 
 end # module

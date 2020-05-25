@@ -9,9 +9,9 @@ function bar(x)
     return rand(:bar, Normal, (z + x, 1.0))
 end
 
-tr, score = trace(bar, (5.0, ))
+ctx, tr, score = trace(bar, (5.0, ))
 display(tr)
-tr, score = regenerate(tr, (6.0,), Address[:bar])
+ctx, tr, score = regenerate(tr, (6.0,), Address[:bar])
 display(tr)
 
 end # module

@@ -4,7 +4,7 @@ function regenerate(tr::Trace, args::Tuple, selection::Vector{Address})
     ret = Cassette.overdub(ctx, func, args...)
     tr.retval = ret
     tr.args = args
-    return ctx.metadata.tr, ctx.metadata.tr.score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
 function update(tr::Trace, args::Tuple, constraints::Dict{Address, T}) where T
@@ -17,7 +17,7 @@ function update(tr::Trace, args::Tuple, constraints::Dict{Address, T}) where T
     !isempty(ctx.metadata.constraints) && begin
         error("UpdateError: tracing did not visit all addresses in constraints.")
     end
-    return ctx.metadata.tr, ctx.metadata.tr.score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
 # Convenience.
@@ -27,7 +27,7 @@ function trace(fn::Function)
     ctx.metadata.tr.func = fn
     ctx.metadata.tr.args = ()
     ctx.metadata.tr.retval = res
-    return ctx.metadata.tr, ctx.metadata.tr.score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
 function trace(fn::Function, constraints::Dict{Address, T}) where T
@@ -36,7 +36,7 @@ function trace(fn::Function, constraints::Dict{Address, T}) where T
     ctx.metadata.tr.func = fn
     ctx.metadata.tr.args = ()
     ctx.metadata.tr.retval = res
-    return ctx.metadata.tr, ctx.metadata.tr.score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
 function trace(fn::Function, args::Tuple)
@@ -45,7 +45,7 @@ function trace(fn::Function, args::Tuple)
     ctx.metadata.tr.func = fn
     ctx.metadata.tr.args = args
     ctx.metadata.tr.retval = res
-    return ctx.metadata.tr, ctx.metadata.tr.score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
 function trace(fn::Function, args::Tuple, constraints::Dict{Address, T}) where T
@@ -54,5 +54,5 @@ function trace(fn::Function, args::Tuple, constraints::Dict{Address, T}) where T
     ctx.metadata.tr.func = fn
     ctx.metadata.tr.args = args
     ctx.metadata.tr.retval = res
-    return ctx.metadata.tr, ctx.metadata.tr.score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
