@@ -13,7 +13,7 @@ mutable struct UnconstrainedGenerateMeta <: Meta
     ret::Any
     UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[])
 end
-Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
+Generate(tr::Trace) = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(tr)))
 
 mutable struct GenerateMeta{T} <: Meta
     tr::Trace
@@ -24,7 +24,7 @@ mutable struct GenerateMeta{T} <: Meta
     ret::Any
     GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
-Generate(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
+Generate(tr::Trace, constraints) = disablehooks(TraceCtx(pass = ignore_pass, metadata = GenerateMeta(tr, constraints)))
 
 mutable struct ProposalMeta <: Meta
     tr::Trace
@@ -34,7 +34,7 @@ mutable struct ProposalMeta <: Meta
     ret::Any
     ProposalMeta(tr::Trace) = new(tr, Address[])
 end
-Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
+Propose(tr::Trace) = disablehooks(TraceCtx(pass = ignore_pass, metadata = ProposalMeta(tr)))
 
 mutable struct UpdateMeta{T} <: Meta
     tr::Trace
@@ -45,7 +45,7 @@ mutable struct UpdateMeta{T} <: Meta
     ret::Any
     UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
-Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
+Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = ignore_pass, metadata = UpdateMeta(tr, constraints)))
 
 mutable struct RegenerateMeta <: Meta
     tr::Trace
@@ -56,7 +56,7 @@ mutable struct RegenerateMeta <: Meta
     ret::Any
     RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], sel)
 end
-Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, sel)))
+Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = ignore_pass, metadata = RegenerateMeta(tr, sel)))
 
 # Required to track nested calls in overdubbing.
 import Base: push!, pop!
@@ -253,15 +253,20 @@ end
 @inline function Cassette.overdub(ctx::TraceCtx,
                                   c::typeof(rand),
                                   addr::T,
+                                  call::Function) where T <: Address
+    push!(ctx.metadata, addr)
+    ret = recurse(ctx, call)
+    pop!(ctx.metadata)
+    return ret
+end
+
+@inline function Cassette.overdub(ctx::TraceCtx,
+                                  c::typeof(rand),
+                                  addr::T,
                                   call::Function,
                                   args) where T <: Address
     push!(ctx.metadata, addr)
-    !isempty(args) && begin
-        ret = recurse(ctx, call, args...)
-        pop!(ctx.metadata)
-        return ret
-    end
-    ret = recurse(ctx, call)
+    ret = recurse(ctx, call, args...)
     pop!(ctx.metadata)
     return ret
 end

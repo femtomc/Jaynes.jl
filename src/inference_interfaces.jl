@@ -8,6 +8,15 @@ function trace(fn::Function)
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
+function trace(ctx::TraceCtx{M},
+               fn::Function) where M <: UnconstrainedGenerateMeta
+    ret = Cassette.overdub(ctx, fn)
+    ctx.metadata.fn = fn
+    ctx.metadata.args = ()
+    ctx.metadata.ret = ret
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+end
+
 function trace(fn::Function, 
                constraints::Dict{Address, T}) where T
     ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), constraints)))
