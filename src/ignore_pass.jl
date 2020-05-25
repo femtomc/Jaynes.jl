@@ -1,3 +1,4 @@
+# This is a pass which indicates to native Cassette passes that the only thing of interest is calls to rand.
 function ignore_transform(::Type{<:TraceCtx}, r::Reflection)
     syn = r.code_info.code
     map(syn) do expr

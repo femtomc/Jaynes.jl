@@ -10,7 +10,7 @@ function importance_sampling(model::Function,
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     rets = Vector{Any}(undef, num_samples)
-    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+    ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(Trace())))
     for i in 1:num_samples
         if isempty(args)
             ret = Cassette.overdub(ctx, model)
@@ -38,7 +38,7 @@ function importance_sampling(model::Function,
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     rets = Vector{Any}(undef, num_samples)
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), observations)))
+    ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = GenerateMeta(Trace(), observations)))
     for i in 1:num_samples
         if isempty(args)
             ret = Cassette.overdub(ctx, model)
@@ -68,8 +68,8 @@ function importance_sampling(model::Function,
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     rets = Vector{Any}(undef, num_samples)
-    prop_ctx = disablehooks(TraceCtx(metadata = ProposalMeta(Trace())))
-    model_ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), observations)))
+    prop_ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = ProposalMeta(Trace())))
+    model_ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = GenerateMeta(Trace(), observations)))
     for i in 1:num_samples
         # Propose.
         if isempty(proposal_args)
