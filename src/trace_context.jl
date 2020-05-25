@@ -51,7 +51,7 @@ end
 
 function reset_keep_constraints!(trm::T) where T <: Meta
     trm.tr = Trace()
-    trm.stack = Union{Symbol, Pair}[]
+    trm.stack = Address[]
 end
 
 # --------------- OVERDUB -------------------- #
@@ -62,7 +62,7 @@ function Cassette.overdub(ctx::TraceCtx{M},
                           dist::Type,
                           args) where {N, 
                                        M <: UnconstrainedGenerateMeta, 
-                                       T <: Union{Symbol, Pair}}
+                                       T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
@@ -80,13 +80,13 @@ function Cassette.overdub(ctx::TraceCtx{M},
     return sample
 end
 
-function Cassette.overdub(ctx::TraceCtx{M}, 
-                          call::typeof(rand), 
-                          addr::T, 
-                          dist::Type,
-                          args) where {N, 
-                                       M <: GenerateMeta, 
-                                       T <: Union{Symbol, Pair}}
+@inline function Cassette.overdub(ctx::TraceCtx{M}, 
+                                  call::typeof(rand), 
+                                  addr::T, 
+                                  dist::Type,
+                                  args) where {N, 
+                                               M <: GenerateMeta, 
+                                               T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
@@ -107,7 +107,7 @@ function Cassette.overdub(ctx::TraceCtx{M},
         ctx.metadata.tr.score += score
         return sample
 
-    # Unconstrained.
+        # Unconstrained.
     else
         sample = rand(d)
         score = logpdf(d, sample)
@@ -116,13 +116,13 @@ function Cassette.overdub(ctx::TraceCtx{M},
     end
 end
 
-function Cassette.overdub(ctx::TraceCtx{M}, 
-                          call::typeof(rand), 
-                          addr::T, 
-                          dist::Type,
-                          args) where {N, 
-                                       M <: ProposalMeta, 
-                                       T <: Union{Symbol, Pair}}
+@inline function Cassette.overdub(ctx::TraceCtx{M}, 
+                                  call::typeof(rand), 
+                                  addr::T, 
+                                  dist::Type,
+                                  args) where {N, 
+                                               M <: ProposalMeta, 
+                                               T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
@@ -142,13 +142,13 @@ function Cassette.overdub(ctx::TraceCtx{M},
 
 end
 
-function Cassette.overdub(ctx::TraceCtx{M}, 
-                          call::typeof(rand), 
-                          addr::T, 
-                          dist::Type,
-                          args) where {N, 
-                                       M <: RegenerateMeta, 
-                                       T <: Union{Symbol, Pair}}
+@inline function Cassette.overdub(ctx::TraceCtx{M}, 
+                                  call::typeof(rand), 
+                                  addr::T, 
+                                  dist::Type,
+                                  args) where {N, 
+                                               M <: RegenerateMeta, 
+                                               T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
@@ -183,13 +183,13 @@ function Cassette.overdub(ctx::TraceCtx{M},
     ret
 end
 
-function Cassette.overdub(ctx::TraceCtx{M}, 
-                          call::typeof(rand), 
-                          addr::T, 
-                          dist::Type,
-                          args) where {N, 
-                                       M <: UpdateMeta, 
-                                       T <: Union{Symbol, Pair}}
+@inline function Cassette.overdub(ctx::TraceCtx{M}, 
+                                  call::typeof(rand), 
+                                  addr::T, 
+                                  dist::Type,
+                                  args) where {N, 
+                                               M <: UpdateMeta, 
+                                               T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
@@ -204,7 +204,7 @@ function Cassette.overdub(ctx::TraceCtx{M},
         prev_ret = prev.val
         prev_score = prev.score
     end
-    
+
     # Check if in constraints.
     in_constraints = haskey(ctx.metadata.constraints, addr)
 
@@ -231,18 +231,27 @@ function Cassette.overdub(ctx::TraceCtx{M},
 end
 
 # This handles functions (not distributions) in rand calls. When we see a rand call with a function, we push the address for that rand call onto the stack, and then recurse into the function. This organizes the choice map in the correct hierarchical way.
-function Cassette.overdub(ctx::TraceCtx,
-                          c::typeof(rand),
-                          addr::T,
-                          call::Function,
-                          args) where T <: Union{Symbol, Pair}
+@inline function Cassette.overdub(ctx::TraceCtx,
+                                  c::typeof(rand),
+                                  addr::T,
+                                  call::Function,
+                                  args) where T <: Address
     push!(ctx.metadata, addr)
+    #    println("Stack: $(ctx.metadata.stack)")
+    #    println("Call: $(call)")
     !isempty(args) && begin
-        res = recurse(ctx, call, args)
+        res = recurse(ctx, call, args...)
         pop!(ctx.metadata)
         return res
     end
     res = recurse(ctx, call)
     pop!(ctx.metadata)
     return res
+end
+
+@inline function Cassette.fallback(ctx::TraceCtx,
+                                   c::Function,
+                                   args...)
+    #    println(c)
+    return c(args...)
 end

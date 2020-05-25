@@ -47,7 +47,7 @@ function Base.display(tr::Trace;
         val = getfield(tr, f)
         typeof(val) <: Dict{Union{Symbol, Pair}, Choice} && begin 
             vals = collect(val)
-            if length(vals) > 5 || show_full
+            if length(vals) > 5 && !show_full
                 map(vals[1:5]) do (k, v)
                     println(" $(k)")
                     map(fieldnames(Choice)) do nm
