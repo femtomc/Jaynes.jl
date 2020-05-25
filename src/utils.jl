@@ -47,7 +47,7 @@ function Base.display(tr::Trace;
             vals = collect(val)
             if length(vals) > 5 || show_full
                 map(vals[1:5]) do (k, v)
-                    println(" ⏺ $(k)")
+                    println(" $(k)")
                     map(fieldnames(Choice)) do nm
                         !(nm in fields) && return
                         println("          $(nm)  = $(getfield(v, nm))")
@@ -58,7 +58,7 @@ function Base.display(tr::Trace;
                 println("  __________________________________\n")
             else
                 map(vals) do (k, v)
-                    println(" <> $(k)")
+                    println(" $(k)")
                     map(fieldnames(Choice)) do nm
                         !(nm in fields) && return
                         println("          $(nm)  = $(getfield(v, nm))")

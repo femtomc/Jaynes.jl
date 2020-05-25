@@ -40,19 +40,13 @@ end # module
 #
 #               Playback
 #
-# <> :geo => :flip
+# :geo => :flip
 #          val  = 0
 #
-# <> flip
+# flip
 #          val  = 0
 #
-# <> :geo => (:geo => :flip)
-#          val  = 0
-#
-# <> :geo => (:geo => (:geo => :flip))
-#          val  = 0
-#
-# <> :geo => (:geo => (:geo => (:geo => :flip)))
+# :geo => (:geo => :flip)
 #          val  = 1
 #
 #  __________________________________
@@ -63,7 +57,7 @@ end # module
 #
 # args : Tuple{Float64}
 #
-# retval : 4
+# retval : 2
 #
 #  __________________________________
 ```
