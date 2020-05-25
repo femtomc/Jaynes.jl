@@ -93,8 +93,8 @@ function importance_sampling(model::Function,
 
         # Track.
         rets[i] = ret
-        lws[i] = model_ctx.metadata.tr.score - prop_score
         trs[i] = model_ctx.metadata.tr
+        lws[i] = model_ctx.metadata.tr.score - prop_score
 
         # Reset.
         reset_keep_constraints!(model_ctx.metadata)

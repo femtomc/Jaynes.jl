@@ -17,9 +17,8 @@ function foo2()
 end
 
 obs = constraints([(:y, 1.0)])
-Walkman.importance_sampling(foo1, (), obs, 1)
+Walkman.importance_sampling(foo1, (), foo2, (), obs, 1)
 Profile.clear_malloc_data()
-trs, lnw, lmle = @profile Walkman.importance_sampling(foo1, (), obs, 30000)
-Profile.print(format=:flat, combine = true, sortedby = :count)
+trs, lnw, lmle = @profile Walkman.importance_sampling(foo1, (), foo2, (), obs, 30000)
 
 end # module

@@ -71,7 +71,6 @@ end
 
 function reset_keep_constraints!(trm::T) where T <: Meta
     trm.tr = Trace()
-    trm.stack = Address[]
 end
 
 # --------------- OVERDUB -------------------- #
