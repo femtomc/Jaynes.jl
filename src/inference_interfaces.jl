@@ -1,6 +1,6 @@
 # Generate
 function trace(fn::Function)
-    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+    ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(Trace())))
     ret = Cassette.overdub(ctx, fn)
     ctx.metadata.fn = fn
     ctx.metadata.args = ()
@@ -19,7 +19,7 @@ end
 
 function trace(fn::Function, 
                constraints::Dict{Address, T}) where T
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), constraints)))
+    ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = GenerateMeta(Trace(), constraints)))
     ret = Cassette.overdub(ctx, fn)
     ctx.metadata.fn = fn
     ctx.metadata.args = ()
@@ -29,7 +29,7 @@ end
 
 function trace(fn::Function, 
                args::Tuple)
-    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+    ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(Trace())))
     ret = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.fn = fn
     ctx.metadata.args = args
@@ -50,7 +50,7 @@ end
 function trace(fn::Function, 
                args::Tuple, 
                constraints::Dict{Address, T}) where T
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), constraints)))
+    ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = GenerateMeta(Trace(), constraints)))
     ret = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.fn = fn
     ctx.metadata.args = args

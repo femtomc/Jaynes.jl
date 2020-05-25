@@ -23,8 +23,8 @@ end
 
 sim = () -> begin
     ctx = Generate(Trace())
-    for i in 1:100
-        ctx, tr, weight = trace(ctx, simulate, ((0.5, 5.0), 5000))
+    for i in 1:1000
+        ctx, tr, weight = trace(ctx, simulate, ((0.5, 5.0), 500))
         reset_keep_constraints!(ctx)
     end
 end
