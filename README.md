@@ -64,9 +64,9 @@ end # module
 
 ## Acknowledgements
 
-The ideas which are going into this package would not have been possible without numerous conversations with very smart people in the Julia community. I would like to acknowledge the following people
+The ideas which are going into this package would not have been possible without numerous conversations with very smart people in the Julia community and beyond. I would like to acknowledge the following people
 
-> Jarred Barber, Alex Lew, Marco Cusumano-Towner, Jarrett Revels, Valentin Churavy, George Matheos, Chad Scherrer, Martin Trapp, Philipp Gabler, Lyndon White, Mike Innes, and Ari Katz...amongst many others in the probabilistic programming community.
+> Jarred Barber, Alex Lew, Marco Cusumano-Towner, Ben Sherman, Jarrett Revels, Valentin Churavy, George Matheos, Chad Scherrer, Martin Trapp, Philipp Gabler, Lyndon White, Mike Innes, and Ari Katz...amongst many others in the probabilistic programming community.
 
 as well as the following systems
 
