@@ -1,6 +1,5 @@
 # These parallel the combinators of Gen. 
 # These effects are given a special semantics in using contexts in overdub.
-
 function Chorus(call::Function)
     call
 end
@@ -9,6 +8,7 @@ function Wavefolder(call::Function)
     call
 end
 
+# TODO: rewrite these.
 function Cassette.overdub(ctx::TraceCtx,
                           call::typeof(rand),
                           addr::T,

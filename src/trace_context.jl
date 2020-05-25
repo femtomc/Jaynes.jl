@@ -164,7 +164,7 @@ function Cassette.overdub(ctx::TraceCtx{M},
         prev_score = prev.score
     end
 
-    # Check if in selection (part of meta).
+    # Check if in selection in meta.
     selection = ctx.metadata.selection
     in_sel = addr in selection
 
@@ -206,15 +206,13 @@ function Cassette.overdub(ctx::TraceCtx{M},
     end
     
     # Check if in constraints.
-    in_constraints = haskey(ctx.metadata.tr.constraints, addr)
-    if in_constraints
-        ret = ctx.metadata.tr.constraints[addr]
-    end
+    in_constraints = haskey(ctx.metadata.constraints, addr)
 
     # Ret.
     d = dist(args...)
     if in_constraints
-        ret = ctx.metadata.tr.constraints[addr]
+        ret = ctx.metadata.constraints[addr]
+        delete!(ctx.metadata.constraints, addr)
     elseif in_prev_chm
         ret = prev_ret
     else

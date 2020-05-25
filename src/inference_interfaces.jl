@@ -1,5 +1,5 @@
 function regenerate(tr::Trace, args::Tuple, selection::Vector{Address})
-    ctx = TraceCtx(metadata = RegenerateMeta(tr, selection))
+    ctx = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, selection)))
     func = tr.func
     ret = Cassette.overdub(ctx, func, args...)
     tr.retval = ret
@@ -8,7 +8,7 @@ function regenerate(tr::Trace, args::Tuple, selection::Vector{Address})
 end
 
 function update(tr::Trace, args::Tuple, constraints::Dict{Address, T}) where T
-    ctx = TraceCtx(metadata = UpdateMeta(tr, constraints))
+    ctx = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
     func = tr.func
     ret = Cassette.overdub(ctx, func, args...)
     tr.retval = ret

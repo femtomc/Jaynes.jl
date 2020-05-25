@@ -20,6 +20,51 @@ _Walkman_ also aims to support a restricted _graph-based_ DSL which allows the u
 
 The motivation for this project is to identify interfaces and techniques to combine programmable inference with graphical model inference. These techniques have complementary strengths and weaknesses - programmable sampling algorithms tend to have difficulties in high-dimensions (but can answer joint queries about a model efficiently when they are efficient) whereas the asymptotic complexity of graphical model algorithms is typically not dependent on the dimensionality of the model (and instead depends on the topology of the dependence graph) but queries are typically restricted to be marginal queries.
 
+## Examples
+
+```julia
+module Geometric
+
+include("../src/Walkman.jl")
+using .Walkman
+using Distributions
+
+geo(p::Float64) = rand(:flip, Bernoulli, (p, )) == 1 ? 0 : 1 + rand(:geo, geo, p)
+
+tr, score = trace(geo, (0.3, ))
+display(tr)
+
+end # module
+
+#  __________________________________
+#
+#              ⏵ Playback
+#
+# ⏺ :geo => :flip
+#          val  = 0
+#
+# ⏺ flip
+#          val  = 0
+#
+# ⏺ :geo => (:geo => :flip)
+#          val  = 0
+#
+# ⏺ :geo => (:geo => (:geo => :flip))
+#          val  = 1
+#
+#  __________________________________
+#
+# score : 0.0
+#
+# func : typeof(Main.Geometric.geo)
+#
+# args : Tuple{Float64}
+#
+# retval : 3
+#
+#  __________________________________
+```
+
 ## Acknowledgements
 
 The ideas which are going into this package would not have been possible without numerous conversations with very smart people in the Julia community. I would like to acknowledge the following people
