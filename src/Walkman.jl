@@ -12,6 +12,7 @@ include("trace_core.jl")
 include("trace_context.jl")
 include("utils.jl")
 include("importance_sampling.jl")
+include("metropolis_hastings.jl")
 include("effects.jl")
 
 @exportAll()
