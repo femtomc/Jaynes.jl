@@ -56,4 +56,3 @@ function trace(fn::Function, args::Tuple, constraints::Dict{Address, T}) where T
     ctx.metadata.tr.retval = res
     return ctx.metadata.tr, ctx.metadata.tr.score
 end
-

@@ -9,7 +9,7 @@ function bar(x)
     return rand(:bar, Normal, (z + x, 1.0))
 end
 
-ctx, tr = trace(bar, (5.0, ))
+tr, score = trace(bar, (5.0, ))
 display(tr)
 tr, score = regenerate(tr, (6.0,), Address[:bar])
 display(tr)

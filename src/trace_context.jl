@@ -28,7 +28,7 @@ mutable struct UpdateMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
     constraints::T
-    UpdateMeta(tr::Trace, constraints::T) = new(tr, Address[], constraints)
+    UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
 
 mutable struct RegenerateMeta <: Meta
