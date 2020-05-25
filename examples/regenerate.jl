@@ -1,4 +1,4 @@
-module Regenerate
+module Regen
 
 include("../src/Walkman.jl")
 using .Walkman
@@ -11,7 +11,8 @@ end
 
 ctx, tr, score = trace(bar, (5.0, ))
 display(tr)
-ctx, tr, score = regenerate(tr, (6.0,), Address[:bar])
+regen_ctx = Regenerate(tr, Address[:bar])
+ctx, tr, score = trace(regen_ctx, tr, (6.0,))
 display(tr)
 
 end # module

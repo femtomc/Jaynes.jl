@@ -10,6 +10,7 @@ mutable struct UnconstrainedGenerateMeta <: Meta
     stack::Vector{Address}
     UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[])
 end
+Generate(tr::Trace) = TraceCtx(metadata = UnconstraintedGenerateMeta(tr))
 
 mutable struct GenerateMeta{T} <: Meta
     tr::Trace
@@ -17,12 +18,14 @@ mutable struct GenerateMeta{T} <: Meta
     constraints::T
     GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
+Generate(tr::Trace, constraints) = TraceCtx(metadata = GenerateMeta(tr, constraints))
 
 mutable struct ProposalMeta <: Meta
     tr::Trace
     stack::Vector{Address}
     ProposalMeta(tr::Trace) = new(tr, Address[])
 end
+Propose(tr::Trace) = TraceCtx(metadata = ProposalMeta(tr))
 
 mutable struct UpdateMeta{T} <: Meta
     tr::Trace
@@ -30,6 +33,7 @@ mutable struct UpdateMeta{T} <: Meta
     constraints::T
     UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
+Update(tr::Trace, constraints) where T = TraceCtx(metadata = UpdateMeta(tr, constraints))
 
 mutable struct RegenerateMeta <: Meta
     tr::Trace
@@ -37,6 +41,7 @@ mutable struct RegenerateMeta <: Meta
     selection::Vector{Address}
     RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], sel)
 end
+Regenerate(tr::Trace, sel::Vector{Address}) = TraceCtx(metadata = RegenerateMeta(tr, sel))
 
 # Required to track nested calls in overdubbing.
 import Base: push!, pop!
@@ -237,8 +242,6 @@ end
                                   call::Function,
                                   args) where T <: Address
     push!(ctx.metadata, addr)
-    #    println("Stack: $(ctx.metadata.stack)")
-    #    println("Call: $(call)")
     !isempty(args) && begin
         res = recurse(ctx, call, args...)
         pop!(ctx.metadata)
@@ -252,6 +255,5 @@ end
 @inline function Cassette.fallback(ctx::TraceCtx,
                                    c::Function,
                                    args...)
-    #    println(c)
     return c(args...)
 end
