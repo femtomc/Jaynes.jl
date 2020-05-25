@@ -40,7 +40,7 @@ function Base.display(tr::Trace;
                       fields::Array{Symbol, 1} = [:val],
                       show_full = false)
     println("  __________________________________\n")
-    println("              ⏵ Playback\n")
+    println("               Playback\n")
     map(fieldnames(Trace)) do f
         val = getfield(tr, f)
         typeof(val) <: Dict{Union{Symbol, Pair}, Choice} && begin 
@@ -58,7 +58,7 @@ function Base.display(tr::Trace;
                 println("  __________________________________\n")
             else
                 map(vals) do (k, v)
-                    println(" ⏺ $(k)")
+                    println(" <> $(k)")
                     map(fieldnames(Choice)) do nm
                         !(nm in fields) && return
                         println("          $(nm)  = $(getfield(v, nm))")

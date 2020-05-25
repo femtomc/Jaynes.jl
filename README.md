@@ -38,18 +38,21 @@ end # module
 
 #  __________________________________
 #
-#              ⏵ Playback
+#               Playback
 #
-# ⏺ :geo => :flip
+# <> :geo => :flip
 #          val  = 0
 #
-# ⏺ flip
+# <> flip
 #          val  = 0
 #
-# ⏺ :geo => (:geo => :flip)
+# <> :geo => (:geo => :flip)
 #          val  = 0
 #
-# ⏺ :geo => (:geo => (:geo => :flip))
+# <> :geo => (:geo => (:geo => :flip))
+#          val  = 0
+#
+# <> :geo => (:geo => (:geo => (:geo => :flip)))
 #          val  = 1
 #
 #  __________________________________
@@ -60,7 +63,7 @@ end # module
 #
 # args : Tuple{Float64}
 #
-# retval : 3
+# retval : 4
 #
 #  __________________________________
 ```
