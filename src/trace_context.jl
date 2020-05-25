@@ -13,7 +13,7 @@ mutable struct UnconstrainedGenerateMeta <: Meta
     ret::Any
     UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[])
 end
-Generate(tr::Trace) = TraceCtx(metadata = UnconstraintedGenerateMeta(tr))
+Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 
 mutable struct GenerateMeta{T} <: Meta
     tr::Trace
@@ -24,7 +24,7 @@ mutable struct GenerateMeta{T} <: Meta
     ret::Any
     GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
-Generate(tr::Trace, constraints) = TraceCtx(metadata = GenerateMeta(tr, constraints))
+Generate(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
 
 mutable struct ProposalMeta <: Meta
     tr::Trace
@@ -34,7 +34,7 @@ mutable struct ProposalMeta <: Meta
     ret::Any
     ProposalMeta(tr::Trace) = new(tr, Address[])
 end
-Propose(tr::Trace) = TraceCtx(metadata = ProposalMeta(tr))
+Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 
 mutable struct UpdateMeta{T} <: Meta
     tr::Trace
@@ -45,7 +45,7 @@ mutable struct UpdateMeta{T} <: Meta
     ret::Any
     UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
-Update(tr::Trace, constraints) where T = TraceCtx(metadata = UpdateMeta(tr, constraints))
+Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
 
 mutable struct RegenerateMeta <: Meta
     tr::Trace
@@ -56,7 +56,7 @@ mutable struct RegenerateMeta <: Meta
     ret::Any
     RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], sel)
 end
-Regenerate(tr::Trace, sel::Vector{Address}) = TraceCtx(metadata = RegenerateMeta(tr, sel))
+Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, sel)))
 
 # Required to track nested calls in overdubbing.
 import Base: push!, pop!
@@ -69,8 +69,8 @@ function pop!(trm::T) where T <: Meta
     pop!(trm.stack)
 end
 
-function reset_keep_constraints!(trm::T) where T <: Meta
-    trm.tr = Trace()
+function reset_keep_constraints!(ctx::TraceCtx{M}) where M <: Meta
+    ctx.metadata.tr = Trace()
 end
 
 # --------------- OVERDUB -------------------- #

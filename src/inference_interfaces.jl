@@ -28,6 +28,16 @@ function trace(fn::Function,
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
+function trace(ctx::TraceCtx{M},
+               fn::Function, 
+               args::Tuple) where M <: UnconstrainedGenerateMeta
+    ret = Cassette.overdub(ctx, fn, args...)
+    ctx.metadata.fn = fn
+    ctx.metadata.args = args
+    ctx.metadata.ret = ret
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+end
+
 function trace(fn::Function, 
                args::Tuple, 
                constraints::Dict{Address, T}) where T
@@ -43,7 +53,6 @@ end
 function trace(ctx::TraceCtx{M}, 
                fn::Function, 
                args::Tuple) where M <: RegenerateMeta
-    ctx = disablehooks(ctx)
     ret = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.fn = fn
     ctx.metadata.args = args
@@ -55,7 +64,6 @@ end
 function trace(ctx::TraceCtx{M},
                fn::Function,
                args::Tuple) where M <: UpdateMeta
-    ctx = disablehooks(ctx)
     ret = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.fn = fn
     ctx.metadata.args = args

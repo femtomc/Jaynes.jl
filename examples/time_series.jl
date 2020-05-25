@@ -3,6 +3,7 @@ module TimeSeries
 include("../src/Walkman.jl")
 using .Walkman
 using Distributions
+using Profile
 
 transition(z::Float64, addr) = rand(addr, Normal, (0.0, 1.0))
 observation(z::Float64, addr) = rand(addr, Normal, (0.0, 1.0))
@@ -20,7 +21,17 @@ function simulate(init_z_params::Tuple{Float64, Float64}, T::Int)
     return observations
 end
 
-ctx, tr, weight = trace(simulate, ((0.5, 5.0), 50))
-display(tr)
+sim = () -> begin
+    ctx = Generate(Trace())
+    for i in 1:100
+        ctx, tr, weight = trace(ctx, simulate, ((0.5, 5.0), 50000))
+        reset_keep_constraints!(ctx)
+        #display(tr)
+    end
+end
+
+sim()
+Profile.clear_malloc_data()
+@profile sim()
 
 end # module

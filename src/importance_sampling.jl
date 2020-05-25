@@ -20,7 +20,7 @@ function importance_sampling(model::Function,
         rets[i] = ret
         lws[i] = ctx.metadata.tr.score
         trs[i] = ctx.metadata.tr
-        reset_keep_constraints!(ctx.metadata)
+        reset_keep_constraints!(ctx)
     end
     ctx.metadata.fn = model
     ctx.metadata.args = args
@@ -48,7 +48,7 @@ function importance_sampling(model::Function,
         rets[i] = ret
         lws[i] = ctx.metadata.tr.score
         trs[i] = ctx.metadata.tr
-        reset_keep_constraints!(ctx.metadata)
+        reset_keep_constraints!(ctx)
     end
     ctx.metadata.fn = model
     ctx.metadata.args = args
@@ -97,8 +97,8 @@ function importance_sampling(model::Function,
         lws[i] = model_ctx.metadata.tr.score - prop_score
 
         # Reset.
-        reset_keep_constraints!(model_ctx.metadata)
-        reset_keep_constraints!(prop_ctx.metadata)
+        reset_keep_constraints!(model_ctx)
+        reset_keep_constraints!(prop_ctx)
     end
     model_ctx.metadata.fn = model
     model_ctx.metadata.args = args
