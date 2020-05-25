@@ -8,6 +8,7 @@ function lse(x1::Real, x2::Real)
     m == -Inf ? m : m + log(exp(x1 - m) + exp(x2 - m))
 end
 
+# This is likely not a well-defined expectation. Investigate.
 function average(trs::Vector{Trace}, addr::T) where T <: Union{Symbol, Pair}
     acc = 0.0
     trs = filter(trs) do tr
@@ -19,6 +20,7 @@ function average(trs::Vector{Trace}, addr::T) where T <: Union{Symbol, Pair}
     return acc/length(trs)
 end
 
+# Same goes for here.
 function average(trs::Vector{Trace})
     d = Dict{Union{Symbol, Pair}, Tuple{Int, Real}}()
     for tr in trs

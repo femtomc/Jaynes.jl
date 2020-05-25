@@ -1,5 +1,5 @@
 # These parallel the combinators of Gen. 
-# These effects are given a special semantics in using contexts in overdub.
+# These effects are given a special semantics inside the TraceCtx in overdub.
 function Chorus(call::Function)
     call
 end
