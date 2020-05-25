@@ -3,7 +3,13 @@ function ignore_transform(::Type{<:TraceCtx}, r::Reflection)
     syn = r.code_info.code
     map(syn) do expr
         MacroTools.prewalk(expr) do k
-            k isa Expr && k.head == :nooverdub && return
+            # If you already wrapped, don't wrap.
+            k isa Expr && k.head == :call && begin
+                arg = k.args[1]
+                arg isa Expr && arg.head == :nooverdub && return
+            end
+
+            # If you haven't wrapped, wrap.
             k isa Expr && k.head == :call && begin
                 call = k.args[1]
                 if !(call isa GlobalRef && call.name == :rand)
@@ -11,6 +17,7 @@ function ignore_transform(::Type{<:TraceCtx}, r::Reflection)
                     return
                 end
             end
+            
             k
         end
     end

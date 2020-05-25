@@ -19,10 +19,14 @@ function foo2()
     return z
 end
 
+ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+low = @code_lowered Cassette.overdub(ctx, foo1, 5.0)
+println("No pass:\n$(low)\n")
+
 ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(Trace())))
 low = @code_lowered Cassette.overdub(ctx, foo1, 5.0)
-println(low)
+println("Pass:\n$(low)\n")
+
 ctx, tr, score = trace(ctx, foo1, (5.0, ))
-display(tr)
 
 end # module
