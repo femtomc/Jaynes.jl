@@ -9,9 +9,6 @@ end
 mutable struct Trace
     chm::Dict{Address, Choice}
     score::Float64
-    func::Function
-    args::Tuple
-    retval::Any
     Trace() = new(Dict{Address, Choice}(), 0.0)
 end
 

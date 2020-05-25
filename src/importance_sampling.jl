@@ -9,24 +9,26 @@ function importance_sampling(model::Function,
                              num_samples::Int)
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
+    rets = Vector{Any}(undef, num_samples)
     ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
     for i in 1:num_samples
         if isempty(args)
-            res = Cassette.overdub(ctx, model)
+            ret = Cassette.overdub(ctx, model)
         else
-            res = Cassette.overdub(ctx, model, args...)
+            ret = Cassette.overdub(ctx, model, args...)
         end
-        ctx.metadata.tr.func = model
-        ctx.metadata.tr.args = args
-        ctx.metadata.tr.retval = res
+        rets[i] = ret
         lws[i] = ctx.metadata.tr.score
         trs[i] = ctx.metadata.tr
         reset_keep_constraints!(ctx.metadata)
     end
+    ctx.metadata.fn = model
+    ctx.metadata.args = args
+    ctx.metadata.retval = rets
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return trs, lnw, lmle
+    return ctx, trs, lnw, lmle
 end
 
 function importance_sampling(model::Function, 
@@ -35,24 +37,26 @@ function importance_sampling(model::Function,
                              num_samples::Int) where T
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
+    rets = Vector{Any}(undef, num_samples)
     ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), observations)))
     for i in 1:num_samples
         if isempty(args)
-            res = Cassette.overdub(ctx, model)
+            ret = Cassette.overdub(ctx, model)
         else
-            res = Cassette.overdub(ctx, model, args...)
+            ret = Cassette.overdub(ctx, model, args...)
         end
-        ctx.metadata.tr.func = model
-        ctx.metadata.tr.args = args
-        ctx.metadata.tr.retval = res
+        rets[i] = ret
         lws[i] = ctx.metadata.tr.score
         trs[i] = ctx.metadata.tr
-        reset_keep_constraints!(ctx.metadata)
+        ctx.metadata.tr = Trace()
     end
+    ctx.metadata.fn = model
+    ctx.metadata.args = args
+    ctx.metadata.ret = rets
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return trs, lnw, lmle
+    return ctx, trs, lnw, lmle
 end
 
 function importance_sampling(model::Function, 
@@ -63,6 +67,7 @@ function importance_sampling(model::Function,
                              num_samples::Int) where T
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
+    rets = Vector{Any}(undef, num_samples)
     prop_ctx = disablehooks(TraceCtx(metadata = ProposalMeta(Trace())))
     model_ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), observations)))
     for i in 1:num_samples
@@ -81,15 +86,13 @@ function importance_sampling(model::Function,
 
         # Generate.
         if isempty(args)
-            res = Cassette.overdub(model_ctx, model)
+            ret = Cassette.overdub(model_ctx, model)
         else
-            res = Cassette.overdub(model_ctx, model, args...)
+            ret = Cassette.overdub(model_ctx, model, args...)
         end
 
-        # Track score.
-        model_ctx.metadata.tr.func = model
-        model_ctx.metadata.tr.args = args
-        model_ctx.metadata.tr.retval = res
+        # Track.
+        rets[i] = ret
         lws[i] = model_ctx.metadata.tr.score - prop_score
         trs[i] = model_ctx.metadata.tr
 
@@ -97,8 +100,11 @@ function importance_sampling(model::Function,
         reset_keep_constraints!(model_ctx.metadata)
         reset_keep_constraints!(prop_ctx.metadata)
     end
+    model_ctx.metadata.fn = model
+    model_ctx.metadata.args = args
+    model_ctx.metadata.ret = rets
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return trs, lnw, lmle
+    return model_ctx, trs, lnw, lmle
 end

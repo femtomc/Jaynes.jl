@@ -8,6 +8,9 @@ abstract type Meta end
 mutable struct UnconstrainedGenerateMeta <: Meta
     tr::Trace
     stack::Vector{Address}
+    args::Tuple
+    fn::Function
+    ret::Any
     UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[])
 end
 Generate(tr::Trace) = TraceCtx(metadata = UnconstraintedGenerateMeta(tr))
@@ -16,6 +19,9 @@ mutable struct GenerateMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
     constraints::T
+    args::Tuple
+    fn::Function
+    ret::Any
     GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
 Generate(tr::Trace, constraints) = TraceCtx(metadata = GenerateMeta(tr, constraints))
@@ -23,6 +29,9 @@ Generate(tr::Trace, constraints) = TraceCtx(metadata = GenerateMeta(tr, constrai
 mutable struct ProposalMeta <: Meta
     tr::Trace
     stack::Vector{Address}
+    args::Tuple
+    fn::Function
+    ret::Any
     ProposalMeta(tr::Trace) = new(tr, Address[])
 end
 Propose(tr::Trace) = TraceCtx(metadata = ProposalMeta(tr))
@@ -31,6 +40,9 @@ mutable struct UpdateMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
     constraints::T
+    args::Tuple
+    fn::Function
+    ret::Any
     UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
 Update(tr::Trace, constraints) where T = TraceCtx(metadata = UpdateMeta(tr, constraints))
@@ -39,6 +51,9 @@ mutable struct RegenerateMeta <: Meta
     tr::Trace
     stack::Vector{Address}
     selection::Vector{Address}
+    args::Tuple
+    fn::Function
+    ret::Any
     RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], sel)
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = TraceCtx(metadata = RegenerateMeta(tr, sel))
@@ -243,13 +258,13 @@ end
                                   args) where T <: Address
     push!(ctx.metadata, addr)
     !isempty(args) && begin
-        res = recurse(ctx, call, args...)
+        ret = recurse(ctx, call, args...)
         pop!(ctx.metadata)
-        return res
+        return ret
     end
-    res = recurse(ctx, call)
+    ret = recurse(ctx, call)
     pop!(ctx.metadata)
-    return res
+    return ret
 end
 
 @inline function Cassette.fallback(ctx::TraceCtx,

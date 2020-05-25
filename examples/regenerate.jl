@@ -12,7 +12,7 @@ end
 ctx, tr, score = trace(bar, (5.0, ))
 display(tr)
 regen_ctx = Regenerate(tr, Address[:bar])
-ctx, tr, score = trace(regen_ctx, tr, (6.0,))
+ctx, tr, score = trace(regen_ctx, bar, (6.0, ))
 display(tr)
 
 end # module
