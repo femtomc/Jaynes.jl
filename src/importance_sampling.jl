@@ -48,7 +48,7 @@ function importance_sampling(model::Function,
         rets[i] = ret
         lws[i] = ctx.metadata.tr.score
         trs[i] = ctx.metadata.tr
-        ctx.metadata.tr = Trace()
+        reset_keep_constraints!(ctx.metadata)
     end
     ctx.metadata.fn = model
     ctx.metadata.args = args
