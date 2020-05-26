@@ -13,7 +13,8 @@ mutable struct UnconstrainedGenerateMeta <: Meta
     ret::Any
     UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[])
 end
-Generate(tr::Trace) = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(tr)))
+Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
+Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
 
 mutable struct GenerateMeta{T} <: Meta
     tr::Trace
@@ -24,7 +25,8 @@ mutable struct GenerateMeta{T} <: Meta
     ret::Any
     GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
-Generate(tr::Trace, constraints) = disablehooks(TraceCtx(pass = ignore_pass, metadata = GenerateMeta(tr, constraints)))
+Generate(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
+Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
 
 mutable struct ProposalMeta <: Meta
     tr::Trace
@@ -34,7 +36,8 @@ mutable struct ProposalMeta <: Meta
     ret::Any
     ProposalMeta(tr::Trace) = new(tr, Address[])
 end
-Propose(tr::Trace) = disablehooks(TraceCtx(pass = ignore_pass, metadata = ProposalMeta(tr)))
+Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
+Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
 
 mutable struct UpdateMeta{T} <: Meta
     tr::Trace
@@ -45,7 +48,8 @@ mutable struct UpdateMeta{T} <: Meta
     ret::Any
     UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
 end
-Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = ignore_pass, metadata = UpdateMeta(tr, constraints)))
+Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
+Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
 
 mutable struct RegenerateMeta <: Meta
     tr::Trace
