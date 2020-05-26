@@ -3,15 +3,17 @@ Cassette.@context TraceCtx
 # ------------------- META ----------------- #
 
 # Structured metadata. This acts as dispatch on overdub - increases the efficiency of the system and forms the core set of interfaces for inference algorithms to use.
+# For each inference interface, there are typically only a few pieces of Meta - this pieces tend to keep constant allocations out of loops.
 abstract type Meta end
 
 mutable struct UnconstrainedGenerateMeta <: Meta
     tr::Trace
     stack::Vector{Address}
+    visited::Vector{Address}
     args::Tuple
     fn::Function
     ret::Any
-    UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[])
+    UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[], Address[])
 end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
@@ -19,11 +21,12 @@ Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = Uncons
 mutable struct GenerateMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
+    visited::Vector{Address}
     constraints::T
     args::Tuple
     fn::Function
     ret::Any
-    GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
+    GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], Address[], constraints)
 end
 Generate(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
 Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
@@ -31,10 +34,11 @@ Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, meta
 mutable struct ProposalMeta <: Meta
     tr::Trace
     stack::Vector{Address}
+    visited::Vector{Address}
     args::Tuple
     fn::Function
     ret::Any
-    ProposalMeta(tr::Trace) = new(tr, Address[])
+    ProposalMeta(tr::Trace) = new(tr, Address[], Address[])
 end
 Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
@@ -96,12 +100,13 @@ function Cassette.overdub(ctx::TraceCtx{M},
     end
 
     # Check for support errors.
-    haskey(ctx.metadata.tr.chm, addr) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
+    addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
 
     d = dist(args...)
     sample = rand(d)
     score = logpdf(d, sample)
     ctx.metadata.tr.chm[addr] = Choice(sample, score)
+    push!(ctx.metadata.visited, addr)
     return sample
 end
 
@@ -120,7 +125,7 @@ end
     end
 
     # Check for support errors.
-    haskey(ctx.metadata.tr.chm, addr) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
+    addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
 
     d = dist(args...)
 
@@ -130,13 +135,15 @@ end
         score = logpdf(d, sample)
         ctx.metadata.tr.chm[addr] = Choice(sample, score)
         ctx.metadata.tr.score += score
+        push!(ctx.metadata.visited, addr)
         return sample
 
-        # Unconstrained.
+    # Unconstrained.
     else
         sample = rand(d)
         score = logpdf(d, sample)
         ctx.metadata.tr.chm[addr] = Choice(sample, score)
+        push!(ctx.metadata.visited, addr)
         return sample
     end
 end
@@ -156,13 +163,14 @@ end
     end
 
     # Check for support errors.
-    haskey(ctx.metadata.tr.chm, addr) && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
+    addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
 
     d = dist(args...)
     sample = rand(d)
     score = logpdf(d, sample)
     ctx.metadata.tr.chm[addr] = Choice(sample, score)
     ctx.metadata.tr.score += score
+    push!(ctx.metadata.visited, addr)
     return sample
 
 end
