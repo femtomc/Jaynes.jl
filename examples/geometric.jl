@@ -5,8 +5,9 @@ using .Walkman
 using Distributions
 
 geo(p::Float64) = rand(:flip, Bernoulli, (p, )) == 1 ? 0 : 1 + rand(:geo, geo, p)
-
-ctx, tr, weight = trace(geo, (0.3, ))
+fn = () -> geo(0.4)
+crazy = () -> (() -> fn())()
+ctx, tr, weight = trace(crazy)
 display(tr)
 
 end # module
