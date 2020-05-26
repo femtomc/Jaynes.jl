@@ -83,17 +83,12 @@ end
 # Merge observations and a choice map.
 function merge(obs::Dict{Address, K},
                chm::Dict{Address, Choice}) where K
-    obs_ks = collect(keys(obs))
-    chm_ks = collect(keys(chm))
-    out = Dict{Address, K}()
-    for k in chm_ks
-        k in obs_ks && error("SupportError: proposal has address on observed value.")
-        out[k] = chm[k].val
+    cons = copy(obs)
+    for (k, v) in chm
+        haskey(cons, k) && error("SupportError: proposal has address on observed value.")
+        cons[k] = v.val
     end
-    for k in obs_ks
-        out[k] = obs[k]
-    end
-    return out
+    return cons
 end
 
 # Make obs.

@@ -4,6 +4,7 @@ include("../src/Walkman.jl")
 using .Walkman
 using Distributions
 using Profile
+using PProf
 
 transition(z::Float64, addr) = rand(addr, Normal, (0.0, 1.0))
 observation(z::Float64, addr) = rand(addr, Normal, (0.0, 1.0))
@@ -31,6 +32,6 @@ end
 
 sim()
 Profile.clear_malloc_data()
-@profile sim()
+@pprof sim()
 
 end # module
