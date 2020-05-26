@@ -1,4 +1,4 @@
-module Regen
+module TestRegenerate
 
 include("../src/Walkman.jl")
 using .Walkman

@@ -42,11 +42,12 @@ Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = Proposa
 mutable struct UpdateMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
+    visited::Vector{Address}
     constraints::T
     args::Tuple
     fn::Function
     ret::Any
-    UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], constraints)
+    UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], Address[], constraints)
 end
 Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
 Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
@@ -54,11 +55,12 @@ Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass
 mutable struct RegenerateMeta <: Meta
     tr::Trace
     stack::Vector{Address}
+    visited::Vector{Address}
     selection::Vector{Address}
     args::Tuple
     fn::Function
     ret::Any
-    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], sel)
+    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], Address[], sel)
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = ignore_pass, metadata = RegenerateMeta(tr, sel)))
 
@@ -198,11 +200,13 @@ end
     end
 
     score = logpdf(d, ret)
-
     in_prev_chm && !in_sel && begin
         ctx.metadata.tr.score += score - prev_score
     end
     ctx.metadata.tr.chm[addr] = Choice(ret, score)
+
+    # Visited
+    push!(ctx.metadata.visited, addr)
     ret
 end
 
@@ -250,6 +254,9 @@ end
         ctx.metadata.tr.score += score
     end
     ctx.metadata.tr.chm[addr] = Choice(ret, score)
+
+    # Visited.
+    push!(ctx.metadata.visited, addr)
     return ret
 end
 

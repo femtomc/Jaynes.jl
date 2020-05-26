@@ -1,5 +1,4 @@
-# These parallel the combinators of Gen. 
-# These effects are given a special semantics inside the TraceCtx in overdub.
+# These parallel the combinators of Gen. These effects are given a special semantics inside the TraceCtx in overdub.
 function Chorus(call::Function, args)
     call(args...)
 end
@@ -8,7 +7,7 @@ function Wavefolder(call::Function, args)
     call(args...)
 end
 
-# TODO: rewrite these.
+# TODO: rewrite these. They both recurse, but they should really be efficient primitives.
 function Cassette.overdub(ctx::TraceCtx,
                           call::typeof(rand),
                           addr::T,

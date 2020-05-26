@@ -75,7 +75,8 @@ function filter_step!(ctx::TraceCtx{M},
     return ctx, trs, lws, rets
 end
 
-function resample!(trs::Vector{Trace}, lws::Vector{Float64})
+function resample!(trs::Vector{Trace}, 
+                   lws::Vector{Float64})
     num_p = length(trs)
     ltw, lnw = nw(lws)
     weights = exp.(lnw)

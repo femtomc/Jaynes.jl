@@ -1,4 +1,4 @@
-# Generate
+# Generate.
 function trace(fn::Function)
     ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
     ret = Cassette.overdub(ctx, fn)
@@ -58,7 +58,7 @@ function trace(fn::Function,
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
-# Regenerate
+# Regenerate.
 function trace(ctx::TraceCtx{M}, 
                fn::Function, 
                args::Tuple) where M <: RegenerateMeta
@@ -66,10 +66,45 @@ function trace(ctx::TraceCtx{M},
     ctx.metadata.fn = fn
     ctx.metadata.args = args
     ctx.metadata.ret = ret
+   
+    # Discard
+    discard = Dict{Address, Choice}()
+    discard_score = 0.0
+    for (k, v) in ctx.metadata.tr.chm
+        !(k in ctx.metadata.visited) && begin
+            discard_score += ctx.metadata.tr.chm[k].score
+            discard[k] = v
+            delete!(ctx.metadata.tr.chm, k)
+        end
+    end
+    
+    ctx.metadata.tr.score -= discard_score
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
-# Update
+function trace(ctx::TraceCtx{M}, 
+               fn::Function) where M <: RegenerateMeta
+    ret = Cassette.overdub(ctx, fn)
+    ctx.metadata.fn = fn
+    ctx.metadata.args = ()
+    ctx.metadata.ret = ret
+   
+    # Discard
+    discard = Dict{Address, Choice}()
+    discard_score = 0.0
+    for (k, v) in ctx.metadata.tr.chm
+        !(k in ctx.metadata.visited) && begin
+            discard_score += ctx.metadata.tr.chm[k].score
+            discard[k] = v
+            delete!(ctx.metadata.tr.chm, k)
+        end
+    end
+    
+    ctx.metadata.tr.score -= discard_score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+end
+
+# Update.
 function trace(ctx::TraceCtx{M},
                fn::Function,
                args::Tuple) where M <: UpdateMeta
@@ -80,5 +115,43 @@ function trace(ctx::TraceCtx{M},
     !isempty(ctx.metadata.constraints) && begin
         error("UpdateError: tracing did not visit all addresses in constraints.")
     end
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+
+    # Discard.
+    discard = typeof(ctx.metadata.tr.chm)()
+    discard_score = 0.0
+    for (k, v) in ctx.metadata.tr.chm
+        !(k in ctx.metadata.visited) && begin
+            discard_score += ctx.metadata.tr.chm[k].score
+            discard[k] = v
+            delete!(ctx.metadata.tr.chm, k)
+        end
+    end
+
+    ctx.metadata.tr.score -= discard_score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score, discard
+end
+
+function trace(ctx::TraceCtx{M},
+               fn::Function) where M <: UpdateMeta
+    ret = Cassette.overdub(ctx, fn)
+    ctx.metadata.fn = fn
+    ctx.metadata.args = ()
+    ctx.metadata.ret = ret
+    !isempty(ctx.metadata.constraints) && begin
+        error("UpdateError: tracing did not visit all addresses in constraints.")
+    end
+
+    # Discard. Note - this is clever AF, and I was too stupid to see why this makes sense. Shoutout to Gen + A Lew.
+    discard = Dict{Address, Choice}()
+    discard_score = 0.0
+    for (k, v) in ctx.metadata.tr.chm
+        !(k in ctx.metadata.visited) && begin
+            discard_score += ctx.metadata.tr.chm[k].score
+            discard[k] = v
+            delete!(ctx.metadata.tr.chm, k)
+        end
+    end
+    
+    ctx.metadata.tr.score -= discard_score
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score, discard
 end
