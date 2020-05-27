@@ -81,6 +81,7 @@ end
 
 function reset_keep_constraints!(ctx::TraceCtx{M}) where M <: Meta
     ctx.metadata.tr = Trace()
+    ctx.metadata.visited = Address[]
 end
 
 # --------------- OVERDUB -------------------- #
