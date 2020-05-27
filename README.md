@@ -14,7 +14,7 @@ Currently supported inference algorithms for this DSL:
 - [ ] Metropolis-Hastings
 - [X] Particle filtering
 
-_Walkman_ also aims to support a restricted _graph-based_ DSL which allows the user to utilize graphical model inference algorithms. This is a WIP, and requires a bit more research at the IR level.
+The dynamic DSL is not the main feature of this system. Gen's version is better optimized, easier to use, and has a better assortment of inference algorithms. _Walkman_ aims to support a restricted _graph-based_ DSL which allows the user to utilize graphical model inference algorithms. Ideally, _Walkman_ should be able to identify when a program is amenable to this static representation. This is a WIP, and requires a bit more research at the IR level. The goal for this DSL is to seamlessly combine with the dynamic, sample-based DSL in a productive way.
 
 ## Other notes
 
