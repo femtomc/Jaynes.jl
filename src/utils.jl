@@ -72,6 +72,7 @@ function Base.display(tr::Trace;
                 end
                 println("                  ...\n")
                 println("  __________________________________\n")
+                return
             else
                 map(vals) do (k, v)
                     println(" $(k)")

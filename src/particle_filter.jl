@@ -1,6 +1,6 @@
+# Currently assumes that the args to the next proposal are stored in the ret field of the context.
 function filter_step!(ctx::TraceCtx{M},
                       trs::Vector{Trace}, 
-                      args::Tuple,
                       observations::Dict{Address, T}) where {T, M <: UnconstrainedGenerateMeta}
     num_p = length(trs)
     lws = Vector{Float64}(undef, num_p)
@@ -11,7 +11,7 @@ function filter_step!(ctx::TraceCtx{M},
         # Run update.
         update_ctx.metadata.tr =  trs[i]
         if !isempty(args)
-            ret = Cassette.overdub(update_ctx, ctx.func, args...)
+            ret = Cassette.overdub(update_ctx, ctx.func, ctx.metadata.ret[i])
         else
 
             ret = Cassette.overdub(update_ctx, ctx.func)
@@ -29,9 +29,9 @@ function filter_step!(ctx::TraceCtx{M},
     return update_ctx, trs, lws, rets
 end
 
+# Currently assumes that the args to the next proposal are stored in the ret field of the context.
 function filter_step!(ctx::TraceCtx{M},
                       trs::Vector{Trace}, 
-                      args::Tuple,
                       proposal::Function,
                       proposal_args::Tuple,
                       observations::Dict{Address, T}) where {T, M <: UnconstrainedGenerateMeta}
@@ -46,7 +46,7 @@ function filter_step!(ctx::TraceCtx{M},
         if isempty(proposal_args)
             Cassette.overdub(prop_ctx, proposal)
         else
-            Cassette.overdub(prop_ctx, proposal, proposal_args...)
+            Cassette.overdub(prop_ctx, proposal, (ctx.metadata.ret[i], proposal_args...))
         end
 
         # Merge proposals and observations.
@@ -88,5 +88,23 @@ function resample!(trs::Vector{Trace},
     lws = map(lws) do k
         0.0
     end
+    return trs, lws, lmle
+end
+
+function resample!(trs::Vector{Trace}, 
+                   lws::Vector{Float64},
+                   num::Int)
+    num_p = length(trs)
+    ltw, lnw = nw(lws)
+    weights = exp.(lnw)
+    selections = rand(Categorical(weights/sum(weights)), 1:num_p)
+    lmle += ltw - log(num_p)
+    trs = map(selections) do ind
+        trs[ind]
+    end
+    lws = map(lws) do k
+        0.0
+    end
+    trs = rand(trs, num)
     return trs, lws, lmle
 end
