@@ -60,7 +60,7 @@ function filter_step!(ctx::TraceCtx{M},
         if isempty(args)
             ret = Cassette.overdub(update_ctx, ctx.func)
         else
-            ret = Cassette.overdub(update_ctx, ctx.func args...)
+            ret = Cassette.overdub(update_ctx, ctx.func, ctx.metadata.ret[i])
         end
 
         # Store.
