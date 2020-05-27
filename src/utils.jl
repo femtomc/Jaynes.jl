@@ -17,7 +17,7 @@ end
 
 # Normalize log weights.
 function nw(lw::Vector{Float64})
-    lt = logsumexp(lw)
+    lt = lse(lw)
     lnw = lw .- lt
     return (lt, lnw)
 end
