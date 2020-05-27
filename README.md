@@ -12,7 +12,7 @@ Currently supported inference algorithms for this DSL:
 - [ ] Programmable MCMC
 - [ ] HMC
 - [ ] Metropolis-Hastings
-- [ ] Particle filtering
+- [X] Particle filtering
 
 _Walkman_ also aims to support a restricted _graph-based_ DSL which allows the user to utilize graphical model inference algorithms. This is a WIP, and requires a bit more research at the IR level.
 
