@@ -80,7 +80,7 @@ function resample!(trs::Vector{Trace},
     num_p = length(trs)
     ltw, lnw = nw(lws)
     weights = exp.(lnw)
-    selections = rand(Categorical(weights/sum(weights)), 1:num_p)
+    selections = rand(Categorical(weights/sum(weights)), num_p)
     lmle += ltw - log(num_p)
     trs = map(selections) do ind
         trs[ind]
@@ -97,7 +97,7 @@ function resample!(trs::Vector{Trace},
     num_p = length(trs)
     ltw, lnw = nw(lws)
     weights = exp.(lnw)
-    selections = rand(Categorical(weights/sum(weights)), 1:num_p)
+    selections = rand(Categorical(weights/sum(weights)), num_p)
     lmle += ltw - log(num_p)
     trs = map(selections) do ind
         trs[ind]
