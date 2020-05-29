@@ -1,7 +1,7 @@
 module Simple
 
-include("../src/Walkman.jl")
-using .Walkman
+include("../src/Jaynes.jl")
+using .Jaynes
 using Distributions
 
 function foo1()
@@ -16,12 +16,12 @@ function foo2()
 end
 
 obs = constraints([(:y, 1.0)])
-Walkman.importance_sampling(foo1, (), obs, 1)
-println("Walkman - proposal sampling from prior. Num_samples = 10000.")
-trs, lnw, lmle = Walkman.importance_sampling(foo1, (), obs, 10000)
+Jaynes.importance_sampling(foo1, (), obs, 1)
+println("Jaynes - proposal sampling from prior. Num_samples = 10000.")
+trs, lnw, lmle = Jaynes.importance_sampling(foo1, (), obs, 10000)
 display(trs[1])
-Walkman.importance_sampling(foo1, (), foo2, (), obs, 1)
-println("Walkman - proposal sampling from proposal. Num_samples = 10000.")
-trs, lnw, lmle = Walkman.importance_sampling(foo1, (), foo2, (), obs, 10000)
+Jaynes.importance_sampling(foo1, (), foo2, (), obs, 1)
+println("Jaynes - proposal sampling from proposal. Num_samples = 10000.")
+trs, lnw, lmle = Jaynes.importance_sampling(foo1, (), foo2, (), obs, 10000)
 display(trs[1])
 end # module

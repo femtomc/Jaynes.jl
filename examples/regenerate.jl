@@ -1,7 +1,7 @@
 module TestRegenerate
 
-include("../src/Walkman.jl")
-using .Walkman
+include("../src/Jaynes.jl")
+using .Jaynes
 using Distributions
 
 function bar(x)

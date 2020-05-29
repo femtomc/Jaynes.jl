@@ -1,7 +1,7 @@
 module Profiling
 
-include("../src/Walkman.jl")
-using .Walkman
+include("../src/Jaynes.jl")
+using .Jaynes
 using Distributions
 using Profile
 using PProf
@@ -18,9 +18,9 @@ function foo2()
 end
 
 obs = constraints([(:y, 1.0)])
-Walkman.importance_sampling(foo1, (), foo2, (), obs, 1)
+Jaynes.importance_sampling(foo1, (), foo2, (), obs, 1)
 Profile.clear_malloc_data()
-trs, lnw, lmle = @profile Walkman.importance_sampling(foo1, (), foo2, (), obs, 30000)
+trs, lnw, lmle = @profile Jaynes.importance_sampling(foo1, (), foo2, (), obs, 30000)
 pprof()
 
 end # module

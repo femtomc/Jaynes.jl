@@ -1,7 +1,7 @@
 module TimeSeries
 
-include("../src/Walkman.jl")
-using .Walkman
+include("../src/Jaynes.jl")
+using .Jaynes
 using Distributions
 using Profile
 using PProf

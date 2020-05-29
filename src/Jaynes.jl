@@ -1,4 +1,4 @@
-module Walkman
+module Jaynes
 
 using Cassette
 using Cassette: recurse, similarcontext, disablehooks, Reflection
