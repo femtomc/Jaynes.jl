@@ -15,16 +15,18 @@ function baz(x::Float64)
     for i in 1:10
         out[i] = rand(:q => i, Normal, (y, 5.0))
     end
-    return out
+    z = rand(:z, Normal, (sum(out), 1.0))
+    return z
 end
 
 function bar(ins::Vector{Float64})
     params = model(ins)
-    y = rand(:y, Normal, params)
+    y = rand(:y, Normal, (0.0, 1.0))
     return y
 end
 
-ctx, tr, score = trace(bar, [0.6, 1.0, 3.0, 5.0, 0.3])
+ctx = Generate(Trace())
+ctx, tr, weight = trace(ctx, bar, (ones(10), ))
 display(tr)
 
 end # module

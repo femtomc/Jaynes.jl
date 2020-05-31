@@ -281,7 +281,7 @@ end
                                   call::Function,
                                   args) where T <: Address
     push!(ctx.metadata, addr)
-    ret = recurse(ctx, call, args...)
+    ret = recurse(ctx, call, args)
     pop!(ctx.metadata)
     return ret
 end
@@ -289,5 +289,5 @@ end
 @inline function Cassette.fallback(ctx::TraceCtx,
                                    c::Function,
                                    args)
-    return c(args...)
+    return c(args)
 end
