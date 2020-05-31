@@ -17,6 +17,7 @@ Currently supported inference algorithms for this DSL:
 - [ ] HMC
 - [ ] Metropolis-Hastings
 - [X] Particle filtering
+- [X] Inference compilation (training pipeline complete, now interfaces to use trained network need to be built)
 
 The dynamic DSL is not the main feature of this system. Gen's version is better optimized, easier to use, and has a better assortment of inference algorithms. _Jaynes_ aims to support a restricted _graph-based_ DSL which allows the user to utilize graphical model inference algorithms. Ideally, _Jaynes_ should be able to identify when a program is amenable to this static representation. This is a WIP, and requires a bit more research at the IR level. The goal for this DSL is to seamlessly combine with the dynamic, sample-based DSL in a productive way.
 
