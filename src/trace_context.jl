@@ -90,8 +90,7 @@ function Cassette.overdub(ctx::TraceCtx{M},
                           call::typeof(rand), 
                           addr::T, 
                           dist::Type,
-                          args) where {N, 
-                                       M <: UnconstrainedGenerateMeta, 
+                          args) where {M <: UnconstrainedGenerateMeta, 
                                        T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
@@ -115,8 +114,7 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {N, 
-                                               M <: GenerateMeta, 
+                                  args) where {M <: GenerateMeta, 
                                                T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
@@ -153,8 +151,7 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {N, 
-                                               M <: ProposalMeta, 
+                                  args) where {M <: ProposalMeta, 
                                                T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
@@ -180,8 +177,7 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {N, 
-                                               M <: RegenerateMeta, 
+                                  args) where {M <: RegenerateMeta, 
                                                T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
@@ -223,8 +219,7 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {N, 
-                                               M <: UpdateMeta, 
+                                  args) where {M <: UpdateMeta, 
                                                T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
@@ -293,6 +288,6 @@ end
 
 @inline function Cassette.fallback(ctx::TraceCtx,
                                    c::Function,
-                                   args...)
+                                   args)
     return c(args...)
 end

@@ -4,6 +4,7 @@ using Cassette
 using Cassette: recurse, similarcontext, disablehooks, Reflection
 using MacroTools
 using MacroTools: postwalk
+using IRTools
 using Distributions
 using FunctionalCollections: PersistentVector
 using ExportAll
