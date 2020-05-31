@@ -25,8 +25,8 @@ function bar(ins::Vector{Float64})
     return y
 end
 
-ctx = Generate(Trace())
-ctx, tr, weight = trace(ctx, bar, (ones(10), ))
-display(tr)
+obs = constraints([(:z, 5.0)])
+ctx, trs, lnw, lmle = Jaynes.importance_sampling(baz, (5.0, ), bar, (ones(10), ), obs, 50000)
+println(lmle)
 
 end # module
