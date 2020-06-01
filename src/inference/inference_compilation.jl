@@ -15,6 +15,7 @@ mutable struct InferenceCompiler
     end
 end
 
+# Dynamic generation of encoding and decoding heads.
 function make_observation_head!(ic::InferenceCompiler, target::Address, tr::Trace)
     !haskey(tr.chm, target) && return
     obs = [tr.chm[target].val...]
@@ -55,12 +56,21 @@ mutable struct InferenceCompilationMeta{T} <: Meta
     opt::T
     compiler::InferenceCompiler
     loss::Float64
-    InferenceCompilationMeta(tr::Trace, target::Address; latent_dim = 5) = new{ADAM}(tr, Address[], target, ADAM(), InferenceCompiler(latent_dim), 0.0)
+    func::Function
+    args::Tuple
+    InferenceCompilationMeta(tr::Trace, target::Address; latent_dim = 64) = new{ADAM}(tr, Address[], target, ADAM(), InferenceCompiler(latent_dim), 0.0)
 end
 
-# Utility bundle.
-function logpdf_loss(dist, head, rnn, sample)
+# Inference compilation loss.
+function logpdf_loss(dist::Type, head::Chain, rnn::Flux.Recur, sample)
     proposal_args = exp.(head(rnn.state))
+    return -logpdf(dist(proposal_args...), sample)
+end
+
+function logpdf_loss(dist::Type, head::Chain, rnn::Flux.Recur, obs_head::Chain, val, sample)
+    encoding = obs_head(val)
+    proposal_args = exp.(head(rnn(obs_head(val))))
+    #println(proposal_args, "\n")
     return -logpdf(dist(proposal_args...), sample)
 end
 
@@ -78,7 +88,7 @@ end
     end
 
     # If in target, return immediately (required by inference compilation objective).
-    addr == ctx.metadata.target && return ctx.metadata.tr.chm[addr].val
+    #addr == ctx.metadata.target && return ctx.metadata.tr.chm[addr].val
 
     # Check if head is defined - otherwise, generate a new one.
     !haskey(ctx.metadata.compiler.decoder_heads, addr) && begin
@@ -88,16 +98,24 @@ end
     # Get args from inference compiler.
     decoder_head = ctx.metadata.compiler.decoder_heads[addr]
     spine = ctx.metadata.compiler.spine
-    params = Flux.params(decoder_head, spine)
+    observation_head = ctx.metadata.compiler.observation_head
+    params = Flux.params(decoder_head, observation_head, spine)
 
     # Get choice from trace choice map.
     choice = ctx.metadata.tr.chm[addr]
     sample = choice.val
     score = choice.score
+    #println("Address: $(addr)\nSample: $(sample)")
 
     # Train.
-    ctx.metadata.loss += -logpdf_loss(dist, decoder_head, spine, sample) - score
-    Flux.train!(s -> logpdf_loss(dist, decoder_head, spine, s) - score, params, [sample], ctx.metadata.opt)
+    if haskey(ctx.metadata.tr.chm, ctx.metadata.target)
+        val = ctx.metadata.tr.chm[ctx.metadata.target].val
+        loss = s -> logpdf_loss(dist, decoder_head, spine, observation_head, [val...], s)
+        Flux.train!(loss, params, [sample], ctx.metadata.opt; cb = () -> ctx.metadata.loss += loss(sample))
+    else
+        loss = s -> logpdf_loss(dist, decoder_head, spine, s)
+        Flux.train!(s -> logpdf_loss(dist, decoder_head, spine, s), params, [sample], ctx.metadata.opt; cb = () -> ctx.metadata.loss += loss(sample))
+    end
 
     # Check if encoder head is available.
     !haskey(ctx.metadata.compiler.encoder_heads, addr) && begin
@@ -113,7 +131,7 @@ end
 function inference_compilation(model::Function, 
                                args::Tuple,
                                target::Address,
-                               batch_size::Int = 1024,
+                               batch_size::Int = 512,
                                epochs::Int = 100) where T
     trs = Vector{Trace}(undef, batch_size)
     model_ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
@@ -139,8 +157,8 @@ function inference_compilation(model::Function,
             !isdefined(inf_comp_ctx.metadata.compiler, :observation_head) && begin
                 make_observation_head!(inf_comp_ctx.metadata.compiler, target, tr)
             end
-            
-            # Optimize block.
+
+            # Optimize.
             inf_comp_ctx.metadata.tr = tr
             if isempty(args)
                 ret = Cassette.overdub(inf_comp_ctx, model)
@@ -152,5 +170,7 @@ function inference_compilation(model::Function,
         println("Epoch loss: $(inf_comp_ctx.metadata.loss/batch_size)")
         inf_comp_ctx.metadata.loss = 0.0
     end
+    inf_comp_ctx.metadata.func = model
+    inf_comp_ctx.metadata.args = args
     return inf_comp_ctx
 end
