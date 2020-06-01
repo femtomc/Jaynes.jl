@@ -10,6 +10,6 @@ function foo1()
     return y
 end
 
-ctx = inference_compilation(foo1, (), Dict{Address, Float64}())
+ctx = inference_compilation(foo1, (), :y)
 
 end # module

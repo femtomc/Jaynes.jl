@@ -1,10 +1,11 @@
 # --------------- INFERENCE COMPILER --------------- #
 
-struct InferenceCompiler
+mutable struct InferenceCompiler
     spine::Flux.Recur
     decoder_heads::Dict{Address, Chain}
     encoder_heads::Dict{Address, Chain}
     latent_dim::Int
+    observation_head::Chain
     function InferenceCompiler(latent_dim::Int)
         rnn = RNN(latent_dim, latent_dim)
         decoder_heads = Dict{Address, Dense}()
@@ -14,25 +15,33 @@ struct InferenceCompiler
     end
 end
 
-function generate_decoder_head(ic::InferenceCompiler, addr::Address, args::Array{Float64, N}) where {T, N}
+function make_observation_head!(ic::InferenceCompiler, target::Address, tr::Trace)
+    !haskey(tr.chm, target) && return
+    obs = [tr.chm[target].val...]
+    shape = length(obs)
+    head = Chain(Dense(shape, 128), Dense(128, ic.latent_dim))
+    ic.observation_head = head
+end
+
+function generate_decoder_head!(ic::InferenceCompiler, addr::Address, args::Array{Float64, N}) where {T, N}
     shape = foldr((x, y) -> x * y, size(args))
     head = Chain(Dense(ic.latent_dim, 128), Dense(128, shape))
     ic.decoder_heads[addr] = head
 end
 
-function generate_decoder_head(ic::InferenceCompiler, addr::Address, args::Tuple{Vararg{Float64}})
+function generate_decoder_head!(ic::InferenceCompiler, addr::Address, args::Tuple{Vararg{Float64}})
     shape = length(args)
     head = Chain(Dense(ic.latent_dim, 128), Dense(128, shape))
     ic.decoder_heads[addr] = head
 end
 
-function generate_encoder_head(ic::InferenceCompiler, addr::Address, args::Array{Float64, N}) where {T, N}
+function generate_encoder_head!(ic::InferenceCompiler, addr::Address, args::Array{Float64, N}) where {T, N}
     shape = foldr((x, y) -> x * y, size(args))
     head = Chain(Dense(shape, 128), Dense(128, ic.latent_dim))
     ic.encoder_heads[addr] = head
 end
 
-function generate_encoder_head(ic::InferenceCompiler, addr::Address, args::Tuple{Vararg{Float64}})
+function generate_encoder_head!(ic::InferenceCompiler, addr::Address, args::Tuple{Vararg{Float64}})
     shape = length(args)
     head = Chain(Dense(shape, 128), Dense(128, ic.latent_dim))
     ic.encoder_heads[addr] = head
@@ -42,10 +51,11 @@ end
 mutable struct InferenceCompilationMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
+    target::Address
     opt::T
     compiler::InferenceCompiler
     loss::Float64
-    InferenceCompilationMeta(tr::Trace; latent_dim = 5) = new{ADAM}(tr, Address[], ADAM(), InferenceCompiler(latent_dim), 0.0)
+    InferenceCompilationMeta(tr::Trace, target::Address; latent_dim = 5) = new{ADAM}(tr, Address[], target, ADAM(), InferenceCompiler(latent_dim), 0.0)
 end
 
 # Utility bundle.
@@ -67,9 +77,12 @@ end
         pop!(ctx.metadata.stack)
     end
 
+    # If in target, return immediately (required by inference compilation objective).
+    addr == ctx.metadata.target && return ctx.metadata.tr.chm[addr].val
+
     # Check if head is defined - otherwise, generate a new one.
     !haskey(ctx.metadata.compiler.decoder_heads, addr) && begin
-        generate_decoder_head(ctx.metadata.compiler, addr, args)
+        generate_decoder_head!(ctx.metadata.compiler, addr, args)
     end
 
     # Get args from inference compiler.
@@ -88,7 +101,7 @@ end
 
     # Check if encoder head is available.
     !haskey(ctx.metadata.compiler.encoder_heads, addr) && begin
-        generate_encoder_head(ctx.metadata.compiler, addr, [sample...])
+        generate_encoder_head!(ctx.metadata.compiler, addr, [sample...])
     end
 
     # Transition.
@@ -99,13 +112,14 @@ end
 
 function inference_compilation(model::Function, 
                                args::Tuple,
-                               observations::Dict{Address, T};
-                               batch_size::Int = 256,
-                               epochs::Int = 1000) where T
+                               target::Address,
+                               batch_size::Int = 1024,
+                               epochs::Int = 100) where T
     trs = Vector{Trace}(undef, batch_size)
-    model_ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), observations)))
-    inf_comp_ctx = disablehooks(TraceCtx(metadata = InferenceCompilationMeta(Trace())))
+    model_ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+    inf_comp_ctx = disablehooks(TraceCtx(metadata = InferenceCompilationMeta(Trace(), target)))
     for i in 1:epochs
+        # Collect a batch.
         for j in 1:batch_size
             # Generate.
             if isempty(args)
@@ -118,9 +132,15 @@ function inference_compilation(model::Function,
             trs[j] = model_ctx.metadata.tr
             reset_keep_constraints!(model_ctx)
         end
-        
+
         # Ascent!
         map(trs) do tr
+            # Initialize observation head of recurrent model (if uninitialized).
+            !isdefined(inf_comp_ctx.metadata.compiler, :observation_head) && begin
+                make_observation_head!(inf_comp_ctx.metadata.compiler, target, tr)
+            end
+            
+            # Optimize block.
             inf_comp_ctx.metadata.tr = tr
             if isempty(args)
                 ret = Cassette.overdub(inf_comp_ctx, model)
@@ -129,7 +149,7 @@ function inference_compilation(model::Function,
             end
             inf_comp_ctx.metadata.stack = Vector{Address}[]
         end
-        println("Batch loss: $(inf_comp_ctx.metadata.loss/batch_size)")
+        println("Epoch loss: $(inf_comp_ctx.metadata.loss/batch_size)")
         inf_comp_ctx.metadata.loss = 0.0
     end
     return inf_comp_ctx
