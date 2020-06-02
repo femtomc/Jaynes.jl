@@ -1,5 +1,12 @@
 # --------------- INFERENCE COMPILER --------------- #
 
+Cassette.@context CompileCtx
+
+function reset_keep_constraints!(ctx::CompileCtx{M}) where M <: Meta
+    ctx.metadata.tr = Trace()
+    ctx.metadata.visited = Address[]
+end
+
 mutable struct InferenceCompiler
     spine::Flux.Recur
     decoder_heads::Dict{Address, Chain}
@@ -52,13 +59,16 @@ end
 mutable struct InferenceCompilationMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
+    visited::Vector{Address}
+    constraints::Dict{Address, Any}
     target::Address
     opt::T
     compiler::InferenceCompiler
     loss::Float64
     func::Function
     args::Tuple
-    InferenceCompilationMeta(tr::Trace, target::Address; latent_dim = 64) = new{ADAM}(tr, Address[], target, ADAM(), InferenceCompiler(latent_dim), 0.0)
+    ret::Any
+    InferenceCompilationMeta(tr::Trace, target::Address; latent_dim = 64) = new{ADAM}(tr, Address[], Address[], Dict{Address, Any}(), target, ADAM(), InferenceCompiler(latent_dim), 0.0)
 end
 
 # Inference compilation loss.
@@ -70,11 +80,10 @@ end
 function logpdf_loss(dist::Type, head::Chain, rnn::Flux.Recur, obs_head::Chain, val, sample)
     encoding = obs_head(val)
     proposal_args = exp.(head(rnn(obs_head(val))))
-    #println(proposal_args, "\n")
     return -logpdf(dist(proposal_args...), sample)
 end
 
-@inline function Cassette.overdub(ctx::TraceCtx{M}, 
+@inline function Cassette.overdub(ctx::CompileCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
@@ -105,7 +114,6 @@ end
     choice = ctx.metadata.tr.chm[addr]
     sample = choice.val
     score = choice.score
-    #println("Address: $(addr)\nSample: $(sample)")
 
     # Train.
     if haskey(ctx.metadata.tr.chm, ctx.metadata.target)
@@ -130,12 +138,12 @@ end
 
 function inference_compilation(model::Function, 
                                args::Tuple,
-                               target::Address,
+                               target::Address;
                                batch_size::Int = 512,
                                epochs::Int = 100) where T
     trs = Vector{Trace}(undef, batch_size)
     model_ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
-    inf_comp_ctx = disablehooks(TraceCtx(metadata = InferenceCompilationMeta(Trace(), target)))
+    inf_comp_ctx = disablehooks(CompileCtx(metadata = InferenceCompilationMeta(Trace(), target)))
     for i in 1:epochs
         # Collect a batch.
         for j in 1:batch_size
@@ -170,7 +178,49 @@ function inference_compilation(model::Function,
         println("Epoch loss: $(inf_comp_ctx.metadata.loss/batch_size)")
         inf_comp_ctx.metadata.loss = 0.0
     end
-    inf_comp_ctx.metadata.func = model
-    inf_comp_ctx.metadata.args = args
-    return inf_comp_ctx
+    ctx = disablehooks(TraceCtx(metadata = inf_comp_ctx.metadata))
+    ctx.metadata.func = model
+    ctx.metadata.args = args
+    return ctx
+end
+
+@inline function Cassette.overdub(ctx::TraceCtx{M}, 
+                                  call::typeof(rand), 
+                                  addr::T, 
+                                  dist::Type,
+                                  args) where {M <: InferenceCompilationMeta, 
+                                               T <: Address}
+    # Check stack.
+    !isempty(ctx.metadata.stack) && begin
+        push!(ctx.metadata.stack, addr)
+        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        pop!(ctx.metadata.stack)
+    end
+
+    # Get heads.
+    encoding_head = ctx.metadata.compiler.encoder_heads[addr]
+    spine = ctx.metadata.compiler.spine
+    observation_head = ctx.metadata.compiler.observation_head
+    decoding_head = ctx.metadata.compiler.decoder_heads[addr]
+    encoding = observation_head([ctx.metadata.constraints[ctx.metadata.target]...])
+    trans = spine(encoding)
+    proposal_args = exp.(decoding_head(spine(encoding)))
+    println(proposal_args)
+    d = dist(proposal_args...)
+    println(d)
+
+    if addr == ctx.metadata.target
+        sample = ctx.metadata.constraints[addr]
+        push!(ctx.metadata.visited, addr)
+        spine(encoding_head([sample...]))
+        return sample
+    else
+        sample = rand(d)
+        score = Float64(logpdf(d, sample))
+        ctx.metadata.tr.chm[addr] = Choice(sample, score)
+        ctx.metadata.tr.score += score
+        push!(ctx.metadata.visited, addr)
+        spine(encoding_head([sample...]))
+        return sample
+    end
 end
