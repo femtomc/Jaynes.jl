@@ -7,6 +7,7 @@ function Wavefolder(call::Function, args)
     call(args...)
 end
 
+
 # TODO: rewrite these. They both recurse, but they should really be efficient primitives.
 function Cassette.overdub(ctx::TraceCtx,
                           call::typeof(rand),

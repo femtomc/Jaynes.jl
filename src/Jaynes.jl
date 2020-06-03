@@ -19,7 +19,7 @@ include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")
 include("inference/inference_compilation.jl")
-include("inference/inference_interfaces.jl")
+include("tracing.jl")
 include("core/effects.jl")
 include("core/ignore_pass.jl")
 

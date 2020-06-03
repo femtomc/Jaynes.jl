@@ -84,6 +84,21 @@ function reset_keep_constraints!(ctx::TraceCtx{M}) where M <: Meta
     ctx.metadata.visited = Address[]
 end
 
+# --------------- DEBUG --------------------- #
+
+function Cassette.prehook(ctx::TraceCtx,
+                          call::Function,
+                          args)
+    println("$call with $(typeof(args...))")
+end
+
+function Cassette.posthook(ctx::TraceCtx,
+                           out,
+                           call::Function,
+                           args)
+    println("Result: $(typeof(out)) for $call with $(typeof(args...))")
+end
+
 # --------------- OVERDUB -------------------- #
 
 function Cassette.overdub(ctx::TraceCtx{M}, 
@@ -137,7 +152,7 @@ end
         push!(ctx.metadata.visited, addr)
         return sample
 
-    # Unconstrained.
+        # Unconstrained.
     else
         sample = rand(d)
         score = logpdf(d, sample)
@@ -281,7 +296,7 @@ end
                                   call::Function,
                                   args) where T <: Address
     push!(ctx.metadata, addr)
-    ret = recurse(ctx, call, args)
+    ret = recurse(ctx, call, args...)
     pop!(ctx.metadata)
     return ret
 end
