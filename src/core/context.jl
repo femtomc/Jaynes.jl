@@ -84,21 +84,6 @@ function reset_keep_constraints!(ctx::TraceCtx{M}) where M <: Meta
     ctx.metadata.visited = Address[]
 end
 
-# --------------- DEBUG --------------------- #
-
-function Cassette.prehook(ctx::TraceCtx,
-                          call::Function,
-                          args)
-    println("$call with $(typeof(args...))")
-end
-
-function Cassette.posthook(ctx::TraceCtx,
-                           out,
-                           call::Function,
-                           args)
-    println("Result: $(typeof(out)) for $call with $(typeof(args...))")
-end
-
 # --------------- OVERDUB -------------------- #
 
 function Cassette.overdub(ctx::TraceCtx{M}, 
