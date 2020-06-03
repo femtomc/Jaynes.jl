@@ -28,8 +28,12 @@ function trace(fn::Function,
 end
 
 function trace(fn::Function, 
-               args::Tuple)
-    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+               args::Tuple; debug = false)
+    if debug
+        ctx = TraceCtx(metadata = UnconstrainedGenerateMeta(Trace()))
+    else
+        ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+    end
     ret = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.fn = fn
     ctx.metadata.args = args

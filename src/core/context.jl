@@ -137,7 +137,7 @@ end
         push!(ctx.metadata.visited, addr)
         return sample
 
-    # Unconstrained.
+        # Unconstrained.
     else
         sample = rand(d)
         score = logpdf(d, sample)
@@ -281,7 +281,7 @@ end
                                   call::Function,
                                   args) where T <: Address
     push!(ctx.metadata, addr)
-    ret = recurse(ctx, call, args)
+    ret = recurse(ctx, call, args...)
     pop!(ctx.metadata)
     return ret
 end
