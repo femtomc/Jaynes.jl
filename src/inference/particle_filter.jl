@@ -1,40 +1,45 @@
-# Currently assumes that the args to the next proposal are stored in the ret field of the context.
-function filter_step!(ctx::TraceCtx{M},
+function filter_step!(ctx::TraceCtx,
+                      new_args::Tuple,
                       trs::Vector{Trace}, 
-                      observations::Dict{Address, T}) where {T, M <: UnconstrainedGenerateMeta}
+                      observations::Dict{Address, T}) where T
+
     num_p = length(trs)
     lws = Vector{Float64}(undef, num_p)
     rets = Vector{Any}(undef, num_p)
     update_ctx = Update(Trace(), observations)
-
+    
     for i in 1:num_p
         # Run update.
         update_ctx.metadata.tr =  trs[i]
-        if !isempty(args)
-            ret = Cassette.overdub(update_ctx, ctx.func, ctx.metadata.ret[i])
+        if !isempty(new_args)
+            ret = Cassette.overdub(update_ctx, ctx.metadata.fn, new_args...)
         else
-
-            ret = Cassette.overdub(update_ctx, ctx.func)
+            ret = Cassette.overdub(update_ctx, ctx.metadata.fn)
         end
 
         # Store.
-        trs[i] = new_tr
-        lws[i] = new_score
-        rets[i] = update_ctx.metadata.ret
+        trs[i] = update_ctx.metadata.tr
+        lws[i] = update_ctx.metadata.tr.score
+        rets[i] = ret
+        update_ctx.metadata.constraints = observations
     end
 
     update_ctx.metadata.ret = rets
-    update.ctx.metadata.func = ctx.func
-    update_ctx.metadata.args = args
-    return update_ctx, trs, lws, rets
+    update_ctx.metadata.fn = ctx.metadata.fn
+    update_ctx.metadata.args = new_args
+    ltw = lse(lws)
+    lmle = ltw - log(num_p)
+    lnw = lws .- ltw
+    return update_ctx, trs, lnw, lmle
 end
 
-# Currently assumes that the args to the next proposal are stored in the ret field of the context.
-function filter_step!(ctx::TraceCtx{M},
+function filter_step!(ctx::TraceCtx,
+                      new_args::Tuple,
                       trs::Vector{Trace}, 
                       proposal::Function,
                       proposal_args::Tuple,
-                      observations::Dict{Address, T}) where {T, M <: UnconstrainedGenerateMeta}
+                      observations::Dict{Address, T}) where T
+
     num_p = length(trs)
     lws = Vector{Float64}(undef, num_p)
     rets = Vector{Any}(undef, num_p)
@@ -57,10 +62,10 @@ function filter_step!(ctx::TraceCtx{M},
         # Run update.
         update_ctx.metadata.tr =  trs[i]
         update_ctx.metadata.constraints = constraints
-        if isempty(args)
-            ret = Cassette.overdub(update_ctx, ctx.func)
+        if isempty(new_args)
+            ret = Cassette.overdub(update_ctx, ctx.metadata.fn)
         else
-            ret = Cassette.overdub(update_ctx, ctx.func, ctx.metadata.ret[i])
+            ret = Cassette.overdub(update_ctx, ctx.metadata.fn, new_args...)
         end
 
         # Store.
@@ -70,13 +75,17 @@ function filter_step!(ctx::TraceCtx{M},
     end
 
     update_ctx.metadata.ret = rets
-    update_ctx.metadata.func = ctx.func
-    update_ctx.metadata.args = args
-    return ctx, trs, lws, rets
+    update_ctx.metadata.fn = ctx.metadata.fn
+    update_ctx.metadata.args = new_args
+    ltw = lse(lws)
+    lmle = ltw - log(num_p)
+    lnw = lws .- ltw
+    return update_ctx, trs, lnw, lmle
 end
 
 function resample!(trs::Vector{Trace}, 
                    lws::Vector{Float64})
+
     num_p = length(trs)
     ltw, lnw = nw(lws)
     weights = exp.(lnw)
@@ -94,6 +103,7 @@ end
 function resample!(trs::Vector{Trace}, 
                    lws::Vector{Float64},
                    num::Int)
+
     num_p = length(trs)
     ltw, lnw = nw(lws)
     weights = exp.(lnw)
