@@ -6,7 +6,7 @@ function ignore_transform(::Type{<:TraceCtx}, r::Reflection)
             # If you already wrapped, don't wrap.
             k isa Expr && k.head == :call && begin
                 arg = k.args[1]
-                arg isa Expr && arg.head == :nooverdub && return
+                arg isa Expr && arg.head == :nooverdub && return k
             end
 
             # If you haven't wrapped, wrap.
@@ -14,7 +14,7 @@ function ignore_transform(::Type{<:TraceCtx}, r::Reflection)
                 call = k.args[1]
                 if !(call isa GlobalRef && call.name == :rand)
                     k.args[1] = Expr(:nooverdub, call)
-                    return
+                    return k
                 end
             end
             
