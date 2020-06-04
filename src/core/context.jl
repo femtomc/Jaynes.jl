@@ -47,11 +47,12 @@ mutable struct UpdateMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
+    constraints_visited::Vector{Address}
     constraints::T
     args::Tuple
     fn::Function
     ret::Any
-    UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], Address[], constraints)
+    UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], Address[], Address[], constraints)
 end
 Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
 Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
@@ -243,7 +244,7 @@ end
     d = dist(args...)
     if in_constraints
         ret = ctx.metadata.constraints[addr]
-        delete!(ctx.metadata.constraints, addr)
+        push!(ctx.metadata.constraints_visited, addr)
     elseif in_prev_chm
         ret = prev_ret
     else

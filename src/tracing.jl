@@ -116,9 +116,9 @@ function trace(ctx::TraceCtx{M},
     ctx.metadata.fn = fn
     ctx.metadata.args = args
     ctx.metadata.ret = ret
-    !isempty(ctx.metadata.constraints) && begin
-        error("UpdateError: tracing did not visit all addresses in constraints.")
-    end
+    !foldl((x, y) -> x && y, map(ctx.metadata.constraints_visited) do k
+               k in keys(ctx.metadata.constraints)
+           end) && error("UpdateError: tracing did not visit all addresses in constraints.")
 
     # Discard.
     discard = typeof(ctx.metadata.tr.chm)()
@@ -141,9 +141,9 @@ function trace(ctx::TraceCtx{M},
     ctx.metadata.fn = fn
     ctx.metadata.args = ()
     ctx.metadata.ret = ret
-    !isempty(ctx.metadata.constraints) && begin
-        error("UpdateError: tracing did not visit all addresses in constraints.")
-    end
+    !foldl((x, y) -> x && y, map(ctx.metadata.constraints_visited) do k
+               k in keys(ctx.metadata.constraints)
+           end) && error("UpdateError: tracing did not visit all addresses in constraints.")
 
     # Discard. Note - this is clever AF, and I was too stupid to see why this makes sense. Shoutout to Gen + A Lew.
     discard = Dict{Address, Choice}()
@@ -155,7 +155,7 @@ function trace(ctx::TraceCtx{M},
             delete!(ctx.metadata.tr.chm, k)
         end
     end
-    
+
     ctx.metadata.tr.score -= discard_score
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score, discard
 end
