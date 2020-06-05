@@ -13,7 +13,6 @@ using Flux: Params
 using Zygote
 using Distributions
 using DistributionsAD
-using FunctionalCollections: PersistentVector
 using ExportAll
 
 const Address = Union{Symbol, Pair}

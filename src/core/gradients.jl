@@ -11,6 +11,7 @@ mutable struct UnconstrainedGradientMeta <: Meta
     tracker::IdDict{Union{Number, AbstractArray}, Address}
     parents::Dict{Address, Vector{Address}}
     tr::Trace
+    loss::Float64
     args::Tuple
     fn::Function
     ret::Any
@@ -20,14 +21,16 @@ mutable struct UnconstrainedGradientMeta <: Meta
                                       Dict{Address, Tuple}(), 
                                       IdDict{Float64, Address}(), 
                                       Dict{Address, Vector{Address}}(),
-                                      Trace())
+                                      Trace(),
+                                      0.0)
     UnconstrainedGradientMeta(tr::Trace) = new(Address[], 
                                                Address[], 
                                                Dict{Address, Number}(), 
                                                Dict{Address, Tuple}(), 
                                                IdDict{Float64, Address}(), 
                                                Dict{Address, Vector{Address}}(),
-                                               tr)
+                                               tr,
+                                               0.0)
 end
 Gradient() = disablehooks(TraceCtx(metadata = UnconstrainedGradientMeta()))
 Gradient(pass::Cassette.AbstractPass) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGradientMeta()))
@@ -93,7 +96,9 @@ function Cassette.overdub(ctx::TraceCtx{M},
     ctx.metadata.tracker[sample] = addr
 
     # Gradients
-    gs = Flux.gradient((s, a) -> -logpdf(dist(a...), s), sample, args)
+    gs = Flux.gradient((s, a) -> (loss = -logpdf(dist(a...), s);
+                                  ctx.metadata.loss += loss;
+                                  loss), sample, args)
     args_arr = Pair{Address, Float64}[]
     map(enumerate(args)) do (i, a)
         haskey(passed_in, a) && begin
