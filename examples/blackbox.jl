@@ -9,7 +9,7 @@ function foo(y::Float64)
     return y
 end
 
-@primitive function logpdf(fn::typeof(foo), y::Float64)
+@primitive function logpdf(fn::typeof(foo), args::Tuple{Float64}, y::Float64)
     if y < 1.0
         log(1) 
     else

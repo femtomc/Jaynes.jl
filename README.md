@@ -33,7 +33,7 @@ function foo(y::Float64)
     return y
 end
 
-@primitive function logpdf(fn::typeof(foo), y::Float64)
+@primitive function logpdf(fn::typeof(foo), args::Tuple{Float64}, y::Float64)
     if y < 1.0
         log(1) 
     else
@@ -48,8 +48,8 @@ end
 
 ctx = Generate(Trace())
 ret = trace(ctx, bar, (0.3, ))
-display(ctx.metadata.tr)
-  
+println(ctx.metadata.tr)
+
 #  __________________________________
 #
 #               Playback
@@ -65,7 +65,11 @@ display(ctx.metadata.tr)
 
 ```
 
-`@primitive` requires that the user define a `logpdf` definition for the call. This expands into `overdub` method definitions for the tracer which automatically work with all the core library context/metadata dispatch.
+`@primitive` requires that the user define a `logpdf` definition for the call. This expands into `overdub` method definitions for the tracer which automatically work with all the core library context/metadata dispatch. The signature for `logpdf` should match the following type specification:
+```julia
+logpdf(::typeof(your_func), ::Tuple, ::T)
+```
+where `T` is the return type of `your_func`. Note that, if your defined `logpdf` is differentiable - gradients will automatically be derived for use in `Gradient` learning contexts as long as `Zygote` can differentiate through it.
 
 The extension mechanism _does not_ check if the user-defined `logpdf` is valid. This mechanism also overrides the normal fallback (i.e. tracing into calls) for any function for which the mechanism is used to write a `logpdf` - this means that if you write a `logpdf` using this mechanism for a call and there _is_ addressed randomness in the call, it will be ignored by the tracer.
 
