@@ -70,7 +70,9 @@ println(ctx.metadata.tr)
 ```julia
 logpdf(::typeof(your_func), ::Tuple, ::T)
 ```
-where `T` is the return type of `your_func`. Note that, if your defined `logpdf` is differentiable - gradients will automatically be derived for use in `Gradient` learning contexts as long as `Zygote` can differentiate through it.
+where `T` is the return type of `your_func`. 
+
+Note that, if your defined `logpdf` is differentiable - gradients will automatically be derived for use in `Gradient` learning contexts as long as `Zygote` can differentiate through it. This can be used to e.g. train neural networks in `Gradient` contexts where the loss is wrapped in the `logpdf`/`@primitive` interface mechanism.
 
 The extension mechanism _does not_ check if the user-defined `logpdf` is valid. This mechanism also overrides the normal fallback (i.e. tracing into calls) for any function for which the mechanism is used to write a `logpdf` - this means that if you write a `logpdf` using this mechanism for a call and there _is_ addressed randomness in the call, it will be ignored by the tracer.
 

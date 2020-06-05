@@ -24,6 +24,6 @@ end
 
 ctx = Generate(Trace())
 ret = trace(ctx, bar, (0.3, ))
-println(ctx.metadata.tr)
+display(ctx.metadata.tr)
 
 end # module

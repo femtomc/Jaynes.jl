@@ -1,7 +1,5 @@
 # These functions closely follow the implementation of the Gen inference library functions. Right now, they are specific to the dynamic DSL here.
 
-# TODO: extract core of routines into inference_interfaces.
-
 # ----------------------------------------------------------------------- #
 
 function importance_sampling(model::Function, 

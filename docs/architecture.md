@@ -6,19 +6,24 @@
 This is a library which implements probabilistic programming by intercepting calls to `rand` and interpreting them according to a user-provided context. The interception is automatic through the execution of Julia code, as the interception is provided by compiler injection into an intermediate representation of code (lowered code) using a package called Cassette.
 
 Cassette is a very powerful package, but it's also very subtle and easy to cause deep issues in the compilation pipeline. Here, I'm not doing anything too crazy with, say, composition of contexts or compiler pass injection (yet). The basic idea is that you may have some code
+
 ```julia
 function foo(x::Float64)
     y = rand(:y, Normal, (x, 1.0))
     return y
 end
 ```
+
 which you want to interpret in a probabilistic programming context. The lowered code looks like this:
+
 ```julia
 1 ─ %1 = Core.tuple(x, 1.0)
 │        y = Main.rand(:y, Main.Normal, %1)
 └──      return y
 ```
+
 After we intercept, the code looks like this:
+
 ```julia
 1 ─      #self# = Core.getfield(##overdub_arguments#254, 1)
 │        x = Core.getfield(##overdub_arguments#254, 2)
@@ -33,7 +38,9 @@ After we intercept, the code looks like this:
 │   @ REPL[1]:3 within `foo'
 └──      return y
 ```
+
 notice that every method invocation has been wrapped in a special function (either `prehook`, `overdub`, or `posthook`) which accepts a special structure as first argument (a _context_). In this library, we don't use the special `prehook` or `posthook` points of access...
+
 ```julia
 1 ─      #self# = Core.getfield(##overdub_arguments#254, 1)
 │        x = Core.getfield(##overdub_arguments#254, 2)
@@ -44,7 +51,9 @@ notice that every method invocation has been wrapped in a special function (eith
 │   @ REPL[1]:3 within `foo'
 └──      return y
 ```
+
 so we just use `overdub`. Now, a structured form for the `overdub` context allows us to record probabilistic statements to a trace. What is a _context_?
+
 ```julia
 Context{N<:Cassette.AbstractContextName,
         M<:Any,
@@ -53,7 +62,9 @@ Context{N<:Cassette.AbstractContextName,
         B<:Union{Nothing,Cassette.BindingMetaDictCache},
         H<:Union{Nothing,Cassette.DisableHooks}}
 ```
+
 where `M` is _metadata_. We use a structured trace as metadata
+
 ```julia
 mutable struct UnconstrainedGenerateMeta <: Meta
     tr::Trace
@@ -61,7 +72,9 @@ mutable struct UnconstrainedGenerateMeta <: Meta
     UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[])
 end
 ```
+
 and then, with `overdub`, we intercept `rand` calls and store the correct location, value, and score in the trace inside the meta.
+
 ```julia
 function Cassette.overdub(ctx::TraceCtx{M}, 
                           call::typeof(rand), 
@@ -87,9 +100,11 @@ function Cassette.overdub(ctx::TraceCtx{M},
     return sample
 end
 ```
+
 We also keep a stack around to handle hierarchical addressing inside function calls. The stack is essentially a lightweight call stack which tracks where we are while tracing. This lets us get the addressing correct, without doing too much work.
 
 Different forms of metadata structure allow us to implement sampling-based inference algorithms efficiently. A `ProposalMeta` comes with its own `overdub` dispatch which minimizes calls during a proposal sampling routine.
+
 ```julia
 function importance_sampling(model::Function, 
                              args::Tuple,
@@ -139,4 +154,5 @@ function importance_sampling(model::Function,
     return trs, lnw, lmle
 end
 ```
+
 whereas the `GenerateMeta` explicitly checks whether each visited address is in the set of observations. Tailoring a `Meta` to each inference interface means that the library should be as performant as other optimized universal probabilistic programming frameworks.
