@@ -6,17 +6,25 @@ using Distributions
 using Flux
 using Plots
 
+# TODO: dynamic check for support.
 function foo1()
     # Literals are tracked as trainable.
     x = rand(:x, 10.0)
-    m = rand(:m, 5.0)
+    m_1 = rand(:m_1, 5.0)
+    m_2 = rand(:m_2, 3.0)
     t = rand(:t, 7.0)
+    cat_p = rand(:cat_p, 0.2)
 
     # Rand calls on distributions also get tracked and the dependency graph is created.
     y = rand(:y, Normal, (x, 1.0))
     z = rand(:z, Normal, (t, 3.0))
+    cat = rand(:cat, Categorical, ([cat_p, 1 - cat_p], ))
     for i in 1:10
-        q = rand(:q => i, Normal, (m, 1.0))
+        if cat == 1
+            q = rand(:q => i, Normal, (m_1, 1.0))
+        else
+            q = rand(:q => i, Normal, (m_2, 1.0))
+        end
     end
     return z
 end
@@ -25,8 +33,13 @@ function foo2()
     x = rand(:x, 1.0)
     y = rand(:y, Normal, (x, 1.0))
     z = rand(:z, Normal, (x + 10, 13.0))
+    cat = rand(:cat, Categorical, ([0.5, 0.5],))
     for i in 1:10
-        q = rand(:q => i, Normal, (x, 1.0))
+        if cat == 1
+            q = rand(:q => i, Normal, (5.0, ))
+        else
+            q = rand(:q => i, Normal, (10.0, ))
+        end
     end
     return z
 end

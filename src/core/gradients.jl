@@ -35,7 +35,7 @@ end
 Gradient() = disablehooks(TraceCtx(metadata = UnconstrainedGradientMeta()))
 Gradient(pass::Cassette.AbstractPass) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGradientMeta()))
 
-# --------------- OVERDUB -------------------- #
+# ------------------ OVERDUB -------------------- #
 
 function Cassette.overdub(ctx::TraceCtx{M}, 
                           call::typeof(rand), 
