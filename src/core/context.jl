@@ -99,7 +99,7 @@ end
 
 # --------------- OVERDUB -------------------- #
 
-function Cassette.overdub(ctx::TraceCtx{M}, 
+@inline function Cassette.overdub(ctx::TraceCtx{M}, 
                           call::typeof(rand), 
                           addr::T, 
                           dist::Type,

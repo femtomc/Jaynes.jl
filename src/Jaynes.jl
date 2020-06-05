@@ -20,7 +20,7 @@ const Address = Union{Symbol, Pair}
 include("core/trace.jl")
 include("core/context.jl")
 include("core/gradients.jl")
-include("core/analysis.jl")
+include("core/blackbox.jl")
 include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")
@@ -62,6 +62,8 @@ function derive_debug(mod; type_tracing = false)
         end
     end
 end
+
+import Cassette.overdub
 
 @exportAll()
 
