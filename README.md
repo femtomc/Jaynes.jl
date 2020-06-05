@@ -29,6 +29,7 @@ The following example shows how this extension mechanism works.
 
 ```julia
 function foo(y::Float64)
+    # Untraced randomness.
     y = rand(Normal(0.5, 3.0))
     return y
 end
