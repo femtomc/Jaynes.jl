@@ -24,7 +24,7 @@ The dynamic DSL is not the main feature of this system. Gen's version is better 
 
 ## Extending _Jaynes_
 
-_Jaynes_ is equipped with the ability to extend the tracing interface to black-box code. This is naturally facilitated by the metaprogramming capabilities of `Cassette`. The primary usage of this extension is to define new `logpdf` method definitions for code which may contain sources of randomness which are not annotated with addresses and/or where inspection by the tracing mechanism can be safely abstracted over.
+_Jaynes_ is equipped with the ability to extend the tracing interface to black-box code. This is naturally facilitated by the metaprogramming capabilities of `Cassette`. The primary usage of this extension is to define new `logpdf` method definitions for code which may contain sources of randomness which are not annotated with addresses and/or where inspection by the tracing mechanism can be safely abstracted over. Thus, `@primitive` defines a contract between the user and the tracer - we assume that what you're doing is correct and we're not going to check you on it!
 
 The following example shows how this extension mechanism works.
 
