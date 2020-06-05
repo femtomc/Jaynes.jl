@@ -6,6 +6,8 @@ using Cthulhu
 using Revise
 using MacroTools
 using MacroTools: postwalk
+using IRTools
+using IRTools: meta
 using Flux
 using Flux: Params
 using Zygote
@@ -19,12 +21,12 @@ const Address = Union{Symbol, Pair}
 include("core/trace.jl")
 include("core/context.jl")
 include("core/gradients.jl")
+include("core/analysis.jl")
 include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")
 include("inference/inference_compilation.jl")
 include("tracing.jl")
-include("core/effects.jl")
 include("core/ignore_pass.jl")
 
 function derive_debug(mod; type_tracing = false)
