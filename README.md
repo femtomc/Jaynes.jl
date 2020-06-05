@@ -29,11 +29,12 @@ _Jaynes_ is equipped with the ability to extend the tracing interface to black-b
 The following example shows how this extension mechanism works.
 
 ```julia
-function foo1(y::Float64)
+function foo(y::Float64)
+    y = rand(Normal(0.5, 3.0))
     return y
 end
 
-@primitive function logpdf(fn::typeof(foo1), y::Float64)
+@primitive function logpdf(fn::typeof(foo), y::Float64)
     if y < 1.0
         log(1) 
     else
@@ -42,26 +43,27 @@ end
 end
 
 function bar(z::Float64)
-    y = rand(:y, foo1, (z, ))
+    y = rand(:y, foo, (z, ))
     return y
 end
 
 ctx = Generate(Trace())
 ret = trace(ctx, bar, (0.3, ))
 display(ctx.metadata.tr)
-
+  
 #  __________________________________
 #
 #               Playback
 #
 # y
-#          val  = 0.3
+#          val  = 2.8607525733342767
 #
 #  __________________________________
 #
 # score : 0.0
 #
 #  __________________________________
+
 ```
 
 `@primitive` requires that the user define a `logpdf` definition for the call. This expands into `overdub` method definitions for the tracer which automatically work with all the core library context/metadata dispatch.
