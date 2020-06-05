@@ -3,7 +3,7 @@ Cassette.@context TraceCtx
 # ------------------- META ----------------- #
 
 # Structured metadata. This acts as dispatch on overdub - increases the efficiency of the system and forms the core set of interfaces for inference algorithms to use.
-# For each inference interface, there are typically only a few pieces of Meta - this pieces tend to keep constant allocations out of loops.
+# For each inference interface, there are typically only a few constant pieces of Meta - these pieces tend to keep constant allocations out of sampling loops.
 abstract type Meta end
 
 mutable struct UnconstrainedGenerateMeta <: Meta
@@ -68,6 +68,18 @@ mutable struct RegenerateMeta <: Meta
     RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], Address[], sel)
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = ignore_pass, metadata = RegenerateMeta(tr, sel)))
+
+mutable struct ScoreMeta <: Meta
+    tr::Trace
+    score::Float64
+    stack::Vector{Address}
+    visited::Vector{Address}
+    args::Tuple
+    fn::Function
+    ret::Any
+    Score(tr::Trace) = new(tr, 0.0, Address[], Address[])
+end
+Score(tr::Trace) = disablehooks(TraceCtx(pass = ignore_pass, metadata = Score(tr)))
 
 # Required to track nested calls in overdubbing.
 import Base: push!, pop!
@@ -265,6 +277,31 @@ end
     return ret
 end
 
+@inline function Cassette.overdub(ctx::TraceCtx{M}, 
+                                  call::typeof(rand), 
+                                  addr::T, 
+                                  dist::Type,
+                                  args) where {M <: ScoreMeta, 
+                                               T <: Address}
+    # Check stack.
+    !isempty(ctx.metadata.stack) && begin
+        push!(ctx.metadata.stack, addr)
+        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        pop!(ctx.metadata.stack)
+    end
+
+    # Get val.
+    val = ctx.metadata.tr.chm[addr].value
+    d = dist(args...)
+    ctx.metadata.tr.score += logpdf(d, val)
+
+    # Visited.
+    push!(ctx.metadata.visited, addr)
+    return val
+end
+
+# ------------------ END OVERDUB ------------------- #
+
 # This handles functions (not distributions) in rand calls. When we see a rand call with a function, we push the address for that rand call onto the stack, and then recurse into the function. This organizes the choice map in the correct hierarchical way.
 @inline function Cassette.overdub(ctx::TraceCtx,
                                   c::typeof(rand),
@@ -287,8 +324,5 @@ end
     return ret
 end
 
-@inline function Cassette.fallback(ctx::TraceCtx,
-                                   c::Function,
-                                   args)
-    return c(args)
-end
+# Fallback - encounter some Cassette issues if we don't force this override for some Core functions.
+@inline Cassette.fallback(ctx::TraceCtx, c::Function, args) = c(args)

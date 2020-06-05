@@ -61,6 +61,25 @@ function trace(fn::Function,
     ctx.metadata.ret = ret
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
+# Gradients.
+function trace(ctx::TraceCtx{M},
+               fn::Function, 
+               args::Tuple) where M <: UnconstrainedGradientMeta
+    ret = Cassette.overdub(ctx, fn, args...)
+    ctx.metadata.fn = fn
+    ctx.metadata.args = args
+    ctx.metadata.ret = ret
+    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+end
+
+function trace(ctx::TraceCtx{M},
+               fn::Function) where M <: UnconstrainedGradientMeta
+    ret = Cassette.overdub(ctx, fn)
+    ctx.metadata.fn = fn
+    ctx.metadata.args = ()
+    ctx.metadata.ret = ret
+    return ctx
+end
 
 # Regenerate.
 function trace(ctx::TraceCtx{M}, 

@@ -205,9 +205,7 @@ end
     encoding = observation_head([ctx.metadata.constraints[ctx.metadata.target]...])
     trans = spine(encoding)
     proposal_args = exp.(decoding_head(spine(encoding)))
-    println(proposal_args)
     d = dist(proposal_args...)
-    println(d)
 
     if addr == ctx.metadata.target
         sample = ctx.metadata.constraints[addr]

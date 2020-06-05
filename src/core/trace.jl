@@ -1,5 +1,6 @@
 import Base.rand
 rand(addr::T, d::Type, args) where T <: Address = rand(d(args...))
+rand(addr::T, lit::K) where {T <: Address, K <: Union{Number, AbstractArray}} = lit
 
 struct Choice{T}
     val::T

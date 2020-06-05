@@ -8,6 +8,7 @@ using MacroTools
 using MacroTools: postwalk
 using Flux
 using Flux: Params
+using Zygote
 using Distributions
 using DistributionsAD
 using FunctionalCollections: PersistentVector
@@ -17,6 +18,7 @@ const Address = Union{Symbol, Pair}
 
 include("core/trace.jl")
 include("core/context.jl")
+include("core/gradients.jl")
 include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")
