@@ -43,15 +43,13 @@ function Cassette.overdub(ctx::TraceCtx{M},
                           dist::Type,
                           args) where {M <: UnconstrainedGradientMeta, 
                                        T <: Address}
+
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
         addr = foldr((x, y) -> x => y, ctx.metadata.stack)
         pop!(ctx.metadata.stack)
     end
-
-    # Check for support errors.
-    addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
 
     # Build dependency graph.
     passed_in = filter(args) do a 
@@ -85,20 +83,17 @@ function Cassette.overdub(ctx::TraceCtx{M},
                                          k = ctx.metadata.tracker[a]
                                          a => k
                                      end)
-    d = dist(args...)
-
+    
     # Check trace for choice map.
-    if haskey(ctx.metadata.tr.chm, addr)
-        sample = ctx.metadata.tr.chm[addr].val
-    else
-        sample = rand(d)
-    end
+    !haskey(ctx.metadata.tr.chm, addr) && error("UnconstrainedGradientMeta: toplevel function call has address space which does not match the training trace.")
+    sample = ctx.metadata.tr.chm[addr].val
     ctx.metadata.tracker[sample] = addr
 
     # Gradients
     gs = Flux.gradient((s, a) -> (loss = -logpdf(dist(a...), s);
                                   ctx.metadata.loss += loss;
                                   loss), sample, args)
+
     args_arr = Pair{Address, Float64}[]
     map(enumerate(args)) do (i, a)
         haskey(passed_in, a) && begin
@@ -166,13 +161,34 @@ import Flux: update!
 function update!(opt, ctx::TraceCtx{M}) where M <: UnconstrainedGradientMeta
     for (k, val) in ctx.metadata.trainable
         if haskey(ctx.metadata.gradients, k)
-            gs = ctx.metadata.gradients[k]
-            map(gs) do g
-                ctx.metadata.trainable[k] = update!(opt, val, [g.gs[k]])
+            averaged = Dict{Address, Float64}()
+            map(ctx.metadata.gradients[k]) do g
+                for k in keys(g.gs)
+                    !haskey(averaged, k) && begin
+                        averaged[k] = 0.0
+                    end
+                    averaged[k] += g.gs[k]
+                end
             end
+            ctx.metadata.trainable[k] = update!(opt, val, [averaged[k]])
         end
     end
     ctx.metadata.gradients = Dict{Address, Union{Number, AbstractArray}}()
     ctx.metadata.visited = Address[]
     ctx.metadata.tracker = IdDict{Union{Number, AbstractArray}, Address}()
+end
+
+function train!(opt, fn::Function, args::Tuple, trs::Vector{Trace})
+    ctx = Gradient()
+    losses = Vector{Float64}(undef, length(trs))
+    map(enumerate(trs)) do (i, tr)
+        ctx.metadata.tr = tr
+        ctx, _ = trace(ctx, fn, args)
+        Jaynes.update!(opt, ctx)
+        losses[i] = ctx.metadata.loss
+        ctx.metadata.loss = 0.0
+    end
+    ctx.metadata.fn = fn
+    ctx.metadata.args = args
+    return ctx, losses
 end

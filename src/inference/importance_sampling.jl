@@ -24,7 +24,7 @@ function importance_sampling(model::Function,
     end
     ctx.metadata.fn = model
     ctx.metadata.args = args
-    ctx.metadata.retval = rets
+    ctx.metadata.ret = rets
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
     lnw = lws .- ltw

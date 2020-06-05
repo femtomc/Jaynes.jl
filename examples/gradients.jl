@@ -4,6 +4,7 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using Distributions
 using Flux
+using Plots
 
 function foo1()
     # Literals are tracked as trainable.
@@ -30,19 +31,9 @@ function foo2()
     return z
 end
 
-trainer = () -> begin
-    train_ctx = Gradient()
-    gen_ctx = Generate(Trace())
-    for i in 1:10000
-        gen_ctx, tr, _ = trace(gen_ctx, foo2)
-        train_ctx.metadata.tr = tr
-        train_ctx = trace(train_ctx, foo1)
-        Jaynes.update!(ADAM(), train_ctx)
-        println(train_ctx.metadata.loss)
-        train_ctx.metadata.loss = 0.0
-        reset_keep_constraints!(gen_ctx)
-    end
-end
-trainer()
+ctx, trs, _, _ = importance_sampling(foo2, (), 10000)
+trained_ctx, losses = train!(ADAM(), foo1, (), trs)
+plt = plot(losses)
+display(plt)
 
 end # module
