@@ -5,11 +5,10 @@
 
 _Jaynes_ is a probabilistic programming framework which uses IR transformations and contextual dispatch to implement the core routines for modeling and inference.
 
-Currently, _Jaynes_ supports a dynamic modeling DSL which is syntactically close (and semantically equivalent) to the dynamic DSL in [Gen](https://www.gen.dev/). This comes with a few caveats:
+Currently, _Jaynes_ supports a dynamic modeling DSL which is syntactically close (and semantically equivalent) to the dynamic DSL in [Gen](https://www.gen.dev/). This comes with a few performance caveats:
 
 1. It is _partially optimized_. I've chosen representations which minimize allocations via profiling - but there are still upstream issues which affect performance on certain programs.
-2. There are a few _effects_ in the library (which are semantically similar to Gen's combinators) but their implementation via contextual dispatch is not complete nor stable. This will likely improve with time, as I settle on representations which allow the sort of analysis I'm aiming for (as noted below).
-3. There are few performance guarantees. Because this package relies on `Cassette`, it comes with all the subtle type performance issues that `Cassette` comes with.
+3. There are few performance guarantees on programs with type instabilities. Because this package relies on `Cassette`, it comes with all the subtle type performance issues that `Cassette` comes with.
 
 Currently supported inference algorithms for this DSL:
 - [X] Importance sampling
