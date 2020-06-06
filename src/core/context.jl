@@ -18,15 +18,15 @@ end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
 
-mutable struct GenerateMeta{T} <: Meta
+mutable struct GenerateMeta <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
-    constraints::T
+    constraints::ConstrainedSelection
     args::Tuple
     fn::Function
     ret::Any
-    GenerateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], Address[], constraints)
+    GenerateMeta(tr::Trace, constraints::ConstrainedSelection) where T = new(tr, Address[], Address[], constraints)
 end
 Generate(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
 Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
@@ -43,16 +43,16 @@ end
 Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
 
-mutable struct UpdateMeta{T} <: Meta
+mutable struct UpdateMeta <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
     constraints_visited::Vector{Address}
-    constraints::T
+    constraints::ConstrainedSelection
     args::Tuple
     fn::Function
     ret::Any
-    UpdateMeta(tr::Trace, constraints::T) where T = new{T}(tr, Address[], Address[], Address[], constraints)
+    UpdateMeta(tr::Trace, constraints::ConstrainedSelection) = new(tr, Address[], Address[], Address[], constraints)
 end
 Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
 Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
@@ -61,7 +61,7 @@ mutable struct RegenerateMeta <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
-    selection::Vector{Address}
+    selection::UnconstrainedSelection
     args::Tuple
     fn::Function
     ret::Any
@@ -208,7 +208,7 @@ end
     end
 
     # Check if in selection in meta.
-    selection = ctx.metadata.selection
+    selection = ctx.metadata.selection.addresses
     in_sel = addr in selection
 
     d = dist(args...)

@@ -17,6 +17,7 @@ using ExportAll
 
 const Address = Union{Symbol, Pair}
 
+include("core/selection.jl")
 include("core/trace.jl")
 include("core/context.jl")
 include("core/gradients.jl")

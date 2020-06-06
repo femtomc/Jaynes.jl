@@ -106,11 +106,15 @@ function merge(obs::Dict{Address, K},
     return cons
 end
 
-# Make obs.
-function constraints(obs::Array{Tuple{T, K}, 1}) where {T <: Address, K}
+# Take observations and return a selection.
+function selection(obs::Array{Tuple{T, K}, 1}) where {T <: Address, K}
     d = Dict{Address, K}()
     for (k, v) in obs 
         d[k] = v
     end
-    return d
+    return ConstrainedSelection([first(el) for el in obs], d)
+end
+
+function selection(obs::Array{T, 1}) where {T <: Address}
+    return UnconstrainedSelection([first(el) for el in obs])
 end
