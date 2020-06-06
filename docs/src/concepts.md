@@ -33,7 +33,10 @@ Here, `rand` call sites are also given addresses and recursive calls produce a h
           val  = true
 ```
 
-One simple question arises: what exactly does this _distribution over choice maps_ look like in a mathematical sense?
+One simple question arises: what exactly does this _distribution over choice maps_ look like in a mathematical sense? The distribution looks something like this:
+
+$P(x)$
+
 
 ## Programming the distribution over choice maps
 
