@@ -2,7 +2,7 @@ using Documenter
 
 makedocs(sitename = "Jaynes.jl",
          pages = [
-                  #"Introduction" => "index.md",
+                  "Introduction" => "index.md",
                   #"Concepts" => "concepts.md",
                   "Implementation architecture" => "architecture.md",
                   #"Examples" => [
