@@ -1,6 +1,6 @@
 module ProposalBenchmarks
 
-include("../src/Jaynes.jl")
+include("../../src/Jaynes.jl")
 using .Jaynes
 using Distributions
 using Gen

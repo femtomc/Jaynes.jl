@@ -1,0 +1,14 @@
+name = "examples"
+uuid = "83c43a4c-4cc2-4eec-91ef-2567dbe7ddf6"
+authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Cassette = "7057c7e9-c182-5462-911a-8362d720325c"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+DistributionsAD = "ced4e74d-a319-5a8a-b0ac-84af2272839c"
+ExportAll = "ad2082ca-a69e-11e9-38fa-e96309a31fe4"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+IRTools = "7869d1d1-7146-5819-86e3-90919afe41df"
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"

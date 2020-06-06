@@ -1,6 +1,6 @@
 module Profiling
 
-include("../src/Jaynes.jl")
+include("../../src/Jaynes.jl")
 using .Jaynes
 using Distributions
 using Profile
