@@ -7,7 +7,7 @@ function filter_step!(ctx::TraceCtx,
     lws = Vector{Float64}(undef, num_p)
     rets = Vector{Any}(undef, num_p)
     update_ctx = Update(Trace(), observations)
-    
+
     for i in 1:num_p
         # Run update.
         update_ctx.metadata.tr =  trs[i]
@@ -101,8 +101,8 @@ function resample!(trs::Vector{Trace},
 end
 
 function resample!(trs::Vector{Trace}, 
-                   lws::Vector{Float64},
-                   num::Int)
+                  lws::Vector{Float64},
+                  num::Int)
 
     num_p = length(trs)
     ltw, lnw = nw(lws)

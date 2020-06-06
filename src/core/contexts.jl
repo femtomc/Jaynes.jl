@@ -65,9 +65,10 @@ mutable struct RegenerateMeta <: Meta
     args::Tuple
     fn::Function
     ret::Any
-    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], Address[], sel)
+    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], Address[], selection(sel))
 end
-Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = ignore_pass, metadata = RegenerateMeta(tr, sel)))
+Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, sel)))
+Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = pass, metadata = RegenerateMeta(tr, sel)))
 
 mutable struct ScoreMeta <: Meta
     tr::Trace
@@ -79,7 +80,8 @@ mutable struct ScoreMeta <: Meta
     ret::Any
     Score(tr::Trace) = new(tr, 0.0, Address[], Address[])
 end
-Score(tr::Trace) = disablehooks(TraceCtx(pass = ignore_pass, metadata = Score(tr)))
+Score(tr::Trace) = disablehooks(TraceCtx(metadata = Score(tr)))
+Score(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = Score(tr)))
 
 # Required to track nested calls in overdubbing.
 import Base: push!, pop!

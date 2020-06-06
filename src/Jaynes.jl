@@ -17,9 +17,9 @@ using ExportAll
 
 const Address = Union{Symbol, Pair}
 
-include("core/selection.jl")
+include("core/selections.jl")
 include("core/trace.jl")
-include("core/context.jl")
+include("core/contexts.jl")
 include("core/gradients.jl")
 include("core/blackbox.jl")
 include("utils.jl")
