@@ -14,3 +14,5 @@ makedocs(sitename = "Jaynes.jl",
          format = Documenter.HTML(prettyurls = false,
                                   assets = ["assets/favicon.ico"])
         )
+
+deploydocs(repo = "github.com/femtomc/Jaynes.jl.git")
