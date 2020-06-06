@@ -58,11 +58,15 @@ end
 
 @testset "Particle filtering" begin
     xs = [1, 1, 2, 2, 1]
-    init_obs = constraints([(:x => 1, xs[1])])
+    init_obs = selection([
+                          (:x => 1, xs[1])
+                         ])
     ctx, trs, lnw, lmle = importance_sampling(CategoricalHiddenMarkovModel, (1,), init_obs, 10000)    
         println(lmle)
     for t=2:5
-        obs = constraints([(:x => t, xs[t])])
+        obs = selection([
+                         (:x => t, xs[t])
+                        ])
         ctx, trs, lnw, lmle = filter_step!(ctx, (t,), trs, obs)
         println(lmle)
     end

@@ -112,7 +112,7 @@ function selection(obs::Array{Tuple{T, K}, 1}) where {T <: Address, K}
     for (k, v) in obs 
         d[k] = v
     end
-    return ConstrainedSelection([first(el) for el in obs], d)
+    return ConstrainedSelection(d)
 end
 
 function selection(obs::Array{T, 1}) where {T <: Address}

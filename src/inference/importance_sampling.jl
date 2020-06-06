@@ -31,7 +31,7 @@ end
 
 function importance_sampling(model::Function, 
                              args::Tuple,
-                             observations::Dict{Address, T},
+                             observations::ConstrainedSelection,
                              num_samples::Int) where T
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
@@ -61,7 +61,7 @@ function importance_sampling(model::Function,
                              args::Tuple,
                              proposal::Function,
                              proposal_args::Tuple,
-                             observations::Dict{Address, T},
+                             observations::ConstrainedSelection,
                              num_samples::Int) where T
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)

@@ -1,7 +1,7 @@
 function filter_step!(ctx::TraceCtx,
                       new_args::Tuple,
                       trs::Vector{Trace}, 
-                      observations::Dict{Address, T}) where T
+                      observations::ConstrainedSelection) where T
 
     num_p = length(trs)
     lws = Vector{Float64}(undef, num_p)
@@ -38,7 +38,7 @@ function filter_step!(ctx::TraceCtx,
                       trs::Vector{Trace}, 
                       proposal::Function,
                       proposal_args::Tuple,
-                      observations::Dict{Address, T}) where T
+                      observations::ConstrainedSelection) where T
 
     num_p = length(trs)
     lws = Vector{Float64}(undef, num_p)

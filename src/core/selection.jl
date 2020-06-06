@@ -7,6 +7,7 @@ end
 struct ConstrainedSelection{T} <: Selection
     addresses::Vector{Address}
     constraints::Dict{Address, T}
+    ConstrainedSelection(d::Dict{Address, T}) where T = new{T}(collect(keys(d)), d)
 end
 
 import Base: haskey, setindex!, getindex
