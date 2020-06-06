@@ -2,7 +2,9 @@
 <img height="250px" src="jaynes.jpeg"/>
 </p>
 <br>
-[![Build Status](https://travis-ci.org/femtomc/Jaynes.jl.svg?branch=master)](https://travis-ci.org/femtomc/Jaynes.jl) [![Dev Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://femtomc.github.io/Jaynes.jl/dev)
+
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://femtomc.github.io/Jaynes.jl/dev)
+[![Build Status](https://travis-ci.org/femtomc/Jaynes.jl.svg?branch=master)](https://travis-ci.org/femtomc/Jaynes.jl)
 
 _Jaynes_ is a probabilistic programming framework which uses IR transformations and contextual dispatch to implement the core routines for modeling and inference.
 
