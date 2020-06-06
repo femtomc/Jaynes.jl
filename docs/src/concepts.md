@@ -17,10 +17,6 @@ geo(p::Float64) = rand(:flip, Bernoulli, (p, )) == 1 ? 0 : 1 + rand(:geo, geo, p
 Here, `rand` call sites are also given addresses and recursive calls produce a hierarchical address space. A sample from the distribution over choice maps for this program might produce the following map:
 
 ```julia
-  __________________________________
-
-               Playback
-
  :geo => :flip
           val  = false
 
@@ -35,8 +31,6 @@ Here, `rand` call sites are also given addresses and recursive calls produce a h
 
  :geo => (:geo => (:geo => (:geo => :flip)))
           val  = true
-
-  __________________________________
 ```
 
 One simple question arises: what exactly does this _distribution over choice maps_ look like in a mathematical sense?

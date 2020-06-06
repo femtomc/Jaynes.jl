@@ -1,4 +1,4 @@
-This is a library which implements probabilistic programming by intercepting calls to `rand` and interpreting them according to a user-provided context. The interception is automatic through the execution of Julia code, as the interception is provided by compiler injection into an intermediate representation of code (lowered code) using a package called Cassette.
+This is a library which implements probabilistic programming by intercepting calls to `rand` and interpreting them according to a user-provided context. The interception is automatic through the execution of Julia code, as the interception is provided by compiler injection into an intermediate representation of code (lowered code) using a package called [Cassette](https://github.com/jrevels/Cassette.jl).
 
 Cassette is a very powerful package, but it's also very subtle and easy to cause deep issues in the compilation pipeline. Here, I'm not doing anything too crazy with, say, composition of contexts or compiler pass injection (yet). The basic idea is that you may have some code
 
