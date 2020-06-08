@@ -43,14 +43,6 @@ function Cassette.prehook(ctx::DomainCtx{M}, fn::Function, args...) where M <: M
     end
 end
 
-function Cassette.overdub(ctx::DomainCtx{M}, fn::Function, args...) where M <: Meta
-    (allowed(ctx.metadata.core, fn, args) || fn == ctx.metadata.toplevel) && begin
-        canrecurse(ctx, fn, args...) && return recurse(ctx, fn, args...)
-        return fn(args...)
-    end
-    error("$(typeof(ctx.metadata.core).name)Error: $fn with $(typeof(args)) not allowed in this language.")
-end
-
 function interpret(ctx, fn::Function, args...)
     ctx.metadata.toplevel = fn
     ctx.metadata.args = args

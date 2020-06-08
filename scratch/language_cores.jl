@@ -12,6 +12,9 @@ end
 
 function foo(z::Float64)
     z = Foo(10.0)
+    for i in 1:10
+        Core.println(i)
+    end
     x = 10
     if x < 15
         y = 20
@@ -27,6 +30,11 @@ ret = interpret(ctx, foo, 5.0)
 @corrode! BaseLang setfield!
 @corrode! BaseLang setproperty!
 @corrode! BaseLang setindex!
+@corrode! BaseLang Base.iterate
+
+# Rejected!
+ret = interpret(ctx, foo, 5.0)
+
 
 # Rejected!
 ret = interpret(ctx, foo, 5.0)

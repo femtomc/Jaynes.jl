@@ -8,7 +8,7 @@ In our system, these languages are only active for specific contexts (i.e. those
 
 ---
 
-As an example of this idea, here's a small functional core which prevents the use of mutation on mutable structures or key-accessed collections.
+As an example of this idea, here's a small functional core which performs runtime checks to prevent the use of mutation on mutable structures or key-accessed collections:
 
 ```julia
 ctx = DomainCtx(metadata = Language(BaseLang()))
@@ -37,6 +37,31 @@ ret = interpret(ctx, foo, 5.0)
 
 # Rejected!
 ret = interpret(ctx, foo, 5.0)
+
+# ERROR: LoadError: Main.LanguageCores.Jaynes.BaseLangError: setproperty! with Tuple{Main.LanguageCores.Foo,Symbol,Float64} is disallowed in this language.
 ```
 
-`BaseLang` lets all calls through. We corrode `BaseLang` to prevent calls to `setfield!`, `setproperty!`, and `setindex!`. Note that, at the method level, we can't prevent re-assignment to variables because assignment is not a method. If we wanted to, we could prevent this using an IR pass.
+`BaseLang` lets all calls through. We corrode `BaseLang` to prevent calls to `setfield!`, `setproperty!`, and `setindex!`. Note that, at the method level, we can't prevent re-assignment to variables because assignment is not a method. If we wanted to, we could prevent this using an IR pass. We could extend this to prevent iteration-based control flow:
+
+```julia
+function foo(z::Float64)
+    z = Foo(10.0)
+    x = 10
+    for i in 1:10
+        println(i)
+    end
+    if x < 15
+        y = 20
+    end
+    y += 1
+    z.x = 10.0
+    return y
+end
+
+@corrode! BaseLang iterate
+
+# Rejected!
+ret = interpret(ctx, foo, 5.0)
+
+# ERROR: LoadError: Main.LanguageCores.Jaynes.BaseLangError: iterate with Tuple{UnitRange{Int64}} is disallowed in this language.
+```
