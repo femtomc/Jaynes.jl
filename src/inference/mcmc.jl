@@ -19,11 +19,14 @@ function kernel_step!(K::KernelDSL,
     return tr
 end
 
-kernel_step!(tr::Trace, select::UnconstrainedSelection, fn::Function, args::Tuple) = kernel_step!(Basic(), tr, select, fn, args)
-kernel_step!(tr::Trace, select::UnconstrainedSelection, fn::Function, args::Tuple; K::KernelDSL) = kernel_step!(K, tr, select, fn, args)
+kernel_step!(fn::Function, args::Tuple, tr::Trace, kernel::Function, k_args::Tuple) = kernel_step!(Basic(), tr, select, fn, args)
+kernel_step!(regen_ctx::TraceCtx{M}, tr::Trace, select::UnconstrainedSelection, kernel::Function, k_args::Tuple; K::KernelDSL = Basic()) where M <: RegenerateMeta = kernel_step!(K, tr, select, fn, args)
 
-# Simple primitives for a simple collection!
-@add_kernel! Basic function rand(tr::Trace, sel::UnconstrainedSelection)::Trace
+@add_kernel! Basic function metropolis_hastings(regen_ctx::TraceCtx{M}, tr::Trace, sel::UnconstrainedSelection)::Trace where M <: RegenerateMeta
 end
-@add_kernel! Basic function metropolis_hastings(tr::Trace, sel::UnconstrainedSelection)::Trace
+
+function check(ir)
+end
+
+function reverse(ir)
 end

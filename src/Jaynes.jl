@@ -1,17 +1,22 @@
 module Jaynes
 
+using Revise
+using Cthulhu
+
+# IRRRR I'm a com-pirate.
 using Cassette
 using Cassette: recurse, similarcontext, disablehooks, Reflection
-using Cthulhu
-using Revise
 using MacroTools
 using MacroTools: postwalk
 using IRTools
 using IRTools: meta
+using Mjolnir
+
+using Distributions
+
 using Flux
 using Flux: Params
 using Zygote
-using Distributions
 using DistributionsAD
 using ExportAll
 

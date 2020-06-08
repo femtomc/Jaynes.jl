@@ -102,15 +102,15 @@ end
 # --------------- OVERDUB -------------------- #
 
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
-                          call::typeof(rand), 
-                          addr::T, 
-                          dist::Type,
-                          args) where {M <: UnconstrainedGenerateMeta, 
-                                       T <: Address}
+                                  call::typeof(rand), 
+                                  addr::T, 
+                                  dist::Type,
+                                  args) where {M <: UnconstrainedGenerateMeta, 
+                                               T <: Address}
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
-        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        addr = foldr(=>, ctx.metadata.stack)
         pop!(ctx.metadata.stack)
     end
 
@@ -134,7 +134,7 @@ end
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
-        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        addr = foldr(=>, ctx.metadata.stack)
         pop!(ctx.metadata.stack)
     end
 
@@ -171,7 +171,7 @@ end
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
-        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        addr = foldr(=>, ctx.metadata.stack)
         pop!(ctx.metadata.stack)
     end
 
@@ -197,7 +197,7 @@ end
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
-        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        addr = foldr(=>, ctx.metadata.stack)
         pop!(ctx.metadata.stack)
     end
 
@@ -239,7 +239,7 @@ end
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
-        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        addr = foldr(=>, ctx.metadata.stack)
         pop!(ctx.metadata.stack)
     end
 
@@ -288,7 +288,7 @@ end
     # Check stack.
     !isempty(ctx.metadata.stack) && begin
         push!(ctx.metadata.stack, addr)
-        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
+        addr = foldr(=>, ctx.metadata.stack)
         pop!(ctx.metadata.stack)
     end
 
