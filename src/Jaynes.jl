@@ -5,7 +5,7 @@ using Cthulhu
 
 # IRRRR I'm a com-pirate.
 using Cassette
-using Cassette: recurse, similarcontext, disablehooks, Reflection
+using Cassette: recurse, similarcontext, disablehooks, Reflection, canrecurse
 using MacroTools
 using MacroTools: postwalk
 using IRTools
@@ -27,6 +27,7 @@ include("core/trace.jl")
 include("core/contexts.jl")
 include("core/gradients.jl")
 include("core/blackbox.jl")
+include("core/language_cores.jl")
 include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")

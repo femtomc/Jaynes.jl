@@ -1,0 +1,34 @@
+module LanguageCores
+
+include("../src/Jaynes.jl")
+using .Jaynes
+using Cassette
+
+ctx = DomainCtx(metadata = Language(BaseLang()))
+
+mutable struct Foo
+    x::Float64
+end
+
+function foo(z::Float64)
+    z = Foo(10.0)
+    x = 10
+    if x < 15
+        y = 20
+    end
+    y += 1
+    z.x = 10.0
+    return y
+end
+
+# Accepted!
+ret = interpret(ctx, foo, 5.0)
+
+@corrode! BaseLang setfield!
+@corrode! BaseLang setproperty!
+@corrode! BaseLang setindex!
+
+# Rejected!
+ret = interpret(ctx, foo, 5.0)
+
+end # module
