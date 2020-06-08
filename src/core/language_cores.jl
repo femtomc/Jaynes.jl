@@ -38,9 +38,8 @@ mutable struct Language{T <: LanguageCore} <: Meta
 end
 
 function Cassette.prehook(ctx::DomainCtx{M}, fn::Function, args...) where M <: Meta
-    x = disallowed(ctx.metadata.core, fn)
-    if x
-        error("LanguageCoreError: $fn with $(typeof(args)) is disallowed.")
+    if disallowed(ctx.metadata.core, fn)
+        error("$(typeof(ctx.metadata.core).name)Error: $fn with $(typeof(args)) is disallowed in this language.")
     end
 end
 
@@ -49,7 +48,7 @@ function Cassette.overdub(ctx::DomainCtx{M}, fn::Function, args...) where M <: M
         canrecurse(ctx, fn, args...) && return recurse(ctx, fn, args...)
         return fn(args...)
     end
-    error("LanguageCoreError: $fn with $(typeof(args)) not allowed.")
+    error("$(typeof(ctx.metadata.core).name)Error: $fn with $(typeof(args)) not allowed in this language.")
 end
 
 function interpret(ctx, fn::Function, args...)
