@@ -4,7 +4,7 @@ There are many active probabilistic programming frameworks in the Julia ecosyste
 
 ### Graphical model DSL
 
-One of the research goals of Jaynes to identify _composable interfaces_ for allowing users to express static graphical models alongside dynamic sample-based models. This has previously been a difficult challenge - the representations which each class of probabilistic programming system utilizes is very different. Universal probabilistic programming systems have typically relied on sample-based inference, where the main representation is a structured form of an execution trace. In contrast, graphical model systems reason explicitly about distributions and thus require an explicit graph representation of how random variates depend on one another.
+One of the research goals of Jaynes is to identify _composable interfaces_ for allowing users to express static graphical models alongside dynamic sample-based models. This has previously been a difficult challenge - the representations which each class of probabilistic programming system utilizes is very different. Universal probabilistic programming systems have typically relied on sample-based inference, where the main representation is a structured form of an execution trace. In contrast, graphical model systems reason explicitly about distributions and thus require an explicit graph representation of how random variates depend on one another.
 
 A priori, there is no reason why these representations can't be combined in some way. The difficulty lies in deciding how to switch between representations when a program is amenable to both, as well as how the different representations will communicate across inference interfaces. For example, consider performing belief propagation on a model which supports both discrete distributions and function call sites for probabilistic programs which required a sample-based tracing mechanism for interpretation. To enable inference routines to operate on this "call graph" style representation, we have to construct and reason about the representation separately from the runtime of each program.
 
@@ -97,4 +97,4 @@ To facilitate these research goals, Jaynes is designed as a type of compiler plu
 
 Because Jaynes is a compiler plugin, it is highly configurable. The goal of the core package is to implement a set of "sensible defaults" for common use, while allowing the implementation of other DSLs, custom inference algorithms, custom representations, etc on top. In this philosophy, Jaynes follows a path first laid out by Gen and Zygote...with a few twists.
 
-Bon appétit!
+> Bon appétit!
