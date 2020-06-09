@@ -28,7 +28,7 @@ ctx, tr, score = trace(ctx, obs)
 
 The user must provide a target observation address to the `inference_compilation` call. This allows the inference compiler to construct an observation-specific head during training.
 
-This inference routine methodology is not yet fully tested - but you can take a peek in the `src` to see how it will eventually be stabilized. One of the long term goals of Jaynes is to provide a backend for inference compilation of arbitary programs. If a user does not specify the choice map structure of the program, the addresses will be automatically filled in, without enough reference metadata to allow the user to locate the `rand` call in the original program. Of course, it is always preferable to structure your own choice map space - this feature is intended to allow programs with untraced `rand` calls to utilize a useful (but possibly limited) form of inference.
+This inference method is not yet fully tested - but you can take a peek in the `src` to see how it will eventually be stabilized. One of the long term goals of Jaynes is to provide a backend for inference compilation of arbitary programs. If a user does not specify the choice map structure of the program, the addresses will be automatically filled in, with enough reference metadata to allow the user to locate the `rand` call in the original program. Of course, it is always preferable to structure your own choice map space - this feature is intended to allow programs with untraced `rand` calls to utilize a useful (but possibly limited) form of inference.
 
 ## Black-box extensions
 
