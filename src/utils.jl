@@ -118,3 +118,8 @@ end
 function selection(obs::Array{T, 1}) where {T <: Address}
     return UnconstrainedSelection([first(el) for el in obs])
 end
+
+function selection()
+    d = Dict{Address, Any}()
+    return ConstrainedSelection(d)
+end

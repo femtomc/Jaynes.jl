@@ -5,10 +5,12 @@ using Cthulhu
 # IRRRR I'm a com-pirate.
 using Cassette
 using Cassette: recurse, similarcontext, disablehooks, Reflection, canrecurse
+import Cassette: overdub, prehook, posthook, Reflection
 using MacroTools
 using MacroTools: postwalk
 using IRTools
-using IRTools: meta
+using IRTools: meta, IR, slots!
+import IRTools: meta, IR
 using Mjolnir
 
 using Distributions
@@ -67,9 +69,6 @@ function derive_debug(mod; type_tracing = false)
     end
 end
 
-import Cassette.overdub
-import Cassette.prehook
-import Cassette.posthook
 
 @exportAll()
 

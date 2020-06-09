@@ -21,6 +21,17 @@ macro corrode!(P, ex)
     end
 end
 
+macro accrete!(P, ex)
+    if @capture(shortdef(ex), f_)
+        expr = quote
+            function Jaynes.prehook(ctx::DomainCtx{M}, fn::typeof($f), args) where M <: Language{<: $P}
+                nothing
+            end
+        end
+        esc(expr)
+    end
+end
+
 function interpret(ctx, fn::Function, args...)
     ctx.metadata.toplevel = fn
     ctx.metadata.args = args

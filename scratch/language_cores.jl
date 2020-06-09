@@ -31,6 +31,7 @@ ret = interpret(ctx, foo, 5.0)
 @corrode! BaseLang setproperty!
 @corrode! BaseLang setindex!
 @corrode! BaseLang Base.iterate
+@accrete! BaseLang Base.iterate
 
 # Rejected!
 ret = interpret(ctx, foo, 5.0)
