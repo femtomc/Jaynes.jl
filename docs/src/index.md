@@ -26,7 +26,7 @@ obs = constraints([(:y, 10.0)])
 ctx, tr, score = trace(ctx, obs)
 ```
 
-The user must provide a target observation address to the `inference_compilation` call.This allows the inference compiler to construct an observation-specific head during training.
+The user must provide a target observation address to the `inference_compilation` call. This allows the inference compiler to construct an observation-specific head during training.
 
 This inference routine methodology is not yet fully tested - but you can take a peek in the `src` to see how it will eventually be stabilized. One of the long term goals of Jaynes is to provide a backend for inference compilation of arbitary programs. If a user does not specify the choice map structure of the program, the addresses will be automatically filled in, without enough reference metadata to allow the user to locate the `rand` call in the original program. Of course, it is always preferable to structure your own choice map space - this feature is intended to allow programs with untraced `rand` calls to utilize a useful (but possibly limited) form of inference.
 
@@ -36,28 +36,28 @@ _Jaynes_ is equipped with the ability to extend the tracing interface to black-b
 
 The following example shows how this extension mechanism works.
 
-```julia
+    ```julia
 function foo(y::Float64)
-    # Untraced randomness.
-    y = rand(Normal(0.5, 3.0))
+# Untraced randomness.
+y = rand(Normal(0.5, 3.0))
     return y
-end
+    end
 
 @primitive function logpdf(fn::typeof(foo), args::Tuple{Float64}, y::Float64)
     if y < 1.0
-        log(1) 
+log(1) 
     else
-        -Inf
+    -Inf
     end
-end
+    end
 
-function bar(z::Float64)
-    y = rand(:y, foo, (z, ))
+    function bar(z::Float64)
+y = rand(:y, foo, (z, ))
     return y
-end
+    end
 
-ctx = Generate(Trace())
-ret = trace(ctx, bar, (0.3, ))
+    ctx = Generate(Trace())
+    ret = trace(ctx, bar, (0.3, ))
 println(ctx.metadata.tr)
 
 #  __________________________________
@@ -73,22 +73,22 @@ println(ctx.metadata.tr)
 #
 #  __________________________________
 
-```
+    ```
 
-`@primitive` requires that the user define a `logpdf` definition for the call. This expands into `overdub` method definitions for the tracer which automatically work with all the core library context/metadata dispatch. The signature for `logpdf` should match the following type specification:
-```julia
+    `@primitive` requires that the user define a `logpdf` definition for the call. This expands into `overdub` method definitions for the tracer which automatically work with all the core library context/metadata dispatch. The signature for `logpdf` should match the following type specification:
+    ```julia
 logpdf(::typeof(your_func), ::Tuple, ::T)
-```
-where `T` is the return type of `your_func`. 
+    ```
+    where `T` is the return type of `your_func`. 
 
-Note that, if your defined `logpdf` is differentiable - gradients will automatically be derived for use in `Gradient` learning contexts as long as `Zygote` can differentiate through it. This can be used to e.g. train neural networks in `Gradient` contexts where the loss is wrapped in the `logpdf`/`@primitive` interface mechanism.
+    Note that, if your defined `logpdf` is differentiable - gradients will automatically be derived for use in `Gradient` learning contexts as long as `Zygote` can differentiate through it. This can be used to e.g. train neural networks in `Gradient` contexts where the loss is wrapped in the `logpdf`/`@primitive` interface mechanism.
 
-The extension mechanism _does not_ check if the user-defined `logpdf` is valid. This mechanism also overrides the normal fallback (i.e. tracing into calls) for any function for which the mechanism is used to write a `logpdf` - this means that if you write a `logpdf` using this mechanism for a call and there _is_ addressed randomness in the call, it will be ignored by the tracer.
+    The extension mechanism _does not_ check if the user-defined `logpdf` is valid. This mechanism also overrides the normal fallback (i.e. tracing into calls) for any function for which the mechanism is used to write a `logpdf` - this means that if you write a `logpdf` using this mechanism for a call and there _is_ addressed randomness in the call, it will be ignored by the tracer.
 
----
+    ---
 
-To facilitate these research goals, Jaynes is designed as a type of compiler plugin. In contrast to existing frameworks, Jaynes does not require the use of specialized macros to denote where the modeling language begins and ends. The use of macros to denote a language barrier has a number of positive advantages from a user-facing perspective, but some disadvantages related to composability. As an opinion, I believe that a general framework for expressing probabilistic programs should mimic the philosophy of _differentiable programming_. The compiler plugin backend should prevent users from writing programs which are "not valid" (either as a static analysis or a runtime error) but should otherwise get out of the way of the user. Any macros present in the Jaynes library extend the core functionality or provide convenient access to code generation for use by a user - but are not required for modeling and inference.
+    To facilitate these research goals, Jaynes is designed as a type of compiler plugin. In contrast to existing frameworks, Jaynes does not require the use of specialized macros to denote where the modeling language begins and ends. The use of macros to denote a language barrier has a number of positive advantages from a user-facing perspective, but some disadvantages related to composability. As an opinion, I believe that a general framework for expressing probabilistic programs should mimic the philosophy of _differentiable programming_. The compiler plugin backend should prevent users from writing programs which are "not valid" (either as a static analysis or a runtime error) but should otherwise get out of the way of the user. Any macros present in the Jaynes library extend the core functionality or provide convenient access to code generation for use by a user - but are not required for modeling and inference.
 
-Because Jaynes is a compiler plugin, it is highly configurable. The goal of the core package is to implement a set of "sensible defaults" for common use, while allowing the implementation of other DSLs, custom inference algorithms, custom representations, etc on top. In this philosophy, Jaynes follows a path first laid out by Gen and Zygote...with a few twists.
+    Because Jaynes is a compiler plugin, it is highly configurable. The goal of the core package is to implement a set of "sensible defaults" for common use, while allowing the implementation of other DSLs, custom inference algorithms, custom representations, etc on top. In this philosophy, Jaynes follows a path first laid out by Gen and Zygote...with a few twists.
 
-Bon appétit!
+    Bon appétit!
