@@ -1,6 +1,5 @@
 module Jaynes
 
-using Revise
 using Cthulhu
 
 # IRRRR I'm a com-pirate.
@@ -33,7 +32,7 @@ include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")
 include("inference/inference_compilation.jl")
 include("tracing.jl")
-include("core/ignore_pass.jl")
+include("core/passes.jl")
 
 function derive_debug(mod; type_tracing = false)
     @assert mod isa Module
@@ -46,15 +45,13 @@ function derive_debug(mod; type_tracing = false)
         end
     end
     @eval begin
-        import Cassette.prehook
-        import Cassette.posthook
         using Revise
     end
 
     exprs = map(fns) do f
         if type_tracing
             @eval begin
-                function prehook(::Jaynes.TraceCtx, call::typeof($mod.$f), args...)
+                function Jaynes.prehook(::Jaynes.TraceCtx, call::typeof($mod.$f), args...)
                     @info "$(stacktrace()[3])\n" call typeof(args)
                     println("Beginning type inference...")
                     Cthulhu.descend(call, typeof(args))
@@ -62,7 +59,7 @@ function derive_debug(mod; type_tracing = false)
             end
         else
             @eval begin
-                function prehook(::Jaynes.TraceCtx, call::typeof($mod.$f), args...)
+                function Jaynes.prehook(::Jaynes.TraceCtx, call::typeof($mod.$f), args...)
                     @info "$(stacktrace()[3])\n" call typeof(args)
                 end
             end
@@ -71,6 +68,8 @@ function derive_debug(mod; type_tracing = false)
 end
 
 import Cassette.overdub
+import Cassette.prehook
+import Cassette.posthook
 
 @exportAll()
 
