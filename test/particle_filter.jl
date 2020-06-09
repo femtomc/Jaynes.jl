@@ -61,13 +61,13 @@ end
     init_obs = selection([
                           (:x => 1, xs[1])
                          ])
-    ctx, trs, lnw, lmle = importance_sampling(CategoricalHiddenMarkovModel, (1,), init_obs, 10000)    
-        println(lmle)
+    ctx, ps = initialize_filter(CategoricalHiddenMarkovModel, (1,), init_obs, 10000)    
+        println(ps.lmle)
     for t=2:5
         obs = selection([
                          (:x => t, xs[t])
                         ])
-        ctx, trs, lnw, lmle = filter_step!(ctx, (t,), trs, obs)
-        println(lmle)
+        ctx, ps = filter_step!(ctx, (t,), ps, obs)
+        println(ps.lmle)
     end
 end

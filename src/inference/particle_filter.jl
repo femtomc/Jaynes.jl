@@ -1,16 +1,33 @@
+mutable struct Particles
+    trs::Vector{Trace}
+    lws::Vector{Float64}
+    lmle::Float64
+end
+import Base.length
+Base.length(ps::Particles) = length(ps.trs)
+
+function initialize_filter(fn::Function, 
+                     args::Tuple, 
+                     observations::ConstrainedSelection, 
+                     num_p::Int)
+    ctx, trs, lnw, lmle = importance_sampling(fn, args, observations, num_p)
+    ltw = lmle + log(num_p)
+    lws = lnw .+ ltw
+    return ctx, Particles(trs, lws, lmle)
+end
+
 function filter_step!(ctx::TraceCtx,
                       new_args::Tuple,
-                      trs::Vector{Trace}, 
+                      ps::Particles,
                       observations::ConstrainedSelection) where T
 
-    num_p = length(trs)
-    lws = Vector{Float64}(undef, num_p)
+    num_p = length(ps)
     rets = Vector{Any}(undef, num_p)
     update_ctx = Update(Trace(), observations)
 
     for i in 1:num_p
         # Run update.
-        update_ctx.metadata.tr =  trs[i]
+        update_ctx.metadata.tr =  ps.trs[i]
         if !isempty(new_args)
             ret = Cassette.overdub(update_ctx, ctx.metadata.fn, new_args...)
         else
@@ -18,8 +35,8 @@ function filter_step!(ctx::TraceCtx,
         end
 
         # Store.
-        trs[i] = update_ctx.metadata.tr
-        lws[i] = update_ctx.metadata.tr.score
+        ps.trs[i] = update_ctx.metadata.tr
+        ps.lws[i] = update_ctx.metadata.tr.score
         rets[i] = ret
         update_ctx.metadata.constraints = observations
     end
@@ -27,20 +44,19 @@ function filter_step!(ctx::TraceCtx,
     update_ctx.metadata.ret = rets
     update_ctx.metadata.fn = ctx.metadata.fn
     update_ctx.metadata.args = new_args
-    ltw = lse(lws)
-    lmle = ltw - log(num_p)
-    lnw = lws .- ltw
-    return update_ctx, trs, lnw, lmle
+    ltw = lse(ps.lws)
+    ps.lmle = ltw - log(num_p)
+    return update_ctx, ps
 end
 
 function filter_step!(ctx::TraceCtx,
                       new_args::Tuple,
-                      trs::Vector{Trace}, 
+                      ps::Particles,
                       proposal::Function,
                       proposal_args::Tuple,
                       observations::ConstrainedSelection) where T
 
-    num_p = length(trs)
+    num_p = length(ps)
     lws = Vector{Float64}(undef, num_p)
     rets = Vector{Any}(undef, num_p)
     prop_ctx = Proposal(Trace())
@@ -60,7 +76,7 @@ function filter_step!(ctx::TraceCtx,
         constraints = merge(observations, prop_chm)
 
         # Run update.
-        update_ctx.metadata.tr =  trs[i]
+        update_ctx.metadata.tr =  ps.trs[i]
         update_ctx.metadata.constraints = constraints
         if isempty(new_args)
             ret = Cassette.overdub(update_ctx, ctx.metadata.fn)
@@ -69,8 +85,8 @@ function filter_step!(ctx::TraceCtx,
         end
 
         # Store.
-        trs[i] = update_ctx.metadata.tr
-        lws[i] = update_ctx.metadata.score - pop_score
+        ps.trs[i] = update_ctx.metadata.tr
+        ps.lws[i] = update_ctx.metadata.score - pop_score
         rets[i] = ret
     end
 
@@ -78,43 +94,36 @@ function filter_step!(ctx::TraceCtx,
     update_ctx.metadata.fn = ctx.metadata.fn
     update_ctx.metadata.args = new_args
     ltw = lse(lws)
-    lmle = ltw - log(num_p)
-    lnw = lws .- ltw
-    return update_ctx, trs, lnw, lmle
+    ps.lmle = ltw - log(num_p)
+    return update_ctx, ps
 end
 
-function resample!(trs::Vector{Trace}, 
-                   lws::Vector{Float64})
+function resample!(ps::Particles)
 
-    num_p = length(trs)
-    ltw, lnw = nw(lws)
+    num_p = length(ps.trs)
+    ltw, lnw = nw(ps.lws)
+    weights = exp.(lnw)
+    selections = rand(Categorical(weights/sum(weights)), num_p)
+    lmle = ltw - log(num_p)
+    trs = map(selections) do ind
+        ps.trs[ind]
+    end
+    ps.trs = trs
+    ps.lws = zeros(num_p)
+end
+
+function resample!(ps::Particles,
+                   num::Int)
+
+    num_p = length(ps.trs)
+    ltw, lnw = nw(ps.lws)
     weights = exp.(lnw)
     selections = rand(Categorical(weights/sum(weights)), num_p)
     lmle = ltw - log(num_p)
     trs = map(selections) do ind
         trs[ind]
-    end
-    lws = map(lws) do k
-        0.0
-    end
-    return trs, lws, lmle
-end
-
-function resample!(trs::Vector{Trace}, 
-                  lws::Vector{Float64},
-                  num::Int)
-
-    num_p = length(trs)
-    ltw, lnw = nw(lws)
-    weights = exp.(lnw)
-    selections = rand(Categorical(weights/sum(weights)), num_p)
-    lmle = ltw - log(num_p)
-    trs = map(selections) do ind
-        trs[ind]
-    end
-    lws = map(lws) do k
-        0.0
     end
     trs = rand(trs, num)
-    return trs, lws, lmle
+    ps.trs = trs
+    ps.lws = zeros(length(ps.trs))
 end
