@@ -1,17 +1,15 @@
 abstract type Selection end
+abstract type ConstrainedSelection <: Selection end
+abstract type UnconstrainedSelection <: Selection end
 
-abstract type HierarchicalSelection <: Selection end
-abstract type HierarchicalUnconstrained <: HierarchicalSelection end
-abstract type HierarchicalConstrained <: HierarchicalSelection end
-
-struct HierarchicalUnconstrainedSelection <: HierarchicalUnconstrained
+struct HierarchicalUnconstrainedSelection <: UnconstrainedSelection
     map::Dict{Address, HierarchicalUnconstrainedSelection}
 end
 
-struct HierarchicalConstrainedSelection <: HierarchicalConstrained
+struct HierarchicalConstrainedSelection <: ConstrainedSelection
     map::Dict{Address, HierarchicalConstrainedSelection}
     constraints::Dict{Address, Any}
-    ConstrainedSelection(d::Dict{Union{Symbol, Pair}, T}) where T = new{T}(collect(keys(d)), d)
+    ConstrainedSelection(d::Dict{Union{Symbol, Pair}, T}) where T = new(collect(keys(d)), d)
 end
 
 struct EmptySelection <: Selection end
@@ -21,6 +19,6 @@ Base.haskey(s::ConstrainedSelection, key::Union{Symbol, Pair}) = key in s.addres
 Base.haskey(s::UnconstrainedSelection, key::Union{Symbol, Pair}) = key in s.addresses
 Base.haskey(s::EmptySelection, key::Union{Symbol, Pair}) = false
 Base.getindex(s::ConstrainedSelection, key::Union{Symbol, Pair}) = s.constraints[key]
-function Base.setindex!(s::ConstrainedSelection{T}, key::Union{Symbol, Pair}, val::T) where T
+function Base.setindex!(s::ConstrainedSelection, key::Union{Symbol, Pair}, val::T) where T
     s.constraints[key] = val
 end

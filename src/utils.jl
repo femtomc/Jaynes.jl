@@ -99,7 +99,7 @@ function collect_addrs!(par::T, addrs::Vector{Union{Symbol, Pair}}, tr::Trace) w
     for (k, v) in tr.chm
         push!(addrs, par => k)
         if v isa CallSite
-            collect_addrs!(par => k, addrs, v.subtrace)
+            collect_addrs!(par => k, addrs, v.trace)
         end
     end
     return addrs

@@ -4,7 +4,7 @@ function trace(fn::Function,
     tr = Trace()
     ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
     ret = Cassette.overdub(ctx, fn)
-    return Call(tr, tr.score, fn, (), ret)
+    return CallSite(tr, fn, (), ret)
 end
 
 function trace(fn::Function, 
@@ -12,14 +12,14 @@ function trace(fn::Function,
     tr = Trace()
     ctx = TraceCtx(metadata = UnconstrainedGenerateMeta(tr))
     ret = Cassette.overdub(ctx, fn, args...)
-    return Call(tr, tr.score, fn, args..., ret)
+    return CallSite(tr, fn, args..., ret)
 end
 
 function trace(ctx::TraceCtx{M},
                fn::Function, 
                args...) where M <: UnconstrainedGenerateMeta
     ret = Cassette.overdub(ctx, fn, args...)
-    return Call(tr, tr.score, fn, args..., ret)
+    return CallSite(tr, fn, args..., ret)
 end
 
 function trace(constraints::Dict{Address, T},
@@ -28,7 +28,7 @@ function trace(constraints::Dict{Address, T},
     tr = Trace()
     ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
     ret = Cassette.overdub(ctx, fn, args...)
-    return Call(tr, tr.score, fn, args..., ret)
+    return CallSite(tr, fn, args..., ret)
 end
 
 # Gradients.
