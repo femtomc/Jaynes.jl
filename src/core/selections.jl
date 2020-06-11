@@ -1,21 +1,25 @@
 abstract type Selection end
 
-struct EmptySelection <: Selection end
+abstract type HierarchicalSelection <: Selection end
+abstract type HierarchicalUnconstrained <: HierarchicalSelection end
+abstract type HierarchicalConstrained <: HierarchicalSelection end
 
-struct UnconstrainedSelection <: Selection
-    addresses::Vector{Union{Symbol, Pair}}
+struct HierarchicalUnconstrainedSelection <: HierarchicalUnconstrained
+    map::Dict{Address, HierarchicalUnconstrainedSelection}
 end
 
-struct ConstrainedSelection{T} <: Selection
-    addresses::Vector{Union{Symbol, Pair}}
-    constraints::Dict{Union{Symbol, Pair}, T}
+struct HierarchicalConstrainedSelection <: HierarchicalConstrained
+    map::Dict{Address, HierarchicalConstrainedSelection}
+    constraints::Dict{Address, Any}
     ConstrainedSelection(d::Dict{Union{Symbol, Pair}, T}) where T = new{T}(collect(keys(d)), d)
 end
+
+struct EmptySelection <: Selection end
 
 import Base: haskey, setindex!, getindex
 Base.haskey(s::ConstrainedSelection, key::Union{Symbol, Pair}) = key in s.addresses
 Base.haskey(s::UnconstrainedSelection, key::Union{Symbol, Pair}) = key in s.addresses
-Base.haskey(s::EmptySelection, key::Union{Symbol, Pair}) = error("KeyError: instances of type EmptySelection have no addresses.")
+Base.haskey(s::EmptySelection, key::Union{Symbol, Pair}) = false
 Base.getindex(s::ConstrainedSelection, key::Union{Symbol, Pair}) = s.constraints[key]
 function Base.setindex!(s::ConstrainedSelection{T}, key::Union{Symbol, Pair}, val::T) where T
     s.constraints[key] = val

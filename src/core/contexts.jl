@@ -19,7 +19,6 @@ Generate(pass, tr::Trace, constraints::EmptySelection) = disablehooks(TraceCtx(p
 mutable struct GenerateMeta{E <: Effect} <: Meta
     tr::Trace
     visited::Vector{Address}
-    stack::Vector{Union{Symbol, Pair}}
     constraints::ConstrainedSelection
     GenerateMeta(tr::Trace, constraints::ConstrainedSelection) where T = new{None}(tr, Address[], Union{Symbol,Pair}[], constraints)
 end
@@ -37,7 +36,6 @@ Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = Proposa
 mutable struct UpdateMeta{E <: Effect} <: Meta
     tr::Trace
     visited::Vector{Address}
-    stack::Vector{Union{Symbol, Pair}}
     constraints_visited::Vector{Address}
     constraints::ConstrainedSelection
     UpdateMeta(tr::Trace, constraints::ConstrainedSelection) = new{None}(tr, Address[], Union{Symbol, Pair}[], constraints)
@@ -48,7 +46,6 @@ Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass
 mutable struct RegenerateMeta{E <: Effect} <: Meta
     tr::Trace
     visited::Vector{Address}
-    stack::Vector{Union{Symbol, Pair}}
     selection::UnconstrainedSelection
     RegenerateMeta(tr::Trace, sel::Vector{Address}) = new{None}(tr, 
                                                                 Address[], 
@@ -71,11 +68,6 @@ function reset_keep_constraints!(ctx::TraceCtx{M}) where M <: Meta
     ctx.metadata.tr = Trace()
     ctx.metadata.visited = Address[]
 end
-
-# Lightweight call stack.
-import Base: push!, pop!
-Base.push!(meta::Meta, addr::T) where T <: Union{Symbol, Pair} = push!(meta.stack, addr)
-Base.pop!(meta::Meta) where T <: Union{Symbol, Pair} = pop!(meta.stack)
 
 # --------------- OVERDUB -------------------- #
 
@@ -269,14 +261,12 @@ end
                                   args...) where {M <: UpdateMeta, 
                                                   T <: Address}
 
-    rec_ctx = similarcontext(ctx; metadata = UnconstrainedGenerateMeta(Trace()))
-    push!(ctx.metadata, addr)
+    rec_ctx = similarcontext(ctx; metadata = Update(Trace(), ctx.metadata.constraints[addr]))
     ret = recurse(rec_ctx, call, args...)
-    pop!(ctx.metadata)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
-                                     call, 
-                                     args..., 
-                                     ret)
+                                         call, 
+                                         args..., 
+                                         ret)
     return ret
 end
 
