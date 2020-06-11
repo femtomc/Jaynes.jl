@@ -3,58 +3,25 @@
 # ----------------------------------------------------------------------- #
 
 function importance_sampling(model::Function, 
-                             args::Tuple,
-                             num_samples::Int)
-    trs = Vector{Trace}(undef, num_samples)
+                             args::Tuple;
+                             observations = EmptySelection(),
+                             num_samples::Int = 5000)
+    calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    rets = Vector{Any}(undef, num_samples)
-    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+    ctx = Generate(Trace(), observations)
     for i in 1:num_samples
-        if isempty(args)
-            ret = Cassette.overdub(ctx, model)
-        else
-            ret = Cassette.overdub(ctx, model, args...)
-        end
-        rets[i] = ret
+        ret = Cassette.overdub(ctx, model, args...)
         lws[i] = ctx.metadata.tr.score
-        trs[i] = ctx.metadata.tr
+        calls[i] = CallSite(ctx.metadata.tr, 
+                            model, 
+                            args,
+                            ret)
         reset_keep_constraints!(ctx)
     end
-    ctx.metadata.fn = model
-    ctx.metadata.args = args
-    ctx.metadata.ret = rets
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return ctx, trs, lnw, lmle
-end
-
-function importance_sampling(model::Function, 
-                             args::Tuple,
-                             observations::ConstrainedSelection,
-                             num_samples::Int) where T
-    trs = Vector{Trace}(undef, num_samples)
-    lws = Vector{Float64}(undef, num_samples)
-    rets = Vector{Any}(undef, num_samples)
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), observations)))
-    for i in 1:num_samples
-        if isempty(args)
-            ret = Cassette.overdub(ctx, model)
-        else
-            ret = Cassette.overdub(ctx, model, args...)
-        end
-        rets[i] = ret
-        lws[i] = ctx.metadata.tr.score
-        trs[i] = ctx.metadata.tr
-        reset_keep_constraints!(ctx)
-    end
-    ctx.metadata.fn = model
-    ctx.metadata.args = args
-    ctx.metadata.ret = rets
-    ltw = lse(lws)
-    lmle = ltw - log(num_samples)
-    lnw = lws .- ltw
-    return ctx, trs, lnw, lmle
+    return calls, lnw, lmle
 end
 
 function importance_sampling(model::Function, 

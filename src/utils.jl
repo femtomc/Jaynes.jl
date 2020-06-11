@@ -23,7 +23,7 @@ function nw(lw::Vector{Float64})
 end
 
 # This is likely not a well-defined expectation. Investigate.
-function average(trs::Vector{Trace}, addr::T) where T <: Union{Symbol, Pair}
+function average(trs::Vector{Trace}, addr::T) where T <: Address
     acc = 0.0
     trs = filter(trs) do tr
         addr in keys(tr.chm)
@@ -36,7 +36,7 @@ end
 
 # Same goes for here.
 function average(trs::Vector{Trace})
-    d = Dict{Union{Symbol, Pair}, Tuple{Int, Real}}()
+    d = Dict{Address, Tuple{Int, Real}}()
     for tr in trs
         for (k, coc) in collect(tr.chm)
             !(k in keys(d)) && begin
@@ -52,19 +52,19 @@ function average(trs::Vector{Trace})
 end
 
 # Pretty printing.
-function Base.display(tr::Trace; 
+function Base.display(call::CallSite; 
                       fields::Array{Symbol, 1} = [:val],
                       show_full = false)
     println("  __________________________________\n")
     println("               Playback\n")
-    map(fieldnames(Trace)) do f
-        val = getfield(tr, f)
-        typeof(val) <: Dict{Union{Symbol, Pair}, Choice} && begin 
+    map(fieldnames(CallSite)) do f
+        val = getfield(call, f)
+        typeof(val) <: Dict{Address, ChoiceSite} && begin 
             vals = collect(val)
             if length(vals) > 5 && !show_full
                 map(vals[1:5]) do (k, v)
                     println(" $(k)")
-                    map(fieldnames(Choice)) do nm
+                    map(fieldnames(ChoiceSite)) do nm
                         !(nm in fields) && return
                         println("          $(nm)  = $(getfield(v, nm))")
                     end
@@ -76,7 +76,7 @@ function Base.display(tr::Trace;
             else
                 map(vals) do (k, v)
                     println(" $(k)")
-                    map(fieldnames(Choice)) do nm
+                    map(fieldnames(ChoiceSite)) do nm
                         !(nm in fields) && return
                         println("          $(nm)  = $(getfield(v, nm))")
                     end
@@ -95,9 +95,44 @@ function Base.display(tr::Trace;
     println("  __________________________________\n")
 end
 
+function collect_addrs!(par::T, addrs::Vector{Union{Symbol, Pair}}, tr::Trace) where T <: Union{Symbol, Pair}
+    for (k, v) in tr.chm
+        push!(addrs, par => k)
+        if v isa CallSite
+            collect_addrs!(par => k, addrs, v.subtrace)
+        end
+    end
+    return addrs
+end
+
+function collect_addrs!(addrs::Vector{Union{Symbol, Pair}}, tr::Trace)
+    for (k, v) in tr.chm
+        push!(addrs, k)
+        if v isa CallSite
+            collect_addrs!(k, addrs, tr)
+        end
+    end
+end
+
+function collect_addrs(tr::Trace)
+    addrs = Union{Symbol, Pair}[]
+    collect_addrs!(addrs, tr)
+    return addrs
+end
+
+function Base.display(tr::Trace)
+    println("  __________________________________\n")
+    println("               Addresses\n")
+    addrs = collect_addrs(tr)
+    map(addrs) do a
+        println(" ", a)
+    end
+    println("  __________________________________\n")
+end
+
 # Merge observations and a choice map.
 function merge(obs::Dict{Address, K},
-               chm::Dict{Address, Choice}) where K
+    chm::Dict{Address, ChoiceSite}) where K
     cons = copy(obs)
     for (k, v) in chm
         haskey(cons, k) && error("SupportError: proposal has address on observed value.")
@@ -120,6 +155,5 @@ function selection(obs::Array{T, 1}) where {T <: Address}
 end
 
 function selection()
-    d = Dict{Address, Any}()
-    return ConstrainedSelection(d)
+    return EmptySelection()
 end

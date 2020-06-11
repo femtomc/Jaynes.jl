@@ -1,14 +1,14 @@
 function CategoricalMarkovChain(time_period::Int)
     # Initial.
-    init_x = rand(:x => 1, Categorical, ([0.5, 0.5], ))
+    init_x = rand(:x => 1, Categorical, [0.5, 0.5])
     observations = Vector{Int}(undef, time_period)
     observations[1] = init_x
     x = init_x
     for i in 2:time_period
         if x == 1
-            trans = rand(:x => i, Categorical, ([0.5, 0.5],))
+            trans = rand(:x => i, Categorical, [0.5, 0.5])
         else
-            trans = rand(:x => i, Categorical, ([0.8, 0.2],))
+            trans = rand(:x => i, Categorical, [0.8, 0.2])
         end
         observations[i] = trans
     end
@@ -17,7 +17,7 @@ end
 
 function CategoricalHiddenMarkovModel(time_period::Int)
     # Initial.
-    init_z = rand(:z => 1, Categorical, ([0.5, 0.5], ))
+    init_z = rand(:z => 1, Categorical, [0.5, 0.5])
     latents = Vector{Int}(undef, time_period)
     latents[1] = init_z
     observations = Vector{Int}(undef, time_period)
@@ -25,18 +25,18 @@ function CategoricalHiddenMarkovModel(time_period::Int)
     # Observation model.
     obs = (z, i) -> begin
         if z == 1
-            rand(:x => i, Categorical, ([0.5, 0.5], ))
+            rand(:x => i, Categorical, [0.5, 0.5])
         else
-            rand(:x => i, Categorical, ([0.2, 0.8], ))
+            rand(:x => i, Categorical, [0.2, 0.8])
         end
     end
 
     # Transition model.
     trans = (prev_z, i) -> begin
         if prev_z == 1
-            rand(:z => i, Categorical, ([0.5, 0.5], ))
+            rand(:z => i, Categorical, [0.5, 0.5])
         else
-            rand(:z => i, Categorical, ([0.2, 0.8], ))
+            rand(:z => i, Categorical, [0.2, 0.8])
         end
     end
 
@@ -61,13 +61,16 @@ end
     init_obs = selection([
                           (:x => 1, xs[1])
                          ])
-    ctx, ps = initialize_filter(CategoricalHiddenMarkovModel, (1,), init_obs, 10000)    
-        println(ps.lmle)
+    ps = initialize_filter(CategoricalHiddenMarkovModel, 
+                           (1, );
+                           observations = init_obs, 
+                           num_particles = 10000)    
+    println(ps.lmle)
     for t=2:5
         obs = selection([
                          (:x => t, xs[t])
                         ])
-        ctx, ps = filter_step!(ctx, (t,), ps, obs)
+        filter_step!(ps, (t,); observations = obs)
         println(ps.lmle)
     end
 end

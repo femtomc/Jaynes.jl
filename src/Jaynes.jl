@@ -1,6 +1,7 @@
 module Jaynes
 
 using Cthulhu
+using FunctionalCollections
 
 # IRRRR I'm a com-pirate.
 using Cassette
@@ -15,13 +16,16 @@ using Mjolnir
 
 using Distributions
 
+# Differentiable goop.
 using Flux
 using Flux: Params
 using Zygote
 using DistributionsAD
+
+# TODO: kill.
 using ExportAll
 
-const Address = Union{Symbol, Pair}
+const Address = Union{Symbol, Pair{Symbol, Int64}}
 
 include("core/selections.jl")
 include("core/trace.jl")
@@ -68,7 +72,6 @@ function derive_debug(mod; type_tracing = false)
         end
     end
 end
-
 
 @exportAll()
 

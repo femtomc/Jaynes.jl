@@ -1,32 +1,37 @@
 import Base.rand
-rand(addr::T, d::Type, args) where T <: Address = rand(d(args...))
-rand(addr::T, lit::K) where {T <: Address, K <: Union{Number, AbstractArray}} = lit
+rand(addr::T, d::Type, args) where T <: Union{Symbol, Pair{Symbol, Int64}} = rand(d(args...))
+rand(addr::T, lit::K) where {T <: Union{Symbol, Pair{Symbol, Int64}}, 
+                             K <: Union{Number, AbstractArray}} = lit
+
+abstract type Trace end
 
 abstract type RecordSite end
 
-struct Choice{T} <: RecordSite
+struct ChoiceSite{T} <: RecordSite
     val::T
     score::Float64
 end
 
-struct Call{T <: Trace} <: RecordSite
-    subtrace::T
-    score::Float64
+mutable struct CallSite{T <: Trace, J, K} <: RecordSite
+    trace::T
+    fn::Function
+    args::J
+    ret::K
 end
-
-abstract type Trace end
 
 mutable struct HierarchicalTrace <: Trace
     chm::Dict{Address, RecordSite}
     score::Float64
-    HierarchicalTrace() = new(Dict{Address, Choice}(), 0.0)
+    HierarchicalTrace() = new(Dict{Address, ChoiceSite}(), 0.0)
 end
 
 mutable struct VectorizedTrace{T <: Trace} <: Trace
     sub::PersistentVector{T}
     score::Float64
-    VectorizedTrace() = new(PersistentHashMap{HierarchicalTrace}(), 0.0)
+    VectorizedTrace() = new{HierarchicalTrace}(PersistentHashMap{HierarchicalTrace}(), 0.0)
 end
+
+Trace() = HierarchicalTrace()
 
 get_func(tr::Trace) = tr.func
 get_args(tr::Trace) = tr.args

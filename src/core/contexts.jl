@@ -2,99 +2,65 @@ Cassette.@context TraceCtx
 
 # ------------------- META ----------------- #
 
-# Structured metadata. This acts as dispatch on overdub - increases the efficiency of the system and forms the core set of interfaces for inference algorithms to use.
-# For each inference interface, there are typically only a few constant pieces of Meta - these pieces tend to keep constant allocations out of sampling loops.
 abstract type Meta end
 abstract type Effect end
 abstract type None <: Effect end
 
 mutable struct UnconstrainedGenerateMeta{E <: Effect} <: Meta
     tr::Trace
-    stack::Vector{Address}
     visited::Vector{Address}
-    args::Tuple
-    fn::Function
-    ret::Any
-    UnconstrainedGenerateMeta(tr::Trace) = new{None}(tr, Address[], Address[])
+    UnconstrainedGenerateMeta(tr::Trace) = new{None}(tr, Address[])
 end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
+Generate(tr::Trace, constraints::EmptySelection) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
+Generate(pass, tr::Trace, constraints::EmptySelection) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
 
 mutable struct GenerateMeta{E <: Effect} <: Meta
     tr::Trace
-    stack::Vector{Address}
     visited::Vector{Address}
+    stack::Vector{Union{Symbol, Pair}}
     constraints::ConstrainedSelection
-    args::Tuple
-    fn::Function
-    ret::Any
-    GenerateMeta(tr::Trace, constraints::ConstrainedSelection) where T = new{None}(tr, Address[], Address[], constraints)
+    GenerateMeta(tr::Trace, constraints::ConstrainedSelection) where T = new{None}(tr, Address[], Union{Symbol,Pair}[], constraints)
 end
-Generate(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
+Generate(tr::Trace, constraints::ConstrainedSelection) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
 Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
 
 mutable struct ProposalMeta{E <: Effect} <: Meta
     tr::Trace
-    stack::Vector{Address}
     visited::Vector{Address}
-    args::Tuple
-    fn::Function
-    ret::Any
-    ProposalMeta(tr::Trace) = new{None}(tr, Address[], Address[])
+    ProposalMeta(tr::Trace) = new{None}(tr, Address[])
 end
 Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
 
 mutable struct UpdateMeta{E <: Effect} <: Meta
     tr::Trace
-    stack::Vector{Address}
     visited::Vector{Address}
     constraints_visited::Vector{Address}
     constraints::ConstrainedSelection
-    args::Tuple
-    fn::Function
-    ret::Any
-    UpdateMeta(tr::Trace, constraints::ConstrainedSelection) = new{None}(tr, Address[], Address[], Address[], constraints)
+    UpdateMeta(tr::Trace, constraints::ConstrainedSelection) = new{None}(tr, Address[], Address[], constraints)
 end
 Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
 Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
 
 mutable struct RegenerateMeta{E <: Effect} <: Meta
     tr::Trace
-    stack::Vector{Address}
     visited::Vector{Address}
     selection::UnconstrainedSelection
-    args::Tuple
-    fn::Function
-    ret::Any
-    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new{None}(tr, Address[], Address[], selection(sel))
+    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new{None}(tr, Address[], selection(sel))
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, sel)))
 Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = pass, metadata = RegenerateMeta(tr, sel)))
 
-mutable struct ScoreMeta <: Meta
+mutable struct ScoreMeta{E <: Effect} <: Meta
     tr::Trace
     score::Float64
-    stack::Vector{Address}
     visited::Vector{Address}
-    args::Tuple
-    fn::Function
-    ret::Any
-    Score(tr::Trace) = new(tr, 0.0, Address[], Address[])
+    Score(tr::Trace) = new{None}(tr, 0.0, Address[])
 end
 Score(tr::Trace) = disablehooks(TraceCtx(metadata = Score(tr)))
 Score(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = Score(tr)))
-
-# Required to track nested calls in overdubbing.
-import Base: push!, pop!
-
-function push!(trm::T, call::Address) where T <: Meta
-    push!(trm.stack, call)
-end
-
-function pop!(trm::T) where T <: Meta
-    pop!(trm.stack)
-end
 
 function reset_keep_constraints!(ctx::TraceCtx{M}) where M <: Meta
     ctx.metadata.tr = Trace()
@@ -103,18 +69,13 @@ end
 
 # --------------- OVERDUB -------------------- #
 
+# ChoiceSites.
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {M <: UnconstrainedGenerateMeta, 
-                                               T <: Address}
-    # Check stack.
-    !isempty(ctx.metadata.stack) && begin
-        push!(ctx.metadata.stack, addr)
-        addr = foldr(=>, ctx.metadata.stack)
-        pop!(ctx.metadata.stack)
-    end
+                                  args...) where {M <: UnconstrainedGenerateMeta, 
+                                                  T <: Address}
 
     # Check for support errors.
     addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
@@ -122,7 +83,7 @@ end
     d = dist(args...)
     sample = rand(d)
     score = logpdf(d, sample)
-    ctx.metadata.tr.chm[addr] = Choice(sample, score)
+    ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
     push!(ctx.metadata.visited, addr)
     return sample
 end
@@ -131,14 +92,8 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {M <: GenerateMeta, 
-                                               T <: Address}
-    # Check stack.
-    !isempty(ctx.metadata.stack) && begin
-        push!(ctx.metadata.stack, addr)
-        addr = foldr(=>, ctx.metadata.stack)
-        pop!(ctx.metadata.stack)
-    end
+                                  args...) where {M <: GenerateMeta, 
+                                                  T <: Address}
 
     # Check for support errors.
     addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
@@ -149,7 +104,7 @@ end
     if haskey(ctx.metadata.constraints, addr)
         sample = ctx.metadata.constraints[addr]
         score = logpdf(d, sample)
-        ctx.metadata.tr.chm[addr] = Choice(sample, score)
+        ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
         ctx.metadata.tr.score += score
         push!(ctx.metadata.visited, addr)
         return sample
@@ -158,7 +113,7 @@ end
     else
         sample = rand(d)
         score = logpdf(d, sample)
-        ctx.metadata.tr.chm[addr] = Choice(sample, score)
+        ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
         push!(ctx.metadata.visited, addr)
         return sample
     end
@@ -168,14 +123,8 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {M <: ProposalMeta, 
-                                               T <: Address}
-    # Check stack.
-    !isempty(ctx.metadata.stack) && begin
-        push!(ctx.metadata.stack, addr)
-        addr = foldr(=>, ctx.metadata.stack)
-        pop!(ctx.metadata.stack)
-    end
+                                  args...) where {M <: ProposalMeta, 
+                                                  T <: Address}
 
     # Check for support errors.
     addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
@@ -183,7 +132,7 @@ end
     d = dist(args...)
     sample = rand(d)
     score = logpdf(d, sample)
-    ctx.metadata.tr.chm[addr] = Choice(sample, score)
+    ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
     ctx.metadata.tr.score += score
     push!(ctx.metadata.visited, addr)
     return sample
@@ -194,14 +143,8 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {M <: RegenerateMeta, 
-                                               T <: Address}
-    # Check stack.
-    !isempty(ctx.metadata.stack) && begin
-        push!(ctx.metadata.stack, addr)
-        addr = foldr(=>, ctx.metadata.stack)
-        pop!(ctx.metadata.stack)
-    end
+                                  args...) where {M <: RegenerateMeta, 
+                                                  T <: Address}
 
     # Check if in previous trace's choice map.
     in_prev_chm = haskey(ctx.metadata.tr.chm, addr)
@@ -225,7 +168,7 @@ end
     in_prev_chm && !in_sel && begin
         ctx.metadata.tr.score += score - prev_score
     end
-    ctx.metadata.tr.chm[addr] = Choice(ret, score)
+    ctx.metadata.tr.chm[addr] = ChoiceSite(ret, score)
 
     # Visited
     push!(ctx.metadata.visited, addr)
@@ -236,14 +179,8 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {M <: UpdateMeta, 
-                                               T <: Address}
-    # Check stack.
-    !isempty(ctx.metadata.stack) && begin
-        push!(ctx.metadata.stack, addr)
-        addr = foldr(=>, ctx.metadata.stack)
-        pop!(ctx.metadata.stack)
-    end
+                                  args...) where {M <: UpdateMeta, 
+                                                  T <: Address}
 
     # Check if in previous trace's choice map.
     in_prev_chm = haskey(ctx.metadata.tr.chm, addr)
@@ -274,7 +211,7 @@ end
     elseif in_constraints
         ctx.metadata.tr.score += score
     end
-    ctx.metadata.tr.chm[addr] = Choice(ret, score)
+    ctx.metadata.tr.chm[addr] = ChoiceSite(ret, score)
 
     # Visited.
     push!(ctx.metadata.visited, addr)
@@ -285,15 +222,8 @@ end
                                   call::typeof(rand), 
                                   addr::T, 
                                   dist::Type,
-                                  args) where {M <: ScoreMeta, 
-                                               T <: Address}
-    # Check stack.
-    !isempty(ctx.metadata.stack) && begin
-        push!(ctx.metadata.stack, addr)
-        addr = foldr(=>, ctx.metadata.stack)
-        pop!(ctx.metadata.stack)
-    end
-
+                                  args...) where {M <: ScoreMeta, 
+                                                  T <: Address}
     # Get val.
     val = ctx.metadata.tr.chm[addr].value
     d = dist(args...)
@@ -304,29 +234,35 @@ end
     return val
 end
 
-# ------------------ END OVERDUB ------------------- #
-
-# This handles functions (not distributions) in rand calls. When we see a rand call with a function, we push the address for that rand call onto the stack, and then recurse into the function. This organizes the choice map in the correct hierarchical way.
-@inline function Cassette.overdub(ctx::TraceCtx,
+# Function calls.
+@inline function Cassette.overdub(ctx::TraceCtx{M},
                                   c::typeof(rand),
                                   addr::T,
-                                  call::Function) where T <: Address
-    push!(ctx.metadata, addr)
-    ret = recurse(ctx, call)
-    pop!(ctx.metadata)
+                                  call::Function) where {M <: UnconstrainedGenerateMeta, 
+                                                         T <: Address}
+
+    rec_ctx = similarcontext(ctx; metadata = UnconstrainedGenerateMeta(Trace()))
+    rec_ctx.metadata.tr = Trace()
+    ret = recurse(rec_ctx, call)
+    ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, call, (), ret)
     return ret
 end
 
-@inline function Cassette.overdub(ctx::TraceCtx,
+@inline function Cassette.overdub(ctx::TraceCtx{M},
                                   c::typeof(rand),
                                   addr::T,
                                   call::Function,
-                                  args) where T <: Address
-    push!(ctx.metadata, addr)
-    ret = recurse(ctx, call, args...)
-    pop!(ctx.metadata)
+                                  args...) where {M <: UnconstrainedGenerateMeta, 
+                                                  T <: Address}
+
+    rec_ctx = similarcontext(ctx; metadata = UnconstrainedGenerateMeta(Trace()))
+    ret = recurse(rec_ctx, call, args...)
+    ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
+                                     call, 
+                                     args..., 
+                                     ret)
     return ret
 end
 
 # Fallback - encounter some Cassette issues if we don't force this override for some Core functions.
-@inline Cassette.fallback(ctx::TraceCtx, c::Function, args) = c(args)
+@inline Cassette.fallback(ctx::TraceCtx, c::Function, args...) = c(args...)
