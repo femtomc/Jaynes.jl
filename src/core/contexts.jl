@@ -6,48 +6,48 @@ abstract type Meta end
 abstract type Effect end
 abstract type None <: Effect end
 
-mutable struct UnconstrainedGenerateMeta{E <: Effect} <: Meta
-    tr::Trace
+mutable struct UnconstrainedGenerateMeta{T <: Trace} <: Meta
+    tr::T
     visited::Vector{Address}
-    UnconstrainedGenerateMeta(tr::Trace) = new{None}(tr, Address[])
+    UnconstrainedGenerateMeta(tr::T) where T <: Trace = new{T}(tr, Address[])
 end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(tr::Trace, constraints::EmptySelection) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace, constraints::EmptySelection) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
 
-mutable struct GenerateMeta{E <: Effect} <: Meta
-    tr::Trace
+mutable struct GenerateMeta{T <: Trace} <: Meta
+    tr::T
     visited::Vector{Address}
     constraints::ConstrainedSelection
-    GenerateMeta(tr::Trace, constraints::ConstrainedSelection) where T = new{None}(tr, Address[], Union{Symbol,Pair}[], constraints)
+    GenerateMeta(tr::T, constraints::ConstrainedSelection) where T <: Trace = new{None}(tr, Address[], Union{Symbol,Pair}[], constraints)
 end
 Generate(tr::Trace, constraints::ConstrainedSelection) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
 Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
 
-mutable struct ProposalMeta{E <: Effect} <: Meta
-    tr::Trace
+mutable struct ProposalMeta{T <: Trace} <: Meta
+    tr::T
     visited::Vector{Address}
-    ProposalMeta(tr::Trace) = new{None}(tr, Address[])
+    ProposalMeta(tr::T) where T <: Trace = new{T}(tr, Address[])
 end
 Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
 
-mutable struct UpdateMeta{E <: Effect} <: Meta
-    tr::Trace
+mutable struct UpdateMeta{T <: Trace} <: Meta
+    tr::T
     visited::Vector{Address}
     constraints_visited::Vector{Address}
     constraints::ConstrainedSelection
-    UpdateMeta(tr::Trace, constraints::ConstrainedSelection) = new{None}(tr, Address[], Union{Symbol, Pair}[], constraints)
+    UpdateMeta(tr::T, constraints::ConstrainedSelection) where T <: Trace = new{T}(tr, Address[], Union{Symbol, Pair}[], constraints)
 end
 Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
 Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
 
-mutable struct RegenerateMeta{E <: Effect} <: Meta
-    tr::Trace
+mutable struct RegenerateMeta{T <: Trace} <: Meta
+    tr::T
     visited::Vector{Address}
     selection::UnconstrainedSelection
-    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new{None}(tr, 
+    RegenerateMeta(tr::T, sel::Vector{Address}) where T <: Trace = new{T}(tr, 
                                                                 Address[], 
                                                                 Union{Symbol, Pair}[],
                                                                 selection(sel))
@@ -55,11 +55,11 @@ end
 Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, sel)))
 Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = pass, metadata = RegenerateMeta(tr, sel)))
 
-mutable struct ScoreMeta{E <: Effect} <: Meta
-    tr::Trace
+mutable struct ScoreMeta{T <: Trace} <: Meta
+    tr::T
     score::Float64
     visited::Vector{Address}
-    Score(tr::Trace) = new{None}(tr, 0.0, Address[])
+    Score(tr::T) where T <: Trace = new{T}(tr, 0.0, Address[])
 end
 Score(tr::Trace) = disablehooks(TraceCtx(metadata = Score(tr)))
 Score(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = Score(tr)))

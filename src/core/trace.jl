@@ -19,16 +19,32 @@ mutable struct CallSite{T <: Trace, J, K} <: RecordSite
     ret::K
 end
 
+# Hierarchical - standard interpreter style.
 mutable struct HierarchicalTrace <: Trace
     chm::Dict{Address, RecordSite}
     score::Float64
     HierarchicalTrace() = new(Dict{Address, ChoiceSite}(), 0.0)
 end
 
-mutable struct VectorizedTrace{T <: Trace} <: Trace
-    sub::PersistentVector{T}
+# Vectorized - for effects.
+mutable struct VectorizedTrace <: Trace
+    sub::PersistentVector{Trace}
     score::Float64
-    VectorizedTrace() = new{HierarchicalTrace}(PersistentHashMap{HierarchicalTrace}(), 0.0)
+    VectorizedTrace() = new(PersistentHashMap{HierarchicalTrace}(), 0.0)
+end
+
+# Graph - for restricted language.
+mutable struct GraphTrace <: Trace
+    sub::Dict{Address, Trace}
+    dependencies::Dict{Address, Vector{Address}}
+    nocacheable::Vector{DataType}
+    cache::IdDict
+    score::Float64
+    GraphTrace() = new(Dict{Address, Trace}(),
+                       Dict{Address, Vector{Address}}(),
+                       [typeof(rand)],
+                       IdDict(),
+                       score::Float64)
 end
 
 Trace() = HierarchicalTrace()

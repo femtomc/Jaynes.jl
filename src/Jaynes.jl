@@ -10,9 +10,8 @@ import Cassette: overdub, prehook, posthook, Reflection
 using MacroTools
 using MacroTools: postwalk
 using IRTools
-using IRTools: meta, IR, slots!
+using IRTools: meta, IR, slots!, Variable, typed_meta
 import IRTools: meta, IR
-using Mjolnir
 
 using Distributions
 
@@ -33,6 +32,7 @@ include("core/contexts.jl")
 include("core/gradients.jl")
 include("core/blackbox.jl")
 include("core/language_cores.jl")
+include("core/static.jl")
 include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")

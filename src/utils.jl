@@ -97,8 +97,9 @@ end
 
 function collect_addrs!(par::T, addrs::Vector{Union{Symbol, Pair}}, tr::Trace) where T <: Union{Symbol, Pair}
     for (k, v) in tr.chm
-        push!(addrs, par => k)
-        if v isa CallSite
+        if v isa ChoiceSite
+            push!(addrs, par => k)
+        elseif v isa CallSite
             collect_addrs!(par => k, addrs, v.trace)
         end
     end
@@ -107,8 +108,9 @@ end
 
 function collect_addrs!(addrs::Vector{Union{Symbol, Pair}}, tr::Trace)
     for (k, v) in tr.chm
-        push!(addrs, k)
-        if v isa CallSite
+        if v isa ChoiceSite
+            push!(addrs, k)
+        elseif v isa CallSite
             collect_addrs!(k, addrs, tr)
         end
     end

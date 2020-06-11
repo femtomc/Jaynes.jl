@@ -1,40 +1,43 @@
 # Generate.
 function trace(fn::Function, 
-               constraints::Dict{Address, T}) where T
+               constraints::Dict{Address, T};
+               pass = ignore_pass) where T
     tr = Trace()
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
+    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints), pass  = pass))
     ret = Cassette.overdub(ctx, fn)
     return CallSite(tr, fn, (), ret)
 end
 
 function trace(fn::Function, 
-               args...)
+               args::Tuple;
+               pass = ignore_pass)
     tr = Trace()
-    ctx = TraceCtx(metadata = UnconstrainedGenerateMeta(tr))
+    ctx = TraceCtx(metadata = UnconstrainedGenerateMeta(tr), pass = pass)
     ret = Cassette.overdub(ctx, fn, args...)
-    return CallSite(tr, fn, args..., ret)
+    return CallSite(tr, fn, args, ret)
 end
 
 function trace(ctx::TraceCtx{M},
                fn::Function, 
-               args...) where M <: UnconstrainedGenerateMeta
+               args::Tuple) where M <: UnconstrainedGenerateMeta
     ret = Cassette.overdub(ctx, fn, args...)
-    return CallSite(tr, fn, args..., ret)
+    return CallSite(tr, fn, args, ret)
 end
 
 function trace(constraints::Dict{Address, T},
                fn::Function, 
-               args...) where T
+               args::Tuple;
+               pass = ignore_pass) where T
     tr = Trace()
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
+    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints), pass = pass))
     ret = Cassette.overdub(ctx, fn, args...)
-    return CallSite(tr, fn, args..., ret)
+    return CallSite(tr, fn, args, ret)
 end
 
 # Gradients.
 function trace(ctx::TraceCtx{M},
                fn::Function, 
-               args...) where M <: UnconstrainedGradientMeta
+               args::Tuple) where M <: UnconstrainedGradientMeta
     ret = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.fn = fn
     ctx.metadata.args = args
@@ -42,19 +45,10 @@ function trace(ctx::TraceCtx{M},
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
-function trace(ctx::TraceCtx{M},
-               fn::Function) where M <: UnconstrainedGradientMeta
-    ret = Cassette.overdub(ctx, fn)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = ()
-    ctx.metadata.ret = ret
-    return ctx
-end
-
 # Regenerate.
 function trace(ctx::TraceCtx{M}, 
                fn::Function, 
-               args...) where M <: RegenerateMeta
+               args::Tuple) where M <: RegenerateMeta
     ret = Cassette.overdub(ctx, fn, args...)
     ctx.metadata.fn = fn
     ctx.metadata.args = args
