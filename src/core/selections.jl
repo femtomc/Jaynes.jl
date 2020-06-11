@@ -3,20 +3,20 @@ abstract type Selection end
 struct EmptySelection <: Selection end
 
 struct UnconstrainedSelection <: Selection
-    addresses::Vector{Address}
+    addresses::Vector{Union{Symbol, Pair}}
 end
 
 struct ConstrainedSelection{T} <: Selection
-    addresses::Vector{Address}
-    constraints::Dict{Address, T}
-    ConstrainedSelection(d::Dict{Address, T}) where T = new{T}(collect(keys(d)), d)
+    addresses::Vector{Union{Symbol, Pair}}
+    constraints::Dict{Union{Symbol, Pair}, T}
+    ConstrainedSelection(d::Dict{Union{Symbol, Pair}, T}) where T = new{T}(collect(keys(d)), d)
 end
 
 import Base: haskey, setindex!, getindex
-Base.haskey(s::ConstrainedSelection, key::Address) = key in s.addresses
-Base.haskey(s::UnconstrainedSelection, key::Address) = key in s.addresses
-Base.haskey(s::EmptySelection, key::Address) = error("KeyError: instances of type EmptySelection have no addresses.")
-Base.getindex(s::ConstrainedSelection, key::Address) = s.constraints[key]
-function Base.setindex!(s::ConstrainedSelection{T}, key::Address, val::T) where T
+Base.haskey(s::ConstrainedSelection, key::Union{Symbol, Pair}) = key in s.addresses
+Base.haskey(s::UnconstrainedSelection, key::Union{Symbol, Pair}) = key in s.addresses
+Base.haskey(s::EmptySelection, key::Union{Symbol, Pair}) = error("KeyError: instances of type EmptySelection have no addresses.")
+Base.getindex(s::ConstrainedSelection, key::Union{Symbol, Pair}) = s.constraints[key]
+function Base.setindex!(s::ConstrainedSelection{T}, key::Union{Symbol, Pair}, val::T) where T
     s.constraints[key] = val
 end
