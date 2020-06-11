@@ -115,5 +115,6 @@ end
 
 
 b, ir = toplevel(foo, Int)
+println(ir)
 
 end # module

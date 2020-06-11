@@ -86,8 +86,23 @@ function toplevel(call, type)
     end
     analysis = flow_analysis(ir)
     dependencies = dependency(analysis)
-    println(dependencies)
-    return (true, ir)
+    return (true, dependencies)
 end
 
 Cassette.@context GraphAnalysisCtx
+
+@inline function Cassette.overdub(ctx::GraphAnalysisCtx,
+                                  c::typeof(rand),
+                                  addr::T,
+                                  call::Function,
+                                  args...) where T <: Address
+
+    test, dependencies = toplevel(call, typeof(args...))
+    ret = recurse(rec_ctx, call, args...)
+    ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
+                                         call, 
+                                         args..., 
+                                         ret)
+    return ret
+end
+
