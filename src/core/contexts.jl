@@ -5,20 +5,22 @@ Cassette.@context TraceCtx
 # Structured metadata. This acts as dispatch on overdub - increases the efficiency of the system and forms the core set of interfaces for inference algorithms to use.
 # For each inference interface, there are typically only a few constant pieces of Meta - these pieces tend to keep constant allocations out of sampling loops.
 abstract type Meta end
+abstract type Effect end
+abstract type None <: Effect end
 
-mutable struct UnconstrainedGenerateMeta <: Meta
+mutable struct UnconstrainedGenerateMeta{E <: Effect} <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
     args::Tuple
     fn::Function
     ret::Any
-    UnconstrainedGenerateMeta(tr::Trace) = new(tr, Address[], Address[])
+    UnconstrainedGenerateMeta(tr::Trace) = new{None}(tr, Address[], Address[])
 end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
 
-mutable struct GenerateMeta <: Meta
+mutable struct GenerateMeta{E <: Effect} <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
@@ -26,24 +28,24 @@ mutable struct GenerateMeta <: Meta
     args::Tuple
     fn::Function
     ret::Any
-    GenerateMeta(tr::Trace, constraints::ConstrainedSelection) where T = new(tr, Address[], Address[], constraints)
+    GenerateMeta(tr::Trace, constraints::ConstrainedSelection) where T = new{None}(tr, Address[], Address[], constraints)
 end
 Generate(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
 Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
 
-mutable struct ProposalMeta <: Meta
+mutable struct ProposalMeta{E <: Effect} <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
     args::Tuple
     fn::Function
     ret::Any
-    ProposalMeta(tr::Trace) = new(tr, Address[], Address[])
+    ProposalMeta(tr::Trace) = new{None}(tr, Address[], Address[])
 end
 Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
 
-mutable struct UpdateMeta <: Meta
+mutable struct UpdateMeta{E <: Effect} <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
@@ -52,12 +54,12 @@ mutable struct UpdateMeta <: Meta
     args::Tuple
     fn::Function
     ret::Any
-    UpdateMeta(tr::Trace, constraints::ConstrainedSelection) = new(tr, Address[], Address[], Address[], constraints)
+    UpdateMeta(tr::Trace, constraints::ConstrainedSelection) = new{None}(tr, Address[], Address[], Address[], constraints)
 end
 Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
 Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
 
-mutable struct RegenerateMeta <: Meta
+mutable struct RegenerateMeta{E <: Effect} <: Meta
     tr::Trace
     stack::Vector{Address}
     visited::Vector{Address}
@@ -65,7 +67,7 @@ mutable struct RegenerateMeta <: Meta
     args::Tuple
     fn::Function
     ret::Any
-    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new(tr, Address[], Address[], selection(sel))
+    RegenerateMeta(tr::Trace, sel::Vector{Address}) = new{None}(tr, Address[], Address[], selection(sel))
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, sel)))
 Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = pass, metadata = RegenerateMeta(tr, sel)))

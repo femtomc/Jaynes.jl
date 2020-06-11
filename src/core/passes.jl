@@ -45,16 +45,17 @@ end
 
 const ignore_pass = Cassette.@pass ignore_transform
 
-@generated function passfold(ctx, args...)
+macro passfold(ctx, args...)
     expr = quote
-        function compose_transform(::Type{Ctx}, r::Jaynes.Reflection)
+        function compose_transform(::Any, r::Jaynes.Reflection)
             m = Jaynes.meta(r.signature)
             ir = Jaynes.IR(m)
-            trans = foldl(∘, args)(ir)
-            new = update!(r.code_info, trans)
+            map($(esc(args))) do fn
+                ir = fn(ir)
+            end
+            new = update!(r.code_info, ir)
             return new
         end
-        #Cassette.@pass compose_transform
     end
     expr
 end
