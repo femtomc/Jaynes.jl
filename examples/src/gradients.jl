@@ -1,7 +1,7 @@
 module Gradients
 
 include("../../src/Jaynes.jl")
-using .Jaynes
+using .Jaynes: importance_sampling, train!
 using Distributions
 using Flux
 using Plots
