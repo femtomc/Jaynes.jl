@@ -1,5 +1,9 @@
 There are many active probabilistic programming frameworks in the Julia ecosystem (see [Related Work](related_work.md)) - the ecosystem is one of the richest sources of probabilistic programming research in any language. Frameworks tend to differentiate themselves based upon what model class they efficiently express ([Stheno](https://github.com/willtebbutt/Stheno.jl) for example allows for convenient expression of Gaussian processes). Other frameworks support universal probabilistic programming with sample-based methods, and have optimized features which allow the efficient composition/expression of inference queries (e.g. [Turing](https://turing.ml/dev/) and [Gen](https://github.com/probcomp/Gen.jl)). Jaynes sits within this latter camp - it is strongly influenced by Turing and Gen, but more closely resembles a system like [Zygote](https://github.com/FluxML/Zygote.jl). The full-scope Jaynes system will allow you to express the same things you might express in these other systems - but the long term research goals may deviate slightly from these other libraries. In this section, I will discuss a few of the long term goals.
 
+**Disclaimer**
+
+> It's possible that this library will change in fundamental ways when new compiler interfaces become available in 1.6 - 2.0. The core implementation of this library will likely change as these interfaces become available, but the top level functionality should not change.
+
 ---
 
 ### Graphical model DSL

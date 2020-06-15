@@ -6,6 +6,7 @@ makedocs(sitename = "Jaynes.jl",
                   #"Concepts" => "concepts.md",
                   "Implementation architecture" => "architecture.md",
                   "Contextual domain-specific languages" => "contextual_DSLs.md",
+                  "Differentiable programming" => "gradients.md",
                   #"Examples" => [
                   #               "Bayesian linear regression" => "bayeslinreg.md",
                   #               "Autoencoding with black box extensions" => "autoencoding.md",
