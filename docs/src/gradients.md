@@ -69,6 +69,8 @@ display(plt)
 
 Despite the fact that this seems like a _batch_ training step with batch `trs` - the optimization is performed on a trace by trace basis, because traces can have different shapes. There are methodologies to allow for vectorized batching of traces (i.e. when the modeling language is restricted, so that the call graph of the program is constant over traces) but they are not yet enabled in the library.
 
+After training, the resultant parameter values are stored in `trained_ctx.metadata.trainable` which is a map from `Address` to values. These values can be extracted and used in other contexts - the contextual execution of any program which includes addressed `rand` calls with literals will check the context for `trainable` metadata and return if the address matches a key.
+
 ### Inference compilation
 
 One powerful inference feature allowed by the differentiable programming capabilities available in Julia is the creation of _inference compilers_ automatically on a program by program basis. Inference compilers are neural network architectures which are trained to produce proposal distributions for sequential sampling-based inference engines.
