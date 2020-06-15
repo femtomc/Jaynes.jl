@@ -12,10 +12,6 @@ One of the research goals of Jaynes is to identify _composable interfaces_ for a
 
 A priori, there is no reason why these representations can't be combined in some way. The difficulty lies in deciding how to switch between representations when a program is amenable to both, as well as how the different representations will communicate across inference interfaces. For example, consider performing belief propagation on a model which supports both discrete distributions and function call sites for probabilistic programs which required a sample-based tracing mechanism for interpretation. To enable inference routines to operate on this "call graph" style representation, we have to construct and reason about the representation separately from the runtime of each program.
 
-### Density compilation
-
-TODO.
-
 ### Automatic inference compilation
 
 Jaynes already provides (rudimentary) support for gradient-based learning in probabilistic programs. Jaynes also provides a simple interface to construct and use [_inference compilers_](https://arxiv.org/abs/1610.09900). The library function `inference_compilation` provides access to the inference compiler context. The result of inference compilation is a trained inference compiler context which can be used to generate traces for the posterior conditioned on observations.
