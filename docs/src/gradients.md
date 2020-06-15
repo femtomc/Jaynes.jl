@@ -1,4 +1,6 @@
-Jaynes contains a number of components which utilize or allow for _differential programming_. At the highest level, learnable parameters can be declared by passing literals into `rand` calls.
+Jaynes contains a number of components which utilize or allow for _differential programming_. At the highest level, learnable parameters can be declared by passing literals into `rand` calls. These declarations are not used in contexts parametrized by inference and tracing metadata, but have a special interpretation in contexts parametrized by `GradientMeta` instances.
+
+### Learnable parameters
 
 ```julia
 # Literals are tracked as trainable.
@@ -64,3 +66,7 @@ display(plt)
 ```
 
 Despite the fact that this seems like a _batch_ training step with batch `trs` - the optimization is performed on a trace by trace basis, because traces can have different shapes. There are methodologies to allow for vectorized batching of traces (i.e. when the modeling language is restricted, so that the call graph of the program is constant over traces) but they are not yet enabled in the library.
+
+### Inference compilation
+
+One powerful inference feature allowed by the differentiable programming capabilities available in Julia is the creation of _inference compilers_ automatically on a program by program basis. Inference compilers are neural network architectures which are trained to produce proposal distributions for sequential sampling-based inference engines.
