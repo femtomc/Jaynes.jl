@@ -1,4 +1,4 @@
-Jaynes contains a number of components which utilize or allow for _differential programming_. At the highest level, learnable parameters can be declared by passing literals into `rand` calls. These declarations are not used in contexts parametrized by inference and tracing metadata, but have a special interpretation in contexts parametrized by `GradientMeta` instances.
+Jaynes contains a number of components which utilize or allow for _differentiable programming_. At the highest level, learnable parameters can be declared by passing literals into `rand` calls. These declarations are not used in contexts parametrized by inference and tracing metadata, but have a special interpretation in contexts parametrized by `GradientMeta` instances.
 
 ### Learnable parameters
 
