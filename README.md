@@ -15,9 +15,8 @@ Currently, _Jaynes_ supports a dynamic modeling DSL which is syntactically close
 
 Currently supported inference algorithms for this DSL:
 - [X] Importance sampling
-- [ ] Programmable MCMC
-- [ ] HMC
-- [ ] Metropolis-Hastings
+- [ ] Programmable MCMC (WIP)
+- [ ] Metropolis-Hastings (WIP)
 - [X] Particle filtering
 - [X] Inference compilation (training pipeline complete, now interfaces to use trained network need to be built)
 - [X] Gradient-based methods (fundamental infrastructure is working, BBVI not in yet)
