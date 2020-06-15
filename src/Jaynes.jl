@@ -19,7 +19,6 @@ using Flux
 using Flux: Params
 using Zygote
 using DistributionsAD
-using ExportAll
 
 const Address = Union{Symbol, Pair}
 
@@ -68,8 +67,5 @@ function derive_debug(mod; type_tracing = false)
         end
     end
 end
-
-
-@exportAll()
 
 end # module
