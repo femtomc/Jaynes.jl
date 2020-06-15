@@ -1,11 +1,26 @@
 # A static analysis allows construction of the highly-efficient GraphTrace. This is constructed by determining where randomness flows. When used in iterative contexts, the dependence information can be used to identify argdiff-style information automatically in any call. If the analysis fails for a call - the fallback is the hierarchical (or vector) trace.
 
-struct Analysis
+abstract type Analysis end
+abstract type CallAnalysis <: Analysis end
+
+struct StaticAnalysis <: CallAnalysis
     reach::Dict
     sites::Vector{Variable}
     addrs::Vector{QuoteNode}
     map::Dict
 end
+
+struct FallbackAnalysis <: CallAnalysis
+end
+
+mutable struct CallGraph{T} <: Analysis
+    expanded::Dict{Address, CallGraph}
+    dependencies::T
+    CallGraph(map::T) where T = new{T}(Dict{Address, CallGraph}(), map)
+    CallGraph() = new{Nothing}(Dict{Address, CallGraph}(), nothing)
+end
+
+# ---- Analysis ---- #
 
 function lower_to_typed_ir(call, type)
     sig = Tuple{typeof(call), type}
@@ -19,6 +34,7 @@ function control_flow_check(ir)
     return true
 end
 
+# Reaching analysis.
 function reaching!(reach::Vector{Variable}, p, var, ir)
     for (v, st) in ir
         st.expr isa Expr && begin
@@ -75,34 +91,43 @@ function dependency(a::Analysis)
         end
         map[a.map[k].value] = Set(depends)
     end
-    return map
+    return CallGraph(map)
 end
 
-function toplevel(call, type)
+# ---- Driver ---- #
+
+# Recurses into `rand` calls with function calls (in all branches!). 
+# If the call has control flow which is not unrollable at compile-time, falls back on no analysis.
+# Returns the dependency analysis in call graph (tree) form.
+function construct_graph!(parent, addr, call, type)
     ir = typed_ir(call, type)
-    !control_flow_check(ir) && begin
-        @info "In $(stacktrace()[2]): analysis error.\nFalling back on hierarchical representation."
-        return (false, nothing)
+    if control_flow_check(ir)
+        @info "In IR at address $(addr): static analysis error.\nFalling back on hierarchical representation."
+        graph = CallGraph()
+    else
+        analysis = flow_analysis(ir)
+        dependencies = dependency(analysis)
+        graph = CallGraph(dependencies)
     end
-    analysis = flow_analysis(ir)
-    dependencies = dependency(analysis)
-    return (true, dependencies)
+    # Recurse
+    
+    # Mutate.
+    parent[addr] = graph
 end
 
-Cassette.@context GraphAnalysisCtx
+# Toplevel analysis driver. 
+function construct_graph(call, type)
+    ir = typed_ir(call, type)
+    if !control_flow_check(ir)
+        @info "In $(stacktrace()[2]): analysis error.\nFalling back on hierarchical representation."
+        graph = CallGraph()
+    else
+        analysis = flow_analysis(ir)
+        dependencies = dependency(analysis)
+        graph = CallGraph(dependencies)
+    end
 
-@inline function Cassette.overdub(ctx::GraphAnalysisCtx,
-                                  c::typeof(rand),
-                                  addr::T,
-                                  call::Function,
-                                  args...) where T <: Address
+    # Now recurse into rand calls.
 
-    test, dependencies = toplevel(call, typeof(args...))
-    ret = recurse(rec_ctx, call, args...)
-    ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
-                                         call, 
-                                         args..., 
-                                         ret)
-    return ret
+    return graph
 end
-

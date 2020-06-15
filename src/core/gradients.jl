@@ -4,12 +4,8 @@ struct SiteGradients{K}
 end
 
 mutable struct UnconstrainedGradientMeta <: Meta
-    stack::Vector{Address}
     visited::Vector{Address}
-    trainable::Dict{Address, Union{Number, AbstractArray}}
-    gradients::Dict{Address, Vector{SiteGradients}}
-    tracker::IdDict{Union{Number, AbstractArray}, Address}
-    parents::Dict{Address, Vector{Address}}
+    learnable::LearnableUnconstrainedSelection
     tr::Trace
     loss::Float64
     args::Tuple
@@ -43,13 +39,6 @@ function Cassette.overdub(ctx::TraceCtx{M},
                           dist::Type,
                           args) where {M <: UnconstrainedGradientMeta, 
                                        T <: Address}
-
-    # Check stack.
-    !isempty(ctx.metadata.stack) && begin
-        push!(ctx.metadata.stack, addr)
-        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
-        pop!(ctx.metadata.stack)
-    end
 
     # Build dependency graph.
     passed_in = filter(args) do a 
@@ -122,17 +111,11 @@ function Cassette.overdub(ctx::TraceCtx{M},
 end
 
 function Cassette.overdub(ctx::TraceCtx{M}, 
-                          call::typeof(rand), 
+                          call::typeof(learnable), 
                           addr::T,
                           lit::K) where {M <: UnconstrainedGradientMeta, 
                                          T <: Address,
                                          K <: Union{Number, AbstractArray}}
-    # Check stack.
-    !isempty(ctx.metadata.stack) && begin
-        push!(ctx.metadata.stack, addr)
-        addr = foldr((x, y) -> x => y, ctx.metadata.stack)
-        pop!(ctx.metadata.stack)
-    end
 
     # Check for support errors.
     addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")

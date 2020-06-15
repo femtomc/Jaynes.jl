@@ -1,15 +1,34 @@
-abstract type Selection end
-abstract type ConstrainedSelection <: Selection end
-abstract type UnconstrainedSelection <: Selection end
+# Address selections are used by many different contexts.
 
-struct HierarchicalUnconstrainedSelection <: UnconstrainedSelection
-    map::Dict{Address, HierarchicalUnconstrainedSelection}
+abstract type Selection end
+
+struct UnconstrainedSelection <: Selection
+    map::Dict{Address, UnconstrainedSelection}
 end
 
-struct HierarchicalConstrainedSelection <: ConstrainedSelection
-    map::Dict{Address, HierarchicalConstrainedSelection}
+struct ConstrainedSelection <: Selection
+    map::Dict{Address, ConstrainedSelection}
     constraints::Dict{Address, Any}
     ConstrainedSelection(d::Dict{Union{Symbol, Pair}, T}) where T = new(collect(keys(d)), d)
+end
+
+# Mutable - represents a set of learnable parameters in each call.
+mutable struct LearnableUnconstrainedSelection <: Selection
+    map::Dict{Address, LearnableUnconstrainedSelection}
+    trainable::Dict{Address, Union{Number, AbstractArray}}
+    gradients::Dict{Address, Vector{SiteGradients}}
+    parents::Dict{Address, Vector{Address}}
+    tracker::IdDict{Union{Number, AbstractArray}, Address}
+end
+
+mutable struct LearnableConstrainedSelection <: Selection
+    map::Dict{Address, LearnableConstrainedSelection}
+    trainable::Dict{Address, Union{Number, AbstractArray}}
+    gradients::Dict{Address, Vector{SiteGradients}}
+    parents::Dict{Address, Vector{Address}}
+    tracker::IdDict{Union{Number, AbstractArray}, Address}
+    constraints::Dict{Address, Any}
+    LearnableConstrainedSelection(d::Dict{Union{Symbol, Pair}, T}) where T = new(collect(keys(d)), d)
 end
 
 struct EmptySelection <: Selection end
