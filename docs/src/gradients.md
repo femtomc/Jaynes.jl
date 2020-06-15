@@ -8,7 +8,7 @@ x = rand(:x, 10.0)
 t = rand(:t, 7.0)
 ```
 
-This informally represents a sort of delta distribution with initial parameter equal to the literal. You might imagine constructing a program with learnable parameters:
+This informally represents a sort of delta distribution with initial parameter equal to the literal. You might imagine constructing a program `foo1` with learnable parameters:
 
 ```julia
 function foo1()
@@ -32,7 +32,7 @@ function foo1()
 end
 ```
 
-The natural objective is the `logpdf` of a trace over the execution of this program. In variational inference, we might generate traces from another program, and perform gradient-based learning to maximize the `logpdf` of the model program with learnable parameters.
+The natural objective is the `logpdf` of a trace over the execution of this program. We might generate traces from another program, and perform gradient-based learning to maximize the `logpdf` of the model program with learnable parameters.
 
 ```julia
 function foo2()
@@ -57,7 +57,7 @@ We can generate a batch of traces from the target `foo2`:
 ctx, trs, _, _ = importance_sampling(foo2, (), 10000)
 ```
 
-Jaynes support [Flux](https://github.com/FluxML/Flux.jl)-style learning APIs:
+Jaynes supports [Flux](https://github.com/FluxML/Flux.jl)-style learning APIs:
 
 ```julia
 trained_ctx, losses = train!(ADAM(), foo1, (), trs)
