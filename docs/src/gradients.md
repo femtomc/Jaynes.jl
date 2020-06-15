@@ -68,7 +68,9 @@ display(plt)
 ![LogPDF loss over training set.](assets/gradients_loss.png)
 
 !!! warning
-    Despite the fact that this seems like a _batch_ training step with batch `trs` - the optimization is performed on a trace by trace basis, because traces can have different shapes. There are methodologies to allow for vectorized batching of traces (i.e. when the modeling language is restricted, so that the call graph of the program is constant over traces) but they are not yet enabled in the library.
+    Despite the fact that this seems like a _batch_ training step with batch `trs` - the optimization is performed on a trace by trace basis, because traces can have different shapes. 
+
+    There are methodologies to allow for vectorized batching of traces (i.e. when the modeling language is restricted, so that the call graph of the program is constant over traces) but they are not yet enabled in the library.
 
 Here, after training, the resultant parameter values are stored in `trained_ctx.metadata.trainable` which is a map from `Address` to values. These values can be extracted and used in other contexts - the contextual execution of any program which includes addressed `rand` calls with literals will check the context for `trainable` metadata and return if the address matches a key.
 
