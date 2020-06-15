@@ -30,6 +30,8 @@ _Jaynes_ is equipped with the ability to extend the tracing interface to black-b
 The following example shows how this extension mechanism works.
 
 ```julia
+using Jaynes: @primitive, Trace, Generate, trace
+
 function foo(y::Float64)
     # Untraced randomness.
     y = rand(Normal(0.5, 3.0))
@@ -87,8 +89,7 @@ The motivation for this project is to identify interfaces and techniques to comb
 ```julia
 module Geometric
 
-include("../src/Jaynes.jl")
-using .Jaynes
+using Jaynes: trace
 using Distributions
 
 geo(p::Float64) = rand(:flip, Bernoulli, (p, )) == 1 ? 0 : 1 + rand(:geo, geo, p)
