@@ -2,7 +2,7 @@ There are many active probabilistic programming frameworks in the Julia ecosyste
 
 
 !!! warning
-    It's possible that this library will change in fundamental ways when new compiler interfaces become available in 1.6. The core implementation of this library will likely change as these interfaces become available, but the top level functionality should not change.
+    It's possible that this library will change in fundamental ways when new compiler interfaces become available in Julia 1.6 and beyond. The core implementation of this library will likely change as these interfaces become available (and the library should become more performant!) but the top level functionality should not change.
 
 ---
 
