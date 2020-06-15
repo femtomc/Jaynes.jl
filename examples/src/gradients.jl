@@ -44,7 +44,7 @@ end
 
 ctx, trs, _, _ = importance_sampling(foo2, (), 10000)
 trained_ctx, losses = train!(ADAM(), foo1, (), trs)
-plt = Plots.plot(losses)
+plt = Plots.plot(losses, legend=:false)
 display(plt)
 
 end # module

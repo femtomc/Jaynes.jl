@@ -61,9 +61,11 @@ Jaynes support [Flux](https://github.com/FluxML/Flux.jl)-style learning APIs:
 
 ```julia
 trained_ctx, losses = train!(ADAM(), foo1, (), trs)
-plt = plot(losses)
+plt = plot(losses, legend=:false)
 display(plt)
 ```
+
+![LogPDF loss over training set.](assets/gradients_loss.png)
 
 Despite the fact that this seems like a _batch_ training step with batch `trs` - the optimization is performed on a trace by trace basis, because traces can have different shapes. There are methodologies to allow for vectorized batching of traces (i.e. when the modeling language is restricted, so that the call graph of the program is constant over traces) but they are not yet enabled in the library.
 
