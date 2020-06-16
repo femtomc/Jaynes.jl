@@ -12,6 +12,7 @@ using IRTools
 using IRTools: meta, IR, slots!
 import IRTools: meta, IR
 using Mjolnir
+using Logging
 
 using Distributions
 
@@ -35,7 +36,7 @@ include("inference/inference_compilation.jl")
 include("tracing.jl")
 include("core/passes.jl")
 
-function derive_debug(mod; type_tracing = false)
+function derive_debug(mod; path = String(gensym()) * ".txt", type_tracing = false)
     @assert mod isa Module
     fns = filter(names(mod)) do nm
         try
@@ -51,23 +52,29 @@ function derive_debug(mod; type_tracing = false)
         end
     end
 
+    @info "Jaynes says: deriving debug calls.\n$(map(x -> String(x) * "\n", fns)...)"
     exprs = map(fns) do f
         if type_tracing
-            @eval begin
+            @eval mod begin
                 function Jaynes.prehook(::Jaynes.TraceCtx, call::typeof($mod.$f), args...)
-                    @info "$(stacktrace()[3])\n" call typeof(args)
+                    @debug "$(stacktrace()[3])\n" call typeof(args)
                     println("Beginning type inference...")
                     Cthulhu.descend(call, typeof(args))
                 end
             end
         else
-            @eval begin
+            @eval mod begin
                 function Jaynes.prehook(::Jaynes.TraceCtx, call::typeof($mod.$f), args...)
-                    @info "$(stacktrace()[3])\n" call typeof(args)
+                    @debug "$(stacktrace()[3])\n" call typeof(args)
                 end
             end
         end
     end
+    
+    io = open(path, "w+")
+    logger = Logging.SimpleLogger(io)
+    Logging.global_logger(logger)
+    return logger
 end
 
 end # module
