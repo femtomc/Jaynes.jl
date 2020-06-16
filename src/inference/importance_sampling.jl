@@ -8,7 +8,7 @@ function importance_sampling(model::Function,
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     rets = Vector{Any}(undef, num_samples)
-    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+    ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(Trace())))
     for i in 1:num_samples
         if isempty(args)
             ret = Cassette.overdub(ctx, model)

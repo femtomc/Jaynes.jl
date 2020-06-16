@@ -26,7 +26,7 @@ mutable struct GenerateMeta <: Meta
     args::Tuple
     fn::Function
     ret::Any
-    GenerateMeta(tr::Trace, constraints::ConstrainedSelection) where T = new(tr, Address[], Address[], constraints)
+    GenerateMeta(tr::Trace, constraints::ConstrainedSelection) = new(tr, Address[], Address[], constraints)
 end
 Generate(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
 Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
@@ -54,8 +54,8 @@ mutable struct UpdateMeta <: Meta
     ret::Any
     UpdateMeta(tr::Trace, constraints::ConstrainedSelection) = new(tr, Address[], Address[], Address[], constraints)
 end
-Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
-Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
+Update(tr::Trace, constraints) = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
+Update(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
 
 mutable struct RegenerateMeta <: Meta
     tr::Trace
@@ -328,3 +328,4 @@ end
 
 # Fallback - encounter some Cassette issues if we don't force this override for some Core functions.
 @inline Cassette.fallback(ctx::TraceCtx, c::Function, args) = c(args)
+#@inline Cassette.call(::TraceCtx, f::typeof(Core.apply_type), a::Type{A}, b::Type{B}) where {A,B} = f(a, b)

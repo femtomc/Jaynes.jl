@@ -5,7 +5,7 @@ using Cthulhu
 # IRRRR I'm a com-pirate.
 using Cassette
 using Cassette: recurse, similarcontext, disablehooks, Reflection, canrecurse
-import Cassette: overdub, prehook, posthook, Reflection
+import Cassette: overdub, prehook, posthook, Reflection, fallback
 using MacroTools
 using MacroTools: postwalk
 using IRTools
@@ -45,8 +45,10 @@ function derive_debug(mod; type_tracing = false)
             false
         end
     end
-    @eval begin
-        using Revise
+    if type_tracing
+        @eval begin
+            using Revise
+        end
     end
 
     exprs = map(fns) do f
