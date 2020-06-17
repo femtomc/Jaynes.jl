@@ -13,6 +13,7 @@ using IRTools: meta, IR, slots!
 import IRTools: meta, IR
 using Mjolnir
 using Logging
+using Dates
 
 using Distributions
 
@@ -36,7 +37,10 @@ include("inference/inference_compilation.jl")
 include("tracing.jl")
 include("core/passes.jl")
 
-function derive_debug(mod; path = String(gensym()) * ".txt", type_tracing = false)
+function derive_debug(mod; path = "jayneslog_$(Time(Dates.now())).txt", type_tracing = false)
+    io = open(path, "w+")
+    logger = Logging.SimpleLogger(io)
+    Logging.global_logger(logger)
     @assert mod isa Module
     fns = filter(names(mod)) do nm
         try
@@ -57,7 +61,7 @@ function derive_debug(mod; path = String(gensym()) * ".txt", type_tracing = fals
         if type_tracing
             @eval mod begin
                 function Jaynes.prehook(::Jaynes.TraceCtx, call::typeof($mod.$f), args...)
-                    @debug "$(stacktrace()[3])\n" call typeof(args)
+                    @info "\n$(stacktrace()[3])\n" call typeof(args)
                     println("Beginning type inference...")
                     Cthulhu.descend(call, typeof(args))
                 end
@@ -65,15 +69,12 @@ function derive_debug(mod; path = String(gensym()) * ".txt", type_tracing = fals
         else
             @eval mod begin
                 function Jaynes.prehook(::Jaynes.TraceCtx, call::typeof($mod.$f), args...)
-                    @debug "$(stacktrace()[3])\n" call typeof(args)
+                    @info "\n$(stacktrace()[3])\n" call typeof(args)
                 end
             end
         end
     end
     
-    io = open(path, "w+")
-    logger = Logging.SimpleLogger(io)
-    Logging.global_logger(logger)
     return logger
 end
 
