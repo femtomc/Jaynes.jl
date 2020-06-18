@@ -1,10 +1,9 @@
 import Base.rand
 rand(addr::T, d::Type, args) where T <: Union{Symbol, Pair{Symbol, Int64}} = rand(d(args...))
-rand(addr::T, lit::K) where {T <: Union{Symbol, Pair{Symbol, Int64}}, 
-                             K <: Union{Number, AbstractArray}} = lit
+learnable(addr::T, lit::K) where {T <: Union{Symbol, Pair{Symbol, Int64}}, 
+                                  K <: Union{Number, AbstractArray}} = lit
 
 abstract type Trace end
-
 abstract type RecordSite end
 
 struct ChoiceSite{T} <: RecordSite

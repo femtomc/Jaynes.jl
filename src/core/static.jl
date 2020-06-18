@@ -79,7 +79,7 @@ function flow_analysis(ir)
             e
         end
     end
-    return Analysis(reach, sites, addrs, var_sym_map)
+    return StaticAnalysis(reach, sites, addrs, var_sym_map)
 end
 
 function dependency(a::Analysis)
@@ -100,7 +100,7 @@ end
 # If the call has control flow which is not unrollable at compile-time, falls back on no analysis.
 # Returns the dependency analysis in call graph (tree) form.
 function construct_graph!(parent, addr, call, type)
-    ir = typed_ir(call, type)
+    ir = lower_to_typed_ir(call, type)
     if control_flow_check(ir)
         @info "In IR at address $(addr): static analysis error.\nFalling back on hierarchical representation."
         graph = CallGraph()
@@ -117,7 +117,7 @@ end
 
 # Toplevel analysis driver. 
 function construct_graph(call, type)
-    ir = typed_ir(call, type)
+    ir = lower_to_typed_ir(call, type)
     if !control_flow_check(ir)
         @info "In $(stacktrace()[2]): analysis error.\nFalling back on hierarchical representation."
         graph = CallGraph()

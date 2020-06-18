@@ -21,18 +21,15 @@ using Flux: Params
 using Zygote
 using DistributionsAD
 
-# TODO: kill.
-using ExportAll
-
 const Address = Union{Symbol, Pair{Symbol, Int64}}
 
+include("core/static.jl")
 include("core/selections.jl")
 include("core/trace.jl")
 include("core/contexts.jl")
 include("core/gradients.jl")
 include("core/blackbox.jl")
 include("core/language_cores.jl")
-include("core/static.jl")
 include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")
@@ -72,7 +69,5 @@ function derive_debug(mod; type_tracing = false)
         end
     end
 end
-
-@exportAll()
 
 end # module
