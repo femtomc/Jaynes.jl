@@ -1,7 +1,6 @@
 module Jaynes
 
 using Cthulhu
-using FunctionalCollections
 
 # IRRRR I'm a com-pirate.
 using Cassette
@@ -47,8 +46,10 @@ function derive_debug(mod; type_tracing = false)
             false
         end
     end
-    @eval begin
-        using Revise
+    if type_tracing
+        @eval begin
+            using Revise
+        end
     end
 
     exprs = map(fns) do f

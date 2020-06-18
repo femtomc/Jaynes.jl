@@ -1,7 +1,7 @@
 module GraphIRScratch
 
 include("../src/Jaynes.jl")
-using Jaynes
+using .Jaynes
 using Distributions
 
 function bar(z::Float64)

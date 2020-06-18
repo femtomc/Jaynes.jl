@@ -25,14 +25,7 @@ mutable struct HierarchicalTrace <: Trace
     HierarchicalTrace() = new(Dict{Address, ChoiceSite}(), 0.0)
 end
 
-# Vectorized - for effects.
-mutable struct VectorizedTrace <: Trace
-    sub::PersistentVector{Trace}
-    score::Float64
-    VectorizedTrace() = new(PersistentHashMap{HierarchicalTrace}(), 0.0)
-end
-
-# Graph - for restricted language.
+# Graph - for when analysis is available.
 mutable struct GraphTrace <: Trace
     sub::Dict{Address, Trace}
     dependencies::Dict{Address, Vector{Address}}

@@ -1,4 +1,11 @@
-# A static analysis allows construction of the highly-efficient GraphTrace. This is constructed by determining where randomness flows. When used in iterative contexts, the dependence information can be used to identify argdiff-style information automatically in any call. If the analysis fails for a call - the fallback is the hierarchical (or vector) trace.
+# Graph IR - a representation which can be packaged and sent into the runtime execution context for specialization.
+
+abstract type GraphIR end
+
+# Static analysis allows construction of the highly-efficient GraphTrace for method bodies which support it. 
+# This is constructed by determining where randomness flows using a reaching analysis. 
+# When used in iterative contexts, the dependence information can be used to identify argdiff-style information automatically in any call. 
+# If the analysis fails for a call - the fallback is the hierarchical (or vector) trace.
 
 abstract type Analysis end
 abstract type CallAnalysis <: Analysis end
@@ -22,9 +29,9 @@ end
 
 # ---- Analysis ---- #
 
-function lower_to_typed_ir(call, type)
+function lower_to_ir(call, type)
     sig = Tuple{typeof(call), type}
-    m = typed_meta(sig)
+    m = meta(sig)
     ir = IR(m)
     return ir
 end
@@ -100,7 +107,7 @@ end
 # If the call has control flow which is not unrollable at compile-time, falls back on no analysis.
 # Returns the dependency analysis in call graph (tree) form.
 function construct_graph!(parent, addr, call, type)
-    ir = lower_to_typed_ir(call, type)
+    ir = lower_to_ir(call, type)
     if control_flow_check(ir)
         @info "In IR at address $(addr): static analysis error.\nFalling back on hierarchical representation."
         graph = CallGraph()
@@ -117,7 +124,7 @@ end
 
 # Toplevel analysis driver. 
 function construct_graph(call, type)
-    ir = lower_to_typed_ir(call, type)
+    ir = lower_to_ir(call, type)
     if !control_flow_check(ir)
         @info "In $(stacktrace()[2]): analysis error.\nFalling back on hierarchical representation."
         graph = CallGraph()
