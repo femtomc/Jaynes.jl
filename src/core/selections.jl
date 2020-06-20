@@ -26,12 +26,15 @@ struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: Sele
     UnconstrainedHierarchicalSelection() = new{UnconstrainedSelectByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedSelectByAddress())
 end
 
-# Base imports.
 import Base: haskey
-Base.haskey(usa::UnconstrainedSelectByAddress, addr::Address) = addr in usa.select
-Base.haskey(csa::ConstrainedSelectByAddress, addr::Address) = addr in keys(csa.select)
+Base.haskey(usa::UnconstrainedSelectByAddress, addr::Address) = haskey(usa.select, addr)
+Base.haskey(csa::ConstrainedSelectByAddress, addr::Address) = haskey(csa.select, addr)
 Base.haskey(hs::ConstrainedHierarchicalSelection, addr::Address) = haskey(hs.select, addr)
 Base.haskey(hs::UnconstrainedHierarchicalSelection, addr::Address) = haskey(hs.select, addr)
+
+import Base: getindex
+Base.getindex(csa::ConstrainedSelectByAddress, addr::Address) = csa.select[addr]
+Base.getindex(chs::ConstrainedHierarchicalSelection, addr::Address) = getindex(chs.select, addr)
 
 # Builder.
 import Base.push!
