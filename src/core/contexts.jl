@@ -19,10 +19,10 @@ Generate(pass, tr::Trace, constraints::EmptySelection) = disablehooks(TraceCtx(p
 mutable struct GenerateMeta{T <: Trace} <: Meta
     tr::T
     visited::Vector{Address}
-    constraints::ConstrainedSelection
-    GenerateMeta(tr::T, constraints::ConstrainedSelection) where T <: Trace = new{None}(tr, Address[], Union{Symbol,Pair}[], constraints)
+    constraints::ConstrainedHierarchicalSelection
+    GenerateMeta(tr::T, constraints::ConstrainedHierarchicalSelection) where T <: Trace = new{None}(tr, Address[], Union{Symbol,Pair}[], constraints)
 end
-Generate(tr::Trace, constraints::ConstrainedSelection) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
+Generate(tr::Trace, constraints::ConstrainedHierarchicalSelection) = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints)))
 Generate(pass, tr::Trace, constraints) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
 
 mutable struct ProposalMeta{T <: Trace} <: Meta
@@ -37,8 +37,8 @@ mutable struct UpdateMeta{T <: Trace} <: Meta
     tr::T
     visited::Vector{Address}
     constraints_visited::Vector{Address}
-    constraints::ConstrainedSelection
-    UpdateMeta(tr::T, constraints::ConstrainedSelection) where T <: Trace = new{T}(tr, Address[], Union{Symbol, Pair}[], constraints)
+    constraints::ConstrainedHierarchicalSelection
+    UpdateMeta(tr::T, constraints::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, Address[], Union{Symbol, Pair}[], constraints)
 end
 Update(tr::Trace, constraints) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, constraints)))
 Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, constraints)))
@@ -46,7 +46,7 @@ Update(pass, tr::Trace, constraints) where T = disablehooks(TraceCtx(pass = pass
 mutable struct RegenerateMeta{T <: Trace} <: Meta
     tr::T
     visited::Vector{Address}
-    selection::UnconstrainedSelection
+    selection::UnconstrainedHierarchicalSelection
     RegenerateMeta(tr::T, sel::Vector{Address}) where T <: Trace = new{T}(tr, 
                                                                 Address[], 
                                                                 Union{Symbol, Pair}[],

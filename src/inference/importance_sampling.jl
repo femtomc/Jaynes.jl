@@ -28,7 +28,7 @@ function importance_sampling(model::Function,
                              args::Tuple,
                              proposal::Function,
                              proposal_args::Tuple,
-                             observations::ConstrainedSelection,
+                             observations::ConstrainedHierarchicalSelection,
                              num_samples::Int) where T
     trs = Vector{Trace}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
