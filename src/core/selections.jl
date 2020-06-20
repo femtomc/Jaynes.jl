@@ -1,92 +1,100 @@
 # Address selections are used by many different contexts. 
 # This is essentially a query language for addresses within a particular method body.
 abstract type Selection end
-
 abstract type SelectQuery <: Selection end
-struct EmptySelection <: SelectQuery end
-
 abstract type ConstrainedSelectQuery <: SelectQuery end
 abstract type UnconstrainedSelectQuery <: SelectQuery end
-struct SelectAll <: UnconstrainedSelectQuery end
 
 struct ConstrainedSelectByAddress <: ConstrainedSelectQuery
     select::Dict{Address, Any}
+    ConstrainedSelectByAddress() = new(Dict{Address, Any}())
 end
 struct UnconstrainedSelectByAddress <: UnconstrainedSelectQuery
     select::Vector{Address}
+    UnconstrainedSelectByAddress() = new(Address[])
 end
 
-# Convenience - EmptySelection is allowed for both sub-structures.
-const Unconstrained = Union{UnconstrainedSelectQuery, EmptySelection}
-const Constrained = Union{ConstrainedSelectQuery, EmptySelection}
-
-struct ConstrainedHierarchicalSelection{T <: Constrained} <: Selection
+struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: Selection
     tree::Dict{Address, ConstrainedHierarchicalSelection}
     select::T
-    ConstrainedHierarchicalSelection() = new{EmptySelection}(Dict{Address, ConstrainedHierarchicalSelection}(), EmptySelection())
+    ConstrainedHierarchicalSelection() = new{ConstrainedSelectByAddress}(Dict{Address, ConstrainedHierarchicalSelection}(), ConstrainedSelectByAddress())
 end
 
-struct UnconstrainedHierarchicalSelection{T <: Unconstrained} <: Selection
+struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: Selection
     tree::Dict{Address, UnconstrainedHierarchicalSelection}
     select::T
-    UnconstrainedHierarchicalSelection() = new{EmptySelection}(Dict{Address, UnconstrainedHierarchicalSelection}(), EmptySelection())
-end
-
-function UnconstrainedHierarchicalSelection(a::Vector{Tuple{Union{Symbol, Pair}}})
-    isempty(a) && return UnconstrainedHierarchicalSelection()
-    call_addrs, levels = create_levels(a)
-    ks = sort(collect(keys(levels)))
-    if !(0 in ks)
-        first = minimum(ks)
-        top = build_to_first(first)
-        for k in ks
-            lvl_sel = UnconstrainedSelectByAddress(levels[k])
-            top[k] = UnconstrainedHierarchicalSelection(Dict{Address, UnconstrainedHierarchicalSelection}(), lvl_sel)
-        end
-    else
-        top = UnconstrainedHierarchicalSelection(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedSelectByAddress(levels[0]))
-        for k in ks
-            lvl_sel = UnconstrainedSelectByAddress(levels[k])
-            top[k] = UnconstrainedHierarchicalSelection(Dict{Address, UnconstrainedHierarchicalSelection}(), lvl_sel)
-        end
-    end
-    return top
-end
-
-function ConstrainedHierarchicalSelection(a::Vector{Tuple{Union{Symbol, Pair}, Any}})
-    isempty(a) && return ConstrainedHierarchicalSelection()
-    call_addrs, levels = create_levels(a)
-    ks = sort(collect(keys(levels)))
-    if !(0 in ks)
-        first = minimum(ks)
-        top = build_to_first(first)
-        for k in ks
-            lvl_sel = ConstrainedSelectByAddress(levels[k])
-            top[k] = ConstrainedHierarchicalSelection(Dict{Address, ConstrainedHierarchicalSelection}(), lvl_sel)
-        end
-    else
-        top = ConstrainedHierarchicalSelection(Dict{Address, ConstrainedHierarchicalSelection}(), ConstrainedSelectByAddress(levels[0]))
-        for k in ks
-            lvl_sel = ConstrainedSelectByAddress(levels[k])
-            top[k] = ConstrainedHierarchicalSelection(Dict{Address, ConstrainedHierarchicalSelection}(), lvl_sel)
-        end
-    end
-    return top
+    UnconstrainedHierarchicalSelection() = new{UnconstrainedSelectByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedSelectByAddress())
 end
 
 # Base imports.
 import Base: haskey
-Base.haskey(::EmptySelection, addr::Address) = false
-Base.haskey(::SelectAll, addr::Address) = true
 Base.haskey(usa::UnconstrainedSelectByAddress, addr::Address) = addr in usa.select
 Base.haskey(csa::ConstrainedSelectByAddress, addr::Address) = addr in keys(csa.select)
 Base.haskey(hs::ConstrainedHierarchicalSelection, addr::Address) = haskey(hs.select, addr)
 Base.haskey(hs::UnconstrainedHierarchicalSelection, addr::Address) = haskey(hs.select, addr)
 
 # Builder.
+import Base.push!
+function push!(sel::UnconstrainedSelectByAddress, addr::Symbol)
+    push!(sel.select, addr)
+end
+function push!(sel::ConstrainedSelectByAddress, addr::Symbol, val::T) where T
+    sel.select[addr] = val
+end
+function push!(sel::UnconstrainedSelectByAddress, addr::Pair{Symbol, Int64})
+    push!(sel.select, addr)
+end
+function push!(sel::ConstrainedSelectByAddress, addr::Pair{Symbol, Int64}, val::T) where T
+    sel.select[addr] = val
+end
+function push!(sel::UnconstrainedHierarchicalSelection, addr::Symbol)
+    push!(sel.select, addr)
+end
+function push!(sel::ConstrainedHierarchicalSelection, addr::Symbol, val::T) where T
+    push!(sel.select, addr, val)
+end
+function push!(sel::UnconstrainedHierarchicalSelection, addr::Pair{Symbol, Int64})
+    push!(sel.select, addr)
+end
+function push!(sel::ConstrainedHierarchicalSelection, addr::Pair{Symbol, Int64}, val::T) where T
+    push!(sel.select, addr, val)
+end
+function push!(sel::UnconstrainedHierarchicalSelection, addr::Pair)
+    if !(haskey(sel.tree, addr[1]))
+        new = UnconstrainedHierarchicalSelection()
+        push!(new, addr[2])
+        sel.tree[addr[1]] = new
+    else
+        push!(sel[addr[1]], addr[2])
+    end
+end
+function push!(sel::ConstrainedHierarchicalSelection, addr::Pair, val::T) where T
+    if !(haskey(sel.tree, addr[1]))
+        new = ConstrainedHierarchicalSelection()
+        push!(new, addr[2], val)
+        sel.tree[addr[1]] = new
+    else
+        push!(sel[addr[1]], addr[2], val)
+    end
+end
+function UnconstrainedHierarchicalSelection(a::Vector{Union{Symbol, Pair}})
+    top = UnconstrainedHierarchicalSelection()
+    for addr in a
+        push!(top, addr)
+    end
+    return top
+end
+function ConstrainedHierarchicalSelection(a::Vector{Tuple{Union{Symbol, Pair}, Any}})
+    top = ConstrainedHierarchicalSelection()
+    for (addr, val) in a
+        push!(top, addr, val)
+    end
+    return top
+end
+
 function selection(a::Vector{Tuple{Union{Symbol, Pair}, Any}}) 
     return ConstrainedHierarchicalSelection(a)
 end
-function selection(a::Vector{Tuple{Union{Symbol, Pair}}})
+function selection(a::Vector{Union{Symbol, Pair}})
     return UnconstrainedHierarchicalSelection(a)
 end

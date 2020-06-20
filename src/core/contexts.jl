@@ -12,9 +12,7 @@ mutable struct UnconstrainedGenerateMeta{T <: Trace} <: Meta
     UnconstrainedGenerateMeta(tr::T) where T <: Trace = new{T}(tr, Address[])
 end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
-Generate(tr::Trace, constraints::EmptySelection) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
-Generate(pass, tr::Trace, constraints::EmptySelection) = disablehooks(TraceCtx(pass = pass, metadata = GenerateMeta(tr, constraints)))
 
 mutable struct GenerateMeta{T <: Trace} <: Meta
     tr::T
