@@ -6,47 +6,40 @@ abstract type Meta end
 
 mutable struct UnconstrainedGenerateMeta{T <: Trace} <: Meta
     tr::T
-    visited::Vector{Address}
-    UnconstrainedGenerateMeta(tr::T) where T <: Trace = new{T}(tr, Address[])
+    UnconstrainedGenerateMeta(tr::T) where T <: Trace = new{T}(tr)
 end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
 
 mutable struct ConstrainedGenerateMeta{T <: Trace} <: Meta
     tr::T
-    visited::Vector{Address}
     select::ConstrainedHierarchicalSelection
-    ConstrainedGenerateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, Address[], select)
+    ConstrainedGenerateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, select)
 end
 Generate(tr::Trace, select::ConstrainedHierarchicalSelection) = disablehooks(TraceCtx(metadata = ConstrainedGenerateMeta(tr, select)))
 Generate(pass, tr::Trace, select) = disablehooks(TraceCtx(pass = pass, metadata = ConstrainedGenerateMeta(tr, select)))
 
 mutable struct ProposalMeta{T <: Trace} <: Meta
     tr::T
-    visited::Vector{Address}
-    ProposalMeta(tr::T) where T <: Trace = new{T}(tr, Address[])
+    ProposalMeta(tr::T) where T <: Trace = new{T}(tr)
 end
 Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
 
 mutable struct UpdateMeta{T <: Trace} <: Meta
     tr::T
-    visited::Vector{Address}
     select_visited::Vector{Address}
     select::ConstrainedHierarchicalSelection
-    UpdateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, Address[], Union{Symbol, Pair}[], select)
+    UpdateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, Address[], select)
 end
 Update(tr::Trace, select) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, select)))
 Update(pass, tr::Trace, select) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, select)))
 
 mutable struct RegenerateMeta{T <: Trace} <: Meta
     tr::T
-    visited::Vector{Address}
     selection::UnconstrainedHierarchicalSelection
     RegenerateMeta(tr::T, sel::Vector{Address}) where T <: Trace = new{T}(tr, 
-                                                                Address[], 
-                                                                Union{Symbol, Pair}[],
-                                                                selection(sel))
+                                                                          selection(sel))
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, sel)))
 Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = pass, metadata = RegenerateMeta(tr, sel)))
@@ -54,16 +47,12 @@ Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass =
 mutable struct ScoreMeta{T <: Trace} <: Meta
     tr::T
     score::Float64
-    visited::Vector{Address}
-    Score(tr::T) where T <: Trace = new{T}(tr, 0.0, Address[])
+    Score(tr::T) where T <: Trace = new{T}(tr, 0.0)
 end
 Score(tr::Trace) = disablehooks(TraceCtx(metadata = Score(tr)))
 Score(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = Score(tr)))
 
-function reset_keep_select!(ctx::TraceCtx{M}) where M <: Meta
-    ctx.metadata.tr = Trace()
-    ctx.metadata.visited = Address[]
-end
+reset!(ctx::TraceCtx{M}) where M <: Meta = ctx.metadata.tr = Trace()
 
 # ------------------ OVERDUB -------------------- #
 
@@ -76,13 +65,9 @@ end
                                                              T <: Address,
                                                              K}
 
-    # Check for support errors.
-    addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
-
     sample = rand(d)
     score = logpdf(d, sample)
     ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
-    push!(ctx.metadata.visited, addr)
     return sample
 end
 
@@ -93,16 +78,12 @@ end
                                                              T <: Address,
                                                              K}
 
-    # Check for support errors.
-    addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
-
     # Constrained..
     if haskey(ctx.metadata.select, addr)
         sample = ctx.metadata.select[addr]
         score = logpdf(d, sample)
         ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
         ctx.metadata.tr.score += score
-        push!(ctx.metadata.visited, addr)
         return sample
 
         # Unconstrained.
@@ -110,7 +91,6 @@ end
         sample = rand(d)
         score = logpdf(d, sample)
         ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
-        push!(ctx.metadata.visited, addr)
         return sample
     end
 end
@@ -122,14 +102,10 @@ end
                                                              T <: Address, 
                                                              K}
 
-    # Check for support errors.
-    addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
-
     sample = rand(d)
     score = logpdf(d, sample)
     ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
     ctx.metadata.tr.score += score
-    push!(ctx.metadata.visited, addr)
     return sample
 
 end
@@ -164,7 +140,6 @@ end
     ctx.metadata.tr.chm[addr] = ChoiceSite(ret, score)
 
     # Visited
-    push!(ctx.metadata.visited, addr)
     ret
 end
 
@@ -205,8 +180,6 @@ end
     end
     ctx.metadata.tr.chm[addr] = ChoiceSite(ret, score)
 
-    # Visited.
-    push!(ctx.metadata.visited, addr)
     return ret
 end
 
@@ -220,8 +193,6 @@ end
     val = ctx.metadata.tr.chm[addr].value
     ctx.metadata.tr.score += logpdf(d, val)
 
-    # Visited.
-    push!(ctx.metadata.visited, addr)
     return val
 end
 

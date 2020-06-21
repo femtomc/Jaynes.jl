@@ -16,7 +16,7 @@ function importance_sampling(model::Function,
                             model, 
                             args,
                             ret)
-        reset_keep_select!(ctx)
+        reset!(ctx)
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
@@ -62,8 +62,8 @@ function importance_sampling(model::Function,
         lws[i] = model_ctx.metadata.tr.score - prop_score
 
         # Reset.
-        reset_keep_select!(model_ctx)
-        reset_keep_select!(prop_ctx)
+        reset!(model_ctx)
+        reset!(prop_ctx)
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)

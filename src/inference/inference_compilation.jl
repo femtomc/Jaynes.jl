@@ -2,9 +2,8 @@
 
 Cassette.@context CompileCtx
 
-function reset_keep_constraints!(ctx::CompileCtx{M}) where M <: Meta
+function reset!(ctx::CompileCtx{M}) where M <: Meta
     ctx.metadata.tr = Trace()
-    ctx.metadata.visited = Address[]
 end
 
 mutable struct InferenceCompiler
@@ -59,7 +58,6 @@ end
 mutable struct InferenceCompilationMeta{T} <: Meta
     tr::Trace
     stack::Vector{Address}
-    visited::Vector{Address}
     constraints::Dict{Address, Any}
     target::Address
     opt::T
@@ -156,7 +154,7 @@ function inference_compilation(model::Function,
 
             # Track.
             trs[j] = model_ctx.metadata.tr
-            reset_keep_constraints!(model_ctx)
+            reset!(model_ctx)
         end
 
         # Ascent!
@@ -209,7 +207,6 @@ end
 
     if addr == ctx.metadata.target
         sample = ctx.metadata.constraints[addr]
-        push!(ctx.metadata.visited, addr)
         spine(encoding_head([sample...]))
         return sample
     else
@@ -217,7 +214,6 @@ end
         score = Float64(logpdf(d, sample))
         ctx.metadata.tr.chm[addr] = Choice(sample, score)
         ctx.metadata.tr.score += score
-        push!(ctx.metadata.visited, addr)
         spine(encoding_head([sample...]))
         return sample
     end

@@ -16,11 +16,9 @@ macro primitive(ex)
                 addr = foldr((x, y) -> x => y, ctx.metadata.stack)
                 pop!(ctx.metadata.stack)
             end
-            addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
             sample = $argname(args...)
             score = logpdf($argname, args, sample)
             ctx.metadata.tr.chm[addr] = Choice(sample, score)
-            push!(ctx.metadata.visited, addr)
             return sample
         end
 
@@ -35,19 +33,16 @@ macro primitive(ex)
                 addr = foldr((x, y) -> x => y, ctx.metadata.stack)
                 pop!(ctx.metadata.stack)
             end
-            addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
             if haskey(ctx.metadata.constraints, addr)
                 sample = ctx.metadata.constraints[addr]
                 score = logpdf($argname, args, sample)
                 ctx.metadata.tr.chm[addr] = Choice(sample, score)
                 ctx.metadata.tr.score += score
-                push!(ctx.metadata.visited, addr)
                 return sample
             else
                 sample = $argname(args...)
                 score = logpdf($argname, args, sample)
                 ctx.metadata.tr.chm[addr] = Choice(sample, score)
-                push!(ctx.metadata.visited, addr)
                 return sample
             end
         end
@@ -65,14 +60,10 @@ macro primitive(ex)
                 pop!(ctx.metadata.stack)
             end
 
-            # Check for support errors.
-            addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
-
             sample = $argname(args...)
             score = logpdf($argname, args, sample)
             ctx.metadata.tr.chm[addr] = Choice(sample, score)
             ctx.metadata.tr.score += score
-            push!(ctx.metadata.visited, addr)
             return sample
 
         end
@@ -113,8 +104,6 @@ macro primitive(ex)
             end
             ctx.metadata.tr.chm[addr] = Choice(ret, score)
 
-            # Visited
-            push!(ctx.metadata.visited, addr)
             ret
         end
 
@@ -161,8 +150,6 @@ macro primitive(ex)
             end
             ctx.metadata.tr.chm[addr] = Choice(ret, score)
 
-            # Visited.
-            push!(ctx.metadata.visited, addr)
             return ret
         end
 
@@ -183,8 +170,6 @@ macro primitive(ex)
             val = ctx.metadata.tr.chm[addr].value
             ctx.metadata.tr.score += logpdf($argname, args, val)
 
-            # Visited.
-            push!(ctx.metadata.visited, addr)
             return val
         end
 
@@ -268,7 +253,6 @@ macro primitive(ex)
                 end
             end
 
-            push!(ctx.metadata.visited, addr)
             return sample
         end
     end

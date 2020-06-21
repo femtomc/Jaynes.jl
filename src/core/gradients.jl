@@ -24,7 +24,6 @@ mutable struct GradientAnalysis <: RuntimeAnalysis
 end
 
 mutable struct UnconstrainedGradientMeta <: Meta
-    visited::Vector{Address}
     ga::GradientAnalysis
     learned::CallLearnables
     cgs::CallGradients
@@ -129,7 +128,6 @@ Gradient(pass::Cassette.AbstractPass) = disablehooks(TraceCtx(pass = pass, metad
         end
     end
 
-    push!(ctx.metadata.visited, addr)
     return sample
 end
 
@@ -139,9 +137,6 @@ end
                                   lit::K) where {M <: UnconstrainedGradientMeta, 
                                                  T <: Address,
                                                  K <: Union{Number, AbstractArray}}
-
-    # Check for support errors.
-    addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
 
     # Check if value in trainable.
     if haskey(ctx.metadata.sel.learned, addr)
@@ -156,7 +151,6 @@ end
         ctx.metadata.sel.learned[addr] = [ret]
     end
 
-    push!(ctx.metadata.visited, addr)
     return ret
 end
 
@@ -197,7 +191,6 @@ function update!(opt, ctx::TraceCtx{M}) where M <: UnconstrainedGradientMeta
         end
     end
     ctx.metadata.gradients = Dict{Address, Union{Number, AbstractArray}}()
-    ctx.metadata.visited = Address[]
     ctx.metadata.tracker = IdDict{Union{Number, AbstractArray}, Address}()
 end
 
