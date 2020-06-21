@@ -49,28 +49,34 @@ end
 
 So, there are basically two "branches" in the trace. One branch produces a distribution over the values of the addressed random variables
 
+```math
 \begin{equation}
 P(y, z; x) = P(z | y)P(y | x)
 \end{equation}
+```
 
 and the other branch produces a distribution:
 
+```math
 \begin{equation}
 P(y ; x) = P(y | x)
 \end{equation}
+```
 
 but how do you express this as a valid measure _itself_? One way is to think about an auxiliary "indicator" measure over the possible sets of _addresses_ in the program:
 
+```math
 \begin{equation}
 P(A), \text{where $A$ takes a set as a value}
 \end{equation}
+```
 
-We actually know a bit about the space of values of $A$ and about this measure.  
+We actually know a bit about the space of values of ``A`` and about this measure.  
 
 1. The space of values is the powerset of the set of all addresses.
-2. The measure $P(A)$ is unknown, but if the program halts, it is normalized.
+2. The measure ``P(A)`` is unknown, but if the program halts, it is normalized.
 
-So we can imagine that the generative process selects an $A$
+So we can imagine that the generative process selects an ``A``
 
 ## Programming the distribution over choice maps
 
