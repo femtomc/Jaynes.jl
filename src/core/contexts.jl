@@ -4,7 +4,7 @@ Cassette.@context TraceCtx
 
 abstract type Meta end
 
-struct UnconstrainedGenerateMeta{T <: Trace} <: Meta
+mutable struct UnconstrainedGenerateMeta{T <: Trace} <: Meta
     tr::T
     visited::Vector{Address}
     UnconstrainedGenerateMeta(tr::T) where T <: Trace = new{T}(tr, Address[])
@@ -12,16 +12,16 @@ end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
 
-struct ConstrainedGenerateMeta{T <: Trace} <: Meta
+mutable struct ConstrainedGenerateMeta{T <: Trace} <: Meta
     tr::T
     visited::Vector{Address}
     select::ConstrainedHierarchicalSelection
-    ConstrainedGenerateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{None}(tr, Address[], Union{Symbol,Pair}[], select)
+    ConstrainedGenerateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, Address[], select)
 end
 Generate(tr::Trace, select::ConstrainedHierarchicalSelection) = disablehooks(TraceCtx(metadata = ConstrainedGenerateMeta(tr, select)))
 Generate(pass, tr::Trace, select) = disablehooks(TraceCtx(pass = pass, metadata = ConstrainedGenerateMeta(tr, select)))
 
-struct ProposalMeta{T <: Trace} <: Meta
+mutable struct ProposalMeta{T <: Trace} <: Meta
     tr::T
     visited::Vector{Address}
     ProposalMeta(tr::T) where T <: Trace = new{T}(tr, Address[])
@@ -29,7 +29,7 @@ end
 Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
 
-struct UpdateMeta{T <: Trace} <: Meta
+mutable struct UpdateMeta{T <: Trace} <: Meta
     tr::T
     visited::Vector{Address}
     select_visited::Vector{Address}
@@ -39,7 +39,7 @@ end
 Update(tr::Trace, select) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, select)))
 Update(pass, tr::Trace, select) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, select)))
 
-struct RegenerateMeta{T <: Trace} <: Meta
+mutable struct RegenerateMeta{T <: Trace} <: Meta
     tr::T
     visited::Vector{Address}
     selection::UnconstrainedHierarchicalSelection
@@ -240,7 +240,6 @@ end
                                   call::Function,
                                   args...) where {M <: UnconstrainedGenerateMeta, 
                                                   T <: Address}
-
     rec_ctx = similarcontext(ctx; metadata = UnconstrainedGenerateMeta(Trace()))
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 

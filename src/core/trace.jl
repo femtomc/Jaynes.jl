@@ -11,7 +11,7 @@ struct ChoiceSite{T} <: RecordSite
     score::Float64
 end
 
-mutable struct CallSite{T <: Trace, J, K} <: RecordSite
+struct CallSite{T <: Trace, J, K} <: RecordSite
     trace::T
     fn::Function
     args::J
@@ -24,6 +24,7 @@ mutable struct HierarchicalTrace <: Trace
     score::Float64
     HierarchicalTrace() = new(Dict{Address, ChoiceSite}(), 0.0)
 end
+
 
 # Graph - for when analysis is available.
 mutable struct GraphTrace <: Trace

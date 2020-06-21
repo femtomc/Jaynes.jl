@@ -133,29 +133,9 @@ function Base.display(tr::Trace)
 end
 
 # Merge observations and a choice map.
-function merge(obs::Dict{Address, K},
-    chm::Dict{Address, ChoiceSite}) where K
-    cons = copy(obs)
-    for (k, v) in chm
-        haskey(cons, k) && error("SupportError: proposal has address on observed value.")
-        cons[k] = v.val
-    end
-    return cons
-end
-
-# Take observations and return a selection.
-function selection(obs::Array{Tuple{T, K}, 1}) where {T <: Address, K}
-    d = Dict{Address, K}()
-    for (k, v) in obs 
-        d[k] = v
-    end
-    return ConstrainedSelection(d)
-end
-
-function selection(obs::Array{T, 1}) where {T <: Address}
-    return UnconstrainedSelection([first(el) for el in obs])
-end
-
-function selection()
-    return EmptySelection()
+function merge(tr::HierarchicalTrace,
+               obs::ConstrainedHierarchicalSelection)
+    tr_selection = chm(tr)
+    merge!(tr_selection, obs)
+    return tr_selection
 end

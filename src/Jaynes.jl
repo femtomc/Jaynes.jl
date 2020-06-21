@@ -23,8 +23,8 @@ using DistributionsAD
 const Address = Union{Symbol, Pair{Symbol, Int64}}
 
 include("core/static.jl")
-include("core/selections.jl")
 include("core/trace.jl")
+include("core/selections.jl")
 include("core/contexts.jl")
 include("core/gradients.jl")
 include("core/blackbox.jl")

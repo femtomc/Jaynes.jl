@@ -3,12 +3,12 @@
 # ----------------------------------------------------------------------- #
 
 function importance_sampling(model::Function, 
-                             args::Tuple;
-                             observations = EmptySelection(),
+                             args::Tuple,
+                             observations::ConstrainedHierarchicalSelection,
                              num_samples::Int = 5000)
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    ctx = Generate(Trace(), observations)
+    ctx = Generate(ignore_pass, Trace(), observations)
     for i in 1:num_samples
         ret = Cassette.overdub(ctx, model, args...)
         lws[i] = ctx.metadata.tr.score
@@ -16,7 +16,7 @@ function importance_sampling(model::Function,
                             model, 
                             args,
                             ret)
-        reset_keep_constraints!(ctx)
+        reset_keep_select!(ctx)
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
@@ -30,11 +30,10 @@ function importance_sampling(model::Function,
                              proposal_args::Tuple,
                              observations::ConstrainedHierarchicalSelection,
                              num_samples::Int) where T
-    trs = Vector{Trace}(undef, num_samples)
+    calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    rets = Vector{Any}(undef, num_samples)
-    prop_ctx = disablehooks(TraceCtx(metadata = ProposalMeta(Trace())))
-    model_ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), observations)))
+    prop_ctx = Propose(ignore_pass, Trace())
+    model_ctx = Generate(ignore_pass, Trace(), observations)
     for i in 1:num_samples
         # Propose.
         if isempty(proposal_args)
@@ -45,9 +44,8 @@ function importance_sampling(model::Function,
 
         # Merge proposals and observations.
         prop_score = prop_ctx.metadata.tr.score
-        prop_chm = prop_ctx.metadata.tr.chm
-        constraints = merge(observations, prop_chm)
-        model_ctx.metadata.constraints = constraints
+        select = merge(prop_ctx.metadata.tr, observations)
+        model_ctx.metadata.select = select
 
         # Generate.
         if isempty(args)
@@ -57,19 +55,18 @@ function importance_sampling(model::Function,
         end
 
         # Track.
-        rets[i] = ret
-        trs[i] = model_ctx.metadata.tr
+        calls[i] = CallSite(model_ctx.metadata.tr, 
+                            model, 
+                            args,
+                            ret)
         lws[i] = model_ctx.metadata.tr.score - prop_score
 
         # Reset.
-        reset_keep_constraints!(model_ctx)
-        reset_keep_constraints!(prop_ctx)
+        reset_keep_select!(model_ctx)
+        reset_keep_select!(prop_ctx)
     end
-    model_ctx.metadata.fn = model
-    model_ctx.metadata.args = args
-    model_ctx.metadata.ret = rets
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return model_ctx, trs, lnw, lmle
+    return calls, lnw, lmle
 end
