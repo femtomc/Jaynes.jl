@@ -72,14 +72,13 @@ end
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
-                                  dist::Type,
-                                  args...) where {M <: UnconstrainedGenerateMeta, 
-                                                  T <: Address}
+                                  d::Distribution{K}) where {M <: UnconstrainedGenerateMeta, 
+                                                             T <: Address,
+                                                             K}
 
     # Check for support errors.
     addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
 
-    d = dist(args...)
     sample = rand(d)
     score = logpdf(d, sample)
     ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
@@ -90,14 +89,12 @@ end
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
-                                  dist::Type,
-                                  args...) where {M <: ConstrainedGenerateMeta, 
-                                                  T <: Address}
+                                  d::Distribution{K}) where {M <: ConstrainedGenerateMeta, 
+                                                             T <: Address,
+                                                             K}
 
     # Check for support errors.
     addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
-
-    d = dist(args...)
 
     # Constrained..
     if haskey(ctx.metadata.select, addr)
@@ -121,14 +118,13 @@ end
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
-                                  dist::Type,
-                                  args...) where {M <: ProposalMeta, 
-                                                  T <: Address}
+                                  d::Distribution{K}) where {M <: ProposalMeta, 
+                                                             T <: Address, 
+                                                             K}
 
     # Check for support errors.
     addr in ctx.metadata.visited && error("AddressError: each address within a rand call must be unique. Found duplicate $(addr).")
 
-    d = dist(args...)
     sample = rand(d)
     score = logpdf(d, sample)
     ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
@@ -141,9 +137,9 @@ end
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
-                                  dist::Type,
-                                  args...) where {M <: RegenerateMeta, 
-                                                  T <: Address}
+                                  d::Distribution{K}) where {M <: RegenerateMeta, 
+                                                             T <: Address,
+                                                             K}
 
     # Check if in previous trace's choice map.
     in_prev_chm = haskey(ctx.metadata.tr.chm, addr)
@@ -156,7 +152,6 @@ end
     # Check if in selection in meta.
     in_sel = haskey(ctx.metadata.select, addr)
 
-    d = dist(args...)
     ret = rand(d)
     in_prev_chm && !in_sel && begin
         ret = prev_val
@@ -176,9 +171,9 @@ end
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
-                                  dist::Type,
-                                  args...) where {M <: UpdateMeta, 
-                                                  T <: Address}
+                                  d::Distribution{K}) where {M <: UpdateMeta, 
+                                                             T <: Address,
+                                                             K}
 
     # Check if in previous trace's choice map.
     in_prev_chm = haskey(ctx.metadata.tr.chm, addr)
@@ -192,7 +187,6 @@ end
     in_selection = haskey(ctx.metadata.select, addr)
 
     # Ret.
-    d = dist(args...)
     if in_selection
         ret = ctx.metadata.select[addr]
         push!(ctx.metadata.select_visited, addr)
@@ -219,12 +213,11 @@ end
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
-                                  dist::Type,
-                                  args...) where {M <: ScoreMeta, 
-                                                  T <: Address}
+                                  d::Distribution{K}) where {M <: ScoreMeta, 
+                                                             T <: Address,
+                                                             K}
     # Get val.
     val = ctx.metadata.tr.chm[addr].value
-    d = dist(args...)
     ctx.metadata.tr.score += logpdf(d, val)
 
     # Visited.
@@ -243,9 +236,9 @@ end
     rec_ctx = similarcontext(ctx; metadata = UnconstrainedGenerateMeta(Trace()))
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
-                                     call, 
-                                     args..., 
-                                     ret)
+                                         call, 
+                                         args..., 
+                                         ret)
     return ret
 end
 
@@ -259,9 +252,9 @@ end
     rec_ctx = similarcontext(ctx; metadata = ConstrainedGenerateMeta(Trace(), ctx.metadata.select.tree[addr]))
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
-                                     call, 
-                                     args..., 
-                                     ret)
+                                         call, 
+                                         args..., 
+                                         ret)
     return ret
 end
 
@@ -275,9 +268,9 @@ end
     rec_ctx = similarcontext(ctx; metadata = Propose(Trace()))
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
-                                     call, 
-                                     args..., 
-                                     ret)
+                                         call, 
+                                         args..., 
+                                         ret)
     return ret
 end
 

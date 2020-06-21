@@ -7,13 +7,13 @@ using Distributions
 using Profile
 
 function foo1()
-    x = rand(:x, Normal, 3.0, 1.0)
-    y = rand(:y, Normal, x, 1.0)
+    x = rand(:x, Normal(3.0, 1.0))
+    y = rand(:y, Normal(x, 1.0))
     return y
 end
 
 function foo2()
-    x = rand(:x, Normal, 3.0, 1.0)
+    x = rand(:x, Normal(3.0, 1.0))
     return x
 end
 
