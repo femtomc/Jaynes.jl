@@ -80,8 +80,8 @@ end
                                                              K}
 
     # Constrained..
-    if haskey(ctx.metadata.select, addr)
-        sample = ctx.metadata.select[addr]
+    if haskey(ctx.metadata.select.query, addr)
+        sample = ctx.metadata.select.query[addr]
         score = logpdf(d, sample)
         ctx.metadata.tr.chm[addr] = ChoiceSite(sample, score)
         ctx.metadata.tr.score += score
@@ -160,11 +160,11 @@ end
     end
 
     # Check if in selection.
-    in_selection = haskey(ctx.metadata.select, addr)
+    in_selection = haskey(ctx.metadata.select.query, addr)
 
     # Ret.
     if in_selection
-        ret = ctx.metadata.select[addr]
+        ret = ctx.metadata.select.query[addr]
         push!(ctx.metadata.select_visited, addr)
     elseif in_prev_chm
         ret = prev_ret
@@ -221,7 +221,7 @@ end
                                   args...) where {M <: ConstrainedGenerateMeta, 
                                                   T <: Address}
 
-    rec_ctx = similarcontext(ctx; metadata = ConstrainedGenerateMeta(Trace(), ctx.metadata.select.tree[addr]))
+    rec_ctx = similarcontext(ctx; metadata = ConstrainedGenerateMeta(Trace(), ctx.metadata.select[addr]))
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 
@@ -253,7 +253,7 @@ end
                                   args...) where {M <: UpdateMeta, 
                                                   T <: Address}
 
-    rec_ctx = similarcontext(ctx; metadata = Update(Trace(), ctx.metadata.select.tree[addr]))
+    rec_ctx = similarcontext(ctx; metadata = Update(Trace(), ctx.metadata.select[addr]))
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 
@@ -269,7 +269,7 @@ end
                                   args...) where {M <: RegenerateMeta, 
                                                   T <: Address}
 
-    rec_ctx = similarcontext(ctx; metadata = Regenerate(Trace(), ctx.metadata.select.tree[addr]))
+    rec_ctx = similarcontext(ctx; metadata = Regenerate(Trace(), ctx.metadata.select[addr]))
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 

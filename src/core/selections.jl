@@ -6,61 +6,76 @@ abstract type ConstrainedSelectQuery <: SelectQuery end
 abstract type UnconstrainedSelectQuery <: SelectQuery end
 
 struct ConstrainedSelectByAddress <: ConstrainedSelectQuery
-    select::Dict{Address, Any}
+    query::Dict{Address, Any}
     ConstrainedSelectByAddress() = new(Dict{Address, Any}())
 end
+
 struct UnconstrainedSelectByAddress <: UnconstrainedSelectQuery
-    select::Vector{Address}
+    query::Vector{Address}
     UnconstrainedSelectByAddress() = new(Address[])
 end
 
 struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: Selection
     tree::Dict{Address, ConstrainedHierarchicalSelection}
-    select::T
+    query::T
     ConstrainedHierarchicalSelection() = new{ConstrainedSelectByAddress}(Dict{Address, ConstrainedHierarchicalSelection}(), ConstrainedSelectByAddress())
+end
+
+struct ConstrainedAnywhereSelection{T <: ConstrainedSelectQuery} <: Selection
+    query::T
+end
+
+struct UnionSelection <: Selection
+    selections::Vector{Selection}
 end
 
 struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: Selection
     tree::Dict{Address, UnconstrainedHierarchicalSelection}
-    select::T
+    query::T
     UnconstrainedHierarchicalSelection() = new{UnconstrainedSelectByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedSelectByAddress())
 end
 
 import Base: haskey
-Base.haskey(usa::UnconstrainedSelectByAddress, addr::Address) = haskey(usa.select, addr)
-Base.haskey(csa::ConstrainedSelectByAddress, addr::Address) = haskey(csa.select, addr)
+Base.haskey(usa::UnconstrainedSelectByAddress, addr::Address) = haskey(usa.query, addr)
+Base.haskey(csa::ConstrainedSelectByAddress, addr::Address) = haskey(csa.query, addr)
 Base.haskey(hs::ConstrainedHierarchicalSelection, addr::Address) = haskey(hs.select, addr)
 Base.haskey(hs::UnconstrainedHierarchicalSelection, addr::Address) = haskey(hs.select, addr)
 
 import Base: getindex
-Base.getindex(csa::ConstrainedSelectByAddress, addr::Address) = csa.select[addr]
-Base.getindex(chs::ConstrainedHierarchicalSelection, addr::Address) = getindex(chs.select, addr)
+Base.getindex(csa::ConstrainedSelectByAddress, addr::Address) = csa.query[addr]
+Base.getindex(chs::ConstrainedHierarchicalSelection, addr::Address) = getindex(chs.tree, addr)
+Base.getindex(chs::ConstrainedAnywhereSelection, addr::Address) = chs
+function Base.getindex(us::UnionSelection, addr::Address)
+    UnionSelection(map(us.selections) do sel
+                       getindex(sel, addr)
+                   end)
+end
 
 # Builder.
 import Base.push!
 function push!(sel::UnconstrainedSelectByAddress, addr::Symbol)
-    push!(sel.select, addr)
+    push!(sel.query, addr)
 end
 function push!(sel::ConstrainedSelectByAddress, addr::Symbol, val)
-    sel.select[addr] = val
+    sel.query[addr] = val
 end
 function push!(sel::UnconstrainedSelectByAddress, addr::Pair{Symbol, Int64})
-    push!(sel.select, addr)
+    push!(sel.query, addr)
 end
 function push!(sel::ConstrainedSelectByAddress, addr::Pair{Symbol, Int64}, val)
-    sel.select[addr] = val
+    sel.query[addr] = val
 end
 function push!(sel::UnconstrainedHierarchicalSelection, addr::Symbol)
-    push!(sel.select, addr)
+    push!(sel.query, addr)
 end
 function push!(sel::ConstrainedHierarchicalSelection, addr::Symbol, val)
-    push!(sel.select, addr, val)
+    push!(sel.query, addr, val)
 end
 function push!(sel::UnconstrainedHierarchicalSelection, addr::Pair{Symbol, Int64})
-    push!(sel.select, addr)
+    push!(sel.query, addr)
 end
 function push!(sel::ConstrainedHierarchicalSelection, addr::Pair{Symbol, Int64}, val)
-    push!(sel.select, addr, val)
+    push!(sel.query, addr, val)
 end
 function push!(sel::UnconstrainedHierarchicalSelection, addr::Pair)
     if !(haskey(sel.tree, addr[1]))
@@ -146,4 +161,3 @@ function selection(a::Tuple{K, T}...) where {T, K <: Union{Symbol, Pair}}
     observations = Vector{Tuple{K, T}}(collect(a))
     return ConstrainedHierarchicalSelection(observations)
 end
-
