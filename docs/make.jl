@@ -3,11 +3,11 @@ using Documenter
 makedocs(sitename = "Jaynes.jl",
          pages = [
                   "Introduction" => "index.md",
-                  #"Concepts" => "concepts.md",
+                  "Concepts" => "concepts.md",
                   "Trace types" => "trace_types.md",
                   "Implementation architecture" => "architecture.md",
                   "Contextual domain-specific languages" => "contextual_DSLs.md",
-                  "Differentiable programming" => "gradients.md",
+                  #"Differentiable programming" => "gradients.md",
                   #"Examples" => [
                   #               "Bayesian linear regression" => "bayeslinreg.md",
                   #               "Autoencoding with black box extensions" => "autoencoding.md",

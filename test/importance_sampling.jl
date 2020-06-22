@@ -8,7 +8,7 @@ end
 @testset "Importance sampling" begin
 
     @testset "Linear Gaussian model" begin
-        observations = Jaynes.selection([(:x, 3.0)])
+        observations = Jaynes.selection((:x, 3.0))
         calls, lnw, lmle = Jaynes.importance_sampling(LinearGaussian, (0.0, 1.0), observations, 50000)
     end
 end

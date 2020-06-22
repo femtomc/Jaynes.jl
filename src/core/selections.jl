@@ -142,3 +142,8 @@ end
 function selection(a::Vector{K}) where K <: Union{Symbol, Pair}
     return UnconstrainedHierarchicalSelection(a)
 end
+function selection(a::Tuple{K, T}...) where {T, K <: Union{Symbol, Pair}}
+    observations = Vector{Tuple{K, T}}(collect(a))
+    return ConstrainedHierarchicalSelection(observations)
+end
+
