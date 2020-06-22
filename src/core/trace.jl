@@ -11,7 +11,7 @@ struct ChoiceSite{T} <: RecordSite
     score::Float64
 end
 
-struct CallSite{T <: Trace, J, K} <: RecordSite
+mutable struct CallSite{T <: Trace, J, K} <: RecordSite
     trace::T
     fn::Function
     args::J

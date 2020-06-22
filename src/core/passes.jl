@@ -22,7 +22,7 @@ end
 function ignore_transform(::Type{<:TraceCtx}, r::Reflection)
     syn = r.code_info.code
     map(syn) do expr
-        MacroTools.prewalk(expr) do k
+        MacroTools.postwalk(expr) do k
             # If you already wrapped, don't wrap.
             k isa Expr && k.head == :call && begin
                 arg = k.args[1]

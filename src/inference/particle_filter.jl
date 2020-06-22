@@ -7,18 +7,18 @@ import Base.length
 Base.length(ps::Particles) = length(ps.calls)
 
 function initialize_filter(fn::Function, 
-                           args::Tuple;
-                           observations = EmptySelection(),
-                           num_particles::Int = 5000)
-    calls, lnw, lmle = importance_sampling(fn, args; observations = observations, num_samples = num_particles)
+                           args::Tuple,
+                           observations::ConstrainedHierarchicalSelection,
+                           num_particles::Int)
+    calls, lnw, lmle = importance_sampling(fn, args, observations, num_particles)
     ltw = lmle + log(num_particles)
     lws = lnw .+ ltw
     return Particles(calls, lws, lmle)
 end
 
 function filter_step!(ps::Particles,
-                      new_args::Tuple;
-                      observations = EmptySelection)
+                      new_args::Tuple,
+                      observations::ConstrainedHierarchicalSelection)
 
     num_particles = length(ps)
     update_ctx = Update(Trace(), observations)
@@ -32,7 +32,7 @@ function filter_step!(ps::Particles,
         ps.calls[i].args = new_args
         ps.calls[i].ret = ret
         ps.lws[i] = update_ctx.metadata.tr.score
-        update_ctx.metadata.constraints = observations
+        update_ctx.metadata.select = observations
     end
     ltw = lse(ps.lws)
     ps.lmle = ltw - log(num_particles)
@@ -41,8 +41,8 @@ end
 function filter_step!(ps::Particles,
                       new_args::Tuple,
                       proposal::Function,
-                      proposal_args::Tuple;
-                      observations = EmptySelection())
+                      proposal_args::Tuple,
+                      observations::ConstrainedHierarchicalSelection)
 
     num_particles = length(ps)
     lws = Vector{Float64}(undef, num_particles)
@@ -55,12 +55,11 @@ function filter_step!(ps::Particles,
 
         # Merge proposals and observations.
         prop_score = prop_ctx.metadata.tr.score
-        prop_chm = prop_ctx.metadata.tr.chm
-        constraints = merge(observations, prop_chm)
+        select = merge(prop_ctx.metadata.tr, observations)
 
         # Run update.
         update_ctx.metadata.tr =  ps.calls[i]
-        update_ctx.metadata.constraints = constraints
+        update_ctx.metadata.select = select
         ret = Cassette.overdub(update_ctx, ps.calls[i].fn, new_args...)
 
         # Store.
