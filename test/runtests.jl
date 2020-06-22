@@ -1,4 +1,4 @@
-module Test
+module TestJaynes
 
 using Test
 
@@ -9,4 +9,4 @@ using Distributions
 include("particle_filter.jl")
 include("importance_sampling.jl")
 
-end
+end #module
