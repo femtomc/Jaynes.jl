@@ -3,10 +3,10 @@ using Documenter
 makedocs(sitename = "Jaynes.jl",
          pages = [
                   "Introduction" => "index.md",
-                  "Concepts" => "concepts.md",
+                  #"Concepts" => "concepts.md",
                   "Trace types" => "trace_types.md",
-                  "Implementation architecture" => "architecture.md",
                   "Contextual domain-specific languages" => "contextual_DSLs.md",
+                  "Implementation architecture" => "architecture.md",
                   #"Differentiable programming" => "gradients.md",
                   #"Examples" => [
                   #               "Bayesian linear regression" => "bayeslinreg.md",
@@ -15,7 +15,7 @@ makedocs(sitename = "Jaynes.jl",
                   #               "Inference compilation" => "infcomp.md"],
                   #"Related work" => "related_work.md"
                   ],
-         format = Documenter.HTML(prettyurls = false,
+         format = Documenter.HTML(prettyurls = true,
                                   assets = ["assets/favicon.ico"])
         )
 

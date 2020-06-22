@@ -28,12 +28,12 @@ end
 
 # Graph - for when analysis is available.
 mutable struct GraphTrace <: Trace
-    sub::Dict{Address, Trace}
+    sub::Dict{Address, RecordSite}
     dependencies::Dict{Address, Vector{Address}}
     nocacheable::Vector{DataType}
     cache::IdDict
     score::Float64
-    GraphTrace() = new(Dict{Address, Trace}(),
+    GraphTrace() = new(Dict{Address, RecordSite}(),
                        Dict{Address, Vector{Address}}(),
                        [typeof(rand)],
                        IdDict(),
