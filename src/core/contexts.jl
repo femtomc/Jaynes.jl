@@ -32,6 +32,7 @@ mutable struct UpdateMeta{T <: Trace} <: Meta
     select::ConstrainedHierarchicalSelection
     UpdateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, Address[], select)
 end
+
 Update(tr::Trace, select) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, select)))
 Update(pass, tr::Trace, select) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, select)))
 

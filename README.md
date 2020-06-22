@@ -1,5 +1,5 @@
 <p align="center">
-<img height="250px" src="jaynes.jpeg"/>
+<img height="250px" src="docs/assets/jaynes.png"/>
 </p>
 <br>
 
@@ -15,9 +15,8 @@ Currently, _Jaynes_ supports a dynamic modeling DSL which is syntactically close
 
 Currently supported inference algorithms for this DSL:
 - [X] Importance sampling
-- [ ] Programmable MCMC
-- [ ] HMC
-- [ ] Metropolis-Hastings
+- [ ] Programmable MCMC (WIP)
+- [ ] Metropolis-Hastings (WIP)
 - [X] Particle filtering
 - [X] Inference compilation (training pipeline complete, now interfaces to use trained network need to be built)
 - [X] Gradient-based methods (fundamental infrastructure is working, BBVI not in yet)
@@ -31,6 +30,8 @@ _Jaynes_ is equipped with the ability to extend the tracing interface to black-b
 The following example shows how this extension mechanism works.
 
 ```julia
+using Jaynes: @primitive, Trace, Generate, trace
+
 function foo(y::Float64)
     # Untraced randomness.
     y = rand(Normal(0.5, 3.0))
@@ -88,8 +89,7 @@ The motivation for this project is to identify interfaces and techniques to comb
 ```julia
 module Geometric
 
-include("../src/Jaynes.jl")
-using .Jaynes
+using Jaynes: trace
 using Distributions
 
 geo(p::Float64) = rand(:flip, Bernoulli, (p, )) == 1 ? 0 : 1 + rand(:geo, geo, p)
