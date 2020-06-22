@@ -1,66 +1,39 @@
 # Generate.
-function trace(fn::Function)
-    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
+function trace(fn::Function, 
+               constraints::Dict{Address, T};
+               pass = ignore_pass) where T
+    tr = Trace()
+    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints), pass  = pass))
     ret = Cassette.overdub(ctx, fn)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = ()
-    ctx.metadata.ret = ret
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
-end
-
-function trace(ctx::TraceCtx{M},
-               fn::Function) where M <: UnconstrainedGenerateMeta
-    ret = Cassette.overdub(ctx, fn)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = ()
-    ctx.metadata.ret = ret
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+    return CallSite(tr, fn, (), ret)
 end
 
 function trace(fn::Function, 
-               constraints::Dict{Address, T}) where T
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), constraints)))
-    ret = Cassette.overdub(ctx, fn)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = ()
-    ctx.metadata.ret = ret
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
-end
-
-function trace(fn::Function, 
-               args::Tuple; debug = false)
-    if debug
-        ctx = TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(Trace()))
-    else
-        ctx = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedGenerateMeta(Trace())))
-    end
+               args::Tuple;
+               pass = ignore_pass)
+    tr = Trace()
+    ctx = TraceCtx(metadata = UnconstrainedGenerateMeta(tr), pass = pass)
     ret = Cassette.overdub(ctx, fn, args...)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = args
-    ctx.metadata.ret = ret
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+    return CallSite(tr, fn, args, ret)
 end
 
 function trace(ctx::TraceCtx{M},
                fn::Function, 
                args::Tuple) where M <: UnconstrainedGenerateMeta
     ret = Cassette.overdub(ctx, fn, args...)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = args
-    ctx.metadata.ret = ret
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+    return CallSite(tr, fn, args, ret)
 end
 
-function trace(fn::Function, 
-               args::Tuple, 
-               constraints::Dict{Address, T}) where T
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), constraints)))
+function trace(constraints::Dict{Address, T},
+               fn::Function, 
+               args::Tuple;
+               pass = ignore_pass) where T
+    tr = Trace()
+    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints), pass = pass))
     ret = Cassette.overdub(ctx, fn, args...)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = args
-    ctx.metadata.ret = ret
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
+    return CallSite(tr, fn, args, ret)
 end
+
 # Gradients.
 function trace(ctx::TraceCtx{M},
                fn::Function, 
@@ -72,15 +45,6 @@ function trace(ctx::TraceCtx{M},
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
 
-function trace(ctx::TraceCtx{M},
-               fn::Function) where M <: UnconstrainedGradientMeta
-    ret = Cassette.overdub(ctx, fn)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = ()
-    ctx.metadata.ret = ret
-    return ctx
-end
-
 # Regenerate.
 function trace(ctx::TraceCtx{M}, 
                fn::Function, 
@@ -89,7 +53,7 @@ function trace(ctx::TraceCtx{M},
     ctx.metadata.fn = fn
     ctx.metadata.args = args
     ctx.metadata.ret = ret
-   
+
     # Discard
     discard = Dict{Address, Choice}()
     discard_score = 0.0
@@ -100,7 +64,7 @@ function trace(ctx::TraceCtx{M},
             delete!(ctx.metadata.tr.chm, k)
         end
     end
-    
+
     ctx.metadata.tr.score -= discard_score
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end
@@ -111,7 +75,7 @@ function trace(ctx::TraceCtx{M},
     ctx.metadata.fn = fn
     ctx.metadata.args = ()
     ctx.metadata.ret = ret
-   
+
     # Discard
     discard = Dict{Address, Choice}()
     discard_score = 0.0
@@ -122,7 +86,7 @@ function trace(ctx::TraceCtx{M},
             delete!(ctx.metadata.tr.chm, k)
         end
     end
-    
+
     ctx.metadata.tr.score -= discard_score
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score
 end

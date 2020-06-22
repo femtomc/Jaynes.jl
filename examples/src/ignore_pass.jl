@@ -35,7 +35,8 @@ ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(Trace())))
 ret = Cassette.overdub(ctx, foo1, 5.0)
 println(ret)
 
-compose_pass = passfold(TraceCtx, mul_switch!)
+transform = @passfold TraceCtx mul_switch!
+const compose_pass = Cassette.@pass transform
 
 ctx = disablehooks(TraceCtx(pass = compose_pass, metadata = UnconstrainedGenerateMeta(Trace())))
 #low = @code_lowered Cassette.overdub(ctx, foo1, 5.0)

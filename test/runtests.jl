@@ -7,5 +7,6 @@ using .Jaynes
 using Distributions
 
 include("particle_filter.jl")
+include("importance_sampling.jl")
 
 end

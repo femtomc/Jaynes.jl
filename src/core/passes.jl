@@ -1,3 +1,4 @@
+# Allows updating of CodeInfo instances with new IR.
 function update!(ci::Core.CodeInfo, ir::Core.Compiler.IRCode)
   Core.Compiler.replace_code_newstyle!(ci, ir, length(ir.argtypes)-1)
   ci.inferred = false
@@ -21,7 +22,7 @@ end
 function ignore_transform(::Type{<:TraceCtx}, r::Reflection)
     syn = r.code_info.code
     map(syn) do expr
-        MacroTools.prewalk(expr) do k
+        MacroTools.postwalk(expr) do k
             # If you already wrapped, don't wrap.
             k isa Expr && k.head == :call && begin
                 arg = k.args[1]
@@ -44,25 +45,3 @@ function ignore_transform(::Type{<:TraceCtx}, r::Reflection)
 end
 
 const ignore_pass = Cassette.@pass ignore_transform
-
-@generated function passfold(ctx, args...)
-    expr = quote
-        function compose_transform(::Type{Ctx}, r::Jaynes.Reflection)
-            m = Jaynes.meta(r.signature)
-            ir = Jaynes.IR(m)
-            trans = foldl(∘, args)(ir)
-            new = update!(r.code_info, trans)
-            return new
-        end
-        #Cassette.@pass compose_transform
-    end
-    expr
-end
-
-function mul_switch!(ir)
-    ir = MacroTools.prewalk(ir) do x
-        x isa GlobalRef && x.name == :(+) && return GlobalRef(Base, :*)
-        x
-    end
-    return ir
-end

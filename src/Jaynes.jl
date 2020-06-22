@@ -9,7 +9,7 @@ import Cassette: overdub, prehook, posthook, Reflection, fallback
 using MacroTools
 using MacroTools: postwalk
 using IRTools
-using IRTools: meta, IR, slots!
+using IRTools: meta, IR, slots!, Variable, typed_meta
 import IRTools: meta, IR
 using Mjolnir
 using Logging
@@ -17,15 +17,17 @@ using Dates
 
 using Distributions
 
+# Differentiable goop.
 using Flux
 using Flux: Params
 using Zygote
 using DistributionsAD
 
-const Address = Union{Symbol, Pair}
+const Address = Union{Symbol, Pair{Symbol, Int64}}
 
-include("core/selections.jl")
+include("core/static.jl")
 include("core/trace.jl")
+include("core/selections.jl")
 include("core/contexts.jl")
 include("core/gradients.jl")
 include("core/blackbox.jl")
