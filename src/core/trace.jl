@@ -16,6 +16,8 @@ mutable struct CallSite{T <: Trace, J, K} <: RecordSite
     fn::Function
     args::J
     ret::K
+    CallSite(tr::T, fn, ret::K) where {T <: Trace, K} = new{T, Tuple{}, K}(tr, fn, (), ret)
+    CallSite(tr::T, fn, args::J, ret::K) where {T <: Trace, J, K} = new{T, J, K}(tr, fn, args, ret)
 end
 
 # Hierarchical - standard interpreter style.
@@ -41,9 +43,3 @@ mutable struct GraphTrace <: Trace
 end
 
 Trace() = HierarchicalTrace()
-
-get_func(tr::Trace) = tr.func
-get_args(tr::Trace) = tr.args
-get_score(tr::Trace) = tr.score
-get_chm(tr::Trace) = tr.chm
-get_retval(tr::Trace) = tr.retval

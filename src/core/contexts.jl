@@ -11,10 +11,10 @@ end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
 
-mutable struct ConstrainedGenerateMeta{T <: Trace} <: Meta
+mutable struct ConstrainedGenerateMeta{T <: Trace, K <: ConstrainedSelection} <: Meta
     tr::T
-    select::ConstrainedHierarchicalSelection
-    ConstrainedGenerateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, select)
+    select::K
+    ConstrainedGenerateMeta(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select)
 end
 Generate(tr::Trace, select::ConstrainedHierarchicalSelection) = disablehooks(TraceCtx(metadata = ConstrainedGenerateMeta(tr, select)))
 Generate(pass, tr::Trace, select) = disablehooks(TraceCtx(pass = pass, metadata = ConstrainedGenerateMeta(tr, select)))
@@ -127,7 +127,7 @@ end
     end
 
     # Check if in selection in meta.
-    in_sel = haskey(ctx.metadata.select, addr)
+    in_sel = haskey(ctx.metadata.select.query, addr)
 
     ret = rand(d)
     in_prev_chm && !in_sel && begin

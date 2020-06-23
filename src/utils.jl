@@ -95,46 +95,56 @@ function Base.display(call::CallSite;
     println("  __________________________________\n")
 end
 
-function collect_addrs!(par::T, addrs::Vector{Union{Symbol, Pair}}, tr::Trace) where T <: Union{Symbol, Pair}
+function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace) where T <: Union{Symbol, Pair}
     for (k, v) in tr.chm
         if v isa ChoiceSite
             push!(addrs, par => k)
+            chd[par => k] = v.val
         elseif v isa CallSite
-            collect_addrs!(par => k, addrs, v.trace)
+            collect!(par => k, addrs, chd, v.trace)
         end
     end
     return addrs
 end
 
-function collect_addrs!(addrs::Vector{Union{Symbol, Pair}}, tr::Trace)
+function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace)
     for (k, v) in tr.chm
         if v isa ChoiceSite
             push!(addrs, k)
+            chd[k] = v.val
         elseif v isa CallSite
-            collect_addrs!(k, addrs, tr)
+            collect!(k, addrs, chd, tr)
         end
     end
 end
 
-function collect_addrs(tr::Trace)
+import Base.collect
+function collect(tr::Trace)
     addrs = Union{Symbol, Pair}[]
-    collect_addrs!(addrs, tr)
-    return addrs
+    chd = Dict{Union{Symbol, Pair}, Any}()
+    collect!(addrs, chd, tr)
+    return addrs, chd
 end
 
-function Base.display(tr::Trace)
+function Base.display(tr::Trace; show_values = false)
     println("  __________________________________\n")
     println("               Addresses\n")
-    addrs = collect_addrs(tr)
-    map(addrs) do a
-        println(" ", a)
+    addrs, chd = collect(tr)
+    if show_values
+        for a in addrs
+            println(" $(a) : $(chd[a])")
+        end
+    else
+        for a in addrs
+            println(" $(a)")
+        end
     end
     println("  __________________________________\n")
 end
 
 # Merge observations and a choice map.
 function merge(tr::HierarchicalTrace,
-               obs::ConstrainedHierarchicalSelection)
+    obs::ConstrainedHierarchicalSelection)
     tr_selection = chm(tr)
     merge!(tr_selection, obs)
     return tr_selection

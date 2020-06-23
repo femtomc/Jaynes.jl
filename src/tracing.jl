@@ -1,9 +1,9 @@
 # Generate.
 function trace(fn::Function, 
-               constraints::Dict{Address, T};
+               constraints::ConstrainedSelection;
                pass = ignore_pass) where T
     tr = Trace()
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(tr, constraints), pass  = pass))
+    ctx = disablehooks(TraceCtx(metadata = ConstrainedGenerateMeta(tr, constraints), pass  = pass))
     ret = Cassette.overdub(ctx, fn)
     return CallSite(tr, fn, (), ret)
 end
