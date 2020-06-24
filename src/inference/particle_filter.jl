@@ -10,7 +10,7 @@ function initialize_filter(fn::Function,
                            args::Tuple,
                            observations::ConstrainedHierarchicalSelection,
                            num_particles::Int)
-    calls, lnw, lmle = importance_sampling(fn, args, observations, num_particles)
+    calls, lnw, lmle = importance_sampling(fn, args; observations = observations, num_samples = num_particles)
     ltw = lmle + log(num_particles)
     lws = lnw .+ ltw
     return Particles(calls, lws, lmle)
