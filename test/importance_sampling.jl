@@ -11,14 +11,30 @@ function LinearGaussianProposal()
 end
 
 @testset "Importance sampling" begin
-    observations = Jaynes.selection((:y, 3.0))
+    y = 3.0
+    observations = Jaynes.selection((:y, y))
+    n_traces = 5
 
     @testset "Linear Gaussian model" begin
-        calls, lnw, lmle = Jaynes.importance_sampling(LinearGaussian, (0.0, 1.0), observations, 50000)
+        calls, lnw, lmle = Jaynes.importance_sampling(LinearGaussian, (0.0, 1.0), observations, n_traces)
+        @test length(calls) == n_traces
+        @test length(lnw) == n_traces
+        @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
+        @test !isnan(lmle)
+        for call in calls
+            @test call[:y] == y
+        end
     end
 
     @testset "Linear Gaussian proposal" begin
-        calls, lnw, lmle = Jaynes.importance_sampling(LinearGaussian, (0.0, 1.0), LinearGaussianProposal, (), observations, 50000)
+        calls, lnw, lmle = Jaynes.importance_sampling(LinearGaussian, (0.0, 1.0), LinearGaussianProposal, (), observations, n_traces)
+        @test length(calls) == n_traces
+        @test length(lnw) == n_traces
+        @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
+        @test !isnan(lmle)
+        for call in calls
+            @test call[:y] == y
+        end
     end
 end
 
