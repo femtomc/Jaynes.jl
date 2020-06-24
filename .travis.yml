@@ -14,7 +14,6 @@ jobs:
                 Pkg.instantiate()'
               - julia --project=docs/ docs/make.jl
           after_success:
-              - julia --project=. -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
-                Pkg.instantiate()'
+              - julia --project=. -e 'using Pkg; Pkg.instantiate()'
               - julia --project=. --code-coverage test/runtests.jl
               - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
