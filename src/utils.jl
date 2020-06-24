@@ -145,7 +145,7 @@ end
 # Merge observations and a choice map.
 function merge(tr::HierarchicalTrace,
     obs::ConstrainedHierarchicalSelection)
-    tr_selection = chm(tr)
+    tr_selection = selection(tr)
     merge!(tr_selection, obs)
     return tr_selection
 end

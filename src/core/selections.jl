@@ -57,7 +57,7 @@ function Base.haskey(selections::Vector{ConstrainedSelection}, addr::T) where T 
     return false
 end
 Base.haskey(sel::ConstrainedAnywhereSelection, addr::T) where T <: Address = haskey(sel.query, addr)
-Base.haskey(hs::UnconstrainedHierarchicalSelection, addr::Address) = haskey(hs.select, addr)
+Base.haskey(hs::UnconstrainedHierarchicalSelection, addr::Address) = haskey(hs.query, addr)
 
 import Base: getindex
 # Can't appear outside of a higher-level wrapper.
@@ -153,17 +153,17 @@ end
 import Base.merge!
 function merge!(sel1::ConstrainedSelectByAddress,
                 sel2::ConstrainedSelectByAddress)
-    Base.merge!(sel1.select, sel2.select)
+    Base.merge!(sel1.query, sel2.query)
 end
 
 function merge!(sel1::ConstrainedHierarchicalSelection,
                 sel2::ConstrainedHierarchicalSelection)
-    merge!(sel1.select, sel2.select)
+    merge!(sel1.query, sel2.query)
     for k in keys(sel2.tree)
         if haskey(sel1.tree, k)
-            merge!(sel1.tree[k], sel2.select[k])
+            merge!(sel1.tree[k], sel2.query[k])
         else
-            sel1.tree[k] = sel2.select[k]
+            sel1.tree[k] = sel2.query[k]
         end
     end
 end
