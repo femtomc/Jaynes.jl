@@ -140,7 +140,6 @@ end
     end
     ctx.metadata.tr.chm[addr] = ChoiceSite(ret, score)
 
-    # Visited
     ret
 end
 
