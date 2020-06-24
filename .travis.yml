@@ -1,7 +1,8 @@
 language: julia
-codecov: true
 julia:
     - 1.4.2
+
+codecov: true
 
 jobs:
     include:
