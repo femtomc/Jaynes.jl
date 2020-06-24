@@ -1,5 +1,6 @@
 import Base.rand
 rand(addr::T, d::Distribution{K}) where {K, T <: Union{Symbol, Pair{Symbol, Int64}}} = rand(d)
+rand(addr::T, d::Function, args...) where T <: Union{Symbol, Pair{Symbol, Int64}} = d(args...)
 learnable(addr::T, lit::K) where {T <: Union{Symbol, Pair{Symbol, Int64}}, 
                                   K <: Union{Number, AbstractArray}} = lit
 

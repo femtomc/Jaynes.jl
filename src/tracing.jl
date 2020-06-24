@@ -12,7 +12,7 @@ function trace(fn::Function,
                args::Tuple;
                pass = ignore_pass)
     tr = Trace()
-    ctx = TraceCtx(metadata = UnconstrainedGenerateMeta(tr), pass = pass)
+    ctx = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr), pass = pass))
     ret = Cassette.overdub(ctx, fn, args...)
     return CallSite(tr, fn, args, ret)
 end

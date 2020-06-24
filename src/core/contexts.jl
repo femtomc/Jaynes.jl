@@ -208,7 +208,7 @@ end
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 
-                                         args..., 
+                                         args, 
                                          ret)
     return ret
 end
@@ -224,7 +224,7 @@ end
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 
-                                         args..., 
+                                         args, 
                                          ret)
     return ret
 end
@@ -240,7 +240,7 @@ end
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 
-                                         args..., 
+                                         args, 
                                          ret)
     return ret
 end
@@ -256,7 +256,7 @@ end
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 
-                                         args..., 
+                                         args, 
                                          ret)
     return ret
 end
@@ -272,7 +272,7 @@ end
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 
-                                         args..., 
+                                         args, 
                                          ret)
     return ret
 end

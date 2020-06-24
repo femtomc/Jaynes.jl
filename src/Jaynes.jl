@@ -39,7 +39,7 @@ include("inference/inference_compilation.jl")
 include("tracing.jl")
 include("core/passes.jl")
 
-function derive_debug(mod; path = "jayneslog_$(Time(Dates.now())).txt", type_tracing = false)
+function derive_debug(mod; path = "jayneslog_$(Time(Dates.now())).txt", type_tracing = false, all_calls = false)
     io = open(path, "w+")
     logger = Logging.SimpleLogger(io)
     Logging.global_logger(logger)
@@ -76,8 +76,16 @@ function derive_debug(mod; path = "jayneslog_$(Time(Dates.now())).txt", type_tra
             end
         end
     end
+
+    if all_calls
+        @eval mod begin
+            function Jaynes.prehook(::Jaynes.TraceCtx, call::Function, args...)
+                @info "\n$(stacktrace()[3])\n" call typeof(args)
+            end
+        end
+    end
     
-    return logger
+    return logger 
 end
 
 end # module
