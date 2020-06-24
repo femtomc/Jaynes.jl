@@ -30,6 +30,9 @@ end
         anywhere = Jaynes.ConstrainedAnywhereSelection([(:x, 5.0), (:q => 21, 10.0)])
         un = Jaynes.union(observations, anywhere)
         call = Jaynes.trace(AnywhereTopLevel, un)
-        Jaynes.display(call.trace; show_values = true)
+        @test call[:x] == 5.0
+        @test call[:y => :x] == 5.0
+        @test call[:y => :y => :x] == 5.0
+        @test call[:y => :y => :loop => :q => 21] == 10.0
     end
 end

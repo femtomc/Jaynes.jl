@@ -43,3 +43,39 @@ mutable struct GraphTrace <: Trace
 end
 
 Trace() = HierarchicalTrace()
+
+# Allows instances of Trace and CallSite to be accessed through indexing like a dictionary. 
+# setindex! is not defined - we treat the trace as immutable, unless you interact with it through contexts for inference.
+import Base.getindex
+getindex(cs::ChoiceSite, addr::Address) = nothing
+getindex(cs::CallSite, addr) = getindex(cs.trace, addr)
+unwrap(cs::ChoiceSite) = cs.val
+unwrap(cs::CallSite) = cs.ret
+function getindex(tr::HierarchicalTrace, addr::Address)
+    if haskey(tr.chm, addr)
+        return unwrap(tr.chm[addr])
+    else
+        return nothing
+    end
+end
+function getindex(tr::HierarchicalTrace, addr::Pair)
+    if haskey(tr.chm, addr[1])
+        return getindex(tr.chm[addr[1]], addr[2])
+    else
+        return nothing
+    end
+end
+
+import Base.haskey
+haskey(cs::ChoiceSite, addr::Address) = false
+haskey(cs::CallSite, addr) = haskey(cs.trace, addr)
+function Base.haskey(tr::HierarchicalTrace, addr::Address)
+    haskey(tr.chm, addr)
+end
+function Base.haskey(tr::HierarchicalTrace, addr::Pair)
+    if haskey(tr.chm, addr[1])
+        return haskey(tr.chm[1], addr[2])
+    else
+        return false
+    end
+end

@@ -113,7 +113,7 @@ function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pa
             push!(addrs, k)
             chd[k] = v.val
         elseif v isa CallSite
-            collect!(k, addrs, chd, tr)
+            collect!(k, addrs, chd, v.trace)
         end
     end
 end
