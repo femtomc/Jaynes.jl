@@ -3,8 +3,8 @@
 # ----------------------------------------------------------------------- #
 
 function importance_sampling(model::Function, 
-                             args::Tuple,
-                             observations::ConstrainedHierarchicalSelection,
+                             args::Tuple;
+                             observations::ConstrainedSelection = ConstrainedAnywhereSelection(), 
                              num_samples::Int = 5000)
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
@@ -27,9 +27,9 @@ end
 function importance_sampling(model::Function, 
                              args::Tuple,
                              proposal::Function,
-                             proposal_args::Tuple,
-                             observations::ConstrainedHierarchicalSelection,
-                             num_samples::Int) where T
+                             proposal_args::Tuple; 
+                             observations::ConstrainedSelection = ConstrainedAnywhereSelection(),
+                             num_samples::Int = 5000) where T
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     prop_ctx = Propose(ignore_pass, Trace())
