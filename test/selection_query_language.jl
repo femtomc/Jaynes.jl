@@ -29,7 +29,7 @@ end
         observations = Jaynes.ConstrainedHierarchicalSelection()
         anywhere = Jaynes.ConstrainedAnywhereSelection([(:x, 5.0), (:q => 21, 10.0)])
         un = Jaynes.union(observations, anywhere)
-        call = Jaynes.trace(AnywhereTopLevel, un)
+        call = Jaynes.trace(AnywhereTopLevel, (), un)
         @test call[:x] == 5.0
         @test call[:y => :x] == 5.0
         @test call[:y => :y => :x] == 5.0

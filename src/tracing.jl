@@ -1,9 +1,9 @@
 # Generate.
 function trace(ctx::TraceCtx{M},
                fn::Function, 
-               args::Tuple) where M <: UnconstrainedGenerateMeta
+               args::Tuple) where M <: GenerateMeta
     ret = Cassette.overdub(ctx, fn, args...)
-    return CallSite(tr, fn, args, ret)
+    return CallSite(ctx.metadata.tr, fn, args, ret)
 end
 
 function trace(fn::Function, 
@@ -14,8 +14,15 @@ end
 
 function trace(fn::Function, 
                args::Tuple,
-               obs::Vector{K, T}) where {K <: Union{Symbol, Pair}, T}
-    ctx = disablehooks(TraceCtx(metadata = GenerateMeta(Trace(), obs), pass = ignore_pass))
+               obs::Vector{Tuple{K, T}}) where {K <: Union{Symbol, Pair}, T}
+    ctx = disablehooks(TraceCtx(metadata = ConstrainedGenerateMeta(Trace(), obs), pass = ignore_pass))
+    return trace(ctx, fn, args)
+end
+
+function trace(fn::Function, 
+               args::Tuple,
+               obs::ConstrainedSelection)
+    ctx = disablehooks(TraceCtx(metadata = ConstrainedGenerateMeta(Trace(), obs), pass = ignore_pass))
     return trace(ctx, fn, args)
 end
 

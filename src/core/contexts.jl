@@ -4,19 +4,20 @@ Cassette.@context TraceCtx
 
 abstract type Meta end
 
-mutable struct UnconstrainedGenerateMeta{T <: Trace} <: Meta
+abstract type GenerateMeta <: Meta end
+mutable struct UnconstrainedGenerateMeta{T <: Trace} <: GenerateMeta
     tr::T
     UnconstrainedGenerateMeta(tr::T) where T <: Trace = new{T}(tr)
 end
 Generate(tr::Trace) = disablehooks(TraceCtx(metadata = UnconstrainedGenerateMeta(tr)))
 Generate(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedGenerateMeta(tr)))
 
-mutable struct ConstrainedGenerateMeta{T <: Trace, K <: ConstrainedSelection} <: Meta
+mutable struct ConstrainedGenerateMeta{T <: Trace, K <: ConstrainedSelection} <: GenerateMeta
     tr::T
     select::K
     ConstrainedGenerateMeta(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select)
 end
-Generate(tr::Trace, select::ConstrainedHierarchicalSelection) = disablehooks(TraceCtx(metadata = ConstrainedGenerateMeta(tr, select)))
+Generate(tr::Trace, select::ConstrainedSelection) = disablehooks(TraceCtx(metadata = ConstrainedGenerateMeta(tr, select)))
 Generate(pass, tr::Trace, select) = disablehooks(TraceCtx(pass = pass, metadata = ConstrainedGenerateMeta(tr, select)))
 
 mutable struct ProposalMeta{T <: Trace} <: Meta
@@ -36,21 +37,26 @@ end
 Update(tr::Trace, select) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, select)))
 Update(pass, tr::Trace, select) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, select)))
 
-mutable struct UnconstrainedRegenerateMeta{T <: Trace, L <: UnconstrainedSelection} <: Meta
+abstract type RegenerateMeta <: Meta end
+mutable struct UnconstrainedRegenerateMeta{T <: Trace, L <: UnconstrainedSelection} <: RegenerateMeta
     tr::T
-    selection::L
+    select::L
     visited::VisitedSelection
     function UnconstrainedRegenerateMeta(tr::T, sel::Vector{Address}) where T <: Trace
         un_sel = selection(sel)
-        new{T, typeof(unsel)}(tr, unsel, VisitedSelection())
+        new{T, typeof(un_sel)}(tr, un_sel, VisitedSelection())
+    end
+    function UnconstrainedRegenerateMeta(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
+        new{T, L}(tr, sel, VisitedSelection())
     end
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = UnconstrainedRegenerateMeta(tr, sel)))
+Regenerate(tr::Trace, sel::UnconstrainedSelection) = disablehooks(TraceCtx(metadata = UnconstrainedRegenerateMeta(tr, sel)))
 Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedRegenerateMeta(tr, sel)))
 
 mutable struct ConstrainedRegenerateMeta{T <: Trace, L <: UnconstrainedSelection, K <: ConstrainedSelection} <: Meta
     tr::T
-    selection::L
+    select::L
     observations::K
     visited::VisitedSelection
     function ConstrainedRegenerateMeta(tr::T, sel::Vector{Address}, obs::Vector{Tuple{K, P}}) where {T <: Trace, P, K <: Union{Symbol, Pair}} 

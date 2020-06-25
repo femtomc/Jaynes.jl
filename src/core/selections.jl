@@ -57,6 +57,7 @@ end
 
 Base.haskey(usa::UnconstrainedSelectByAddress, addr::Address) = haskey(usa.query, addr)
 Base.haskey(csa::ConstrainedSelectByAddress, addr::Address) = haskey(csa.query, addr)
+Base.haskey(usa::UnconstrainedSelectByAddress, addr::Address) = addr in usa.query
 Base.haskey(chs::ConstrainedHierarchicalSelection, addr::Address) = haskey(chs.tree, addr)
 function Base.haskey(selections::Vector{ConstrainedSelection}, addr::T) where T <: Address
     for sel in selections
@@ -208,6 +209,10 @@ end
 function selection(a::Tuple{K, T}...) where {T, K <: Union{Symbol, Pair}}
     observations = Vector{Tuple{K, T}}(collect(a))
     return ConstrainedHierarchicalSelection(observations)
+end
+function selection(a::Address...)
+    observations = Vector{Address}(collect(a))
+    return UnconstrainedHierarchicalSelection(observations)
 end
 
 # Set operations.

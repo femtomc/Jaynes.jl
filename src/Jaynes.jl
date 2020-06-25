@@ -36,9 +36,11 @@ include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")
 include("inference/inference_compilation.jl")
+include("inference/metropolis_hastings.jl")
 include("tracing.jl")
 include("core/passes.jl")
 
+# Allows debug tracing in packages which use Jaynes.
 function derive_debug(mod; path = "jayneslog_$(Time(Dates.now())).txt", type_tracing = false, all_calls = false)
     io = open(path, "w+")
     logger = Logging.SimpleLogger(io)

@@ -2,8 +2,8 @@ function metropolis_hastings(call::CallSite,
                              sel::UnconstrainedSelection)
     args = call.args
     ctx = Regenerate(call.trace, sel)
-    prop, weight = trace(ctx, call.fn, call.args)
-    log(rand()) < weight && return (prop, true)
+    prop, discard = trace(ctx, call.fn, call.args)
+    log(rand()) < prop.trace.score && return (prop, true)
     return (trace, false)
 end
 
@@ -12,8 +12,8 @@ function metropolis_hastings(call::CallSite,
                              obs::ConstrainedSelection)
     args = call.args
     ctx = Regenerate(call.trace, sel, obs)
-    prop, weight = trace(ctx, call.fn, call.args)
-    log(rand()) < weight && return (prop, true)
+    prop, discard = trace(ctx, call.fn, call.args)
+    log(rand()) < prop.trace.score && return (prop, true)
     return (trace, false)
 end
 
