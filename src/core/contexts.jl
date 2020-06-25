@@ -26,24 +26,41 @@ end
 Propose(tr::Trace) = disablehooks(TraceCtx(metadata = ProposalMeta(tr)))
 Propose(pass, tr::Trace) = disablehooks(TraceCtx(pass = pass, metadata = ProposalMeta(tr)))
 
-mutable struct UpdateMeta{T <: Trace} <: Meta
+mutable struct UpdateMeta{T <: Trace, K <: ConstrainedSelection} <: Meta
     tr::T
     select_visited::Vector{Address}
-    select::ConstrainedHierarchicalSelection
-    UpdateMeta(tr::T, select::ConstrainedHierarchicalSelection) where T <: Trace = new{T}(tr, Address[], select)
+    select::K
+    UpdateMeta(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Address[], select)
 end
 
 Update(tr::Trace, select) where T = disablehooks(TraceCtx(metadata = UpdateMeta(tr, select)))
 Update(pass, tr::Trace, select) where T = disablehooks(TraceCtx(pass = pass, metadata = UpdateMeta(tr, select)))
 
-mutable struct RegenerateMeta{T <: Trace} <: Meta
+mutable struct UnconstrainedRegenerateMeta{T <: Trace, L <: UnconstrainedSelection} <: Meta
     tr::T
-    selection::UnconstrainedHierarchicalSelection
-    RegenerateMeta(tr::T, sel::Vector{Address}) where T <: Trace = new{T}(tr, 
-                                                                          selection(sel))
+    selection::L
+    visited::VisitedSelection
+    function UnconstrainedRegenerateMeta(tr::T, sel::Vector{Address}) where T <: Trace
+        un_sel = selection(sel)
+        new{T, typeof(unsel)}(tr, unsel, VisitedSelection())
+    end
 end
-Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = RegenerateMeta(tr, sel)))
-Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = pass, metadata = RegenerateMeta(tr, sel)))
+Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(metadata = UnconstrainedRegenerateMeta(tr, sel)))
+Regenerate(pass, tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = pass, metadata = UnconstrainedRegenerateMeta(tr, sel)))
+
+mutable struct ConstrainedRegenerateMeta{T <: Trace, L <: UnconstrainedSelection, K <: ConstrainedSelection} <: Meta
+    tr::T
+    selection::L
+    observations::K
+    visited::VisitedSelection
+    function ConstrainedRegenerateMeta(tr::T, sel::Vector{Address}, obs::Vector{Tuple{K, P}}) where {T <: Trace, P, K <: Union{Symbol, Pair}} 
+        un_sel = selection(sel)
+        c_sel = selection(obs)
+        new{T, typeof(un_sel), typeof(c_sel)}(tr, unsel, c_sel, VisitedSelection())
+    end
+end
+Regenerate(tr::Trace, sel::Vector{Address}, obs::Vector) = disablehooks(TraceCtx(metadata = ConstrainedRegenerateMeta(tr, sel, obs)))
+Regenerate(pass, tr::Trace, sel::Vector{Address}, obs::Vector) = disablehooks(TraceCtx(pass = pass, metadata = ConstrainedRegenerateMeta(tr, sel, obs)))
 
 mutable struct ScoreMeta{T <: Trace} <: Meta
     tr::T
@@ -114,7 +131,7 @@ end
 @inline function Cassette.overdub(ctx::TraceCtx{M}, 
                                   call::typeof(rand), 
                                   addr::T, 
-                                  d::Distribution{K}) where {M <: RegenerateMeta, 
+                                  d::Distribution{K}) where {M <: UnconstrainedRegenerateMeta, 
                                                              T <: Address,
                                                              K}
 
@@ -139,6 +156,9 @@ end
         ctx.metadata.tr.score += score - prev_score
     end
     ctx.metadata.tr.chm[addr] = ChoiceSite(ret, score)
+
+    # Visited.
+    push!(ctx.metadata.visited, addr)
 
     ret
 end
@@ -265,15 +285,16 @@ end
                                   c::typeof(rand),
                                   addr::T,
                                   call::Function,
-                                  args...) where {M <: RegenerateMeta, 
+                                  args...) where {M <: UnconstrainedRegenerateMeta, 
                                                   T <: Address}
 
-    rec_ctx = similarcontext(ctx; metadata = Regenerate(Trace(), ctx.metadata.select[addr]))
+    rec_ctx = similarcontext(ctx; metadata = Regenerate(ctx.metadata.tr.chm[addr].trace, ctx.metadata.select[addr]))
     ret = recurse(rec_ctx, call, args...)
     ctx.metadata.tr.chm[addr] = CallSite(rec_ctx.metadata.tr, 
                                          call, 
                                          args, 
                                          ret)
+    ctx.metadata.tr.visited.tree[addr] = rec_ctx.metadata.tr.visited
     return ret
 end
 

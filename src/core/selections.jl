@@ -1,6 +1,17 @@
+import Base: haskey, getindex, push!, merge!, union
+
 # Address selections are used by many different contexts. 
 # This is essentially a query language for addresses within a particular method body.
 abstract type Selection end
+
+# Lightweight visitor - used by regenerate contexts.
+struct VisitedSelection <: Selection
+    tree::Dict{Address, VisitedSelection}
+    addrs::Vector{Address}
+    VisitedSelection() = new(Dict{Address, VisitedSelection}(), Address[])
+end
+push!(vs::VisitedSelection, addr::Address) = push!(vs.addrs, addr)
+
 abstract type ConstrainedSelection end
 abstract type UnconstrainedSelection end
 abstract type SelectQuery <: Selection end
@@ -44,7 +55,6 @@ struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: Unco
     UnconstrainedHierarchicalSelection() = new{UnconstrainedSelectByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedSelectByAddress())
 end
 
-import Base: haskey
 Base.haskey(usa::UnconstrainedSelectByAddress, addr::Address) = haskey(usa.query, addr)
 Base.haskey(csa::ConstrainedSelectByAddress, addr::Address) = haskey(csa.query, addr)
 Base.haskey(chs::ConstrainedHierarchicalSelection, addr::Address) = haskey(chs.tree, addr)
@@ -59,7 +69,6 @@ end
 Base.haskey(sel::ConstrainedAnywhereSelection, addr::T) where T <: Address = haskey(sel.query, addr)
 Base.haskey(hs::UnconstrainedHierarchicalSelection, addr::Address) = haskey(hs.query, addr)
 
-import Base: getindex
 # Can't appear outside of a higher-level wrapper.
 Base.getindex(csa::ConstrainedSelectByAddress, addr::Address) = csa.query[addr]
 
@@ -91,7 +100,6 @@ function Base.getindex(selections::Vector{ConstrainedSelection}, addr::Address)
 end
 
 # Builder.
-import Base.push!
 function push!(sel::UnconstrainedSelectByAddress, addr::Symbol)
     push!(sel.query, addr)
 end
@@ -150,7 +158,6 @@ function ConstrainedHierarchicalSelection(a::Vector{Tuple{K, T}}) where {T, K <:
 end
 
 # Merges two selections, overwriting the first.
-import Base.merge!
 function merge!(sel1::ConstrainedSelectByAddress,
                 sel2::ConstrainedSelectByAddress)
     Base.merge!(sel1.query, sel2.query)
@@ -204,5 +211,4 @@ function selection(a::Tuple{K, T}...) where {T, K <: Union{Symbol, Pair}}
 end
 
 # Set operations.
-import Base.union
 union(a::ConstrainedSelection...) = ConstrainedUnionSelection([a...])
