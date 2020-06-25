@@ -17,12 +17,12 @@ Currently, _Jaynes_ supports a dynamic modeling DSL which is syntactically close
 Currently supported inference algorithms for this DSL:
 - [X] Importance sampling
 - [X] Particle filtering
+- [X] Metropolis-Hastings (Testing)
 ---
-Broken by `effects` merge to enable robust selection querying, re-working:
+Broken by `effects` merge to enable robust selection querying language, re-working:
 - [ ] Programmable MCMC (WIP)
-- [ ] Metropolis-Hastings (WIP)
-- [X] Inference compilation (training pipeline complete, now interfaces to use trained network need to be built)
-- [X] Gradient-based methods (fundamental infrastructure is working, BBVI not in yet)
+- [X] Inference compilation
+- [X] Gradient-based methods
 ---
 
 The dynamic DSL is not the the long term main feature of this system. Gen's version is better optimized, has better documentation, and has a better assortment of inference algorithms. _Jaynes_ aims to support a restricted _graph-based_ DSL which allows the user to utilize graphical model inference algorithms. Ideally, _Jaynes_ should be able to identify when a program is amenable to this static representation. This is a WIP, and requires a bit more research at the IR level. The goal for this DSL is to seamlessly combine with the dynamic, sample-based DSL in a productive way.
