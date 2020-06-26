@@ -11,7 +11,6 @@ Jaynes.@primitive function logpdf(fn::typeof(geo), p, n::Int)
     return Distributions.logpdf(Geometric(p), n)
 end
 
-
 function wats_p()
     p = rand(:p, Beta(1, 1))
     q = rand(:q, geo, p)
@@ -25,7 +24,11 @@ end
 
 obs = Jaynes.selection((:q, 100))
 calls, lnw, lmle = Jaynes.importance_sampling(wats_p, (), good_prop, (50, ); observations = obs, num_samples = 50000)
+
+# Show a trace.
 display(calls[1].trace; show_values = true)
+
+# Expectation over samples.
 println(sum(map(calls) do c
                 c[:p]
             end) / 50000)
