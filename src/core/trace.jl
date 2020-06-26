@@ -28,7 +28,6 @@ mutable struct HierarchicalTrace <: Trace
     HierarchicalTrace() = new(Dict{Address, ChoiceSite}(), 0.0)
 end
 
-
 # Graph - for when analysis is available.
 mutable struct GraphTrace <: Trace
     sub::Dict{Address, RecordSite}

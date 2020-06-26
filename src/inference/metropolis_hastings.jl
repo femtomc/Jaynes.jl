@@ -4,7 +4,7 @@ function metropolis_hastings(call::CallSite,
     ctx = Regenerate(call.trace, sel)
     prop, discard = trace(ctx, call.fn, call.args)
     log(rand()) < prop.trace.score && return (prop, true)
-    return (trace, false)
+    return (call, false)
 end
 
 function metropolis_hastings(call::CallSite,
@@ -14,10 +14,9 @@ function metropolis_hastings(call::CallSite,
     ctx = Regenerate(call.trace, sel, obs)
     prop, discard = trace(ctx, call.fn, call.args)
     log(rand()) < prop.trace.score && return (prop, true)
-    return (trace, false)
+    return (call, false)
 end
 
-# TODO: custom proposals.
 function metropolis_hastings(call::CallSite,
                              proposal::Function,
                              proposal_args::Tuple,
@@ -27,13 +26,15 @@ function metropolis_hastings(call::CallSite,
     prop = trace(prop_ctx, proposal, call, proposal_args...)
     
     # Update.
-    update_ctx = Update(call.trace, call.args, selection(prop))
+    update_ctx = Update(call.trace, selection(prop))
+    update, discard = trace(update_ctx, call.fn, call.args...)
 
     # Score.
-    score_ctx = Score()
-    ratio = update.score - prop.score + score.score
+    s_ctx = Score(discard)
+    score = trace(s_ctx, proposal, update, proposal_args...)
 
     # Accept/reject.
+    ratio = update.score - prop.score + sc
     log(rand()) < ratio && return (prop, true)
-    return (trace, false)
+    return (call, false)
 end

@@ -2,17 +2,23 @@ function LinearGaussian(μ::Float64, σ::Float64)
     α = 5.0
     x = rand(:x, Normal(μ, σ))
     y = rand(:y, Normal(α * x, 1.0))
-    return y
+    z = rand(:z, Normal(y, 5.0))
+    return z
 end
 
 function LinearGaussianProposal()
     α = 10.0
     x = rand(:x, Normal(α * 3.0, 3.0))
+    y = rand(:y, Normal(0.0, 1.0))
+end
+
+function OneSiteProposal()
+    x = rand(:x, Normal(0.0, 1.0))
 end
 
 @testset "Importance sampling" begin
-    y = 3.0
-    observations = Jaynes.selection((:y, y))
+    z = 3.0
+    observations = Jaynes.selection((:z, z))
     n_traces = 5
 
     @testset "Linear Gaussian model" begin
@@ -22,7 +28,7 @@ end
         @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
         @test !isnan(lmle)
         for call in calls
-            @test call[:y] == y
+            @test call[:z] == z
         end
     end
 
@@ -33,7 +39,7 @@ end
         @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
         @test !isnan(lmle)
         for call in calls
-            @test call[:y] == y
+            @test call[:z] == z
         end
     end
 end

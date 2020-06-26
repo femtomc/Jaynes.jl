@@ -8,7 +8,7 @@ function importance_sampling(model::Function,
                              num_samples::Int = 5000)
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    ctx = Generate(ignore_pass, Trace(), observations)
+    ctx = Generate(Trace(), observations)
     for i in 1:num_samples
         ret = Cassette.overdub(ctx, model, args...)
         lws[i] = ctx.metadata.tr.score
@@ -32,15 +32,11 @@ function importance_sampling(model::Function,
                              num_samples::Int = 5000) where T
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    prop_ctx = Propose(ignore_pass, Trace())
-    model_ctx = Generate(ignore_pass, Trace(), observations)
+    prop_ctx = Propose(Trace())
+    model_ctx = Generate(Trace(), observations)
     for i in 1:num_samples
         # Propose.
-        if isempty(proposal_args)
-            Cassette.overdub(prop_ctx, proposal)
-        else
-            Cassette.overdub(prop_ctx, proposal, proposal_args...)
-        end
+        Cassette.overdub(prop_ctx, proposal, proposal_args...)
 
         # Merge proposals and observations.
         prop_score = prop_ctx.metadata.tr.score
@@ -48,11 +44,8 @@ function importance_sampling(model::Function,
         model_ctx.metadata.select = select
 
         # Generate.
-        if isempty(args)
-            ret = Cassette.overdub(model_ctx, model)
-        else
-            ret = Cassette.overdub(model_ctx, model, args...)
-        end
+        ret = Cassette.overdub(model_ctx, model, args...)
+        !compare(select, model_ctx.metadata.visited) && error("ProposalError: support error - not all constraints provided by merge of proposal and observations were visited.")
 
         # Track.
         calls[i] = CallSite(model_ctx.metadata.tr, 

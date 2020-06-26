@@ -24,10 +24,12 @@ struct ConstrainedSelectByAddress <: ConstrainedSelectQuery
     ConstrainedSelectByAddress(d::Dict{Address, Any}) = new(d)
 end
 
+
 struct UnconstrainedSelectByAddress <: UnconstrainedSelectQuery
     query::Vector{Address}
     UnconstrainedSelectByAddress() = new(Address[])
 end
+
 
 struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: ConstrainedSelection
     tree::Dict{Address, ConstrainedHierarchicalSelection}
@@ -48,6 +50,9 @@ end
 struct UnconstrainedUnionSelection <: UnconstrainedSelection
     query::Vector{UnconstrainedSelection}
 end
+
+# Set operations.
+union(a::ConstrainedSelection...) = ConstrainedUnionSelection([a...])
 
 struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: UnconstrainedSelection
     tree::Dict{Address, UnconstrainedHierarchicalSelection}
@@ -215,5 +220,18 @@ function selection(a::Address...)
     return UnconstrainedHierarchicalSelection(observations)
 end
 
-# Set operations.
-union(a::ConstrainedSelection...) = ConstrainedUnionSelection([a...])
+# Get addresses.
+addresses(csa::ConstrainedSelectByAddress) = keys(csa.query)
+addresses(usa::UnconstrainedSelectByAddress) = usa.query
+
+# Compare.
+function compare(chs::ConstrainedHierarchicalSelection, v::VisitedSelection)::Bool
+    for addr in addresses(chs.query)
+        addr in v.addrs || return false
+    end
+    for addr in keys(chs.tree)
+        haskey(v.tree, addr) || return false
+        compare(chs.tree[addr], v.tree[addr]) || return false
+    end
+    return true
+end

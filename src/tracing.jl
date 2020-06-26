@@ -83,10 +83,19 @@ function trace(ctx::TraceCtx{M},
                fn::Function,
                args::Tuple) where M <: UpdateMeta
     ret = Cassette.overdub(ctx, fn, args...)
-    !foldl((x, y) -> x && y, map(ctx.metadata.constraints_visited) do k
-               k in keys(ctx.metadata.constraints)
-           end) && error("UpdateError: tracing did not visit all addresses in constraints.")
-
+    # TODO: fix.
+#    !foldl((x, y) -> x && y, map(ctx.metadata.constraints_visited) do k
+#               k in keys(ctx.metadata.constraints)
+#           end) && error("UpdateError: tracing did not visit all addresses in constraints.")
+#
     discard = visited_walk!(ctx.metadata.tr, ctx.metadata.visited)
     return CallSite(ctx.metadata.tr, fn, args, ret), discard
+end
+
+# Score.
+function trace(ctx::TraceCtx{M},
+               fn::Function,
+               args::Tuple) where M <: ScoreMeta
+    ret = Cassette.overdub(ctx, fn, args...)
+    return ctx.metadata.score
 end
