@@ -104,18 +104,3 @@ function trace(ctx::TraceCtx{M},
     ctx.metadata.tr.score -= discard_score
     return ctx, ctx.metadata.tr, ctx.metadata.tr.score, discard
 end
-
-# Inference compilation.
-function trace(ctx::TraceCtx{M}, 
-               constraints::Dict{Address, T}) where {T, M <: InferenceCompilationMeta}
-    !(length(constraints) == 1 && ctx.metadata.target in keys(constraints)) && begin
-        error("InferenceCompilationError: constraints must contain the target address and only the target address.")
-    end
-    ctx.metadata.tr = Trace()
-    ctx.metadata.constraints = constraints
-    ret = Cassette.overdub(ctx, ctx.metadata.func, ctx.metadata.args...)
-    ctx.metadata.ret = ret
-    Flux.reset!(ctx.metadata.compiler.spine)
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score
-end
-

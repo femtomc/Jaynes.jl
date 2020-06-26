@@ -18,8 +18,6 @@ using Dates
 using Distributions
 
 # Differentiable goop.
-using Flux
-using Flux: Params
 using Zygote
 using DistributionsAD
 
@@ -29,13 +27,11 @@ include("core/static.jl")
 include("core/trace.jl")
 include("core/selections.jl")
 include("core/contexts.jl")
-include("core/gradients.jl")
 include("core/blackbox.jl")
 include("core/language_cores.jl")
 include("utils.jl")
 include("inference/importance_sampling.jl")
 include("inference/particle_filter.jl")
-include("inference/inference_compilation.jl")
 include("inference/metropolis_hastings.jl")
 include("tracing.jl")
 include("core/passes.jl")
