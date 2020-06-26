@@ -69,9 +69,9 @@ macro primitive(ex)
                                                           K}
 
             # Check if in previous trace's choice map.
-            in_prev_chm = haskey(ctx.metadata.tr.chm, addr)
+            in_prev_chm = haskey(ctx.metadata.prev.chm, addr)
             in_prev_chm && begin
-                prev = ctx.metadata.tr.chm[addr]
+                prev = ctx.metadata.prev.chm[addr]
                 prev_val = prev.val
                 prev_score = prev.score
             end
@@ -105,9 +105,9 @@ macro primitive(ex)
                                                           K}
 
             # Check if in previous trace's choice map.
-            in_prev_chm = haskey(ctx.metadata.tr.chm, addr)
+            in_prev_chm = haskey(ctx.metadata.prev.chm, addr)
             in_prev_chm && begin
-                prev = ctx.metadata.tr.chm[addr]
+                prev = ctx.metadata.prev.chm[addr]
                 prev_ret = prev.val
                 prev_score = prev.score
             end
@@ -144,11 +144,13 @@ macro primitive(ex)
                                           args...) where {M <: Jaynes.ScoreMeta, 
                                                           T <: Jaynes.Address,
                                                           K}
-            # Get val.
-            val = ctx.metadata.tr.chm[addr].value
-            ctx.metadata.tr.score += logpdf($argname, args..., val)
-
+            
+            haskey(ctx.metadata.select.query, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.") && begin
+                val = ctx.metadata.select.query[addr]
+            end
+            ctx.metadata.score += logpdf(d, val)
             return val
+
         end
     end
 

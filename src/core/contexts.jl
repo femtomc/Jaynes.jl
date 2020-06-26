@@ -52,20 +52,6 @@ end
 Regenerate(tr::Trace, sel::Vector{Address}) = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedRegenerateMeta(tr, sel)))
 Regenerate(tr::Trace, sel::UnconstrainedSelection) = disablehooks(TraceCtx(pass = ignore_pass, metadata = UnconstrainedRegenerateMeta(tr, sel)))
 
-mutable struct ConstrainedRegenerateMeta{T <: Trace, L <: UnconstrainedSelection, K <: ConstrainedSelection} <: Meta
-    prev::T
-    tr::T
-    select::L
-    observations::K
-    visited::VisitedSelection
-    function ConstrainedRegenerateMeta(tr::T, sel::Vector{Address}, obs::Vector{Tuple{K, P}}) where {T <: Trace, P, K <: Union{Symbol, Pair}} 
-        un_sel = selection(sel)
-        c_sel = selection(obs)
-        new{T, typeof(un_sel), typeof(c_sel)}(tr, Trace(), unsel, c_sel, VisitedSelection())
-    end
-end
-Regenerate(tr::Trace, sel::Vector{Address}, obs::Vector) = disablehooks(TraceCtx(pass = ignore_pass, metadata = ConstrainedRegenerateMeta(tr, sel, obs)))
-
 mutable struct ScoreMeta{K <: ConstrainedSelection} <: Meta
     score::Float64
     select::K
