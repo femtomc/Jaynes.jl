@@ -1,6 +1,8 @@
+# Differentiable programming
+
 Jaynes contains a number of components which utilize or allow for _differentiable programming_. At the highest level, learnable parameters can be declared by passing literals into `rand` calls. These declarations are not used in contexts parametrized by inference and tracing metadata, but have a special interpretation in contexts parametrized by `GradientMeta` instances.
 
-### Learnable parameters
+## Learnable parameters
 
 ```julia
 # Literals are tracked as trainable.
@@ -74,6 +76,6 @@ display(plt)
 
 Here, after training, the resultant parameter values are stored in `trained_ctx.metadata.trainable` which is a map from `Address` to values. These values can be extracted and used in other contexts - the contextual execution of any program which includes addressed `rand` calls with literals will check the context for `trainable` metadata and return if the address matches a key.
 
-### Inference compilation
+## Inference compilation
 
 One powerful inference feature allowed by the differentiable programming capabilities available in Julia is the creation of _inference compilers_ automatically on a program by program basis. Inference compilers are neural network architectures which are trained to produce proposal distributions for sequential sampling-based inference engines.
