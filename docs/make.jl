@@ -1,7 +1,7 @@
 using Documenter
 
 makedocs(sitename = "Jaynes.jl",
-         pages = [
+         pages = ["Summary" => "summary.md",
                   "Introduction" => "index.md",
                   #"Concepts" => "concepts.md",
                   "Trace types" => "trace_types.md",
