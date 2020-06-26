@@ -22,21 +22,18 @@ function metropolis_hastings(call::CallSite,
                              proposal::Function,
                              proposal_args::Tuple,
                              sel::UnconstrainedSelection)
-    args = call.args
-    ctx = Regenerate(call.trace, sel)
-    prop, weight = trace(ctx, call.fn, call.args)
-    log(rand()) < weight && return (prop, true)
-    return (trace, false)
-end
+    # Proposal.
+    prop_ctx = Proposal(Trace())
+    prop = trace(prop_ctx, proposal, call, proposal_args...)
+    
+    # Update.
+    update_ctx = Update(call.trace, call.args, selection(prop))
 
-function metropolis_hastings(call::CallSite,
-                             proposal::Function,
-                             proposal_args::Tuple,
-                             sel::UnconstrainedSelection,
-                             obs::ConstrainedSelection)
-    args = call.args
-    ctx = Regenerate(call.trace, sel, obs)
-    prop, weight = trace(ctx, call.fn, call.args)
-    log(rand()) < weight && return (prop, true)
+    # Score.
+    score_ctx = Score()
+    ratio = update.score - prop.score + score.score
+
+    # Accept/reject.
+    log(rand()) < ratio && return (prop, true)
     return (trace, false)
 end

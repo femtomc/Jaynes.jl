@@ -16,7 +16,7 @@ end
     n_steps = 5
 
     @testset "Linear Gaussian model" begin
-        tr, _ = Jaynes.metropolis_hastings(call, sel)
+        tr, discard = Jaynes.metropolis_hastings(call, sel)
     end
 
     @testset "Linear Gaussian proposal" begin

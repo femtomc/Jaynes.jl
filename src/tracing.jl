@@ -27,13 +27,13 @@ function trace(fn::Function,
 end
 
 # Regenerate.
-function visited_walk!(discard, d_score::Float64, rs::RecordSite, addr)
-    discard[addr] = rs
+function visited_walk!(discard, d_score::Float64, rs::ChoiceSite, addr)
+    push!(discard, addr, rs.val)
     d_score += rs.score
 end
 
-function visited_walk!(par_addr, discard, d_score::Float64, rs::RecordSite, addr)
-    discard[par_addr => addr] = rs
+function visited_walk!(par_addr, discard, d_score::Float64, rs::ChoiceSite, addr)
+    push!(discard, par_addr => addr, rs.val)
     d_score += rs.score
 end
 
@@ -53,7 +53,7 @@ end
 
 # Toplevel.
 function visited_walk!(tr::T, vs::VisitedSelection) where T <: Trace
-    discard = Dict{Union{Symbol, Pair}, RecordSite}() 
+    discard = ConstrainedHierarchicalSelection()
     d_score = 0.0
     for addr in keys(tr.chm)
         # Check choices at this stack level.
@@ -83,24 +83,10 @@ function trace(ctx::TraceCtx{M},
                fn::Function,
                args::Tuple) where M <: UpdateMeta
     ret = Cassette.overdub(ctx, fn, args...)
-    ctx.metadata.fn = fn
-    ctx.metadata.args = args
-    ctx.metadata.ret = ret
     !foldl((x, y) -> x && y, map(ctx.metadata.constraints_visited) do k
                k in keys(ctx.metadata.constraints)
            end) && error("UpdateError: tracing did not visit all addresses in constraints.")
 
-    # Discard.
-    discard = typeof(ctx.metadata.tr.chm)()
-    discard_score = 0.0
-    for (k, v) in ctx.metadata.tr.chm
-        !(k in ctx.metadata.visited) && begin
-            discard_score += ctx.metadata.tr.chm[k].score
-            discard[k] = v
-            delete!(ctx.metadata.tr.chm, k)
-        end
-    end
-
-    ctx.metadata.tr.score -= discard_score
-    return ctx, ctx.metadata.tr, ctx.metadata.tr.score, discard
+    discard = visited_walk!(ctx.metadata.tr, ctx.metadata.visited)
+    return CallSite(ctx.metadata.tr, fn, args, ret), discard
 end
