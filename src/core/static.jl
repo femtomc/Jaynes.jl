@@ -29,8 +29,8 @@ end
 
 # ---- Analysis ---- #
 
-function lower_to_ir(call, type)
-    sig = Tuple{typeof(call), type}
+function lower_to_ir(call, type...)
+    sig = Tuple{typeof(call), type...}
     m = meta(sig)
     ir = IR(m)
     return ir
