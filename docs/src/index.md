@@ -1,3 +1,5 @@
+# Architecture
+
 Jaynes is a simple implementation of _effect-oriented programming_ for probabilistic programming. It closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. Jaynes is organized around a central [IRTools](https://github.com/FluxML/IRTools.jl) _dynamo
 
 ```julia
@@ -34,6 +36,8 @@ end
 
 for `UnconstrainedGenerateContext`. Each of the other contexts define a particular functionality required for inference over probabilistic program traces. 
 
+## Traces
+
 The structured representation of traces is also an `ExecutionContext`
 
 ```julia
@@ -59,3 +63,13 @@ display(tr, show_value = true)
 ```
 
 will produce
+
+```
+  __________________________________
+
+               Addresses
+
+ flip : false
+ :geo => :flip : true
+  __________________________________
+```
