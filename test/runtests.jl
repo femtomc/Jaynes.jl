@@ -22,6 +22,10 @@ end
     include("metropolis_hastings.jl")
 end
 
+@time @testset "Black-box extensions." begin
+    include("blackbox.jl")
+end
+
 @time @testset "Selection query language." begin
     include("selection_query_language.jl")
 end

@@ -1,5 +1,6 @@
 import Base: rand
-rand(addr::Symbol, d::Distribution{T}) where T = rand(d)
+rand(addr::Address, d::Distribution{T}) where T = rand(d)
+rand(addr::Address, fn::Function, args...) = fn(args...)
 
 abstract type RecordSite end
 abstract type Trace <: ExecutionContext end

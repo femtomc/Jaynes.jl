@@ -73,3 +73,53 @@ will produce
  :geo => :flip : true
   __________________________________
 ```
+
+# Inference
+
+To express constraints associated with inference (or unconstrained selections required for MCMC), there is a `Selection` interface which can be used to communicate constraints to `rand` sites in compatible execution contexts.
+
+```julia
+sel = selection((:flip, true))
+ctx = Generate(Trace(), sel)
+ctx(geo, 0.5)
+display(ctx.tr, show_values = true)
+```
+
+will produce
+
+```
+  __________________________________
+
+               Addresses
+
+ flip : true
+  __________________________________
+```
+
+which constrains the execution to select that value for the random choice at address `:flip`. We can also communicate constraints to inference algorithms:
+
+```julia
+@time calls, lnw, lmle = Jaynes.importance_sampling(geo, (0.05, ); observations = sel)
+println(lmle)
+@time calls, lnw, lmle = Jaynes.importance_sampling(geo, (0.5, ); observations = sel)
+println(lmle)
+@time calls, lnw, lmle = Jaynes.importance_sampling(geo, (0.8, ); observations = sel)
+println(lmle)
+```
+
+will produce
+
+```julia
+  0.431258 seconds (1.49 M allocations: 78.267 MiB, 4.96% gc time)
+-2.9957322735539904
+  0.003901 seconds (80.04 k allocations: 4.476 MiB)
+-0.6931471805599454
+  0.004302 seconds (80.04 k allocations: 4.476 MiB)
+-0.2231435513142106
+```
+
+which shows that the log marginal likelihood of the data increases as the parameter for the geometric generator increases (towards a value which is ultimately more likely given the data).
+
+## Black-box extensions
+
+Jaynes is equipped with the ability to extend the tracer to arbitrary black-box code which the user can provide a `logpdf` for
