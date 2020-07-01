@@ -1,0 +1,7 @@
+name = "Jaynes2"
+uuid = "a2015381-cef8-4fe1-827c-95a77dd17ccf"
+authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+IRTools = "7869d1d1-7146-5819-86e3-90919afe41df"
