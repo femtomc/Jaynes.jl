@@ -127,7 +127,6 @@ Jaynes is equipped with the ability to extend the tracer to arbitrary black-box 
 ```julia
 geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 0 : 1 + rand(:geo, geo, p)
 @primitive function logpdf(fn::typeof(geo), p, count)
-    println("Hi!")
     return Distributions.logpdf(Geometric(p), count)
 end
 
