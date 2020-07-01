@@ -1,43 +1,39 @@
 module Jaynes2
 
-module Mixtape
-
 using IRTools
-using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, var
+using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!
+using Distributions
 
-const Address = Union{Symbol, Pair{Symbol, Int}}
+# Toplevel importants :)
+abstract type ExecutionContext end
+const Address = Union{Symbol, Pair{Symbol, Int64}}
 
-import Base.rand
-rand(addr::Address, d::Distribution{T}) where T = rand(d)
+include("trace.jl")
+include("selections.jl")
+include("contexts.jl")
+include("utils.jl")
+include("inference/importance_sampling.jl")
+include("inference/particle_filtering.jl")
+include("inference/metropolis_hastings.jl")
 
-abstract type MixTable end
-@dynamo function (mx::MixTable)(a...)
-  ir = IR(a...)
-  ir == nothing && return
-  recurse!(ir)
-  return ir
+function call(tr::Trace, fn::Function, args...)
+    ret = tr(fn, args...)
+    return CallSite(tr, fn, args, ret)
 end
 
-# Traces.
-abstract type RecordSite end
+# Contexts.
+export Generate, Update, Propose, Regenerate, Score
 
-struct Trace <: MixTable
-    chm::Dict{Symbol, RecordSite}
-    Trace() = new(Dict{Symbol, RecordSite}())
-end
+# Trace.
+export Trace
 
-struct ChoiceSite{T} <: RecordSite
-    score::Float64
-    val::T
-end
+# Selections.
+export selection, compare
 
-struct CallSite{T <: Trace, J, K} <: RecordSite
-    trace::T
-    fn::Function
-    args::J
-    ret::K
-end
+# Inference.
+export importance_sampling, initialize_filter, filter_step!, metropolis_hastings
 
-export remix!, MixTable
+# Utilities.
+export display, merge
 
 end # module
