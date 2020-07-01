@@ -1,9 +1,9 @@
-module TestJaynes2
+module TestJaynes
 
 using Test
 
-include("../src/Jaynes2.jl")
-using .Jaynes2
+include("../src/Jaynes.jl")
+using .Jaynes
 using Distributions
 
 @time @testset "Execution contexts." begin
