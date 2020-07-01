@@ -2,3 +2,5 @@ Manifest.toml
 *.mem
 docs/build
 *.cov
+scratch
+examples
