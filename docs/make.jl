@@ -1,12 +1,12 @@
 using Documenter
 
 makedocs(sitename = "Jaynes.jl",
-         pages = ["Summary" => "summary.md",
-                  "Introduction" => "index.md",
+         pages = ["Architecture" => "architecture.md",
+                  #"Introduction" => "index.md",
                   #"Concepts" => "concepts.md",
-                  "Trace types" => "trace_types.md",
-                  "Contextual domain-specific languages" => "contextual_DSLs.md",
-                  "Implementation architecture" => "architecture.md",
+                  #"Trace types" => "trace_types.md",
+                  #"Contextual domain-specific languages" => "contextual_DSLs.md",
+                  #"Implementation architecture" => "architecture.md",
                   #"Differentiable programming" => "gradients.md",
                   #"Examples" => [
                   #               "Bayesian linear regression" => "bayeslinreg.md",
