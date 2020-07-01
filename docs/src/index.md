@@ -122,4 +122,27 @@ which shows that the log marginal likelihood of the data increases as the parame
 
 ## Black-box extensions
 
-Jaynes is equipped with the ability to extend the tracer to arbitrary black-box code which the user can provide a `logpdf` for
+Jaynes is equipped with the ability to extend the tracer to arbitrary black-box code, as long as the user can provide a `logpdf` for the call:
+
+```julia
+geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 0 : 1 + rand(:geo, geo, p)
+@primitive function logpdf(fn::typeof(geo), p, count)
+    println("Hi!")
+    return Distributions.logpdf(Geometric(p), count)
+end
+
+
+cl = Jaynes.call(Trace(), rand, :geo, geo, 0.3)
+display(cl.trace; show_values = true)
+```
+
+will produce
+
+```
+  __________________________________
+
+               Addresses
+
+ geo : 4
+  __________________________________
+```
