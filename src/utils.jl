@@ -22,33 +22,48 @@ function nw(lw::Vector{Float64})
     return (lt, lnw)
 end
 
-# This is likely not a well-defined expectation. Investigate.
-function average(trs::Vector{Trace}, addr::T) where T <: Address
-    acc = 0.0
-    trs = filter(trs) do tr
-        addr in keys(tr.chm)
-    end
-    for tr in trs
-        acc += tr.chm[addr].val
-    end
-    return acc/length(trs)
+# Regenerate and update.
+function visited_walk!(discard, d_score::Float64, rs::ChoiceSite, addr)
+    push!(discard, addr, rs.val)
+    d_score += rs.score
 end
 
-# Same goes for here.
-function average(trs::Vector{Trace})
-    d = Dict{Address, Tuple{Int, Real}}()
-    for tr in trs
-        for (k, coc) in collect(tr.chm)
-            !(k in keys(d)) && begin
-                d[k] = (1, coc.val)
-                return
-            end
-            d[k] = (d[k][1] + 1, d[k][2] + coc.val)
+function visited_walk!(par_addr, discard, d_score::Float64, rs::ChoiceSite, addr)
+    push!(discard, par_addr => addr, rs.val)
+    d_score += rs.score
+end
+
+function visited_walk!(par_addr, discard, d_score::Float64, tr::T, vs::VisitedSelection) where T <: Trace
+    for addr in keys(tr.chm)
+        # Check choices at this stack level.
+        if !(addr in vs.addrs)
+            visited_walk!(par_addr, discard, d_score, tr.chm[addr], addr)
+            delete!(tr.chm, addr)
+        
+        # If it's a CallSite, recurse into it.
+        elseif addr in keys(vs.tree)
+            visited_walk!(par_addr => addr, discard, d_score, tr.chm[addr].trace, vs.tree[addr])
         end
     end
-    return Dict(map(collect(d)) do (k, v)
-                    k => v[2]/v[1]
-                end)
+end
+
+# Toplevel.
+function visited_walk!(tr::T, vs::VisitedSelection) where T <: Trace
+    discard = ConstrainedHierarchicalSelection()
+    d_score = 0.0
+    for addr in keys(tr.chm)
+        # Check choices at this stack level.
+        if !(addr in vs.addrs)
+            visited_walk!(discard, d_score, tr.chm[addr], addr)
+            delete!(tr.chm, addr)
+       
+        # If it's a CallSite, recurse into it.
+        elseif addr in keys(vs.tree)
+            visited_walk!(addr, discard, d_score, tr.chm[addr].trace, vs.tree[addr])
+        end
+    end
+    tr.score -= d_score
+    return discard
 end
 
 # Pretty printing.
@@ -149,3 +164,4 @@ function merge(tr::HierarchicalTrace,
     merge!(tr_selection, obs)
     return tr_selection
 end
+
