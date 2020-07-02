@@ -3,6 +3,7 @@ using Documenter
 makedocs(sitename = "Jaynes.jl",
          pages = [#"Architecture" => "architecture.md",
                   "Architecture" => "index.md",
+                  "Modeling language" => "modeling_lang.md",
                   "Examples" => "examples.md",
                   #"Concepts" => "concepts.md",
                   #"Trace types" => "trace_types.md",

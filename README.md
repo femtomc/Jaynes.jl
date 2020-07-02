@@ -8,4 +8,3 @@
 [![codecov](https://codecov.io/gh/femtomc/Jaynes.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/femtomc/Jaynes.jl)
 
 _Jaynes_ is a universal probabilistic programming framework which uses IR transformations and contextual dispatch to implement the core routines for modeling and inference.
-
