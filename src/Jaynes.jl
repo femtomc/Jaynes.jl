@@ -1,7 +1,7 @@
 module Jaynes
 
 using IRTools
-using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!
+using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
 using MacroTools
 using Distributions
 
@@ -9,6 +9,7 @@ using Distributions
 abstract type ExecutionContext end
 const Address = Union{Symbol, Pair{Symbol, Int64}}
 
+include("static.jl")
 include("trace.jl")
 include("selections.jl")
 include("contexts.jl")
