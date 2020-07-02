@@ -55,6 +55,14 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
 
+# Update has a special dynamo.
+@dynamo function (mx::UpdateContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    recurse!(ir)
+    return ir
+end
+
 mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: ExecutionContext
     prev::T
     tr::T
@@ -70,6 +78,14 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
 Regenerate(tr::Trace, sel::UnconstrainedSelection) = RegenerateContext(tr, sel)
+
+# Regenerate has a special dynamo.
+@dynamo function (mx::RegenerateContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    recurse!(ir)
+    return ir
+end
 
 mutable struct ScoreContext{K <: ConstrainedSelection} <: ExecutionContext
     score::Float64
