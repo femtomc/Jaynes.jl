@@ -46,12 +46,41 @@ end
     return ret
 end
 
-# Vectorized call.
-@inline function (tr::HierarchicalTrace)(c::typeof(foldr), fn::typeof(rand), addr::Address, call::Function, args...)
+# Vectorized foldr call.
+@inline function (tr::HierarchicalTrace)(c::typeof(foldr), fn::typeof(rand), addr::Address, call::Function, len::Int, args...)
     n_tr = Trace()
     ret = n_tr(call, args...)
-    tr.chm[addr] = CallSite(n_tr, call, args, ret)
-    return ret
+    v_ret = Vector{typeof(ret)}(undef, len)
+    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_ret[1] = ret
+    v_tr[1] = n_tr
+    for i in 2:len
+        n_tr = Trace()
+        ret = n_tr(call, v_ret[i-1]...)
+        v_ret[i] = ret
+        v_tr[i] = n_tr
+    end
+    tr.chm[addr] = VectorizedCallSite(v_tr, fn, args, v_ret)
+    return v_ret
+end
+
+# Vectorized map call.
+@inline function (tr::HierarchicalTrace)(c::typeof(map), fn::typeof(rand), addr::Address, call::Function, args::Vector)
+    n_tr = Trace()
+    ret = n_tr(call, args[1]...)
+    len = length(args)
+    v_ret = Vector{typeof(ret)}(undef, len)
+    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_ret[1] = ret
+    v_tr[1] = n_tr
+    for i in 2:len
+        n_tr = Trace()
+        ret = n_tr(call, args[2]...)
+        v_ret[i] = ret
+        v_tr[i] = n_tr
+    end
+    tr.chm[addr] = VectorizedCallSite(v_tr, fn, args, v_ret)
+    return v_ret
 end
 
 # Allows instances of Trace and CallSite to be accessed through indexing like a dictionary. 

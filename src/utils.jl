@@ -117,6 +117,10 @@ function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Sy
             chd[par => k] = v.val
         elseif v isa CallSite
             collect!(par => k, addrs, chd, v.trace)
+        elseif v isa VectorizedCallSite
+            for i in 1:length(v.subtraces)
+                collect!(par => k => i, addrs, chd, v.subtraces[i])
+            end
         end
     end
     return addrs
@@ -129,6 +133,10 @@ function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pa
             chd[k] = v.val
         elseif v isa CallSite
             collect!(k, addrs, chd, v.trace)
+        elseif v isa VectorizedCallSite
+            for i in 1:length(v.subtraces)
+                collect!(k => i, addrs, chd, v.subtraces[i])
+            end
         end
     end
 end
