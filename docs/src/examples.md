@@ -1,5 +1,3 @@
-# Examples
-
 This page keeps a set of common model examples expressed in Jaynes.
 
 ## Bayesian linear regression
