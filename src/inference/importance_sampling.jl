@@ -17,7 +17,7 @@ function importance_sampling(model::Function,
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return calls, lnw, lmle
+    return Particles(calls, lnw, lmle)
 end
 
 function importance_sampling(model::Function, 
@@ -57,5 +57,5 @@ function importance_sampling(model::Function,
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return calls, lnw, lmle
+    return Particles(calls, lnw, lmle)
 end

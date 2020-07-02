@@ -13,12 +13,20 @@ include("trace.jl")
 include("selections.jl")
 include("contexts.jl")
 include("utils.jl")
+
+mutable struct Particles
+    calls::Vector{CallSite}
+    lws::Vector{Float64}
+    lmle::Float64
+end
+
 include("inference/importance_sampling.jl")
 include("inference/particle_filtering.jl")
 include("inference/metropolis_hastings.jl")
 include("blackbox.jl")
 
-function call(tr::Trace, fn::Function, args...)
+function trace(fn::Function, args...)
+    tr = Trace()
     ret = tr(fn, args...)
     return CallSite(tr, fn, args, ret)
 end
@@ -27,13 +35,13 @@ end
 export Generate, Update, Propose, Regenerate, Score
 
 # Trace.
-export Trace
+export Trace, trace
 
 # Selections.
 export selection, compare
 
 # Inference.
-export importance_sampling, initialize_filter, filter_step!, metropolis_hastings
+export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!
 
 # Utilities.
 export display, merge

@@ -33,6 +33,15 @@ end
 end
 
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args...)
+    println("Call site at $addr for $call.")
+    n_tr = Trace()
+    ret = n_tr(call, args...)
+    tr.chm[addr] = CallSite(n_tr, call, args, ret)
+    return ret
+end
+
+@inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args::Tuple)
+    println("Call site at $addr for $call.")
     n_tr = Trace()
     ret = n_tr(call, args...)
     tr.chm[addr] = CallSite(n_tr, call, args, ret)

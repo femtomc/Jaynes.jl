@@ -196,10 +196,38 @@ end
     return ret
 end
 
+@inline function (ctx::UnconstrainedGenerateContext)(c::typeof(rand),
+                                                     addr::T,
+                                                     call::Function,
+                                                     args::Tuple) where T <: Address
+    ug_ctx = UnconstrainedGenerateContext(Trace())
+    ret = ug_ctx(call, args...)
+    ctx.tr.chm[addr] = CallSite(ug_ctx.tr,
+                                call, 
+                                args, 
+                                ret)
+    return ret
+end
+
 @inline function (ctx::ConstrainedGenerateContext)(c::typeof(rand),
                                                    addr::T,
                                                    call::Function,
                                                    args...) where T <: Address
+
+    cg_ctx = ConstrainedGenerateContext(Trace(), ctx.select[addr])
+    ret = cg_ctx(call, args...)
+    ctx.tr.chm[addr] = CallSite(cg_ctx.tr,
+                                call, 
+                                args, 
+                                ret)
+    ctx.visited.tree[addr] = cg_ctx.visited
+    return ret
+end
+
+@inline function (ctx::ConstrainedGenerateContext)(c::typeof(rand),
+                                                   addr::T,
+                                                   call::Function,
+                                                   args::Tuple) where T <: Address
 
     cg_ctx = ConstrainedGenerateContext(Trace(), ctx.select[addr])
     ret = cg_ctx(call, args...)
@@ -225,10 +253,38 @@ end
     return ret
 end
 
+@inline function (ctx::ProposalContext)(c::typeof(rand),
+                                        addr::T,
+                                        call::Function,
+                                        args::Tuple) where T <: Address
+
+    p_ctx = Propose(Trace())
+    ret = p_ctx(call, args...)
+    ctx.tr.chm[addr] = CallSite(p_ctx.tr, 
+                                call, 
+                                args, 
+                                ret)
+    return ret
+end
+
 @inline function (ctx::UpdateContext)(c::typeof(rand),
                                       addr::T,
                                       call::Function,
                                       args...) where T <: Address
+    u_ctx = Update(ctx.prev.chm[addr].trace, ctx.select[addr])
+    ret = u_ctx(call, args...)
+    ctx.tr.chm[addr] = CallSite(u_ctx.tr, 
+                                call, 
+                                args, 
+                                ret)
+    ctx.visited.tree[addr] = u_ctx.visited
+    return ret
+end
+
+@inline function (ctx::UpdateContext)(c::typeof(rand),
+                                      addr::T,
+                                      call::Function,
+                                      args::Tuple) where T <: Address
     u_ctx = Update(ctx.prev.chm[addr].trace, ctx.select[addr])
     ret = u_ctx(call, args...)
     ctx.tr.chm[addr] = CallSite(u_ctx.tr, 
@@ -254,10 +310,35 @@ end
     return ret
 end
 
+@inline function (ctx::RegenerateContext)(c::typeof(rand),
+                                          addr::T,
+                                          call::Function,
+                                          args::Tuple) where T <: Address
+
+    ur_ctx = Regenerate(ctx.prev.chm[addr].trace, ctx.select[addr])
+    ret = ur_ctx(call, args...)
+    ctx.tr.chm[addr] = CallSite(ur_ctx.tr, 
+                                call, 
+                                args, 
+                                ret)
+    ctx.visited.tree[addr] = ur_ctx.visited
+    return ret
+end
+
 @inline function (ctx::ScoreContext)(c::typeof(rand),
                                      addr::T,
                                      call::Function,
                                      args...) where T <: Address
+
+    s_ctx = Score(ctx.select[addr])
+    ret = s_ctx(call, args...)
+    return ret
+end
+
+@inline function (ctx::ScoreContext)(c::typeof(rand),
+                                     addr::T,
+                                     call::Function,
+                                     args::Tuple) where T <: Address
 
     s_ctx = Score(ctx.select[addr])
     ret = s_ctx(call, args...)

@@ -1,8 +1,3 @@
-mutable struct Particles
-    calls::Vector{CallSite}
-    lws::Vector{Float64}
-    lmle::Float64
-end
 import Base.length
 Base.length(ps::Particles) = length(ps.calls)
 
@@ -96,7 +91,7 @@ function resample!(ps::Particles,
     selections = rand(Categorical(weights/sum(weights)), num_particles)
     lmle = ltw - log(num_particles)
     calls = map(selections) do ind
-        calls[ind]
+        ps.calls[ind]
     end
     calls = rand(calls, num)
     ps.calls = calls
