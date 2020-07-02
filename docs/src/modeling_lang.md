@@ -45,3 +45,11 @@ f: (X, Y) -> (X, Y)
 as well as a first argument which denotes the number of fold operations to compute (in the example above, `10`). `foldr` will then iteratively compute the function, passing the return value as arguments to the next computation (from left to right).
 
 `map` does not place requirements on the function `f` (other than the implicit requirements for valid programs, as described above) but does require that the arguments be a `Vector` with each element matching the signature of `f`. `map` then iteratively applies the function as a kernel for each element in the argument vector.
+
+These functions are actually "higher-order" so you can do wild things like
+
+```julia
+y = map(rand, :y, bar, foldr(rand, :x, bar, 10, 0.3, 3.0))
+```
+
+and expect it to work.
