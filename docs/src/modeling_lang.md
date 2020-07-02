@@ -8,7 +8,7 @@ However, this doesn't give you free reign to write anything with `rand` calls an
 
 ## Vectorized call sites
 
-Jaynes also offers a set of primitive language features for creating _vectorized call sites_ which are similar to the combinators of [Gen](https://www.gen.dev/dev/ref/gfi/#Mathematical-concepts-1). These special features are treated as simple "functional" higher-order functions
+Jaynes also offers a set of primitive language features for creating _vectorized call sites_ which are similar to the combinators of [Gen](https://www.gen.dev/dev/ref/combinators/#Generative-Function-Combinators-1). These special features are treated as simple "functional" higher-order functions
 
 ```julia
 using Jaynes
