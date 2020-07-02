@@ -10,7 +10,7 @@ However, this doesn't give you free reign to write anything with `rand` calls an
 
 # Vectorized call sites
 
-Jaynes also offers a set of primitive language features for creating _vectorized call sites_ which are similar to the combinators of `Gen`. These special features are treated as simple "functional" higher-order functions
+Jaynes also offers a set of primitive language features for creating _vectorized call sites_ which are similar to the combinators of [Gen](https://www.gen.dev/dev/ref/gfi/#Mathematical-concepts-1). These special features are treated as simple "functional" higher-order functions
 
 ```julia
 using Jaynes
@@ -39,7 +39,7 @@ This is a simple way for the user to increase the efficiency of inference algori
 `foldr` requires that the user provide a function `f` with
 
 ```math
-f: (X, Y) -> (X, Y)
+f: (X, Y) \rightarrow (X, Y)
 ```
 
 as well as a first argument which denotes the number of fold operations to compute (in the example above, `10`). `foldr` will then iteratively compute the function, passing the return value as arguments to the next computation (from left to right).
