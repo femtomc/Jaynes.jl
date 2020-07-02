@@ -229,6 +229,20 @@ end
     return ret
 end
 
+@inline function (ctx::UnconstrainedGenerateContext)(f::typeof(foldr),
+                                                     c::typeof(rand),
+                                                     addr::T,
+                                                     call::Function,
+                                                     args...) where T <: Address
+    ug_ctx = UnconstrainedGenerateContext(Trace())
+    ret = ug_ctx(call, args...)
+    ctx.tr.chm[addr] = CallSite(ug_ctx.tr,
+                                call, 
+                                args, 
+                                ret)
+    return ret
+end
+
 @inline function (ctx::ConstrainedGenerateContext)(c::typeof(rand),
                                                    addr::T,
                                                    call::Function,

@@ -26,6 +26,13 @@ mutable struct CallSite{T <: Trace, J, K} <: RecordSite
     ret::K
 end
 
+mutable struct VectorizedCallSite{T <: Trace, J, K} <: RecordSite
+    subtraces::Vector{T}
+    fn::Function
+    args::J
+    ret::Vector{K}
+end
+
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, d::Distribution{T}) where T
     s = rand(d)
     tr.chm[addr] = ChoiceSite(logpdf(d, s), s)
@@ -33,6 +40,14 @@ end
 end
 
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args...)
+    n_tr = Trace()
+    ret = n_tr(call, args...)
+    tr.chm[addr] = CallSite(n_tr, call, args, ret)
+    return ret
+end
+
+# Vectorized call.
+@inline function (tr::HierarchicalTrace)(c::typeof(foldr), fn::typeof(rand), addr::Address, call::Function, args...)
     n_tr = Trace()
     ret = n_tr(call, args...)
     tr.chm[addr] = CallSite(n_tr, call, args, ret)
