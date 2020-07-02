@@ -1,6 +1,6 @@
 # Architecture
 
-Jaynes is a simple implementation of _effect-oriented programming_ for probabilistic programming. It closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. Jaynes is organized around a central [IRTools](https://github.com/FluxML/IRTools.jl) _dynamo
+Jaynes is a simple implementation of _effect-oriented programming_ for probabilistic programming. It closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. Jaynes is organized around a central [IRTools](https://github.com/FluxML/IRTools.jl) _dynamo_
 
 ```julia
 @dynamo function (mx::ExecutionContext)(a...)
@@ -96,7 +96,7 @@ will produce
   __________________________________
 ```
 
-which constrains the execution to select that value for the random choice at address `:flip`. We can also communicate constraints to inference algorithms:
+which constrains the execution to select that value for the random choice at address `:flip`. We can also communicate constraints to inference algorithms
 
 ```julia
 @time calls, lnw, lmle = Jaynes.importance_sampling(geo, (0.05, ); observations = sel)
@@ -122,7 +122,7 @@ which shows that the log marginal likelihood of the data increases as the parame
 
 ## Black-box extensions
 
-Jaynes is equipped with the ability to extend the tracer to arbitrary black-box code, as long as the user can provide a `logpdf` for the call:
+Jaynes is equipped with the ability to extend the tracer to arbitrary black-box code, as long as the user can provide a `logpdf` for the call
 
 ```julia
 geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 0 : 1 + rand(:geo, geo, p)
