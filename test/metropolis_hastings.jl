@@ -12,8 +12,7 @@ end
 
 @testset "Importance sampling" begin
     sel = Jaynes.selection(:x)
-    cl = Jaynes.call(Jaynes.Trace(), LinearGaussian, 0.0, 1.0)
-    n_steps = 5
+    cl = trace(LinearGaussian, 0.0, 1.0)
 
     @testset "Linear Gaussian model" begin
         tr, discard = Jaynes.metropolis_hastings(cl, sel)

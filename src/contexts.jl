@@ -6,9 +6,21 @@
     return ir
 end
 
-function (mx::ExecutionContext)(::typeof(Core._apply_iterate), f, args...)
-    println("$f : $(typeof(args))")
-    return Core._apply_iterate(f, args...)
+# Fix for _apply_iterate.
+function f_push!(arr::Array, t::Tuple{}) end
+f_push!(arr::Array, t::Array) = append!(arr, t)
+f_push!(arr::Array, t::Tuple) = append!(arr, t)
+f_push!(arr, t) = push!(arr, t)
+function flatten(t::Tuple)
+    arr = Any[]
+    for sub in t
+        f_push!(arr, sub)
+    end
+    return arr
+end
+
+function (mx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(rand), args...)
+    return mx(c, flatten(args)...)
 end
 
 # The wondrous worlds of contexts.

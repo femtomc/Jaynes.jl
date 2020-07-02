@@ -5,10 +5,7 @@ function initialize_filter(fn::Function,
                            args::Tuple,
                            observations::ConstrainedHierarchicalSelection,
                            num_particles::Int)
-    calls, lnw, lmle = importance_sampling(fn, args; observations = observations, num_samples = num_particles)
-    ltw = lmle + log(num_particles)
-    lws = lnw .+ ltw
-    return Particles(calls, lws, lmle)
+    return importance_sampling(fn, args; observations = observations, num_samples = num_particles)
 end
 
 function filter_step!(ps::Particles,
@@ -30,6 +27,7 @@ function filter_step!(ps::Particles,
         update_ctx.select = observations
     end
     ltw = lse(ps.lws)
+    ps.lws = ps.lws .- ltw
     ps.lmle = ltw - log(num_particles)
 end
 
@@ -63,7 +61,8 @@ function filter_step!(ps::Particles,
         ps.lws[i] = update_ctx.score - pop_score
     end
 
-    ltw = lse(lws)
+    ltw = lse(ps.lws)
+    ps.lws = ps.lws .- ltw
     ps.lmle = ltw - log(num_particles)
 end
 

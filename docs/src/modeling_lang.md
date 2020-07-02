@@ -6,4 +6,4 @@ However, this doesn't give you free reign to write anything with `rand` calls an
 
 1. For branches with address spaces which intersect, the addresses in the intersection _must_ have distributions with the same base measure. This means you cannot swap continuous for discrete or vice versa depending on which branch you're on.
 
-2. Mutable state does not interact well with iterative inference (e.g. MCMC). Additionall, be careful about the support of your distributions in this regard.
+2. Mutable state does not interact well with iterative inference (e.g. MCMC). Additionally, be careful about the support of your distributions in this regard. If you're going to use mutable state in your programs, use `rand` calls in a lightweight manner - only condition on distributions with constant support and be careful about MCMC.
