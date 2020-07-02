@@ -40,14 +40,6 @@ end
     return ret
 end
 
-@inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args::Tuple)
-    println("Call site at $addr for $call.")
-    n_tr = Trace()
-    ret = n_tr(call, args...)
-    tr.chm[addr] = CallSite(n_tr, call, args, ret)
-    return ret
-end
-
 # Allows instances of Trace and CallSite to be accessed through indexing like a dictionary. 
 # setindex! is not defined - we treat the trace as immutable, unless you interact with it through contexts for inference.
 import Base.getindex
