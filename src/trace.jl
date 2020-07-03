@@ -75,7 +75,7 @@ end
     v_tr[1] = n_tr
     for i in 2:len
         n_tr = Trace()
-        ret = n_tr(call, args[2]...)
+        ret = n_tr(call, args[i]...)
         v_ret[i] = ret
         v_tr[i] = n_tr
     end
