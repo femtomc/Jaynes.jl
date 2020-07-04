@@ -33,6 +33,14 @@ mutable struct VectorizedCallSite{T <: Trace, J, K} <: RecordSite
     ret::Vector{K}
 end
 
+score(tr::T) where T <: Trace = tr.score
+score(cs::CallSite) = cs.trace.score
+score(vcs::VectorizedCallSite) = sum(map(vcs.subtraces) do tr
+                                         score(tr)
+                                     end)
+
+# ------------ Direct execution ------------ #
+
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, d::Distribution{T}) where T
     s = rand(d)
     tr.chm[addr] = ChoiceSite(logpdf(d, s), s)
