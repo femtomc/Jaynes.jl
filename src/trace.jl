@@ -5,6 +5,7 @@ rand(addr::Address, fn::Function, args...) = fn(args...)
 abstract type RecordSite end
 abstract type Trace <: ExecutionContext end
 
+# These are the core tracing data structures which represent random choices, function call sites, and the trace of execution in any particular context.
 mutable struct HierarchicalTrace <: Trace
     chm::Dict{Address, RecordSite}
     score::Float64
@@ -39,7 +40,7 @@ score(vcs::VectorizedCallSite) = sum(map(vcs.subtraces) do tr
                                          score(tr)
                                      end)
 
-# ------------ Direct execution ------------ #
+# ------------ Direct execution with trace ------------ #
 
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, d::Distribution{T}) where T
     s = rand(d)
@@ -96,8 +97,13 @@ end
 import Base.getindex
 getindex(cs::ChoiceSite, addr::Address) = nothing
 getindex(cs::CallSite, addr) = getindex(cs.trace, addr)
+getindex(vcs::VectorizedCallSite, addr::Int) = cs.subtraces[addr]
+function getindex(vcs::VectorizedCallSite, addr::Pair)
+    getindex(vcs.subtraces[addr[1]], addr[2])
+end
 unwrap(cs::ChoiceSite) = cs.val
 unwrap(cs::CallSite) = cs.ret
+unwrap(cs::VectorizedCallSite) = cs.ret
 function getindex(tr::HierarchicalTrace, addr::Address)
     if haskey(tr.chm, addr)
         return unwrap(tr.chm[addr])
@@ -116,6 +122,9 @@ end
 import Base.haskey
 haskey(cs::ChoiceSite, addr::Address) = false
 haskey(cs::CallSite, addr) = haskey(cs.trace, addr)
+function haskey(vcs::VectorizedCallSite, addr::Pair)
+    addr[1] < length(vcs.subtraces) && haskey(vcs.subtraces, addr[2])
+end
 function Base.haskey(tr::HierarchicalTrace, addr::Address)
     haskey(tr.chm, addr)
 end

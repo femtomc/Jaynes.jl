@@ -30,7 +30,7 @@ macro primitive(ex)
                 ctx.tr.score += score
                 return s
 
-                # Unconstrained.
+            # Unconstrained.
             else
                 s = $argname(args...)
                 score = logpdf($argname, args..., s)
@@ -39,7 +39,7 @@ macro primitive(ex)
             end
         end
 
-        @inline function (ctx::Jaynes.ProposalContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
+        @inline function (ctx::Jaynes.ProposeContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
 
             s = $argname(args...)
             score = logpdf($argname, args..., s)

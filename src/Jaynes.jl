@@ -12,9 +12,10 @@ const Address = Union{Symbol, Pair{Symbol, Int64}}
 include("static.jl")
 include("trace.jl")
 include("selections.jl")
-include("contexts.jl")
+include("contexts/contexts.jl")
 include("utils.jl")
 
+# Utility structure for collections of samples.
 mutable struct Particles
     calls::Vector{CallSite}
     lws::Vector{Float64}
@@ -26,6 +27,7 @@ include("inference/particle_filtering.jl")
 include("inference/metropolis_hastings.jl")
 include("blackbox.jl")
 
+# Convenience function for unconstrained generation.
 function trace(fn::Function, args...)
     tr = Trace()
     ret = tr(fn, args...)
