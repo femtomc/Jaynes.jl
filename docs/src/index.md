@@ -1,4 +1,15 @@
-Jaynes is a simple implementation of _effect-oriented programming_ for probabilistic programming. It closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. Jaynes is organized around a central [IRTools](https://github.com/FluxML/IRTools.jl) _dynamo_
+Jaynes is an implementation of _effect-oriented programming_ for probabilistic programming. Internally, the current implementation closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. In contrast to Gen (which provides powerful optimizations for programs written in the [static DSL](https://www.gen.dev/dev/ref/modeling/#Static-Modeling-Language-1), Jaynes is focused on an optimized dynamic language which is equivalent to all of Julia. To address the dynamic analysis problems which arise as a function of this goal, Jaynes is implemented using IR introspection and metaprogramming. The long term goal of Jaynes is to implement _optimization by default_ for dynamic programs, while providing a simple modeling and inference interface.
+
+!!! info
+    Jaynes uses many concepts from the design and implementation of Gen. First and foremost, I would recommend users of Jaynes become familiar with Gen - to understand the problems which Jaynes attempts to solve. 
+
+    In the design space of compiler metaprogramming tools, [IRTools](https://github.com/FluxML/IRTools.jl) and [Cassette](https://github.com/jrevels/Cassette.jl) are also large influences on Jaynes. In particular, the former is a core component of the implementation.
+
+    Jaynes has also been influenced by [Turing](https://turing.ml/dev/), the [Poutine effects system](https://docs.pyro.ai/en/stable/poutine.html) in Pyro, and [Unison lang](https://www.unisonweb.org/). Jaynes does not implement _algebraic effects_ in a rigorous (or functional!) way, but the usage of execution contexts which control how certain method calls are executed is closely aligned with these concepts.
+
+## Implementation
+
+Jaynes is organized around a central `IRTools` _dynamo_
 
 ```julia
 @dynamo function (mx::ExecutionContext)(a...)
@@ -12,6 +23,7 @@ end
 which defines how instances of inheritors of `ExecutionContext` act on function calls. There are a number of such inheritors
 
 ```
+HierarchicalTrace
 UnconstrainedGenerateContext
 ConstrainedGenerateContext
 ProposalContext
