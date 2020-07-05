@@ -1,7 +1,12 @@
 Jaynes is an implementation of _effect-oriented programming_ for probabilistic programming. Internally, the current implementation closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. In contrast to Gen (which provides powerful optimizations for programs written in the [static DSL](https://www.gen.dev/dev/ref/modeling/#Static-Modeling-Language-1), Jaynes is focused on an optimized dynamic language which is equivalent to all of Julia. To address the dynamic analysis problems which arise as a function of this goal, Jaynes is implemented using IR introspection and metaprogramming. The long term goal of Jaynes is to implement _optimization by default_ for dynamic programs, while providing a simple modeling and inference interface.
 
 !!! info
-    Jaynes uses many concepts from the design and implementation of Gen. First and foremost, I would recommend users of Jaynes become familiar with Gen - to understand the problems which Jaynes attempts to solve. 
+    Jaynes uses many concepts from the design and implementation of Gen. First and foremost, I would recommend users of Jaynes become familiar with Gen - to understand the problems which Jaynes attempts to solve. The following papers may be useful in this regard:
+
+    1. [Gen: a general-purpose probabilistic programming system with programmable inference](https://dl.acm.org/doi/10.1145/3314221.3314642)
+    2. [Probabilistic programming with programmable inference](https://people.csail.mit.edu/rinard/paper/pldi18.pdf)
+    3. [A new approach to probabilistic programming inference](http://proceedings.mlr.press/v33/wood14.pdf)
+    4. [Lightweight Implementations of probabilistic programming languages via transformational compilation](http://proceedings.mlr.press/v15/wingate11a/wingate11a.pdf)
 
     In the design space of compiler metaprogramming tools, [IRTools](https://github.com/FluxML/IRTools.jl) and [Cassette](https://github.com/jrevels/Cassette.jl) are also large influences on Jaynes. In particular, the former is a core component of the implementation.
 
