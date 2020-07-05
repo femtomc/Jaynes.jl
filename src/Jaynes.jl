@@ -12,8 +12,11 @@ const Address = Union{Symbol, Pair{Symbol, Int64}}
 include("static.jl")
 include("trace.jl")
 include("selections.jl")
+include("utils/numerical.jl")
+include("utils/vectorized.jl")
+include("utils/visited.jl")
+include("utils/visualization.jl")
 include("contexts/contexts.jl")
-include("utils.jl")
 
 # Utility structure for collections of samples.
 mutable struct Particles

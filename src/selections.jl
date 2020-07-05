@@ -235,3 +235,11 @@ function compare(chs::ConstrainedHierarchicalSelection, v::VisitedSelection)::Bo
     end
     return true
 end
+
+# Merge observations and a choice map.
+function merge(tr::HierarchicalTrace,
+               obs::ConstrainedHierarchicalSelection)
+    tr_selection = selection(tr)
+    merge!(tr_selection, obs)
+    return tr_selection
+end
