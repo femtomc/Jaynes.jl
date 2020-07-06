@@ -9,7 +9,7 @@ mutable struct ScoreContext <: ExecutionContext
     Score() = new(0.0)
 end
 Score(obs::Vector) = ScoreContext(obs)
-Score(obs::ConstrainedSelection) = ScoreContext(sel)
+Score(obs::ConstrainedSelection) = ScoreContext(obs)
 Score() = ScoreContext()
 
 # ------------ Choice sites ------------ #
@@ -17,9 +17,8 @@ Score() = ScoreContext()
 @inline function (ctx::ScoreContext)(call::typeof(rand), 
                                      addr::T, 
                                      d::Distribution{K}) where {T <: Address, K}
-    haskey(ctx.select.query, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.") && begin
-        val = ctx.select.query[addr]
-    end
+    haskey(ctx.select.query, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
+    val = ctx.select.query[addr]
     ctx.score += logpdf(d, val)
     return val
 end
@@ -73,4 +72,8 @@ end
 end
 
 # Convenience.
-function score end
+function score(sel::L, fn::Function, args...) where L <: ConstrainedSelection
+    ctx = Score(sel)
+    ret = ctx(fn, args...)
+    return ctx.score
+end

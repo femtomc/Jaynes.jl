@@ -66,4 +66,7 @@ end
 end
 
 @testset "Score" begin
+    sel = selection([(:x, 5.0), (:y, 10.0)])
+    sc = score(sel, LinearGaussian, 0.5, 3.0)
+    @test sc != 0.0
 end
