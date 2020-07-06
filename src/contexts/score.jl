@@ -71,3 +71,6 @@ end
     end
     return v_ret
 end
+
+# Convenience.
+function score end

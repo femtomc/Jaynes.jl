@@ -4,6 +4,7 @@ mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection} <: Executi
     visited::VisitedSelection
     GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, VisitedSelection())
 end
+Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
 Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
 
 # ------------ Choice sites ------------ #
@@ -59,10 +60,10 @@ end
         v_ret[i] = ret
         v_tr[i] = ug_ctx.tr
     end
-    score = sum(map(v_tr) do tr
+    sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    tr.chm[addr] = VectorizedCallSite(v_tr, score, fn, args, v_ret)
+    tr.chm[addr] = VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret)
     return v_ret
 end
 
@@ -84,9 +85,46 @@ end
         v_ret[i] = ret
         v_tr[i] = ug_ctx.tr
     end
-    score = sum(map(v_tr) do tr
+    sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    tr.chm[addr] = VectorizedCallSite(v_tr, score, fn, args, v_ret)
+    ctx.tr.chm[addr] = VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret)
     return v_ret
+end
+
+# Convenience.
+function generate(sel::L, fn::Function, args...) where L <: ConstrainedSelection
+    ctx = Generate(sel)
+    ret = ctx(fn, args...)
+    return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.tr.score
+end
+
+function generate(sel::L, fn::typeof(foldr), r::typeof(rand), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection
+    ctx = Generate(sel)
+    ctx(fn, r, addr, args...)
+    return ctx.tr.chm[addr], ctx.tr.chm[addr].score
+end
+
+function generate(sel::L, fn::typeof(foldr), call::Function, args...) where L <: ConstrainedSelection
+    ctx = Generate(sel)
+    addr = gensym()
+    ctx(fn, rand, addr, args...)
+    return ctx.tr.chm[addr], ctx.tr.chm[addr].score
+end
+
+function generate(sel::L, fn::typeof(map), r::typeof(rand), addr::Symbol, call::Function, args::Vector) where L <: ConstrainedSelection
+    ctx = Generate(sel)
+    ctx(fn, r, addr, call, args)
+    return ctx.tr.chm[addr], ctx.tr.chm[addr].score
+end
+
+function generate(sel::L, fn::typeof(map), call::Function, args::Vector) where L <: ConstrainedSelection
+    ctx = Generate(sel)
+    addr = gensym()
+    ctx(fn, rand, addr, call, args)
+    return ctx.tr.chm[addr], ctx.tr.chm[addr].score
+end
+
+function generate(fn, args...)
+    return generate(ConstrainedHierarchicalSelection(), fn, args...)
 end

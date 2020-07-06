@@ -2,8 +2,9 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
     prev::T
     tr::T
     select::K
+    discard::ConstrainedHierarchicalSelection
     visited::VisitedSelection
-    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, VisitedSelection())
+    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, ConstrainedHierarchicalSelection(), VisitedSelection())
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
 Update(select) = UpdateContext(Trace(), select)
@@ -35,6 +36,7 @@ end
     # Ret.
     if in_selection
         ret = ctx.select.query[addr]
+        in_prev_chm && push!(ctx.discard, addr, prev_ret)
     elseif in_prev_chm
         ret = prev_ret
     else
@@ -60,14 +62,21 @@ end
                                       addr::T,
                                       call::Function,
                                       args...) where T <: Address
-    u_ctx = Update(ctx.prev.chm[addr].trace, ctx.select[addr])
-    ret = u_ctx(call, args...)
-    ctx.tr.chm[addr] = BlackBoxCallSite(u_ctx.tr, 
-                                call, 
-                                args, 
-                                ret)
-    ctx.visited.tree[addr] = u_ctx.visited
-    return ret
+   
+    has_addr = haskey(ctx.prev, addr)
+    if has_addr
+        cs = ctx.prev.chm[addr]
+
+        # TODO: Mjolnir.
+        new_site, lw, _, discard = update(cs, ctx.select[addr], args...; diffs = map((_) -> UndefinedChange(), args))
+
+        push!(ctx.discard, addr, discard)
+    else
+        new_site, lw = generate(call, ctx.select[addr], args...)
+    end
+    ctx.tr.chm[addr] = new_site
+    ctx.tr.score += lw
+    return new_site.ret
 end
 
 # Vectorized convenience functions for map.
@@ -200,11 +209,23 @@ end
 end
 
 # Convenience.
-function update(ctx::UpdateContext, cs::BlackBoxCallSite, new_args...)
-    ctx.prev = cs.tr
-    ctx(cs.fn, new_args...)
-    return ctx.tr
+function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, new_args...)
+    ctx(bbcs.fn, new_args...)
+    return ctx.tr, ctx.tr.score, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection
+    ctx = UpdateContext(bbcs.trace, sel)
+    return update(ctx, bbcs, new_args...)
+end
+
+function update(bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection
+    ctx = UpdateContext(bbcs.trace, ConstrainedHierarchicalSelection())
+    return update(ctx, bbcs, new_args...)
 end
 
 function update(ctx::UpdateContext, vcs::VectorizedCallSite, new_args...)
+end
+
+function update(sel::L, vcs::VectorizedCallSite, new_args...) where L <: ConstrainedSelection
 end

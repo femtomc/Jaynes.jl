@@ -50,10 +50,10 @@ end
         v_ret[i] = ret
         v_tr[i] = p_ctx.tr
     end
-    score = sum(map(v_tr) do tr
+    sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    tr.chm[addr] = VectorizedCallSite(v_tr, score, fn, args, v_ret)
+    tr.chm[addr] = VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret)
     return v_ret
 end
 
@@ -75,10 +75,12 @@ end
         v_ret[i] = ret
         v_tr[i] = p_ctx.tr
     end
-    score = sum(map(v_tr) do tr
+    sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    tr.chm[addr] = VectorizedCallSite(v_tr, score, fn, args, v_ret)
+    tr.chm[addr] = VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret)
     return v_ret
 end
 
+# Convenience.
+function score end

@@ -14,13 +14,18 @@ include("trace.jl")
 include("selections.jl")
 include("utils/numerical.jl")
 include("utils/vectorized.jl")
-include("utils/visited.jl")
 include("utils/visualization.jl")
+
+using Mjolnir
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
+using Mjolnir: trace, Defaults
+
+include("diffs.jl")
 include("contexts/contexts.jl")
 
 # Utility structure for collections of samples.
-mutable struct Particles
-    calls::Vector{CallSite}
+mutable struct Particles{C}
+    calls::Vector{C}
     lws::Vector{Float64}
     lmle::Float64
 end
@@ -31,14 +36,18 @@ include("inference/metropolis_hastings.jl")
 include("blackbox.jl")
 
 # Convenience function for unconstrained generation.
-function trace(fn::Function, args...)
+function Jaynes.trace(fn::Function, args...)
     tr = Trace()
     ret = tr(fn, args...)
     return BlackBoxCallSite(tr, fn, args, ret)
 end
 
 # Contexts.
-export Generate, Update, Propose, Regenerate, Score
+export Generate, generate
+export Update, update
+export Propose, propose
+export Regenerate, regenerate
+export Score, score
 
 # Trace.
 export Trace, trace

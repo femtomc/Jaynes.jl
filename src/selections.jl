@@ -79,16 +79,16 @@ Base.haskey(hs::UnconstrainedHierarchicalSelection, addr::Address) = haskey(hs.q
 Base.getindex(csa::ConstrainedSelectByAddress, addr::Address) = csa.query[addr]
 
 # Higher level wrappers.
-Base.getindex(chs::ConstrainedHierarchicalSelection, addr::Address) = getindex(chs.tree, addr)
+function Base.getindex(chs::ConstrainedHierarchicalSelection, addr::Address)
+    haskey(chs.tree, addr) && return getindex(chs.tree, addr)
+    return ConstrainedHierarchicalSelection()
+end
 Base.getindex(chs::ConstrainedAnywhereSelection, addr::Address) = chs
 
 unwrap(sel::ConstrainedAnywhereSelection, addr::Address) = sel
 function unwrap(chs::ConstrainedHierarchicalSelection, addr::Address)
-    if haskey(chs.tree, addr)
-        chs.tree[addr]
-    else
-        ConstrainedHierarchicalSelection()
-    end
+    haskey(chs.tree, addr) && return chs.tree[addr]
+    return ConstrainedHierarchicalSelection()
 end
 function Base.getindex(us::ConstrainedUnionSelection, addr::Address)
     ConstrainedUnionSelection(map(us.query) do sel

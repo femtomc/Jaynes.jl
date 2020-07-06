@@ -1,10 +1,11 @@
 # Pretty printing.
-function Base.display(call::CallSite; 
+function Base.display(call::C; 
                       fields::Array{Symbol, 1} = [:val],
-                      show_full = false)
+                      show_full = false) where C <: CallSite
     println("  __________________________________\n")
     println("               Playback\n")
-    map(fieldnames(CallSite)) do f
+    println(" type : $C\n")
+    map(fieldnames(C)) do f
         val = getfield(call, f)
         typeof(val) <: Dict{Address, ChoiceSite} && begin 
             vals = collect(val)
@@ -92,6 +93,24 @@ function Base.display(tr::Trace; show_values = false)
     else
         for a in addrs
             println(" $(a)")
+        end
+    end
+    println("  __________________________________\n")
+end
+
+function Base.display(trs::Array{T, 1}; show_values = false) where T <: Trace
+    println("  __________________________________\n")
+    println("               Addresses\n")
+    map(trs) do tr
+        addrs, chd = collect(tr)
+        if show_values
+            for a in addrs
+                println(" $(a) : $(chd[a])")
+            end
+        else
+            for a in addrs
+                println(" $(a)")
+            end
         end
     end
     println("  __________________________________\n")
