@@ -159,7 +159,7 @@ end
 end
 
 # Vectorized convenience functions for foldr.
-function map_retrace_retained(addr::Address,
+function foldr_retrace_retained(addr::Address,
                               new_trs::Vector{T},
                               vcs::VectorizedCallSite{T, J, K}, 
                               sel::L, 
