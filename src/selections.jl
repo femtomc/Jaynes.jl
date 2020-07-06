@@ -19,31 +19,35 @@ abstract type SelectQuery <: Selection end
 abstract type ConstrainedSelectQuery <: SelectQuery end
 abstract type UnconstrainedSelectQuery <: SelectQuery end
 
+# Constraints to direct addresses.
 struct ConstrainedSelectByAddress <: ConstrainedSelectQuery
     query::Dict{Address, Any}
     ConstrainedSelectByAddress() = new(Dict{Address, Any}())
     ConstrainedSelectByAddress(d::Dict{Address, Any}) = new(d)
 end
 
-
+# Constraints to direct addresses.
 struct UnconstrainedSelectByAddress <: UnconstrainedSelectQuery
     query::Vector{Address}
     UnconstrainedSelectByAddress() = new(Address[])
 end
 
-
-struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: ConstrainedSelection
-    tree::Dict{Address, ConstrainedHierarchicalSelection}
+# Constraints by call site structure.
+abstract type ConstrainedCallSiteSelection <: ConstrainedSelection end
+struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: ConstrainedCallSiteSelection
+    tree::Dict{Union{Int, Address}, ConstrainedCallSiteSelection}
     query::T
-    ConstrainedHierarchicalSelection() = new{ConstrainedSelectByAddress}(Dict{Address, ConstrainedHierarchicalSelection}(), ConstrainedSelectByAddress())
+    ConstrainedHierarchicalSelection() = new{ConstrainedSelectByAddress}(Dict{Union{Int, Address}, ConstrainedHierarchicalSelection}(), ConstrainedSelectByAddress())
 end
 
+# Constrain anywhere.
 struct ConstrainedAnywhereSelection{T <: ConstrainedSelectQuery} <: ConstrainedSelection
     query::T
     ConstrainedAnywhereSelection(obs::Vector{Tuple{T, K}}) where {T <: Any, K} = new{ConstrainedSelectByAddress}(ConstrainedSelectByAddress(Dict{Address, Any}(obs)))
     ConstrainedAnywhereSelection(obs::Tuple{T, K}...) where {T <: Any, K} = new{ConstrainedSelectByAddress}(ConstrainedSelectByAddress(Dict{Address, Any}(collect(obs))))
 end
 
+# Union of constraints.
 struct ConstrainedUnionSelection <: ConstrainedSelection
     query::Vector{ConstrainedSelection}
 end
@@ -80,6 +84,10 @@ Base.getindex(csa::ConstrainedSelectByAddress, addr::Address) = csa.query[addr]
 
 # Higher level wrappers.
 function Base.getindex(chs::ConstrainedHierarchicalSelection, addr::Address)
+    haskey(chs.tree, addr) && return getindex(chs.tree, addr)
+    return ConstrainedHierarchicalSelection()
+end
+function Base.getindex(chs::ConstrainedHierarchicalSelection, addr::Int)
     haskey(chs.tree, addr) && return getindex(chs.tree, addr)
     return ConstrainedHierarchicalSelection()
 end

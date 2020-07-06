@@ -132,16 +132,15 @@ import Base.haskey
 haskey(cs::ChoiceSite, addr::Address) = false
 haskey(cs::BlackBoxCallSite, addr) = haskey(cs.trace, addr)
 function haskey(vcs::VectorizedCallSite, addr::Pair)
-    addr[1] < length(vcs.subtraces) && haskey(vcs.subtraces, addr[2])
+    addr[1] <= length(vcs.subtraces) && haskey(vcs.subtraces[addr[1]], addr[2])
 end
 function Base.haskey(tr::HierarchicalTrace, addr::Address)
     haskey(tr.chm, addr)
 end
 function Base.haskey(tr::HierarchicalTrace, addr::Pair)
     if haskey(tr.chm, addr[1])
-        return haskey(tr.chm[1], addr[2])
+        return haskey(tr.chm[addr[1]], addr[2])
     else
         return false
     end
 end
-

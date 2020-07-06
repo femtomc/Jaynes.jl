@@ -64,7 +64,7 @@ function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pa
         if v isa ChoiceSite
             push!(addrs, k)
             chd[k] = v.val
-        elseif v isa CallSite
+        elseif v isa BlackBoxCallSite
             collect!(k, addrs, chd, v.trace)
         elseif v isa VectorizedCallSite
             for i in 1:length(v.subtraces)
@@ -101,15 +101,15 @@ end
 function Base.display(trs::Array{T, 1}; show_values = false) where T <: Trace
     println("  __________________________________\n")
     println("               Addresses\n")
-    map(trs) do tr
+    map(enumerate(trs)) do (i, tr)
         addrs, chd = collect(tr)
         if show_values
             for a in addrs
-                println(" $(a) : $(chd[a])")
+                println(" $(i => a) : $(chd[a])")
             end
         else
             for a in addrs
-                println(" $(a)")
+                println(" $(i => a)")
             end
         end
     end
