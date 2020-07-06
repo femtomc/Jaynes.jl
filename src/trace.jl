@@ -29,6 +29,7 @@ end
 
 mutable struct VectorizedCallSite{T <: Trace, J, K} <: RecordSite
     subtraces::Vector{T}
+    score::Float64
     fn::Function
     args::J
     ret::Vector{K}
@@ -36,9 +37,7 @@ end
 
 score(tr::T) where T <: Trace = tr.score
 score(cs::CallSite) = cs.trace.score
-score(vcs::VectorizedCallSite) = sum(map(vcs.subtraces) do tr
-                                         score(tr)
-                                     end)
+score(vcs::VectorizedCallSite) = vcs.score
 
 # ------------ Direct execution with trace ------------ #
 
@@ -69,7 +68,10 @@ end
         v_ret[i] = ret
         v_tr[i] = n_tr
     end
-    tr.chm[addr] = VectorizedCallSite(v_tr, fn, args, v_ret)
+    score = sum(map(v_tr) do tr
+                    score(tr)
+                end)
+    tr.chm[addr] = VectorizedCallSite(v_tr, score, fn, args, v_ret)
     return v_ret
 end
 
@@ -88,7 +90,10 @@ end
         v_ret[i] = ret
         v_tr[i] = n_tr
     end
-    tr.chm[addr] = VectorizedCallSite(v_tr, fn, args, v_ret)
+    score = sum(map(v_tr) do tr
+                    score(tr)
+                end)
+    tr.chm[addr] = VectorizedCallSite(v_tr, score, fn, args, v_ret)
     return v_ret
 end
 

@@ -12,15 +12,7 @@ macro primitive(ex)
             return s
         end
 
-        @inline function (ctx::Jaynes.UnconstrainedGenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
-
-            s = $argname(args...)
-            score = logpdf($argname, args..., s)
-            ctx.tr.chm[addr] = Jaynes.ChoiceSite(score, s)
-            return s
-        end
-
-        function (ctx::Jaynes.ConstrainedGenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
+        function (ctx::Jaynes.GenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
 
             # Constrained..
             if haskey(ctx.select.query, addr)

@@ -44,17 +44,13 @@ end
     s_ctx = Score(ctx.select[addr => 1])
     ret = s_ctx(call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = s_ctx.tr
     for i in 2:len
         s_ctx.select = ctx.select[addr => i]
         s_ctx.tr = Trace()
         ret = s_ctx(call, v_ret[i-1]...)
         v_ret[i] = ret
-        v_tr[i] = s_ctx.tr
     end
-    tr.chm[addr] = VectorizedCallSite(v_tr, fn, args, v_ret)
     return v_ret
 end
 
@@ -67,16 +63,11 @@ end
     ret = s_ctx(call, args[1]...)
     len = length(args)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = s_ctx.tr
     for i in 2:len
         s_ctx.select = ctx.select[addr => i]
-        n_tr = Trace()
         ret = s_ctx(call, args[i]...)
         v_ret[i] = ret
-        v_tr[i] = s_ctx.tr
     end
-    tr.chm[addr] = VectorizedCallSite(v_tr, fn, args, v_ret)
     return v_ret
 end
