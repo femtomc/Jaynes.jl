@@ -33,7 +33,7 @@ end
                                         args...) where T <: Address
     cg_ctx = GenerateContext(Trace(), ctx.select[addr])
     ret = cg_ctx(call, args...)
-    ctx.tr.chm[addr] = CallSite(cg_ctx.tr,
+    ctx.tr.chm[addr] = BlackBoxCallSite(cg_ctx.tr,
                                 call, 
                                 args, 
                                 ret)

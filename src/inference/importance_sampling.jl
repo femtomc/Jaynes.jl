@@ -2,13 +2,13 @@ function importance_sampling(model::Function,
                              args::Tuple;
                              observations::ConstrainedSelection = ConstrainedAnywhereSelection(), 
                              num_samples::Int = 5000)
-    calls = Vector{CallSite}(undef, num_samples)
+    calls = Vector{BlackBoxCallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     ctx = Generate(Trace(), observations)
     for i in 1:num_samples
         ret = ctx(model, args...)
         lws[i] = ctx.tr.score
-        calls[i] = CallSite(ctx.tr, 
+        calls[i] = BlackBoxCallSite(ctx.tr, 
                             model, 
                             args,
                             ret)
@@ -26,7 +26,7 @@ function importance_sampling(model::Function,
                              proposal_args::Tuple; 
                              observations::ConstrainedSelection = ConstrainedAnywhereSelection(),
                              num_samples::Int = 5000) where T
-    calls = Vector{CallSite}(undef, num_samples)
+    calls = Vector{BlackBoxCallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     prop_ctx = Propose(Trace())
     model_ctx = Generate(Trace(), observations)
@@ -44,7 +44,7 @@ function importance_sampling(model::Function,
         !compare(select, model_ctx.visited) && error("ProposalError: support error - not all constraints provided by merge of proposal and observations were visited.")
 
         # Track.
-        calls[i] = CallSite(model_ctx.tr, 
+        calls[i] = BlackBoxCallSite(model_ctx.tr, 
                             model, 
                             args,
                             ret)

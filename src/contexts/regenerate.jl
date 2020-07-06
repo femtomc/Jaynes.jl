@@ -60,7 +60,7 @@ end
                                           args...) where T <: Address
     ur_ctx = Regenerate(ctx.prev.chm[addr].trace, ctx.select[addr])
     ret = ur_ctx(call, args...)
-    ctx.tr.chm[addr] = CallSite(ur_ctx.tr, 
+    ctx.tr.chm[addr] = BlackBoxCallSite(ur_ctx.tr, 
                                 call, 
                                 args, 
                                 ret)

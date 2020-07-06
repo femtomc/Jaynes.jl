@@ -20,14 +20,15 @@ struct ChoiceSite{T} <: RecordSite
     val::T
 end
 
-mutable struct CallSite{T <: Trace, J, K} <: RecordSite
+abstract type CallSite <: RecordSite end
+mutable struct BlackBoxCallSite{T <: Trace, J, K} <: CallSite
     trace::T
     fn::Function
     args::J
     ret::K
 end
 
-mutable struct VectorizedCallSite{T <: Trace, J, K} <: RecordSite
+mutable struct VectorizedCallSite{T <: Trace, J, K} <: CallSite
     subtraces::Vector{T}
     score::Float64
     fn::Function
@@ -36,7 +37,7 @@ mutable struct VectorizedCallSite{T <: Trace, J, K} <: RecordSite
 end
 
 score(tr::T) where T <: Trace = tr.score
-score(cs::CallSite) = cs.trace.score
+score(cs::BlackBoxCallSite) = cs.trace.score
 score(vcs::VectorizedCallSite) = vcs.score
 
 # ------------ Direct execution with trace ------------ #
@@ -50,7 +51,7 @@ end
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args...)
     n_tr = Trace()
     ret = n_tr(call, args...)
-    tr.chm[addr] = CallSite(n_tr, call, args, ret)
+    tr.chm[addr] = BlackBoxCallSite(n_tr, call, args, ret)
     return ret
 end
 
@@ -101,13 +102,13 @@ end
 # setindex! is not defined - we treat the trace as immutable, unless you interact with it through contexts for inference.
 import Base.getindex
 getindex(cs::ChoiceSite, addr::Address) = nothing
-getindex(cs::CallSite, addr) = getindex(cs.trace, addr)
+getindex(cs::BlackBoxCallSite, addr) = getindex(cs.trace, addr)
 getindex(vcs::VectorizedCallSite, addr::Int) = cs.subtraces[addr]
 function getindex(vcs::VectorizedCallSite, addr::Pair)
     getindex(vcs.subtraces[addr[1]], addr[2])
 end
 unwrap(cs::ChoiceSite) = cs.val
-unwrap(cs::CallSite) = cs.ret
+unwrap(cs::BlackBoxCallSite) = cs.ret
 unwrap(cs::VectorizedCallSite) = cs.ret
 function getindex(tr::HierarchicalTrace, addr::Address)
     if haskey(tr.chm, addr)
@@ -126,7 +127,7 @@ end
 
 import Base.haskey
 haskey(cs::ChoiceSite, addr::Address) = false
-haskey(cs::CallSite, addr) = haskey(cs.trace, addr)
+haskey(cs::BlackBoxCallSite, addr) = haskey(cs.trace, addr)
 function haskey(vcs::VectorizedCallSite, addr::Pair)
     addr[1] < length(vcs.subtraces) && haskey(vcs.subtraces, addr[2])
 end

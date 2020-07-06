@@ -6,6 +6,7 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
     UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, VisitedSelection())
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
+Update(select) = UpdateContext(Trace(), select)
 
 # Update has a special dynamo.
 @dynamo function (mx::UpdateContext)(a...)
@@ -61,7 +62,7 @@ end
                                       args...) where T <: Address
     u_ctx = Update(ctx.prev.chm[addr].trace, ctx.select[addr])
     ret = u_ctx(call, args...)
-    ctx.tr.chm[addr] = CallSite(u_ctx.tr, 
+    ctx.tr.chm[addr] = BlackBoxCallSite(u_ctx.tr, 
                                 call, 
                                 args, 
                                 ret)
@@ -119,6 +120,7 @@ end
                                       addr::Address, 
                                       call::Function, 
                                       args::Vector)
+    # Grab VCS and compute new and old lengths.
     vcs = ctx.prev[addr]
     n_len, o_len = length(args), length(vcs.args)
 
@@ -176,8 +178,9 @@ end
                                       fn::typeof(rand), 
                                       addr::Address, 
                                       call::Function, 
-                                      len::Int
+                                      len::Int,
                                       args...)
+    # Grab VCS and compute new and old lengths.
     vcs = ctx.prev[addr]
     n_len, o_len = len, length(vcs.subtraces)
 
@@ -194,4 +197,14 @@ end
     # Generate new traces (if n_len > o_len).
 
     return new_ret
+end
+
+# Convenience.
+function update(ctx::UpdateContext, cs::BlackBoxCallSite, new_args...)
+    ctx.prev = cs.tr
+    ctx(cs.fn, new_args...)
+    return ctx.tr
+end
+
+function update(ctx::UpdateContext, vcs::VectorizedCallSite, new_args...)
 end

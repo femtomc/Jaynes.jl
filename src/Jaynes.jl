@@ -34,7 +34,7 @@ include("blackbox.jl")
 function trace(fn::Function, args...)
     tr = Trace()
     ret = tr(fn, args...)
-    return CallSite(tr, fn, args, ret)
+    return BlackBoxCallSite(tr, fn, args, ret)
 end
 
 # Contexts.

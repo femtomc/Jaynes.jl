@@ -25,7 +25,7 @@ end
                                         args...) where T <: Address
     p_ctx = Propose(Trace())
     ret = p_ctx(call, args...)
-    ctx.tr.chm[addr] = CallSite(p_ctx.tr, 
+    ctx.tr.chm[addr] = BlackBoxCallSite(p_ctx.tr, 
                                 call, 
                                 args, 
                                 ret)

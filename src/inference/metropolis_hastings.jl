@@ -1,21 +1,21 @@
-function metropolis_hastings(call::CallSite,
+function metropolis_hastings(call::BlackBoxCallSite,
                              sel::UnconstrainedSelection)
     ctx = Regenerate(call.trace, sel)
     ret = ctx(call.fn, call.args...)
-    log(rand()) < ctx.tr.score && return (CallSite(ctx.tr, call.fn, call.args, ret), true)
+    log(rand()) < ctx.tr.score && return (BlackBoxCallSite(ctx.tr, call.fn, call.args, ret), true)
     return (call, false)
 end
 
-function metropolis_hastings(call::CallSite,
+function metropolis_hastings(call::BlackBoxCallSite,
                              sel::UnconstrainedSelection,
                              obs::ConstrainedSelection)
     ctx = Regenerate(call.trace, sel, obs)
     prop, discard = ctx(call.fn, call.args...)
-    log(rand()) < ctx.tr.score && return (CallSite(ctx.tr, call.fn, call.args, ret), true)
+    log(rand()) < ctx.tr.score && return (BlackBoxCallSite(ctx.tr, call.fn, call.args, ret), true)
     return (call, false)
 end
 
-function metropolis_hastings(call::CallSite,
+function metropolis_hastings(call::BlackBoxCallSite,
                              proposal::Function,
                              proposal_args::Tuple,
                              sel::UnconstrainedSelection)
@@ -33,6 +33,6 @@ function metropolis_hastings(call::CallSite,
 
     # Accept/reject.
     ratio = update.score - prop.score + sc
-    log(rand()) < ratio && return (CallSite(ctx.tr, call.fn, call.args, ret), true)
+    log(rand()) < ratio && return (BlackBoxCallSite(ctx.tr, call.fn, call.args, ret), true)
     return (call, false)
 end
