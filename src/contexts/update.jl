@@ -209,14 +209,19 @@ end
 end
 
 # Convenience.
-function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, new_args...)
-    ctx(bbcs.fn, new_args...)
-    return ctx.tr, ctx.tr.score, UndefinedChange(), ctx.discard
+function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, args...)
+    ret = ctx(bbcs.fn, args...)
+    return BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection
     ctx = UpdateContext(bbcs.trace, sel)
     return update(ctx, bbcs, new_args...)
+end
+
+function update(sel::L, bbcs::BlackBoxCallSite) where L <: ConstrainedSelection
+    ctx = UpdateContext(bbcs.trace, sel)
+    return update(ctx, bbcs, bbcs.args...)
 end
 
 function update(bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection

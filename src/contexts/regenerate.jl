@@ -72,13 +72,18 @@ end
 
 # Convenience.
 function regenerate(ctx::RegenerateContext, bbcs::BlackBoxCallSite, new_args...)
-    ctx(bbcs.fn, new_args...)
-    return ctx.tr, ctx.tr.score, UndefinedChange(), ctx.discard
+    ret = ctx(bbcs.fn, new_args...)
+    return BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: UnconstrainedSelection
     ctx = RegenerateContext(bbcs.trace, sel)
     return regenerate(ctx, bbcs, new_args...)
+end
+
+function regenerate(sel::L, bbcs::BlackBoxCallSite) where L <: UnconstrainedSelection
+    ctx = RegenerateContext(bbcs.trace, sel)
+    return regenerate(ctx, bbcs, bbcs.args...)
 end
 
 function regenerate(bbcs::BlackBoxCallSite, new_args...) where L <: UnconstrainedSelection

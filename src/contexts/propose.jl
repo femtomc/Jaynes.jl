@@ -2,7 +2,7 @@ mutable struct ProposeContext{T <: Trace} <: ExecutionContext
     tr::T
     ProposeContext(tr::T) where T <: Trace = new{T}(tr)
 end
-Propose(tr::Trace) = ProposeContext(tr)
+Propose() = ProposeContext(Trace())
 
 # ------------ Choice sites ------------ #
 
@@ -83,4 +83,8 @@ end
 end
 
 # Convenience.
-function score end
+function propose(fn::Function, args...)
+    ctx = Propose()
+    ret = ctx(fn, args...)
+    return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.tr.score
+end

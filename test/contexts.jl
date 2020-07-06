@@ -10,23 +10,60 @@ function LinearGaussianProposal()
     x = rand(:x, Normal(α * 3.0, 3.0))
 end
 
-@testset "Contextual execution" begin
-    @testset "Unconstrained generate" begin
-    end
-
-    @testset "Constrained generate" begin
-    end
-    
-    @testset "Update" begin
-    end
-
-    @testset "Regenerate" begin
-    end
-
-    @testset "Propose" begin
-    end
-    
-    @testset "Score" begin
-    end
+@testset "Trace" begin
+    tr = Trace()
+    tr(LinearGaussian, 0.5, 3.0)
+    @test haskey(tr, :x)
+    @test haskey(tr, :y)
 end
 
+@testset "Generate" begin
+    sel = selection((:x, 5.0))
+    cl, w = generate(sel, LinearGaussian, 0.5, 3.0)
+    @test cl[:x] == 5.0
+    sel = selection([(:x, 5.0), (:y, 10.0)])
+    cl, w = generate(sel, LinearGaussian, 0.5, 3.0)
+    @test cl[:x] == 5.0
+    @test cl[:y] == 10.0
+end
+
+@testset "Update" begin
+    cl, w = generate(LinearGaussian, 0.5, 3.0)
+    stored_at_x = cl[:x]
+    stored_at_y = cl[:y]
+    sel = selection((:x, 5.0))
+    cl, retdiff, d = update(sel, cl)
+    # Discard should be original :x
+    @test d.query[:x] == stored_at_x
+    # New should be equal to constraint.
+    @test cl[:x] == 5.0
+    sel = selection((:y, 10.0))
+    cl, retdiff, d = update(sel, cl)
+    @test d.query[:y] == stored_at_y
+    @test cl[:x] == 5.0
+    @test cl[:y] == 10.0
+end
+
+@testset "Regenerate" begin
+    cl, w = generate(LinearGaussian, 0.5, 3.0)
+    stored_at_x = cl[:x]
+    stored_at_y = cl[:y]
+    sel = selection(:x)
+    cl, retdiff, d = regenerate(sel, cl)
+    # Discard should be original :x
+    @test d.query[:x] == stored_at_x
+    # New should not be equal to original.
+    @test cl[:x] != stored_at_x
+    sel = selection(:y)
+    cl, retdiff, d = regenerate(sel, cl)
+    @test d.query[:y] == stored_at_y
+end
+
+@testset "Propose" begin
+    cl, w = propose(LinearGaussian, 0.5, 3.0)
+    # Propose should track score.
+    @test score(cl) != 0.0
+end
+
+@testset "Score" begin
+end
