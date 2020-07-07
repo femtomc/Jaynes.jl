@@ -1,4 +1,6 @@
-Jaynes is an implementation of _effect-oriented programming_ for probabilistic programming. Internally, the current implementation closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. In contrast to Gen (which provides powerful optimizations for programs written in the [static DSL](https://www.gen.dev/dev/ref/modeling/#Static-Modeling-Language-1)), Jaynes is focused on an optimized dynamic language which is equivalent to all of Julia. To address the dynamic analysis problems which arise as a function of this goal, Jaynes is implemented using IR introspection and metaprogramming. The long term goal of Jaynes is to implement _optimization by default_ for dynamic programs, while providing a simple modeling and inference interface.
+Jaynes is a contextual _effect-oriented programming_ system for probabilistic programming. Internally, the current implementation closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. 
+
+In contrast to Gen (which provides powerful optimizations for programs written in the [static DSL](https://www.gen.dev/dev/ref/modeling/#Static-Modeling-Language-1)), Jaynes is focused on an optimized dynamic language which allows most Julia programs. To address the dynamic analysis problems which arise as a function of this goal, Jaynes is implemented using IR introspection and metaprogramming. The long term goal of Jaynes is to implement a set of useful optimizations _by default_ for programs expressible in the system, while providing a simple modeling and inference interface.
 
 !!! info
     Jaynes uses many concepts from the design and implementation of Gen. First and foremost, I would recommend users of Jaynes become familiar with Gen - to understand the problems which Jaynes attempts to solve. The following papers may be useful in this regard:
@@ -20,7 +22,7 @@ Jaynes is organized around a central `IRTools` _dynamo_
 @dynamo function (mx::ExecutionContext)(a...)
     ir = IR(a...)
     ir == nothing && return
-    recurse!(ir)
+    recur!(ir)
     return ir
 end
 ```
