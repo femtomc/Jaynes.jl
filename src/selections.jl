@@ -420,13 +420,13 @@ function Base.display(chs::ConstrainedHierarchicalSelection; show_values = false
 end
 
 function collect!(par, addrs, query::UnconstrainedSelectByAddress, meta)
-    for (k, v) in query.query
+    for k in query.query
         push!(addrs, par => k)
     end
 end
 
 function collect!(addrs, query::UnconstrainedSelectByAddress, meta)
-    for (k, v) in query.query
+    for k in query.query
         push!(addrs, k)
     end
 end
@@ -454,7 +454,7 @@ end
 
 function Base.display(chs::UnconstrainedHierarchicalSelection)
     println("  __________________________________\n")
-    println("             Selection\n")
+    println("              Selection\n")
     addrs, meta = collect(chs)
     for a in addrs
         if haskey(meta, a)
