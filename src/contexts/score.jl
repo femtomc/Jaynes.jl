@@ -17,8 +17,8 @@ Score() = ScoreContext()
 @inline function (ctx::ScoreContext)(call::typeof(rand), 
                                      addr::T, 
                                      d::Distribution{K}) where {T <: Address, K}
-    haskey(ctx.select.query, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
-    val = ctx.select.query[addr]
+    has_query(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
+    val = get_query(ctx.select, addr)
     ctx.score += logpdf(d, val)
     return val
 end

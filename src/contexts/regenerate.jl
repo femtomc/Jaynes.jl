@@ -2,14 +2,14 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
     prev::T
     tr::T
     select::L
-    discard::ConstrainedHierarchicalSelection
-    visited::VisitedSelection
+    discard::T
+    visited::Visitor
     function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
         un_sel = selection(sel)
-        new{T, typeof(un_sel)}(tr, Trace(), un_sel, ConstrainedHierarchicalSelection(), VisitedSelection())
+        new{T, typeof(un_sel)}(tr, Trace(), un_sel, Trace(), Visitor())
     end
     function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-        new{T, L}(tr, Trace(), sel, ConstrainedHierarchicalSelection(), VisitedSelection())
+        new{T, L}(tr, Trace(), sel, Trace(), Visitor())
     end
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
@@ -29,16 +29,16 @@ end
                                           addr::T, 
                                           d::Distribution{K}) where {T <: Address, K}
     # Check if in previous trace's choice map.
-    in_prev_chm = haskey(ctx.prev.chm, addr)
+    in_prev_chm = has_choice(ctx.prev, addr)
 
     # Check if in selection in meta.
-    in_sel = haskey(ctx.select.query, addr)
+    in_sel = has_query(ctx.select, addr)
 
     if in_prev_chm
-        prev = ctx.prev.chm[addr]
+        prev = get_choice(ctx.prev, addr)
         if in_sel
             ret = rand(d)
-            push!(ctx.discard, addr, prev.val)
+            set_choice!(ctx.discard, addr, prev)
         else
             ret = prev.val
         end
@@ -49,8 +49,8 @@ end
         ctx.tr.score += score - prev.score
     end
 
-    ctx.tr.chm[addr] = ChoiceSite(score, ret)
-    push!(ctx.visited, addr)
+    set_call!(ctx.tr, addr, ChoiceSite(score, ret))
+    visit!(ctx.visited, addr)
     return ret
 end
 

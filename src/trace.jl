@@ -2,31 +2,53 @@ import Base: rand
 rand(addr::Address, d::Distribution{T}) where T = rand(d)
 rand(addr::Address, fn::Function, args...) = fn(args...)
 
-abstract type RecordSite end
 abstract type Trace <: ExecutionContext end
-
-# These are the core tracing data structures which represent random choices, function call sites, and the trace of execution in any particular context.
-mutable struct HierarchicalTrace <: Trace
-    chm::Dict{Address, RecordSite}
-    score::Float64
-    function HierarchicalTrace()
-        new(Dict{Address, RecordSite}(), 0.0)
-    end
-end
-Trace() = HierarchicalTrace()
-
+abstract type RecordSite end
+abstract type CallSite <: RecordSite end
 struct ChoiceSite{T} <: RecordSite
     score::Float64
     val::T
 end
 
-abstract type CallSite <: RecordSite end
+# ------------ Hierarchical trace ------------ #
+
+mutable struct HierarchicalTrace <: Trace
+    calls::Dict{Address, CallSite}
+    choices::Dict{Address, ChoiceSite}
+    score::Float64
+    function HierarchicalTrace()
+        new(Dict{Address, CallSite}(), 
+            Dict{Address, ChoiceSite}(),
+            0.0)
+    end
+end
+Trace() = HierarchicalTrace()
+has_choice(tr::HierarchicalTrace, addr) = haskey(tr.choices, addr)
+has_call(tr::HierarchicalTrace, addr) = haskey(tr.calls, addr)
+get_call(tr::HierarchicalTrace, addr) = tr.calls[addr]
+get_choice(tr::HierarchicalTrace, addr) = tr.choices[addr]
+function get_call(tr::HierarchicalTrace, addr::Pair)
+    get_call(tr.calls[addr[1]], addr[2])
+end
+function set_choice!(tr::HierarchicalTrace, addr, cs::ChoiceSite)
+    tr.choices[addr] = cs
+end
+function set_call!(tr::HierarchicalTrace, addr, cs::CallSite)
+    tr.call[addr] = cs
+end
+score(tr::HierarchicalTrace) = tr.score
+
+# ------------ Call sites ------------ #
+
 mutable struct BlackBoxCallSite{T <: Trace, J, K} <: CallSite
     trace::T
     fn::Function
     args::J
     ret::K
 end
+has_choice(bbcs::BlackBoxCallSite, addr) = haskey(bbcs.tr.choices, addr)
+has_call(bbcs::BlackBoxCallSite, addr) = haskey(bbcs.tr.calls, addr)
+get_call(bbcs::BlackBoxCallSite, addr) = bbcs.tr.calls[addr]
 
 mutable struct VectorizedCallSite{F <: Function, T <: Trace, J, K} <: CallSite
     subtraces::Vector{T}
@@ -38,8 +60,25 @@ mutable struct VectorizedCallSite{F <: Function, T <: Trace, J, K} <: CallSite
         new{F, T, J, K}(sub, sc, fn, args, ret)
     end
 end
+function has_choice(vcs::VectorizedCallSite, addr)
+    for tr in vcs.subtraces
+        has_choice(tr, addr) && return true
+    end
+    return false
+end
+function has_call(vcs::VectorizedCallSite, addr)
+    for tr in vcs.subtraces
+        has_call(tr, addr) && return true
+    end
+    return false
+end
+function get_call(vcs::VectorizedCallSite, addr)
+    for tr in vcs.subtraces
+        has_call(tr, addr) && return get_call(tr, addr)
+    end
+    error("VectorizedCallSite (get_call): no call at $addr.")
+end
 
-score(tr::T) where T <: Trace = tr.score
 score(cs::BlackBoxCallSite) = cs.trace.score
 score(vcs::VectorizedCallSite) = vcs.score
 
@@ -47,14 +86,14 @@ score(vcs::VectorizedCallSite) = vcs.score
 
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, d::Distribution{T}) where T
     s = rand(d)
-    tr.chm[addr] = ChoiceSite(logpdf(d, s), s)
+    set_choice!(tr, addr, ChoiceSite(logpdf(d, s), s))
     return s
 end
 
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args...)
     n_tr = Trace()
     ret = n_tr(call, args...)
-    tr.chm[addr] = BlackBoxCallSite(n_tr, call, args, ret)
+    set_call!(tr, addr, BlackBoxCallSite(n_tr, call, args, ret))
     return ret
 end
 
@@ -75,7 +114,7 @@ end
     sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    tr.chm[addr] = VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret)
+    set_call!(tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -114,14 +153,14 @@ unwrap(cs::ChoiceSite) = cs.val
 unwrap(cs::BlackBoxCallSite) = cs.ret
 unwrap(cs::VectorizedCallSite) = cs.ret
 function getindex(tr::HierarchicalTrace, addr::Address)
-    if haskey(tr.chm, addr)
-        return unwrap(tr.chm[addr])
+    if has_choice(tr, addr)
+        return unwrap(get_choice(tr, addr))
     else
         return nothing
     end
 end
 function getindex(tr::HierarchicalTrace, addr::Pair)
-    if haskey(tr.chm, addr[1])
+    if has_call(tr, addr[1])
         return getindex(tr.chm[addr[1]], addr[2])
     else
         return nothing
@@ -135,10 +174,10 @@ function haskey(vcs::VectorizedCallSite, addr::Pair)
     addr[1] <= length(vcs.subtraces) && haskey(vcs.subtraces[addr[1]], addr[2])
 end
 function Base.haskey(tr::HierarchicalTrace, addr::Address)
-    haskey(tr.chm, addr)
+    has_choice(tr, addr)
 end
 function Base.haskey(tr::HierarchicalTrace, addr::Pair)
-    if haskey(tr.chm, addr[1])
+    if has_call(tr, addr[1])
         return haskey(tr.chm[addr[1]], addr[2])
     else
         return false

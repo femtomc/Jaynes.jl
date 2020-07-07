@@ -2,9 +2,9 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
     prev::T
     tr::T
     select::K
-    discard::ConstrainedHierarchicalSelection
-    visited::VisitedSelection
-    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, ConstrainedHierarchicalSelection(), VisitedSelection())
+    discard::T
+    visited::Visitor
+    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, Trace(), Visitor())
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
 Update(select) = UpdateContext(Trace(), select)
@@ -23,20 +23,22 @@ end
                                       addr::T, 
                                       d::Distribution{K}) where {T <: Address, K}
     # Check if in previous trace's choice map.
-    in_prev_chm = haskey(ctx.prev.chm, addr)
+    in_prev_chm = has_choice(ctx.prev, addr)
     in_prev_chm && begin
-        prev = ctx.prev.chm[addr]
+        prev = get_choice(ctx.prev, addr)
         prev_ret = prev.val
         prev_score = prev.score
     end
 
     # Check if in selection.
-    in_selection = haskey(ctx.select.query, addr)
+    in_selection = has_query(ctx.select, addr)
 
     # Ret.
     if in_selection
-        ret = ctx.select.query[addr]
-        in_prev_chm && push!(ctx.discard, addr, prev_ret)
+        ret = get_query(ctx.select, addr)
+        in_prev_chm && begin
+            set_choice!(ctx.discard, addr, prev)
+        end
     elseif in_prev_chm
         ret = prev_ret
     else
@@ -50,7 +52,7 @@ end
     elseif in_selection
         ctx.tr.score += score
     end
-    ctx.tr.chm[addr] = ChoiceSite(score, ret)
+    set_choice!(ctx.tr, addr, ChoiceSite(score, ret))
 
     push!(ctx.visited, addr)
     return ret
@@ -63,53 +65,53 @@ end
                                       call::Function,
                                       args...) where T <: Address
    
-    has_addr = haskey(ctx.prev, addr)
+    has_addr = has_choice(ctx.prev, addr)
     if has_addr
-        cs = ctx.prev.chm[addr]
+        cs = get_choice(ctx.prev, addr)
 
         # TODO: Mjolnir.
         new_site, lw, _, discard = update(cs, ctx.select[addr], args...; diffs = map((_) -> UndefinedChange(), args))
 
-        push!(ctx.discard, addr, discard)
+        set_choice!(ctx.discard, addr, CallSite(discard, cs.fn, cs.args, cs.ret))
     else
         new_site, lw = generate(call, ctx.select[addr], args...)
     end
-    ctx.tr.chm[addr] = new_site
+    set_call!(ctx.tr, addr, new_site)
     ctx.tr.score += lw
     return new_site.ret
 end
 
 # Vectorized convenience functions for map.
-function map_retrace_retained(addr::Address,
-                              new_trs::Vector{T},
-                              vcs::VectorizedCallSite{T, J, K}, 
-                              sel::L, 
-                              args::Vector,
-                              targeted::Set{Int},
-                              prev_length::Int,
-                              new_length::Int) where {T <: Trace, J, K, L <: ConstrainedSelection}
-    u_ctx = Update()
+function retrace_retained(addr::Address,
+                          new_trs::Vector{T},
+                          vcs::VectorizedCallSite{typeof(map), T, J, K}, 
+                          sel::L, 
+                          args::Vector,
+                          targeted::Set{Int},
+                          prev_length::Int,
+                          new_length::Int) where {T <: Trace, J, K, L <: ConstrainedSelection}
+    u_ctx = Update(sel[addr][1])
     updated = Vector{T}(undef, new_length)
-    ret = typeof(vcs.ret)(undef, new_length)
+    n_ret = typeof(vcs.ret)(undef, new_length)
     for k in 1 : min(prev_length, new_length)
         u_ctx.prev = new_trs[k]
-        u_ctx.sel = sel[addr => k]
+        u_ctx.select = sel[addr][k]
         ret = u_ctx(vcs.fn, args[k]...)
-        ret[k] = ret
+        n_ret[k] = ret
         updated[k] = u_ctx.tr
     end
     score_adj = sum(map(updated) do tr
                         score(tr)
                     end)
-    return score_adj, updated, ret
+    return score_adj, updated, n_ret
 end
 
-function map_generate_new(addr::Address, 
-                          vcs::VectorizedCallSite{T, J, K}, 
-                          sel::L,
-                          args::Vector, 
-                          prev_length::Int,
-                          new_length::Int) where {T <: Trace, J, K, L <: ConstrainedSelection}
+function generate_new(addr::Address, 
+                      vcs::VectorizedCallSite{typeof(map), T, J, K}, 
+                      sel::L,
+                      args::Vector, 
+                      prev_length::Int,
+                      new_length::Int) where {T <: Trace, J, K, L <: ConstrainedSelection}
     if prev_length + 1 < new_length
         g_ctx = Generate()
         new_trs = Vector{T}(undef, new_length - prev_length)
@@ -130,49 +132,49 @@ end
                                       call::Function, 
                                       args::Vector)
     # Grab VCS and compute new and old lengths.
-    vcs = ctx.prev[addr]
+    vcs = ctx.prev.chm[addr]
     n_len, o_len = length(args), length(vcs.args)
 
     # Get indices to subset of traces which are in selection.
-    ks = keyset(ctx.sel, n_len)
+    ks = keyset(ctx.select, n_len)
 
     # Adjust score by computing cumulative score for traces which are at indices less than the new length.
-    sc_adj = score_adjust(ctx.tr[addr], o_len, n_len)
+    sc_adj = score_adj(ctx.prev.chm[addr], o_len, n_len)
     vcs.score -= sc_adj
 
     # Get the set of traces which are retained.
-    retained = vcs.subtraces[n_len + 1 : o_len]
+    retained = vcs.subtraces[1 : end - (o_len - n_len)]
 
     # Generate new traces (if n_len > o_len).
-    new_trs = map_generate_new(addr, vcs, sel, args, o_len, n_len)
+    new_trs = generate_new(addr, vcs, ctx.select, args, o_len, n_len)
 
     # Append to the set of retained traces.
     append!(retained, new_trs)
 
     # Update the total set of traces, calculate the score adjustment and new returns.
-    sc_adj, updated, new_ret = map_retrace_retained(addr, retained, vcs, sel, args, ks, o_len, n_len)
+    sc_adj, updated, new_ret = retrace_retained(addr, retained, vcs, ctx.select, args, ks, o_len, n_len)
 
     # Create a new VectorizedCallSite.
-    ctx.tr[addr] = VectorizedCallSite(retained, vcs.score - sc_adj, vcs.fn, args, new_ret)
+    ctx.tr.chm[addr] = VectorizedCallSite{typeof(map)}(retained, vcs.score - sc_adj, vcs.fn, args, new_ret)
 
     return new_ret
 end
 
 # Vectorized convenience functions for foldr.
-function foldr_retrace_retained(addr::Address,
-                              new_trs::Vector{T},
-                              vcs::VectorizedCallSite{T, J, K}, 
-                              sel::L, 
-                              args::Vector,
-                              targeted::Set{Int},
-                              prev_length::Int,
-                              new_length::Int) where {T <: Trace, J, K, L <: ConstrainedSelection}
-    u_ctx = Update()
+function retrace_retained(addr::Address,
+                          new_trs::Vector{T},
+                          vcs::VectorizedCallSite{typeof(foldr), T, J, K}, 
+                          sel::L, 
+                          args::Vector,
+                          targeted::Set{Int},
+                          prev_length::Int,
+                          new_length::Int) where {T <: Trace, J, K, L <: ConstrainedSelection}
+    u_ctx = Update(sel[addr][1])
     updated = Vector{T}(undef, new_length)
     ret = typeof(vcs.ret)(undef, new_length)
     for k in 1 : min(prev_length, new_length)
         u_ctx.prev = new_trs[k]
-        u_ctx.select = sel[addr => k]
+        u_ctx.select = sel[addr][k]
         ret = u_ctx(vcs.fn, args[k]...)
         ret[k] = ret
         updated[k] = u_ctx.tr
@@ -190,14 +192,14 @@ end
                                       len::Int,
                                       args...)
     # Grab VCS and compute new and old lengths.
-    vcs = ctx.prev[addr]
+    vcs = ctx.prev.chm[addr]
     n_len, o_len = len, length(vcs.subtraces)
 
     # Get indices to subset of traces which are in selection.
     ks = keyset(ctx.select, len)
 
     # Adjust score by computing cumulative score for traces which are at indices less than the new length.
-    sc_adj = score_adjust(ctx.tr[addr], o_len, n_len)
+    sc_adj = score_adj(ctx.prev.chm[addr], o_len, n_len)
     vcs.score -= sc_adj
 
     # Get the set of traces which are retained.
