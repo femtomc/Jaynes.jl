@@ -18,20 +18,25 @@ function visit!(vs::Visitor, addr::Address)
     addr in vs.addrs && error("VisitorError (visit!): already visited this address.")
     push!(vs, addr)
 end
+
 function set_sub!(vs::Visitor, addr::Address, sub::Visitor)
     haskey(vs.tree, addr) && error("VisitorError (set_sub!): already visited this address.")
     vs.tree[addr] = sub
 end
+
 function has_sub(vs::Visitor, addr::Address)
     return haskey(vs.tree, addr)
 end
+
 function get_sub(vs::Visitor, addr::Address)
     haskey(vs.tree, addr) && return vs.tree[addr]
     error("VisitorError (get_sub): sub not defined at $addr.")
 end
+
 function has_query(vs::Visitor, addr::Address)
     return addr in vs.addrs
 end
+
 isempty(vs::Visitor) = isempty(vs.tree) && isempty(vs.addrs)
 
 # ------------ Constrained and unconstrained selections ------------ #
@@ -42,39 +47,49 @@ abstract type SelectQuery <: Selection end
 abstract type ConstrainedSelectQuery <: SelectQuery end
 abstract type UnconstrainedSelectQuery <: SelectQuery end
 
-# Empty select query.
-struct EmptySelectQuery <: SelectQuery end
+# ------------ Constraints to direct addresses ------------ #
 
-# Constraints to direct addresses.
 struct ConstrainedSelectByAddress <: ConstrainedSelectQuery
     query::Dict{Address, Any}
     ConstrainedSelectByAddress() = new(Dict{Address, Any}())
     ConstrainedSelectByAddress(d::Dict{Address, Any}) = new(d)
 end
+
 has_query(csa::ConstrainedSelectByAddress, addr) = haskey(csa.query, addr)
+
 get_query(csa::ConstrainedSelectByAddress, addr) = getindex(csa.query, addr)
+
 isempty(csa::ConstrainedSelectByAddress) = isempty(csa.query)
 
-# Selection to direct addresses.
+# ----------- Selection to direct addresses ------------ #
+
 struct UnconstrainedSelectByAddress <: UnconstrainedSelectQuery
     query::Vector{Address}
     UnconstrainedSelectByAddress() = new(Address[])
 end
+
 has_query(csa::UnconstrainedSelectByAddress, addr) = addr in csa.query
+
 isempty(csa::UnconstrainedSelectByAddress) = isempty(csa.query)
 
-# Constrain anywhere.
+# ------------ Constrain anywhere ------------ #
+
 struct ConstrainedAnywhereSelection{T <: ConstrainedSelectQuery} <: ConstrainedSelection
     query::T
     ConstrainedAnywhereSelection(obs::Vector{Tuple{T, K}}) where {T <: Any, K} = new{ConstrainedSelectByAddress}(ConstrainedSelectByAddress(Dict{Address, Any}(obs)))
     ConstrainedAnywhereSelection(obs::Tuple{T, K}...) where {T <: Any, K} = new{ConstrainedSelectByAddress}(ConstrainedSelectByAddress(Dict{Address, Any}(collect(obs))))
 end
+
 has_query(cas::ConstrainedAnywhereSelection, addr) = has_query(cas.query, addr)
+
 get_query(cas::ConstrainedAnywhereSelection, addr) = get_query(cas.query, addr)
+
 get_sub(cas::ConstrainedAnywhereSelection, addr) = cas
+
 isempty(cas::ConstrainedAnywhereSelection) = isempty(cas.query)
 
-# Constrain in call hierarchy.
+# ------------ Constrain in call hierarchy ------------ #
+
 struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: ConstrainedSelection
     tree::Dict{Union{Int, Address}, ConstrainedSelection}
     query::T
@@ -85,80 +100,103 @@ function get_sub(chs::ConstrainedHierarchicalSelection, addr)
     haskey(chs.tree, addr) && return chs.tree[addr]
     return ConstrainedHierarchicalSelection()
 end
+
 function get_sub(chs::ConstrainedHierarchicalSelection, addr::Pair)
     haskey(chs.tree, addr[1]) && return get_sub(chs.tree[addr[1]], addr[2])
     return ConstrainedHierarchicalSelection()
 end
+
 has_query(chs::ConstrainedHierarchicalSelection, addr) = has_query(chs.query, addr)
+
 get_query(chs::ConstrainedHierarchicalSelection, addr) = get_query(chs.query, addr)
+
 isempty(chs::ConstrainedHierarchicalSelection) = isempty(chs.tree) && isempty(chs.query)
+
+# ------------ Unconstrained selection in call hierarchy ------------ #
 
 struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: UnconstrainedSelection
     tree::Dict{Address, UnconstrainedHierarchicalSelection}
     query::T
     UnconstrainedHierarchicalSelection() = new{UnconstrainedSelectByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedSelectByAddress())
 end
+
 function get_sub(uhs::UnconstrainedHierarchicalSelection, addr)
     haskey(uhs.tree, addr) && return uhs.tree[addr]
     return UnconstrainedHierarchicalSelection()
 end
+
 function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::Pair)
     haskey(uhs.tree, addr[1]) && return get_sub(uhs.tree[addr[1]], addr[2])
     return UnconstrainedHierarchicalSelection()
 end
+
 has_query(uhs::UnconstrainedHierarchicalSelection, addr) = has_query(uhs.query, addr)
+
 isempty(uhs::UnconstrainedHierarchicalSelection) = isempty(uhs.tree) && isempty(uhs.query)
 
-# Union of constraints.
+# ------------ Union of constraints ------------ #
+
 struct ConstrainedUnionSelection <: ConstrainedSelection
     query::Vector{ConstrainedSelection}
 end
+
 function has_query(cus::ConstrainedUnionSelection, addr)
     for q in cus.query
         has_query(q, addr) && return true
     end
     return false
 end
+
 function get_query(cus::ConstrainedUnionSelection, addr)
     for q in cus.query
         has_query(q, addr) && return get_query(q, addr)
     end
     error("ConstrainedUnionSelection (get_query): query not defined for $addr.")
 end
+
 function get_sub(cus::ConstrainedUnionSelection, addr)
     return ConstrainedUnionSelection(map(cus.query) do q
                                          get_sub(q, addr)
                                      end)
 end
+
 isempty(cus::ConstrainedUnionSelection) = isempty(cus.query)
+
+# ------------ Unconstrained union selection ------------ #
 
 struct UnconstrainedUnionSelection <: UnconstrainedSelection
     query::Vector{UnconstrainedSelection}
 end
+
 function has_query(uus::UnconstrainedUnionSelection, addr)
     for q in uus.query
         has_query(q, addr) && return true
     end
     return false
 end
+
 function get_query(uus::UnconstrainedUnionSelection, addr)
     for q in uus.query
         has_query(q, addr) && return get_query(q, addr)
     end
     error("ConstrainedUnionSelection (get_query): query not defined for $addr.")
 end
+
 function get_sub(uus::UnconstrainedUnionSelection, addr)
     return UnconstrainedUnionSelection(map(uus.query) do q
                                            get_sub(q, addr)
                                        end)
 end
+
 isempty(uus::UnconstrainedUnionSelection) = isempty(uus.query)
 
-# Set operations.
+# ------------ Set operations on selections ------------ #
+
 union(a::ConstrainedSelection...) = ConstrainedUnionSelection([a...])
 function intersection(a::ConstrainedSelection...) end
 
-# Builders.
+# ------------ Selection builders ------------ #
+
 function push!(sel::UnconstrainedSelectByAddress, addr::Symbol)
     push!(sel.query, addr)
 end
@@ -216,7 +254,8 @@ function ConstrainedHierarchicalSelection(a::Vector{Tuple{K, T}}) where {T, K <:
     return top
 end
 
-# Merges two selections, overwriting the first.
+# ------------ Merging selections ------------ #
+
 function merge!(sel1::ConstrainedSelectByAddress,
                 sel2::ConstrainedSelectByAddress)
     Base.merge!(sel1.query, sel2.query)
@@ -234,11 +273,13 @@ function merge!(sel1::ConstrainedHierarchicalSelection,
     end
 end
 
-# Produces a hierarchical selection from a trace.
+# ------------ Trace to constrained selection ------------ #
+
 function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::ChoiceSite)
     push!(chs, addr, cs.val)
 end
-function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::CallSite)
+
+function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::BlackBoxCallSite)
     subtrace = cs.trace
     subchs = ConstrainedHierarchicalSelection()
     for k in keys(subtrace.calls)
@@ -249,6 +290,20 @@ function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::Ca
     end
     chs.tree[addr] = subchs
 end
+
+function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::VectorizedCallSite)
+    for (k, subtrace) in enumerate(cs.subtraces)
+        subchs = ConstrainedHierarchicalSelection()
+        for k in keys(subtrace.calls)
+            site_push!(subchs, k, subtrace.calls[k])
+        end
+        for k in keys(subtrace.choices)
+            site_push!(subchs, k, subtrace.calls[k])
+        end
+        chs.tree[addr] = subchs
+    end
+end
+
 function push!(chs::ConstrainedHierarchicalSelection, tr::HierarchicalTrace)
     for k in keys(tr.calls)
         site_push!(chs, k, tr.calls[k])
@@ -257,13 +312,15 @@ function push!(chs::ConstrainedHierarchicalSelection, tr::HierarchicalTrace)
         site_push!(chs, k, tr.choices[k])
     end
 end
+
 function selection(tr::HierarchicalTrace)
     top = ConstrainedHierarchicalSelection()
     push!(top, tr)
     return top
 end
 
-# Generic builders.
+# ------------ Wrapper to builders ------------ #
+
 function selection(a::Vector{Tuple{K, T}})  where {T, K <: Union{Symbol, Pair}}
     return ConstrainedHierarchicalSelection(a)
 end
@@ -279,7 +336,8 @@ function selection(a::Address...)
     return UnconstrainedHierarchicalSelection(observations)
 end
 
-# Compare.
+# ------------ Compare selections to visitors ------------ #
+
 addresses(csa::ConstrainedSelectByAddress) = keys(csa.query)
 addresses(usa::UnconstrainedSelectByAddress) = usa.query
 function compare(chs::ConstrainedHierarchicalSelection, v::Visitor)::Bool
@@ -293,10 +351,64 @@ function compare(chs::ConstrainedHierarchicalSelection, v::Visitor)::Bool
     return true
 end
 
-# Merge observations and a choice map.
+# ------------ Merge constrained selections and trace ------------ #
+
 function merge(tr::HierarchicalTrace,
-               obs::ConstrainedHierarchicalSelection)
+    sel::ConstrainedHierarchicalSelection)
     tr_selection = selection(tr)
-    merge!(tr_selection, obs)
+    merge!(tr_selection, sel)
     return tr_selection
 end
+
+# ------------ Pretty printing ------------ #
+
+function collect!(par, addrs, query::ConstrainedSelectByAddress, meta)
+    for (k, v) in query.query
+        push!(addrs, par => k)
+        chd[par => k] = v
+    end
+end
+
+function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::ConstrainedHierarchicalSelection, meta) where T <: Union{Symbol, Pair}
+    collect!(par, chd, chs.query, meta)
+    for (k, v) in chs.tree
+        collect!(par => k, addrs, chd, v, meta)
+    end
+end
+
+function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::ConstrainedHierarchicalSelection, meta)
+    collect!(addrs, chd, chs.query, meta)
+    for (k, v) in chs.tree
+        collect!(k, addrs, chd, v, meta)
+    end
+end
+
+import Base.collect
+function collect(chs::ConstrainedHierarchicalSelection)
+    addrs = Union{Symbol, Pair}[]
+    chd = Dict{Union{Symbol, Pair}, Any}()
+    meta = Dict{Union{Symbol, Pair}, String}()
+    collect!(addrs, chd, chs, meta)
+    return addrs, chd, meta
+end
+
+function Base.display(chs::ConstrainedHierarchicalSelection; show_values = false)
+    println("  __________________________________\n")
+    println("               Addresses\n")
+    addrs, chd, meta = collect(chs)
+    if show_values
+        for a in addrs
+            if haskey(meta, a)
+                println(" $(meta[a]) : $(a) : $(chd[a])")
+            else
+                println(" $(a) : $(chd[a])")
+            end
+        end
+    else
+        for a in addrs
+            println(" $(a)")
+        end
+    end
+    println("  __________________________________\n")
+end
+

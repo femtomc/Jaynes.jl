@@ -85,7 +85,7 @@ macro primitive(ex)
             # Ret.
             if in_selection
                 ret = Jaynes.get_query(ctx.select, addr)
-                Jaynes.visit!(ctx.select_visited, addr)
+                Jaynes.visit!(ctx.visited, addr)
             elseif in_prev_chm
                 ret = prev_ret
             else
