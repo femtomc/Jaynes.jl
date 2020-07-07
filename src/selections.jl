@@ -362,10 +362,17 @@ end
 
 # ------------ Pretty printing ------------ #
 
-function collect!(par, addrs, query::ConstrainedSelectByAddress, meta)
+function collect!(par, addrs, chd, query::ConstrainedSelectByAddress, meta)
     for (k, v) in query.query
         push!(addrs, par => k)
         chd[par => k] = v
+    end
+end
+
+function collect!(addrs, chd, query::ConstrainedSelectByAddress, meta)
+    for (k, v) in query.query
+        push!(addrs, k)
+        chd[k] = v
     end
 end
 
@@ -394,7 +401,7 @@ end
 
 function Base.display(chs::ConstrainedHierarchicalSelection; show_values = false)
     println("  __________________________________\n")
-    println("               Addresses\n")
+    println("             Constrained\n")
     addrs, chd, meta = collect(chs)
     if show_values
         for a in addrs
@@ -412,3 +419,49 @@ function Base.display(chs::ConstrainedHierarchicalSelection; show_values = false
     println("  __________________________________\n")
 end
 
+function collect!(par, addrs, query::UnconstrainedSelectByAddress, meta)
+    for (k, v) in query.query
+        push!(addrs, par => k)
+    end
+end
+
+function collect!(addrs, query::UnconstrainedSelectByAddress, meta)
+    for (k, v) in query.query
+        push!(addrs, k)
+    end
+end
+
+function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarchicalSelection, meta) where T <: Union{Symbol, Pair}
+    collect!(par, chs.query, meta)
+    for (k, v) in chs.tree
+        collect!(par => k, addrs, v, meta)
+    end
+end
+
+function collect!(addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarchicalSelection, meta)
+    collect!(addrs, chs.query, meta)
+    for (k, v) in chs.tree
+        collect!(k, addrs, v, meta)
+    end
+end
+
+function collect(chs::UnconstrainedHierarchicalSelection)
+    addrs = Union{Symbol, Pair}[]
+    meta = Dict{Union{Symbol, Pair}, String}()
+    collect!(addrs, chs, meta)
+    return addrs, meta
+end
+
+function Base.display(chs::UnconstrainedHierarchicalSelection)
+    println("  __________________________________\n")
+    println("             Selection\n")
+    addrs, meta = collect(chs)
+    for a in addrs
+        if haskey(meta, a)
+            println(" $(meta[a]) : $(a)")
+        else
+            println(" $(a)")
+        end
+    end
+    println("  __________________________________\n")
+end
