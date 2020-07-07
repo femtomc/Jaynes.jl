@@ -39,6 +39,7 @@ end
         in_prev_chm && begin
             set_choice!(ctx.discard, addr, prev)
         end
+        visit!(ctx.visited, addr)
     elseif in_prev_chm
         ret = prev_ret
     else
@@ -54,7 +55,6 @@ end
     end
     set_choice!(ctx.tr, addr, ChoiceSite(score, ret))
 
-    push!(ctx.visited, addr)
     return ret
 end
 
@@ -64,7 +64,7 @@ end
                                       addr::T,
                                       call::Function,
                                       args...) where T <: Address
-   
+
     has_addr = has_choice(ctx.prev, addr)
     if has_addr
         cs = get_choice(ctx.prev, addr)

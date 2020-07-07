@@ -25,6 +25,7 @@ function filter_step!(ps::Particles,
         ps.calls[i].ret = ret
         ps.lws[i] = update_ctx.tr.score
         update_ctx.select = observations
+        update_ctx.visited = Visitor()
     end
     ltw = lse(ps.lws)
     ps.lws = ps.lws .- ltw
@@ -59,6 +60,7 @@ function filter_step!(ps::Particles,
         ps.calls[i].args = new_args
         ps.calls[i].ret = ret
         ps.lws[i] = update_ctx.score - pop_score
+        update_ctx.visited = Visitor()
     end
 
     ltw = lse(ps.lws)

@@ -1,7 +1,8 @@
 import Base: haskey, getindex, push!, merge!, union, isempty
 
-# Address selections are used by many different contexts. 
-# This is essentially a query language for addresses within a particular method body.
+# ------------ Selection ------------ #
+
+# Abstract type for a sort of query language for addresses within a particular method body.
 abstract type Selection end
 
 # ------------ Lightweight visitor ------------ #

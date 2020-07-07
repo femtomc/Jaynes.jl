@@ -44,11 +44,12 @@ function Base.display(call::C;
 end
 
 function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace) where T <: Union{Symbol, Pair}
-    for (k, v) in tr.chm
-        if v isa ChoiceSite
-            push!(addrs, par => k)
-            chd[par => k] = v.val
-        elseif v isa CallSite
+    for (k, v) in tr.choices
+        push!(addrs, par => k)
+        chd[par => k] = v.val
+    end
+    for (k, v) in tr.calls
+        if v isa CallSite
             collect!(par => k, addrs, chd, v.trace)
         elseif v isa VectorizedCallSite
             for i in 1:length(v.subtraces)
@@ -60,11 +61,12 @@ function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Sy
 end
 
 function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace)
-    for (k, v) in tr.chm
-        if v isa ChoiceSite
-            push!(addrs, k)
-            chd[k] = v.val
-        elseif v isa BlackBoxCallSite
+    for (k, v) in tr.choices
+        push!(addrs, k)
+        chd[k] = v.val
+    end
+    for (k, v) in tr.calls
+        if v isa BlackBoxCallSite
             collect!(k, addrs, chd, v.trace)
         elseif v isa VectorizedCallSite
             for i in 1:length(v.subtraces)

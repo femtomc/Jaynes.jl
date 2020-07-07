@@ -69,12 +69,14 @@ macro primitive(ex)
             return ret
         end
 
-        @inline function (ctx::Jaynes.UpdateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
-
+        @inline function (ctx::Jaynes.UpdateContext)(call::typeof(rand), 
+                                                     addr::T, 
+                                                     $argname::$name,
+                                                     args...) where {T <: Jaynes.Address, K}
             # Check if in previous trace's choice map.
-            in_prev_chm = Jaynes.has_choice(ctx.tr, addr)
+            in_prev_chm = Jaynes.has_choice(ctx.prev, addr)
             in_prev_chm && begin
-                prev = Jaynes.get_choice(ctx.tr, addr)
+                prev = Jaynes.get_choice(ctx.prev, addr)
                 prev_ret = prev.val
                 prev_score = prev.score
             end
@@ -85,6 +87,9 @@ macro primitive(ex)
             # Ret.
             if in_selection
                 ret = Jaynes.get_query(ctx.select, addr)
+                in_prev_chm && begin
+                    Jaynes.set_choice!(ctx.discard, addr, prev)
+                end
                 Jaynes.visit!(ctx.visited, addr)
             elseif in_prev_chm
                 ret = prev_ret
@@ -99,10 +104,11 @@ macro primitive(ex)
             elseif in_selection
                 ctx.tr.score += score
             end
-            Jaynes.set_choice!(ctx.tr, addr, Jaynes.ChoiceSite(score, ret))
+            Jaynes.set_choice!(ctx.tr, addr, ChoiceSite(score, ret))
 
             return ret
         end
+
 
         @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
 
