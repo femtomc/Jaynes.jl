@@ -8,10 +8,13 @@ whitelist = [:rand, :foldr, :map]
 # Fix for specialized tracing.
 function recur!(ir, to = self)
     for (x, st) in ir
-        isexpr(st.expr, :call) && 
-        (unwrap(st.expr.args[1]) in whitelist || !(unwrap(st.expr.args[1]) in names(Base))) ||
-        continue
-        ir[x] = Expr(:call, to, st.expr.args...)
+        isexpr(st.expr, :call) && begin
+            ref = unwrap(st.expr.args[1])
+            ref in whitelist || 
+            !(unwrap(st.expr.args[1]) in names(Base)) ||
+            continue
+            ir[x] = Expr(:call, to, st.expr.args...)
+        end
     end
     return ir
 end
