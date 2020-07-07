@@ -11,7 +11,7 @@ Propose() = ProposeContext(Trace())
                                        d::Distribution{K}) where {T <: Address, K}
     s = rand(d)
     score = logpdf(d, s)
-    ctx.tr.chm[addr] = ChoiceSite(score, s)
+    set_choice!(ctx.tr, addr, ChoiceSite(score, s))
     ctx.tr.score += score
     return s
 
@@ -25,10 +25,7 @@ end
                                         args...) where T <: Address
     p_ctx = Propose(Trace())
     ret = p_ctx(call, args...)
-    ctx.tr.chm[addr] = BlackBoxCallSite(p_ctx.tr, 
-                                call, 
-                                args, 
-                                ret)
+    set_call!(ctx.tr, addr, BlackBoxCallSite(p_ctx.tr, call, args, ret))
     return ret
 end
 
@@ -53,7 +50,7 @@ end
     sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    tr.chm[addr] = VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret)
+    set_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -78,7 +75,7 @@ end
     sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    tr.chm[addr] = VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret)
+    set_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 

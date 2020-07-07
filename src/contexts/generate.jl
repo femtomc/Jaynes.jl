@@ -17,12 +17,11 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
         score = logpdf(d, s)
         set_choice!(ctx.tr, addr, ChoiceSite(score, s))
         ctx.tr.score += score
-        visit!(ctx.visited, addr)
     else
         s = rand(d)
         set_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
-        visit!(ctx.visited, addr)
     end
+    visit!(ctx.visited, addr)
     return s
 end
 
@@ -51,12 +50,15 @@ end
     v_tr = Vector{HierarchicalTrace}(undef, len)
     v_ret[1] = ret
     v_tr[1] = ug_ctx.tr
+    set_sub!(ctx.visited, addr => 1, ug_ctx.visited)
     for i in 2:len
         ug_ctx.select = get_sub(ctx.select, addr => i)
         ug_ctx.tr = Trace()
+        ug_ctx.visited = Visitor()
         ret = ug_ctx(call, v_ret[i-1]...)
         v_ret[i] = ret
         v_tr[i] = ug_ctx.tr
+        set_sub!(ctx.visited, addr => i, ug_ctx.visited)
     end
     sc = sum(map(v_tr) do tr
                  score(tr)
@@ -77,12 +79,15 @@ end
     v_tr = Vector{HierarchicalTrace}(undef, len)
     v_ret[1] = ret
     v_tr[1] = ug_ctx.tr
+    set_sub!(ctx.visited, addr => 1, ug_ctx.visited)
     for i in 2:len
         ug_ctx.select = get_sub(ctx.select, addr => i)
         ug_ctx.tr = Trace()
+        ug_ctx.visited = Visitor()
         ret = ug_ctx(call, args[i]...)
         v_ret[i] = ret
         v_tr[i] = ug_ctx.tr
+        set_sub!(ctx.visited, addr => i, ug_ctx.visited)
     end
     sc = sum(map(v_tr) do tr
                  score(tr)

@@ -49,7 +49,7 @@ end
         ctx.tr.score += score - prev.score
     end
 
-    set_call!(ctx.tr, addr, ChoiceSite(score, ret))
+    set_choice!(ctx.tr, addr, ChoiceSite(score, ret))
     visit!(ctx.visited, addr)
     return ret
 end

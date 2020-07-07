@@ -52,9 +52,6 @@ function CategoricalHiddenMarkovModel(time_period::Int)
     return observations
 end
 
-function LinearGaussianStateSpaceModel
-end
-
 
 @testset "Particle filtering" begin
 

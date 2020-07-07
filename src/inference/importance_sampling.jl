@@ -13,6 +13,7 @@ function importance_sampling(model::Function,
                             args,
                             ret)
         ctx.tr = Trace()
+        ctx.visited = Visitor()
     end
     ltw = lse(lws)
     lmle = ltw - log(num_samples)
@@ -52,6 +53,7 @@ function importance_sampling(model::Function,
 
         # Reset.
         model_ctx.tr = Trace()
+        model_ctx.visited = Visitor()
         prop_ctx.tr = Trace()
     end
     ltw = lse(lws)

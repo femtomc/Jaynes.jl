@@ -8,34 +8,34 @@ macro primitive(ex)
 
         @inline function (tr::Jaynes.HierarchicalTrace)(call::typeof(rand), addr::Jaynes.Address, $argname::$name, args...)
             s = $argname(args...)
-            tr.chm[addr] = Jaynes.ChoiceSite(logpdf($argname, args..., s), s)
+            Jaynes.set_choice!(tr, addr, Jaynes.ChoiceSite(logpdf($argname, args..., s), s))
             return s
         end
 
         function (ctx::Jaynes.GenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
 
             # Constrained..
-            if haskey(ctx.select.query, addr)
-                s = ctx.select.query[addr]
+            if Jaynes.has_query(ctx.select, addr)
+                s = Jaynes.get_query(ctx.select, addr)
                 score = logpdf($argname, args..., s)
-                ctx.tr.chm[addr] = Jaynes.ChoiceSite(score, s)
+                Jaynes.set_choice!(tr, addr, Jaynes.ChoiceSite(score, s))
                 ctx.tr.score += score
-                return s
 
             # Unconstrained.
             else
                 s = $argname(args...)
                 score = logpdf($argname, args..., s)
-                ctx.tr.chm[addr] = Jaynes.ChoiceSite(score, s)
-                return s
+                Jaynes.set_choice!(ctx.tr, addr, Jaynes.ChoiceSite(score, s))
             end
+            Jaynes.visit!(ctx.visited, addr)
+            return s
         end
 
         @inline function (ctx::Jaynes.ProposeContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
 
             s = $argname(args...)
             score = logpdf($argname, args..., s)
-            ctx.tr.chm[addr] = Jaynes.ChoiceSite(score, s)
+            Jaynes.set_choice!(ctx.tr, addr, Jaynes.ChoiceSite(score, s))
             ctx.tr.score += score
             return s
         end
@@ -43,15 +43,15 @@ macro primitive(ex)
         @inline function (ctx::Jaynes.RegenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
 
             # Check if in previous trace's choice map.
-            in_prev_chm = haskey(ctx.prev.chm, addr)
+            in_prev_chm = Jaynes.has_choice(ctx.prev, addr)
             in_prev_chm && begin
-                prev = ctx.prev.chm[addr]
+                prev = Jaynes.get_choice(ctx.prev, addr)
                 prev_val = prev.val
                 prev_score = prev.score
             end
 
             # Check if in selection in meta.
-            in_sel = haskey(ctx.select.query, addr)
+            in_sel = Jaynes.has_query(ctx.select, addr)
 
             ret = $argname(args...)
             in_prev_chm && !in_sel && begin
@@ -62,31 +62,30 @@ macro primitive(ex)
             in_prev_chm && !in_sel && begin
                 ctx.tr.score += score - prev_score
             end
-            ctx.tr.chm[addr] = Jaynes.ChoiceSite(score, ret)
+            Jaynes.set_choice!(ctx.tr, addr, Jaynes.ChoiceSite(score, ret))
 
             # Visited.
-            push!(ctx.visited, addr)
-
-            ret
+            Jaynes.visit!(ctx.visited, addr)
+            return ret
         end
 
         @inline function (ctx::Jaynes.UpdateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
 
             # Check if in previous trace's choice map.
-            in_prev_chm = haskey(ctx.prev.chm, addr)
+            in_prev_chm = Jaynes.has_choice(ctx.tr, addr)
             in_prev_chm && begin
-                prev = ctx.prev.chm[addr]
+                prev = Jaynes.get_choice(ctx.tr, addr)
                 prev_ret = prev.val
                 prev_score = prev.score
             end
 
             # Check if in selection.
-            in_selection = haskey(ctx.select.query, addr)
+            in_selection = Jaynes.has_query(ctx.select, addr)
 
             # Ret.
             if in_selection
-                ret = ctx.select.query[addr]
-                push!(ctx.select_visited, addr)
+                ret = Jaynes.get_query(ctx.select, addr)
+                Jaynes.visit!(ctx.select_visited, addr)
             elseif in_prev_chm
                 ret = prev_ret
             else
@@ -100,16 +99,15 @@ macro primitive(ex)
             elseif in_selection
                 ctx.tr.score += score
             end
-            ctx.tr.chm[addr] = Jaynes.ChoiceSite(score, ret)
+            Jaynes.set_choice!(ctx.tr, addr, Jaynes.ChoiceSite(score, ret))
 
             return ret
         end
 
         @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
 
-            haskey(ctx.select.query, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.") && begin
-                val = ctx.select.query[addr]
-            end
+            Jaynes.has_query(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
+            val = Jaynes.get_query(ctx.select, addr)
             ctx.score += logpdf(d, val)
             return val
 

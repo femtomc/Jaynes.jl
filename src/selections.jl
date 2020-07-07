@@ -19,7 +19,7 @@ function visit!(vs::Visitor, addr::Address)
     push!(vs, addr)
 end
 function set_sub!(vs::Visitor, addr::Address, sub::Visitor)
-    haskey(vs.tree) && error("VisitorError (set_sub!): already visited this address.")
+    haskey(vs.tree, addr) && error("VisitorError (set_sub!): already visited this address.")
     vs.tree[addr] = sub
 end
 function has_sub(vs::Visitor, addr::Address)
@@ -241,14 +241,20 @@ end
 function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::CallSite)
     subtrace = cs.trace
     subchs = ConstrainedHierarchicalSelection()
-    for k in keys(subtrace.chm)
-        site_push!(subchs, k, subtrace.chm[k])
+    for k in keys(subtrace.calls)
+        site_push!(subchs, k, subtrace.calls[k])
+    end
+    for k in keys(subtrace.choices)
+        site_push!(subchs, k, subtrace.calls[k])
     end
     chs.tree[addr] = subchs
 end
 function push!(chs::ConstrainedHierarchicalSelection, tr::HierarchicalTrace)
-    for k in keys(tr.chm)
-        site_push!(chs, k, tr.chm[k])
+    for k in keys(tr.calls)
+        site_push!(chs, k, tr.calls[k])
+    end
+    for k in keys(tr.choices)
+        site_push!(chs, k, tr.choices[k])
     end
 end
 function selection(tr::HierarchicalTrace)

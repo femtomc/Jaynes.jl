@@ -34,7 +34,7 @@ function set_choice!(tr::HierarchicalTrace, addr, cs::ChoiceSite)
     tr.choices[addr] = cs
 end
 function set_call!(tr::HierarchicalTrace, addr, cs::CallSite)
-    tr.call[addr] = cs
+    tr.calls[addr] = cs
 end
 score(tr::HierarchicalTrace) = tr.score
 
@@ -136,7 +136,7 @@ end
     sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    tr.chm[addr] = VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret)
+    set_call!(tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -161,7 +161,7 @@ function getindex(tr::HierarchicalTrace, addr::Address)
 end
 function getindex(tr::HierarchicalTrace, addr::Pair)
     if has_call(tr, addr[1])
-        return getindex(tr.chm[addr[1]], addr[2])
+        return getindex(get_call(tr, addr[1]), addr[2])
     else
         return nothing
     end
@@ -178,7 +178,7 @@ function Base.haskey(tr::HierarchicalTrace, addr::Address)
 end
 function Base.haskey(tr::HierarchicalTrace, addr::Pair)
     if has_call(tr, addr[1])
-        return haskey(tr.chm[addr[1]], addr[2])
+        return Base.haskey(get_call(tr, addr[1]), addr[2])
     else
         return false
     end
