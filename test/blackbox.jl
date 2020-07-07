@@ -19,9 +19,7 @@ end
 @testset "Update" begin
     cl, w = generate(geo, 0.5)
     sel = selection((:flip, true))
-    display(sel; show_values = true)
     cl, diff, w = update(sel, cl)
-    display(cl)
     @test cl[:flip] == true
     cl, diff, w = update(sel, cl, 0.1)
     @test cl[:flip] == true

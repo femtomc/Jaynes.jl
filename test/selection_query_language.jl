@@ -36,4 +36,10 @@ end
         @test ctx.tr[:y => :y => :x] == 5.0
         @test ctx.tr[:y => :y => :loop => :q => 21] == 10.0
     end
+    
+    @testset "Filtering" begin
+        observations = selection([(:x, 5.0), (:z => :x, 5.0), (:z => :z => :y, 5.0)])
+        filtered = filter([:y], observations)
+        display(filtered)
+    end
 end
