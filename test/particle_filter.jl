@@ -73,7 +73,8 @@ end
         ps = Jaynes.initialize_filter(CategoricalHiddenMarkovModel, 
                                       (1, ),
         init_obs, 
-        50000)    
+        50000)
+        display(ps.calls[1].trace)
         push!(lmles, ps.lmle)
         for t=2:5
             obs = Jaynes.selection([(:x => t, xs[t])])
