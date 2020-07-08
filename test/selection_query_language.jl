@@ -26,10 +26,8 @@ end
 @testset "Constrained selections" begin
 
     @testset "Anywhere" begin
-        observations = Jaynes.ConstrainedHierarchicalSelection()
-        anywhere = Jaynes.ConstrainedAnywhereSelection([(:x, 5.0), (:q => 21, 10.0)])
-        un = Jaynes.union(observations, anywhere)
-        ctx = Generate(Trace(), un)
+        anywhere = selection([(:x, 5.0), (:q => 21, 10.0)]; anywhere = true)
+        ctx = Generate(Trace(), anywhere)
         call = ctx(AnywhereTopLevel)
         @test ctx.tr[:x] == 5.0
         @test ctx.tr[:y => :x] == 5.0

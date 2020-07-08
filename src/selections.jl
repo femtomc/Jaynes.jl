@@ -350,7 +350,8 @@ end
 
 # ------------ Wrapper to builders ------------ #
 
-function selection(a::Vector{Tuple{K, T}})  where {T, K}
+function selection(a::Vector{Tuple{K, T}}; anywhere = false) where {T, K}
+    anywhere && return ConstrainedAnywhereSelection(a)
     return ConstrainedHierarchicalSelection(a)
 end
 function selection(a::Vector{K}) where K <: Union{Symbol, Pair}
