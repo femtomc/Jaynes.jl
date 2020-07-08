@@ -86,6 +86,20 @@ get_query(cas::ConstrainedAnywhereSelection, addr) = get_query(cas.query, addr)
 get_sub(cas::ConstrainedAnywhereSelection, addr) = cas
 isempty(cas::ConstrainedAnywhereSelection) = isempty(cas.query)
 
+# ------------ Unconstrained select anywhere ------------ #
+
+struct UnconstrainedAnywhereSelection{T <: UnconstrainedSelectQuery} <: UnconstrainedSelection
+    query::T
+    UnconstrainedAnywhereSelection(obs::Vector{Tuple{T, K}}) where {T <: Any, K} = new{UnconstrainedSelectByAddress}(UnconstrainedSelectByAddress(Dict{Address, Any}(obs)))
+    UnconstrainedAnywhereSelection(obs::Tuple{T, K}...) where {T <: Any, K} = new{UnconstrainedSelectByAddress}(UnconstrainedSelectByAddress(Dict{Address, Any}(collect(obs))))
+end
+
+has_query(cas::ConstrainedAnywhereSelection, addr) = has_query(cas.query, addr)
+dump_queries(cas::ConstrainedAnywhereSelection) = dump_queries(cas.query)
+get_query(cas::ConstrainedAnywhereSelection, addr) = get_query(cas.query, addr)
+get_sub(cas::ConstrainedAnywhereSelection, addr) = cas
+isempty(cas::ConstrainedAnywhereSelection) = isempty(cas.query)
+
 # ------------ Constrain in call hierarchy ------------ #
 
 struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: ConstrainedSelection
@@ -410,33 +424,49 @@ function filter(k_fn::Function, v_fn::Function, chs::ConstrainedHierarchicalSele
     return top
 end
 
+function filter(k_fn::Function, v_fn::Function, query::UnconstrainedSelectByAddress) where T <: Address
+    top = UnconstrainedSelectByAddress()
+    for k in query.query
+        k_fn(k) && push!(top, k)
+    end
+    return top
+end
+
+function filter(k_fn::Function, chs::UnconstrainedHierarchicalSelection) where T <: Address
+    top = UnconstrainedHierarchicalSelection(filter(k_fn, chs.query))
+    for (k, v) in chs.tree
+        top.tree[k] = filter(k_fn, v)
+    end
+    return top
+end
+
 # ------------ Pretty printing ------------ #
 
-function collect!(par, addrs, chd, query::ConstrainedSelectByAddress, meta)
+function collect!(par, addrs, chd, query::ConstrainedSelectByAddress)
     for (k, v) in query.query
         push!(addrs, par => k)
         chd[par => k] = v
     end
 end
 
-function collect!(addrs, chd, query::ConstrainedSelectByAddress, meta)
+function collect!(addrs, chd, query::ConstrainedSelectByAddress)
     for (k, v) in query.query
         push!(addrs, k)
         chd[k] = v
     end
 end
 
-function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::ConstrainedHierarchicalSelection, meta) where T <: Union{Symbol, Pair}
-    collect!(par, addrs, chd, chs.query, meta)
+function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::ConstrainedHierarchicalSelection) where T <: Union{Symbol, Pair}
+    collect!(par, addrs, chd, chs.query)
     for (k, v) in chs.tree
-        collect!(par => k, addrs, chd, v, meta)
+        collect!(par => k, addrs, chd, v)
     end
 end
 
-function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::ConstrainedHierarchicalSelection, meta)
-    collect!(addrs, chd, chs.query, meta)
+function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::ConstrainedHierarchicalSelection)
+    collect!(addrs, chd, chs.query)
     for (k, v) in chs.tree
-        collect!(k, addrs, chd, v, meta)
+        collect!(k, addrs, chd, v)
     end
 end
 
@@ -444,22 +474,17 @@ import Base.collect
 function collect(chs::ConstrainedHierarchicalSelection)
     addrs = Union{Symbol, Pair}[]
     chd = Dict{Union{Symbol, Pair}, Any}()
-    meta = Dict{Union{Symbol, Pair}, String}()
-    collect!(addrs, chd, chs, meta)
-    return addrs, chd, meta
+    collect!(addrs, chd, chs)
+    return addrs, chd
 end
 
 function Base.display(chs::ConstrainedHierarchicalSelection; show_values = false)
     println("  __________________________________\n")
     println("             Constrained\n")
-    addrs, chd, meta = collect(chs)
+    addrs, chd = collect(chs)
     if show_values
         for a in addrs
-            if haskey(meta, a)
-                println(" $(meta[a]) : $(a) : $(chd[a])")
-            else
                 println(" $(a) : $(chd[a])")
-            end
         end
     else
         for a in addrs
@@ -469,49 +494,64 @@ function Base.display(chs::ConstrainedHierarchicalSelection; show_values = false
     println("  __________________________________\n")
 end
 
-function collect!(par, addrs, query::UnconstrainedSelectByAddress, meta)
+function collect!(par, addrs, query::UnconstrainedSelectByAddress)
     for k in query.query
         push!(addrs, par => k)
     end
 end
 
-function collect!(addrs, query::UnconstrainedSelectByAddress, meta)
+function collect!(addrs, query::UnconstrainedSelectByAddress)
     for k in query.query
         push!(addrs, k)
     end
 end
 
-function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarchicalSelection, meta) where T <: Union{Symbol, Pair}
-    collect!(par, chs.query, meta)
+function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarchicalSelection) where T <: Union{Symbol, Pair}
+    collect!(par, chs.query)
     for (k, v) in chs.tree
-        collect!(par => k, addrs, v, meta)
+        collect!(par => k, addrs, v)
     end
 end
 
-function collect!(addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarchicalSelection, meta)
-    collect!(addrs, chs.query, meta)
+function collect!(addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarchicalSelection)
+    collect!(addrs, chs.query)
     for (k, v) in chs.tree
-        collect!(k, addrs, v, meta)
+        collect!(k, addrs, v)
     end
 end
 
 function collect(chs::UnconstrainedHierarchicalSelection)
     addrs = Union{Symbol, Pair}[]
-    meta = Dict{Union{Symbol, Pair}, String}()
-    collect!(addrs, chs, meta)
-    return addrs, meta
+    collect!(addrs, chs)
+    return addrs
 end
 
 function Base.display(chs::UnconstrainedHierarchicalSelection)
     println("  __________________________________\n")
     println("              Selection\n")
-    addrs, meta = collect(chs)
+    addrs = collect(chs)
     for a in addrs
-        if haskey(meta, a)
-            println(" $(meta[a]) : $(a)")
-        else
-            println(" $(a)")
-        end
+        println(" $(a)")
     end
     println("  __________________________________\n")
 end
+
+function collect!(addrs, chd, query::ConstrainedSelectByAddress)
+    for (k, v) in query.query
+        push!(addrs, k)
+        chd[k] = v
+    end
+end
+
+function Base.display(chs::ConstrainedAnywhereSelection)
+    println("  __________________________________\n")
+    println("              Selection\n")
+    addrs = Union{Symbol, Pair}[]
+    chd = Dict{Address, Any}()
+    collect!(addrs, chd, chs.query)
+    for a in addrs
+        println(" (Anywhere)   $(a) : $(chd[a])")
+    end
+    println("  __________________________________\n")
+end
+

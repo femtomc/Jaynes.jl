@@ -27,6 +27,7 @@ end
 
     @testset "Anywhere" begin
         anywhere = selection([(:x, 5.0), (:q => 21, 10.0)]; anywhere = true)
+        display(anywhere)
         ctx = Generate(Trace(), anywhere)
         call = ctx(AnywhereTopLevel)
         @test ctx.tr[:x] == 5.0
