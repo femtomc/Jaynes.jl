@@ -62,7 +62,7 @@ export Regenerate, regenerate
 export Score, score
 
 # Trace.
-export Trace, trace
+export Trace, trace, get_score
 
 # Selections.
 export selection, compare, has_query

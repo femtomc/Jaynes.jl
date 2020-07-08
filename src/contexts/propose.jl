@@ -23,7 +23,7 @@ end
                                         addr::T,
                                         call::Function,
                                         args...) where T <: Address
-    p_ctx = Propose(Trace())
+    p_ctx = Propose()
     ret = p_ctx(call, args...)
     set_call!(ctx.tr, addr, BlackBoxCallSite(p_ctx.tr, call, args, ret))
     return ret
@@ -35,7 +35,7 @@ end
                                         call::Function, 
                                         len::Int, 
                                         args...)
-    p_ctx = Propose(Trace())
+    p_ctx = Propose()
     ret = p_ctx(call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_tr = Vector{HierarchicalTrace}(undef, len)
@@ -59,7 +59,7 @@ end
                                         addr::Address, 
                                         call::Function, 
                                         args::Vector)
-    p_ctx = Propose(Trace())
+    p_ctx = Propose()
     ret = p_ctx(call, args[1]...)
     len = length(args)
     v_ret = Vector{typeof(ret)}(undef, len)
@@ -83,5 +83,5 @@ end
 function propose(fn::Function, args...)
     ctx = Propose()
     ret = ctx(fn, args...)
-    return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.tr.score
+    return BlackBoxCallSite(ctx.tr, fn, args, ret), get_score(ctx.tr)
 end

@@ -61,7 +61,7 @@ end
         set_sub!(ctx.visited, addr => i, ug_ctx.visited)
     end
     sc = sum(map(v_tr) do tr
-                 score(tr)
+                 get_score(tr)
              end)
     set_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
     return v_ret
@@ -90,7 +90,7 @@ end
         set_sub!(ctx.visited, addr => i, ug_ctx.visited)
     end
     sc = sum(map(v_tr) do tr
-                 score(tr)
+                 get_score(tr)
              end)
     set_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
     return v_ret

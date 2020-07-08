@@ -34,9 +34,10 @@ function set_choice!(tr::HierarchicalTrace, addr, cs::ChoiceSite)
     tr.choices[addr] = cs
 end
 function set_call!(tr::HierarchicalTrace, addr, cs::CallSite)
+    tr.score += get_score(cs)
     tr.calls[addr] = cs
 end
-score(tr::HierarchicalTrace) = tr.score
+get_score(tr::HierarchicalTrace) = tr.score
 
 # ------------ Call sites ------------ #
 
@@ -49,6 +50,7 @@ end
 has_choice(bbcs::BlackBoxCallSite, addr) = haskey(bbcs.tr.choices, addr)
 has_call(bbcs::BlackBoxCallSite, addr) = haskey(bbcs.tr.calls, addr)
 get_call(bbcs::BlackBoxCallSite, addr) = bbcs.tr.calls[addr]
+get_score(bbcs::BlackBoxCallSite) = get_score(bbcs.trace)
 
 mutable struct VectorizedCallSite{F <: Function, T <: Trace, J, K} <: CallSite
     subtraces::Vector{T}
@@ -78,9 +80,7 @@ function get_call(vcs::VectorizedCallSite, addr)
     end
     error("VectorizedCallSite (get_call): no call at $addr.")
 end
-
-score(cs::BlackBoxCallSite) = cs.trace.score
-score(vcs::VectorizedCallSite) = vcs.score
+get_score(vcs::VectorizedCallSite) = vcs.score
 
 # ------------ Direct execution with trace ------------ #
 
@@ -112,7 +112,7 @@ end
         v_tr[i] = n_tr
     end
     sc = sum(map(v_tr) do tr
-                    score(tr)
+                    get_score(tr)
                 end)
     set_call!(tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
     return v_ret
@@ -134,14 +134,14 @@ end
         v_tr[i] = n_tr
     end
     sc = sum(map(v_tr) do tr
-                    score(tr)
+                    get_score(tr)
                 end)
     set_call!(tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
-# Allows instances of Trace and CallSite to be accessed through indexing like a dictionary. 
-# setindex! is not defined - we treat the trace as immutable, unless you interact with it through contexts for inference.
+# ------------ getindex ------------ #
+
 import Base.getindex
 getindex(cs::ChoiceSite, addr::Address) = nothing
 getindex(cs::BlackBoxCallSite, addr) = getindex(cs.trace, addr)
@@ -166,6 +166,8 @@ function getindex(tr::HierarchicalTrace, addr::Pair)
         return nothing
     end
 end
+
+# ------------ haskey ------------ #
 
 import Base.haskey
 haskey(cs::ChoiceSite, addr::Address) = false
