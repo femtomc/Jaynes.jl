@@ -315,7 +315,7 @@ function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::Bl
         site_push!(subchs, k, subtrace.calls[k])
     end
     for k in keys(subtrace.choices)
-        site_push!(subchs, k, subtrace.calls[k])
+        site_push!(subchs, k, subtrace.choices[k])
     end
     chs.tree[addr] = subchs
 end
@@ -327,7 +327,7 @@ function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::Ve
             site_push!(subchs, k, subtrace.calls[k])
         end
         for k in keys(subtrace.choices)
-            site_push!(subchs, k, subtrace.calls[k])
+            site_push!(subchs, k, subtrace.choices[k])
         end
         chs.tree[addr] = subchs
     end
