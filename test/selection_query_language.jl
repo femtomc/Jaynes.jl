@@ -39,6 +39,12 @@ end
     
     @testset "Filtering" begin
         observations = selection([(:x, 5.0), (:z => :x, 5.0), (:z => :z => :y, 5.0)])
-        filtered = filter([:y], observations)
+        filtered = filter(x -> x == :y, x -> true, observations)
+        @test has_query(filtered, :z => :z => :y)
+        observations = selection([(:x, 5.0), (:z => :x, 5.0), (:z => :z => :y, 5.0)])
+        filtered = filter(x -> x == :x, x -> true, observations)
+        @test !has_query(filtered, :z => :z => :y)
+        @test has_query(filtered, :x)
+        @test has_query(filtered, :z => :x)
     end
 end

@@ -105,7 +105,13 @@ function get_sub(chs::ConstrainedHierarchicalSelection, addr::Pair)
     return ConstrainedHierarchicalSelection()
 end
 
-has_query(chs::ConstrainedHierarchicalSelection, addr) = has_query(chs.query, addr)
+has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs.query, addr)
+function has_query(chs::ConstrainedHierarchicalSelection, addr::Pair)
+    if haskey(chs.tree, addr[1])
+        return has_query(get_sub(chs, addr[1]), addr[2])
+    end
+    return false
+end
 dump_queries(chs::ConstrainedHierarchicalSelection) = dump_queries(chs.query)
 get_query(chs::ConstrainedHierarchicalSelection, addr) = get_query(chs.query, addr)
 isempty(chs::ConstrainedHierarchicalSelection) = isempty(chs.tree) && isempty(chs.query)
@@ -387,18 +393,18 @@ end
 
 import Base.filter
 
-function filter(whitelist::Array{T, 1}, query::ConstrainedSelectByAddress) where T <: Address
+function filter(k_fn::Function, v_fn::Function, query::ConstrainedSelectByAddress) where T <: Address
     top = ConstrainedSelectByAddress()
-    for a in whitelist
-        has_query(query, a) && push!(top, a, get_query(query, a))
+    for (k, v) in query.query
+        k_fn(k) && v_fn(v) && push!(top, k, v)
     end
     return top
 end
 
-function filter(whitelist::Array{T, 1}, chs::ConstrainedHierarchicalSelection) where T <: Address
-    top = ConstrainedHierarchicalSelection(filter(whitelist, chs.query))
+function filter(k_fn::Function, v_fn::Function, chs::ConstrainedHierarchicalSelection) where T <: Address
+    top = ConstrainedHierarchicalSelection(filter(k_fn, v_fn, chs.query))
     for (k, v) in chs.tree
-        top.tree[k] = filter(whitelist, v)
+        top.tree[k] = filter(k_fn, v_fn, v)
     end
     return top
 end

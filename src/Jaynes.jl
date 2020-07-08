@@ -65,7 +65,7 @@ export Score, score
 export Trace, trace
 
 # Selections.
-export selection, compare
+export selection, compare, has_query
 
 # Inference.
 export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!
