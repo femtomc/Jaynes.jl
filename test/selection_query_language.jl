@@ -40,6 +40,5 @@ end
     @testset "Filtering" begin
         observations = selection([(:x, 5.0), (:z => :x, 5.0), (:z => :z => :y, 5.0)])
         filtered = filter([:y], observations)
-        display(filtered)
     end
 end

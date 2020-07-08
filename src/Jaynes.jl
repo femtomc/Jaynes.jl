@@ -33,7 +33,19 @@ end
 include("inference/importance_sampling.jl")
 include("inference/particle_filtering.jl")
 include("inference/metropolis_hastings.jl")
-include("blackbox.jl")
+
+# Foreign models.
+include("foreign_model_interfaces/blackbox.jl")
+export @primitive
+
+include("foreign_model_interfaces/soss.jl")
+export @load_soss_fmi
+
+include("foreign_model_interfaces/gen.jl")
+export @load_gen_fmi
+
+include("foreign_model_interfaces/turing.jl")
+export @load_turing_fmi
 
 # Convenience function for unconstrained generation.
 function Jaynes.trace(fn::Function, args...)
@@ -60,8 +72,5 @@ export importance_sampling, initialize_filter, filter_step!, metropolis_hastings
 
 # Utilities.
 export display, merge
-
-# Black-box extension
-export @primitive
 
 end # module
