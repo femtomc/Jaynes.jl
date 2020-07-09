@@ -1,4 +1,5 @@
-import Base: haskey, getindex, push!, merge!, union, isempty
+import Base: haskey, getindex, push!, merge!, union, isempty, merge
+import Base: +
 
 # ------------ Selection ------------ #
 
@@ -39,6 +40,43 @@ function has_query(vs::Visitor, addr::Address)
 end
 
 isempty(vs::Visitor) = isempty(vs.tree) && isempty(vs.addrs)
+
+# ------------ Gradients ------------ #
+
+struct ParameterGradients <: Selection
+    tree::Dict{Address, ParameterGradients}
+    param_grads::Dict{Address, Any}
+    ParameterGradients() = new(Dict{Address, ParameterGradients}(), Dict{Address, Any}())
+end
+
+has_grad(ps::ParameterGradients, addr) = haskey(ps.param_grads, addr)
+function push!(ps::ParameterGradients, addr, val)
+    has_grad(ps, addr) && begin
+        ps.param_grads[addr] += val
+        return
+    end
+    ps.param_grads[addr] = val
+end
+
+Zygote.@adjoint ParameterGradients(tree, param_grads) = ParameterGradients(tree, param_grads), s_grad -> (nothing, nothing)
+
+function merge(sel1::ParameterGradients,
+               sel2::ParameterGradients)
+    param_grads = merge(sel1.param_grads, sel2.param_grads)
+    tree = Dict{Address, ParameterGradients}()
+    for k in setdiff(keys(sel2.tree), keys(sel1.tree))
+        tree[k] = sel2.tree[k]
+    end
+    for k in setdiff(keys(sel1.tree), keys(sel2.tree))
+        tree[k] = sel1.tree[k]
+    end
+    for k in intersect(keys(sel1.tree), keys(sel2.tree))
+        tree[k] = merge(sel1.tree[k], sel2.tree[k])
+    end
+    return ParameterGradients(tree, param_grads)
+end
+
++(a_grads::ParameterGradients, b_grads::ParameterGradients) = merge(a_grads, b_grads)
 
 # ------------ Constrained and unconstrained selections ------------ #
 
@@ -94,11 +132,11 @@ struct UnconstrainedAnywhereSelection{T <: UnconstrainedSelectQuery} <: Unconstr
     UnconstrainedAnywhereSelection(obs::Tuple{T, K}...) where {T <: Any, K} = new{UnconstrainedSelectByAddress}(UnconstrainedSelectByAddress(Dict{Address, Any}(collect(obs))))
 end
 
-has_query(cas::ConstrainedAnywhereSelection, addr) = has_query(cas.query, addr)
-dump_queries(cas::ConstrainedAnywhereSelection) = dump_queries(cas.query)
-get_query(cas::ConstrainedAnywhereSelection, addr) = get_query(cas.query, addr)
-get_sub(cas::ConstrainedAnywhereSelection, addr) = cas
-isempty(cas::ConstrainedAnywhereSelection) = isempty(cas.query)
+has_query(cas::UnconstrainedAnywhereSelection, addr) = has_query(cas.query, addr)
+dump_queries(cas::UnconstrainedAnywhereSelection) = dump_queries(cas.query)
+get_query(cas::UnconstrainedAnywhereSelection, addr) = get_query(cas.query, addr)
+get_sub(cas::UnconstrainedAnywhereSelection, addr) = cas
+isempty(cas::UnconstrainedAnywhereSelection) = isempty(cas.query)
 
 # ------------ Constrain in call hierarchy ------------ #
 
@@ -398,7 +436,7 @@ end
 # ------------ Merge constrained selections and trace ------------ #
 
 function merge(tr::HierarchicalTrace,
-    sel::ConstrainedHierarchicalSelection)
+               sel::ConstrainedHierarchicalSelection)
     tr_selection = selection(tr)
     merge!(tr_selection, sel)
     return tr_selection
@@ -484,7 +522,7 @@ function Base.display(chs::ConstrainedHierarchicalSelection; show_values = false
     addrs, chd = collect(chs)
     if show_values
         for a in addrs
-                println(" $(a) : $(chd[a])")
+            println(" $(a) : $(chd[a])")
         end
     else
         for a in addrs
@@ -536,13 +574,6 @@ function Base.display(chs::UnconstrainedHierarchicalSelection)
     println("  __________________________________\n")
 end
 
-function collect!(addrs, chd, query::ConstrainedSelectByAddress)
-    for (k, v) in query.query
-        push!(addrs, k)
-        chd[k] = v
-    end
-end
-
 function Base.display(chs::ConstrainedAnywhereSelection)
     println("  __________________________________\n")
     println("              Selection\n")
@@ -554,4 +585,3 @@ function Base.display(chs::ConstrainedAnywhereSelection)
     end
     println("  __________________________________\n")
 end
-

@@ -43,36 +43,45 @@ function Base.display(call::C;
     println("  __________________________________\n")
 end
 
-function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace) where T <: Union{Symbol, Pair}
+function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace, meta) where T <: Union{Symbol, Pair}
     for (k, v) in tr.choices
         push!(addrs, par => k)
         chd[par => k] = v.val
     end
     for (k, v) in tr.calls
         if v isa CallSite
-            collect!(par => k, addrs, chd, v.trace)
+            collect!(par => k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedCallSite
             for i in 1:length(v.subtraces)
-                collect!(par => k => i, addrs, chd, v.subtraces[i])
+                collect!(par => k => i, addrs, chd, v.subtraces[i], meta)
             end
         end
     end
-    return addrs
+    for (k, v) in tr.params
+        push!(meta, par => k)
+        push!(addrs, par => k)
+        chd[par => k] = v.val
+    end
 end
 
-function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace)
+function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace, meta)
     for (k, v) in tr.choices
         push!(addrs, k)
         chd[k] = v.val
     end
     for (k, v) in tr.calls
         if v isa BlackBoxCallSite
-            collect!(k, addrs, chd, v.trace)
+            collect!(k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedCallSite
             for i in 1:length(v.subtraces)
-                collect!(k => i, addrs, chd, v.subtraces[i])
+                collect!(k => i, addrs, chd, v.subtraces[i], meta)
             end
         end
+    end
+    for (k, v) in tr.params
+        push!(meta, k)
+        push!(addrs, k)
+        chd[k] = v.val
     end
 end
 
@@ -80,21 +89,30 @@ import Base.collect
 function collect(tr::Trace)
     addrs = Union{Symbol, Pair}[]
     chd = Dict{Union{Symbol, Pair}, Any}()
-    collect!(addrs, chd, tr)
-    return addrs, chd
+    meta = Union{Symbol, Pair}[]
+    collect!(addrs, chd, tr, meta)
+    return addrs, chd, meta
 end
 
 function Base.display(tr::Trace; show_values = false)
     println("  __________________________________\n")
     println("               Addresses\n")
-    addrs, chd = collect(tr)
+    addrs, chd, meta = collect(tr)
     if show_values
         for a in addrs
-            println(" $(a) : $(chd[a])")
+            if a in meta
+                println(" (Learnable)  $(a) : $(chd[a])")
+            else
+                println(" $(a) : $(chd[a])")
+            end
         end
     else
         for a in addrs
-            println(" $(a)")
+            if a in meta
+                println(" (Learnable)  $(a)")
+            else
+                println(" $(a)")
+            end
         end
     end
     println("  __________________________________\n")

@@ -2,7 +2,8 @@ mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection} <: Executi
     tr::T
     select::K
     visited::Visitor
-    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, Visitor())
+    params::Dict{Address, Any}
+    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, Visitor(), Dict{Address,Any}())
 end
 Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
 Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
@@ -23,6 +24,14 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
     end
     visit!(ctx.visited, addr)
     return s
+end
+
+# ------------ Learnable ------------ #
+
+@inline function (ctx::GenerateContext)(fn::typeof(learnable), addr::Address, p::T) where T
+    haskey(ctx.params, addr) && return ctx.params[addr]
+    ctx.params[addr] = p
+    return p
 end
 
 # ------------ Call sites ------------ #

@@ -4,6 +4,12 @@ using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
 using MacroTools
 using Distributions
+using DistributionsAD
+using Zygote
+using Mjolnir
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
+using Mjolnir: Defaults
+import Mjolnir: trace
 
 # Toplevel importants :)
 abstract type ExecutionContext end
@@ -15,11 +21,6 @@ include("selections.jl")
 include("utils/numerical.jl")
 include("utils/vectorized.jl")
 include("utils/visualization.jl")
-
-using Mjolnir
-using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
-using Mjolnir: trace, Defaults
-
 include("diffs.jl")
 include("contexts/contexts.jl")
 
@@ -47,22 +48,16 @@ export @load_gen_fmi
 include("foreign_model_interfaces/turing.jl")
 export @load_turing_fmi
 
-# Convenience function for unconstrained generation.
-function Jaynes.trace(fn::Function, args...)
-    tr = Trace()
-    ret = tr(fn, args...)
-    return BlackBoxCallSite(tr, fn, args, ret)
-end
-
 # Contexts.
 export Generate, generate
 export Update, update
 export Propose, propose
 export Regenerate, regenerate
 export Score, score
+export Backpropagate, parameter_gradients
 
 # Trace.
-export Trace, trace, get_score
+export Trace, trace, get_score, learnable
 
 # Selections.
 export selection, compare, has_query

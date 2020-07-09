@@ -4,12 +4,13 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
     select::L
     discard::T
     visited::Visitor
+    params::Dict{Address, Any}
     function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
         un_sel = selection(sel)
-        new{T, typeof(un_sel)}(tr, Trace(), un_sel, Trace(), Visitor())
+        new{T, typeof(un_sel)}(tr, Trace(), un_sel, Trace(), Visitor(), Dict{Address, Any}())
     end
     function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-        new{T, L}(tr, Trace(), sel, Trace(), Visitor())
+        new{T, L}(tr, Trace(), sel, Trace(), Visitor(), Dict{Address, Any}())
     end
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)

@@ -1,12 +1,19 @@
 import Base: rand
 rand(addr::Address, d::Distribution{T}) where T = rand(d)
 rand(addr::Address, fn::Function, args...) = fn(args...)
+learnable(addr::Address, p::T) where T = p
 
 abstract type Trace <: ExecutionContext end
 abstract type RecordSite end
 abstract type CallSite <: RecordSite end
+abstract type LearnableSite <: RecordSite end
+
 struct ChoiceSite{T} <: RecordSite
     score::Float64
+    val::T
+end
+
+struct ParameterSite{T} <: LearnableSite
     val::T
 end
 
@@ -15,10 +22,12 @@ end
 mutable struct HierarchicalTrace <: Trace
     calls::Dict{Address, CallSite}
     choices::Dict{Address, ChoiceSite}
+    params::Dict{Address, LearnableSite}
     score::Float64
     function HierarchicalTrace()
         new(Dict{Address, CallSite}(), 
             Dict{Address, ChoiceSite}(),
+            Dict{Address, LearnableSite}(),
             0.0)
     end
 end
@@ -27,6 +36,7 @@ has_choice(tr::HierarchicalTrace, addr) = haskey(tr.choices, addr)
 has_call(tr::HierarchicalTrace, addr) = haskey(tr.calls, addr)
 get_call(tr::HierarchicalTrace, addr) = tr.calls[addr]
 get_choice(tr::HierarchicalTrace, addr) = tr.choices[addr]
+get_param(tr::HierarchicalTrace, addr) = tr.params[addr]
 function get_call(tr::HierarchicalTrace, addr::Pair)
     get_call(tr.calls[addr[1]], addr[2])
 end
@@ -88,6 +98,12 @@ get_score(vcs::VectorizedCallSite) = vcs.score
     s = rand(d)
     set_choice!(tr, addr, ChoiceSite(logpdf(d, s), s))
     return s
+end
+
+@inline function (tr::HierarchicalTrace)(fn::typeof(learnable), addr::Address, p::T) where T
+    haskey(tr.params, addr) && return get_param(tr, addr)
+    tr.params[addr] = ParameterSite(p)
+    return p
 end
 
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args...)
@@ -185,3 +201,12 @@ function Base.haskey(tr::HierarchicalTrace, addr::Pair)
         return false
     end
 end
+
+# ------------ Convenience ------------ #
+
+function Jaynes.trace(fn::Function, args...)
+    tr = Trace()
+    ret = tr(fn, args...)
+    return BlackBoxCallSite(tr, fn, args, ret)
+end
+

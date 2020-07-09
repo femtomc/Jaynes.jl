@@ -3,7 +3,7 @@ unwrap(gr::GlobalRef) = gr.name
 unwrap(gr) = gr
 
 # Whitelist includes vectorized calls.
-whitelist = [:rand, :foldr, :map, :soss_fmi, :gen_fmi, :turing_fmi]
+whitelist = [:rand, :learnable, :foldr, :map, :soss_fmi, :gen_fmi, :turing_fmi]
 
 # Fix for specialized tracing.
 function recur!(ir, to = self)
@@ -50,3 +50,4 @@ include("propose.jl")
 include("score.jl")
 include("update.jl")
 include("regenerate.jl")
+include("backpropagate.jl")

@@ -1,9 +1,10 @@
 mutable struct ScoreContext <: ExecutionContext
     score::Float64
     select::ConstrainedSelection
+    params::Dict{Address, Any}
     function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
         c_sel = selection(obs)
-        new(0.0, c_sel)
+        new(0.0, c_sel, Dict{Address, Any}())
     end
     ScoreContext(obs::K) where {K <: ConstrainedSelection} = new(0.0, obs)
     Score() = new(0.0)

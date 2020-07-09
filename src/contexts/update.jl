@@ -4,7 +4,8 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
     select::K
     discard::T
     visited::Visitor
-    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, Trace(), Visitor())
+    params::Dict{Address, Any}
+    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, Trace(), Visitor(), Dict{Address, Any}())
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
 Update(select) = UpdateContext(Trace(), select)

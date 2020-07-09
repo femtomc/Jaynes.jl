@@ -1,6 +1,7 @@
 mutable struct ProposeContext{T <: Trace} <: ExecutionContext
     tr::T
-    ProposeContext(tr::T) where T <: Trace = new{T}(tr)
+    params::Dict{Address, Any}
+    ProposeContext(tr::T) where T <: Trace = new{T}(tr, Dict{Address, Any}())
 end
 Propose() = ProposeContext(Trace())
 
