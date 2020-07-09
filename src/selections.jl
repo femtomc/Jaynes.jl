@@ -450,13 +450,13 @@ function push!(chs::ConstrainedHierarchicalSelection, tr::HierarchicalTrace)
     end
 end
 
-function selection(tr::HierarchicalTrace)
+function get_selection(tr::HierarchicalTrace)
     top = ConstrainedHierarchicalSelection()
     push!(top, tr)
     return top
 end
 
-function selection(cl::BlackBoxCallSite)
+function get_selection(cl::BlackBoxCallSite)
     top = ConstrainedHierarchicalSelection()
     push!(top, cl.trace)
     return top
@@ -538,7 +538,7 @@ end
 
 function merge(tr::HierarchicalTrace,
                sel::ConstrainedHierarchicalSelection)
-    tr_selection = selection(tr)
+    tr_selection = get_selection(tr)
     merge!(tr_selection, sel)
     return tr_selection
 end
