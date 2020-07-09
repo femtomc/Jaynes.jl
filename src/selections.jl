@@ -5,10 +5,11 @@ import Base: +
 
 # Abstract type for a sort of query language for addresses within a particular method body.
 abstract type Selection end
+abstract type UtilitySelection <: Selection end
 
 # ------------ Lightweight visitor ------------ #
 
-struct Visitor <: Selection
+struct Visitor <: UtilitySelection
     tree::Dict{Address, Visitor}
     addrs::Vector{Address}
     Visitor() = new(Dict{Address, Visitor}(), Address[])
@@ -43,15 +44,15 @@ isempty(vs::Visitor) = isempty(vs.tree) && isempty(vs.addrs)
 
 # ------------ Gradients ------------ #
 
-struct Gradients <: Selection
+struct Gradients <: UtilitySelection
     tree::Dict{Address, Gradients}
-    param_grads::Dict{Address, Any}
+    utility::Dict{Address, Any}
     Gradients() = new(Dict{Address, Gradients}(), Dict{Address, Any}())
 end
 
-has_grad(ps::Gradients, addr) = haskey(ps.param_grads, addr)
+has_grad(ps::Gradients, addr) = haskey(ps.utility, addr)
 
-get_grad(ps::Gradients, addr) = getindex(ps.param_grads, addr)
+get_grad(ps::Gradients, addr) = getindex(ps.utility, addr)
 
 has_sub(ps::Gradients, addr) = haskey(ps.tree, addr)
 
@@ -59,17 +60,17 @@ get_sub(ps::Gradients, addr) = getindex(ps.tree, addr)
 
 function push!(ps::Gradients, addr, val)
     has_grad(ps, addr) && begin
-        ps.param_grads[addr] += val
+        ps.utility[addr] += val
         return
     end
-    ps.param_grads[addr] = val
+    ps.utility[addr] = val
 end
 
-Zygote.@adjoint Gradients(tree, param_grads) = Gradients(tree, param_grads), s_grad -> (nothing, nothing)
+Zygote.@adjoint Gradients(tree, utility) = Gradients(tree, utility), s_grad -> (nothing, nothing)
 
 function merge(sel1::Gradients,
                sel2::Gradients)
-    param_grads = merge(sel1.param_grads, sel2.param_grads)
+    utility = merge(sel1.utility, sel2.utility)
     tree = Dict{Address, Gradients}()
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         tree[k] = sel2.tree[k]
@@ -80,32 +81,32 @@ function merge(sel1::Gradients,
     for k in intersect(keys(sel1.tree), keys(sel2.tree))
         tree[k] = merge(sel1.tree[k], sel2.tree[k])
     end
-    return Gradients(tree, param_grads)
+    return Gradients(tree, utility)
 end
 
 +(a_grads::Gradients, b_grads::Gradients) = merge(a_grads, b_grads)
 
 # ------------ LearnableParameters ------------ #
 
-struct LearnableParameters <: Selection
+struct LearnableParameters <: UtilitySelection
     tree::Dict{Address, LearnableParameters}
-    params::Dict{Address, Any}
+    utility::Dict{Address, Any}
     LearnableParameters() = new(Dict{Address, LearnableParameters}(), Dict{Address, Any}())
 end
 
-has_param(ps::LearnableParameters, addr) = haskey(ps.params, addr)
+has_param(ps::LearnableParameters, addr) = haskey(ps.utility, addr)
 
-get_param(ps::LearnableParameters, addr) = getindex(ps.params, addr)
+get_param(ps::LearnableParameters, addr) = getindex(ps.utility, addr)
 
 function push!(ps::LearnableParameters, addr, val)
-    ps.params[addr] = val
+    ps.utility[addr] = val
 end
 
-Zygote.@adjoint LearnableParameters(tree, params) = LearnableParameters(tree, params), s_grad -> (nothing, nothing)
+Zygote.@adjoint LearnableParameters(tree, utility) = LearnableParameters(tree, utility), s_grad -> (nothing, nothing)
 
 function merge(sel1::LearnableParameters,
                sel2::LearnableParameters)
-    params = merge(sel1.params, sel2.params)
+    utility = merge(sel1.utility, sel2.utility)
     tree = Dict{Address, Gradients}()
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         tree[k] = sel2.tree[k]
@@ -116,15 +117,15 @@ function merge(sel1::LearnableParameters,
     for k in intersect(keys(sel1.tree), keys(sel2.tree))
         tree[k] = merge(sel1.tree[k], sel2.tree[k])
     end
-    return LearnableParameters(tree, params)
+    return LearnableParameters(tree, utility)
 end
 
 +(a::LearnableParameters, b::LearnableParameters) = merge(a, b)
 
 function update!(a::LearnableParameters, b::Gradients)
-    for (k, v) in a.params
+    for (k, v) in a.utility
         if has_grad(b, k)
-            a.params[k] = v + get_grad(b, k)
+            a.utility[k] = v + get_grad(b, k)
         end
     end
 
@@ -473,7 +474,7 @@ function site_push!(chs::LearnableParameters, addr::Address, cs::BlackBoxCallSit
     for (k, v) in subtrace.calls
         site_push!(subchs, k, v)
     end
-    for (k, v) in subtrace.params
+    for (k, v) in subtrace.utility
         site_push!(subchs, k, v)
     end
     chs.tree[addr] = subchs
@@ -576,6 +577,68 @@ function filter(k_fn::Function, chs::UnconstrainedHierarchicalSelection) where T
         top.tree[k] = filter(k_fn, v)
     end
     return top
+end
+
+# ------------ Pretty printing utility selections ------------ #
+
+function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::K) where {T <: Union{Symbol, Pair}, K <: UtilitySelection}
+    for (k, v) in chs.utility
+        push!(addrs, par => k)
+        chd[par => k] = v
+    end
+    for (k, v) in chs.tree
+        collect!(par => k, addrs, chd, v)
+    end
+end
+
+function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::K) where K <: UtilitySelection
+    for (k, v) in chs.utility
+        push!(addrs, k)
+        chd[k] = v
+    end
+    for (k, v) in chs.tree
+        collect!(k, addrs, chd, v)
+    end
+end
+
+import Base.collect
+function collect(chs::K) where K <: UtilitySelection
+    addrs = Union{Symbol, Pair}[]
+    chd = Dict{Union{Symbol, Pair}, Any}()
+    collect!(addrs, chd, chs)
+    return addrs, chd
+end
+
+function Base.display(chs::Gradients; show_values = false)
+    println("  __________________________________\n")
+    println("             Gradients\n")
+    addrs, chd = collect(chs)
+    if show_values
+        for a in addrs
+            println(" $(a) : $(chd[a])")
+        end
+    else
+        for a in addrs
+            println(" $(a)")
+        end
+    end
+    println("  __________________________________\n")
+end
+
+function Base.display(chs::LearnableParameters; show_values = false)
+    println("  __________________________________\n")
+    println("             Parameters\n")
+    addrs, chd = collect(chs)
+    if show_values
+        for a in addrs
+            println(" $(a) : $(chd[a])")
+        end
+    else
+        for a in addrs
+            println(" $(a)")
+        end
+    end
+    println("  __________________________________\n")
 end
 
 # ------------ Pretty printing ------------ #
