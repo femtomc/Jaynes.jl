@@ -2,10 +2,12 @@ mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection} <: Executi
     tr::T
     select::K
     visited::Visitor
-    params::Dict{Address, Any}
-    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, Visitor(), Dict{Address,Any}())
+    params::LearnableParameters
+    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, Visitor(), LearnableParameters())
+    GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, Visitor(), params)
 end
 Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
+Generate(select::ConstrainedSelection, params) = GenerateContext(Trace(), select, params)
 Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
 
 # ------------ Choice sites ------------ #
@@ -29,9 +31,13 @@ end
 # ------------ Learnable ------------ #
 
 @inline function (ctx::GenerateContext)(fn::typeof(learnable), addr::Address, p::T) where T
-    haskey(ctx.params, addr) && return ctx.params[addr]
-    ctx.params[addr] = p
-    return p
+    visit!(ctx.visited, addr)
+    ret = p
+    if has_param(ctx.params, addr)
+        ret = get_param(ctx.params, addr)
+    end
+    ctx.tr.params[addr] = ParameterSite(ret)
+    return ret
 end
 
 # ------------ Call sites ------------ #
@@ -106,8 +112,8 @@ end
 end
 
 # Convenience.
-function generate(sel::L, fn::Function, args...) where L <: ConstrainedSelection
-    ctx = Generate(sel)
+function generate(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
+    ctx = Generate(sel, params)
     ret = ctx(fn, args...)
     return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.tr.score
 end

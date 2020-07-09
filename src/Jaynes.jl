@@ -60,7 +60,7 @@ export Backpropagate, get_parameter_gradients, get_choice_gradients
 export Trace, trace, get_score, learnable
 
 # Selections.
-export selection, get_parameters, compare, has_query
+export selection, get_parameters, compare, has_query, update!
 
 # Inference.
 export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!

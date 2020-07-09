@@ -50,6 +50,13 @@ struct Gradients <: Selection
 end
 
 has_grad(ps::Gradients, addr) = haskey(ps.param_grads, addr)
+
+get_grad(ps::Gradients, addr) = getindex(ps.param_grads, addr)
+
+has_sub(ps::Gradients, addr) = haskey(ps.tree, addr)
+
+get_sub(ps::Gradients, addr) = getindex(ps.tree, addr)
+
 function push!(ps::Gradients, addr, val)
     has_grad(ps, addr) && begin
         ps.param_grads[addr] += val
@@ -87,6 +94,9 @@ struct LearnableParameters <: Selection
 end
 
 has_param(ps::LearnableParameters, addr) = haskey(ps.params, addr)
+
+get_param(ps::LearnableParameters, addr) = getindex(ps.params, addr)
+
 function push!(ps::LearnableParameters, addr, val)
     ps.params[addr] = val
 end
@@ -110,6 +120,20 @@ function merge(sel1::LearnableParameters,
 end
 
 +(a::LearnableParameters, b::LearnableParameters) = merge(a, b)
+
+function update!(a::LearnableParameters, b::Gradients)
+    for (k, v) in a.params
+        if has_grad(b, k)
+            a.params[k] = v + get_grad(b, k)
+        end
+    end
+
+    for (k, v) in a.tree
+        if has_sub(b, k)
+            update!(v, get_sub(b, k))
+        end
+    end
+end
 
 # ------------ Constrained and unconstrained selections ------------ #
 
