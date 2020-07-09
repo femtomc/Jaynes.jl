@@ -54,13 +54,13 @@ export Update, update
 export Propose, propose
 export Regenerate, regenerate
 export Score, score
-export Backpropagate, parameter_gradients
+export Backpropagate, get_parameter_gradients, get_choice_gradients
 
 # Trace.
 export Trace, trace, get_score, learnable
 
 # Selections.
-export selection, compare, has_query
+export selection, get_parameters, compare, has_query
 
 # Inference.
 export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!

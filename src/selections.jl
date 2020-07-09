@@ -43,14 +43,14 @@ isempty(vs::Visitor) = isempty(vs.tree) && isempty(vs.addrs)
 
 # ------------ Gradients ------------ #
 
-struct ParameterGradients <: Selection
-    tree::Dict{Address, ParameterGradients}
+struct Gradients <: Selection
+    tree::Dict{Address, Gradients}
     param_grads::Dict{Address, Any}
-    ParameterGradients() = new(Dict{Address, ParameterGradients}(), Dict{Address, Any}())
+    Gradients() = new(Dict{Address, Gradients}(), Dict{Address, Any}())
 end
 
-has_grad(ps::ParameterGradients, addr) = haskey(ps.param_grads, addr)
-function push!(ps::ParameterGradients, addr, val)
+has_grad(ps::Gradients, addr) = haskey(ps.param_grads, addr)
+function push!(ps::Gradients, addr, val)
     has_grad(ps, addr) && begin
         ps.param_grads[addr] += val
         return
@@ -58,12 +58,12 @@ function push!(ps::ParameterGradients, addr, val)
     ps.param_grads[addr] = val
 end
 
-Zygote.@adjoint ParameterGradients(tree, param_grads) = ParameterGradients(tree, param_grads), s_grad -> (nothing, nothing)
+Zygote.@adjoint Gradients(tree, param_grads) = Gradients(tree, param_grads), s_grad -> (nothing, nothing)
 
-function merge(sel1::ParameterGradients,
-               sel2::ParameterGradients)
+function merge(sel1::Gradients,
+               sel2::Gradients)
     param_grads = merge(sel1.param_grads, sel2.param_grads)
-    tree = Dict{Address, ParameterGradients}()
+    tree = Dict{Address, Gradients}()
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         tree[k] = sel2.tree[k]
     end
@@ -73,10 +73,43 @@ function merge(sel1::ParameterGradients,
     for k in intersect(keys(sel1.tree), keys(sel2.tree))
         tree[k] = merge(sel1.tree[k], sel2.tree[k])
     end
-    return ParameterGradients(tree, param_grads)
+    return Gradients(tree, param_grads)
 end
 
-+(a_grads::ParameterGradients, b_grads::ParameterGradients) = merge(a_grads, b_grads)
++(a_grads::Gradients, b_grads::Gradients) = merge(a_grads, b_grads)
+
+# ------------ LearnableParameters ------------ #
+
+struct LearnableParameters <: Selection
+    tree::Dict{Address, LearnableParameters}
+    params::Dict{Address, Any}
+    LearnableParameters() = new(Dict{Address, LearnableParameters}(), Dict{Address, Any}())
+end
+
+has_param(ps::LearnableParameters, addr) = haskey(ps.params, addr)
+function push!(ps::LearnableParameters, addr, val)
+    ps.params[addr] = val
+end
+
+Zygote.@adjoint LearnableParameters(tree, params) = LearnableParameters(tree, params), s_grad -> (nothing, nothing)
+
+function merge(sel1::LearnableParameters,
+               sel2::LearnableParameters)
+    params = merge(sel1.params, sel2.params)
+    tree = Dict{Address, Gradients}()
+    for k in setdiff(keys(sel2.tree), keys(sel1.tree))
+        tree[k] = sel2.tree[k]
+    end
+    for k in setdiff(keys(sel1.tree), keys(sel2.tree))
+        tree[k] = sel1.tree[k]
+    end
+    for k in intersect(keys(sel1.tree), keys(sel2.tree))
+        tree[k] = merge(sel1.tree[k], sel2.tree[k])
+    end
+    return LearnableParameters(tree, params)
+end
+
++(a::LearnableParameters, b::LearnableParameters) = merge(a, b)
 
 # ------------ Constrained and unconstrained selections ------------ #
 
@@ -134,9 +167,14 @@ end
 
 has_query(cas::UnconstrainedAnywhereSelection, addr) = has_query(cas.query, addr)
 dump_queries(cas::UnconstrainedAnywhereSelection) = dump_queries(cas.query)
-get_query(cas::UnconstrainedAnywhereSelection, addr) = get_query(cas.query, addr)
 get_sub(cas::UnconstrainedAnywhereSelection, addr) = cas
 isempty(cas::UnconstrainedAnywhereSelection) = isempty(cas.query)
+
+struct UnconstrainedAllSelection <: UnconstrainedSelection end
+
+has_query(uas::UnconstrainedAllSelection, addr) = true
+get_sub(uas::UnconstrainedAllSelection, addr) = uas
+isempty(uas::UnconstrainedAllSelection) = false
 
 # ------------ Constrain in call hierarchy ------------ #
 
@@ -243,13 +281,6 @@ function dump_queries(uus::UnconstrainedUnionSelection)
         append!(arr, collect(dump_queries(q)))
     end
     return arr
-end
-
-function get_query(uus::UnconstrainedUnionSelection, addr)
-    for q in uus.query
-        has_query(q, addr) && return get_query(q, addr)
-    end
-    error("ConstrainedUnionSelection (get_query): query not defined for $addr.")
 end
 
 function get_sub(uus::UnconstrainedUnionSelection, addr)
@@ -397,6 +428,51 @@ end
 function selection(tr::HierarchicalTrace)
     top = ConstrainedHierarchicalSelection()
     push!(top, tr)
+    return top
+end
+
+function selection(cl::BlackBoxCallSite)
+    top = ConstrainedHierarchicalSelection()
+    push!(top, cl.trace)
+    return top
+end
+
+# ------------ Trace to parameters ------------ #
+
+function site_push!(chs::LearnableParameters, addr::Address, cs::LearnableSite)
+    push!(chs, addr, cs.val)
+end
+
+function site_push!(chs::LearnableParameters, addr::Address, cs::BlackBoxCallSite)
+    subtrace = cs.trace
+    subchs = LearnableParameters()
+    for (k, v) in subtrace.calls
+        site_push!(subchs, k, v)
+    end
+    for (k, v) in subtrace.params
+        site_push!(subchs, k, v)
+    end
+    chs.tree[addr] = subchs
+end
+
+function push!(chs::LearnableParameters, tr::HierarchicalTrace)
+    for (k, v) in tr.calls
+        site_push!(chs, k, v)
+    end
+    for (k, v) in tr.params
+        site_push!(chs, k, v)
+    end
+end
+
+function get_parameters(tr::HierarchicalTrace)
+    top = LearnableParameters()
+    push!(top, tr)
+    return top
+end
+
+function get_parameters(cl::BlackBoxCallSite)
+    top = LearnableParameters()
+    push!(top, cl.trace)
     return top
 end
 

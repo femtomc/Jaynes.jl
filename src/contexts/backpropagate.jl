@@ -1,4 +1,6 @@
-import Base: +, setindex!
+import Base: +, setindex!, filter!
+
+# ------------ Parameter store ------------ #
 
 struct ParameterStore
     params::Dict{Address,Any}
@@ -22,20 +24,47 @@ function +(a::ParameterStore, b::ParameterStore)
     ParameterStore(params)
 end
 
-mutable struct BackpropagateContext{T <: Trace} <: ExecutionContext
+# ------------ Backpropagation contexts ------------ #
+
+abstract type BackpropagationContext <: ExecutionContext end
+
+# Learnable parameters
+mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationContext
     tr::T
     score::Float64
     visited::Visitor
     params::ParameterStore
-    param_grads::ParameterGradients
+    param_grads::Gradients
 end
-Backpropagate(tr::T, params) where T <: Trace = BackpropagateContext(tr, 0.0, Visitor(), params, ParameterGradients())
+ParameterBackpropagate(tr::T, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, Gradients())
+ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, param_grads)
+
+# Choice sites
+mutable struct ChoiceBackpropagateContext{T <: Trace, K <: UnconstrainedSelection} <: BackpropagationContext
+    tr::T
+    score::Float64
+    visited::Visitor
+    params::ParameterStore
+    choice_grads::Gradients
+    select::K
+end
+ChoiceBackpropagate(tr::T, params, choice_grads) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, choice_grads, UnconstrainedAllSelection())
+ChoiceBackpropagate(tr::T, params, choice_grads, sel::K) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, choice_grads, sel)
 
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::BackpropagateContext)(call::typeof(rand), 
-                                             addr::T, 
-                                             d::Distribution{K}) where {T <: Address, K}
+@inline function (ctx::ParameterBackpropagateContext)(call::typeof(rand), 
+                                                      addr::T, 
+                                                      d::Distribution{K}) where {T <: Address, K}
+    s = get_choice(ctx.tr, addr).val
+    ctx.score += logpdf(d, s)
+    #visit!(ctx.visited, addr)
+    return s
+end
+
+@inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
+                                                   addr::T, 
+                                                   d::Distribution{K}) where {T <: Address, K}
     s = get_choice(ctx.tr, addr).val
     ctx.score += logpdf(d, s)
     #visit!(ctx.visited, addr)
@@ -44,8 +73,8 @@ end
 
 # ------------ Learnable ------------ #
 
-read_parameter(ctx::BackpropagateContext, addr::Address) = read_parameter(ctx, ctx.params, addr)
-read_parameter(ctx::BackpropagateContext, params::ParameterStore, addr::Address) = ctx.tr.params[addr].val
+read_parameter(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.params, addr)
+read_parameter(ctx::K, params::ParameterStore, addr::Address) where K <: BackpropagationContext = ctx.tr.params[addr].val
 
 Zygote.@adjoint function read_parameter(ctx, params, addr)
     ret = read_parameter(ctx, params, addr)
@@ -57,38 +86,69 @@ Zygote.@adjoint function read_parameter(ctx, params, addr)
     return ret, fn
 end
 
-@inline function (ctx::BackpropagateContext)(fn::typeof(learnable), addr::Address, p::T) where T
+@inline function (ctx::ParameterBackpropagateContext)(fn::typeof(learnable), addr::Address, p::T) where T
+    return read_parameter(ctx, addr)
+end
+
+@inline function (ctx::ChoiceBackpropagateContext)(fn::typeof(learnable), addr::Address, p::T) where T
     return read_parameter(ctx, addr)
 end
 
 # ------------ Call sites ------------ #
 
-simulate_call_pullback(param_grads, cl::T, args) where {T <: CallSite, K <: UnconstrainedSelection} = cl.ret
+# Learnable parameters.
+simulate_call_pullback(param_grads, cl::T, args) where T <: CallSite = cl.ret
 
 Zygote.@adjoint function simulate_call_pullback(param_grads, cl, args)
     ret = simulate_call_pullback(param_grads, cl, args)
     fn = ret_grad -> begin
-        arg_grads = accumulate_param_gradients!(param_grads, cl, ret_grad)
+        arg_grads = accumulate_parameter_gradients!(param_grads, cl, ret_grad)
         (nothing, nothing, arg_grads)
     end
-    (ret, fn)
+    return ret, fn
 end
 
-@inline function (ctx::BackpropagateContext)(c::typeof(rand),
-                                             addr::T,
-                                             call::Function,
-                                             args...) where T <: Address
+@inline function (ctx::ParameterBackpropagateContext)(c::typeof(rand),
+                                                      addr::T,
+                                                      call::Function,
+                                                      args...) where T <: Address
     #visit!(ctx.visited, addr)
     cl = get_call(ctx.tr, addr)
-    rg_ctx = Backpropagate(cl.trace, ParameterStore())
-    ret = simulate_call_pullback(rg_ctx.param_grads, cl, args)
-    ctx.param_grads.tree[addr] = rg_ctx.param_grads
+    param_grads = Gradients()
+    ret = simulate_call_pullback(param_grads, cl, args)
+    ctx.param_grads.tree[addr] = param_grads
     return ret
 end
 
-function accumulate_param_gradients!(param_grads, cl::T, ret_grad) where T <: CallSite
+# Choices.
+simulate_choice_pullback(choice_grads, choice_selection, cl::T, args) where T <: CallSite = cl.ret
+
+Zygote.@adjoint function simulate_choice_pullback(choice_grads, choice_selection, cl, args)
+    ret = simulate_choice_pullback(choice_grads, choice_selection, cl, args)
+    fn = ret_grad -> begin
+        arg_grads, choice_vals, choice_grads = choice_gradients(choice_grads, choice_selection, cl, ret_grad)
+        (nothing, nothing, (choice_vals, choice_grads), arg_grads)
+    end
+    return ret, fn
+end
+
+@inline function (ctx::ChoiceBackpropagateContext)(c::typeof(rand),
+                                                   addr::T,
+                                                   call::Function,
+                                                   args...) where T <: Address
+    #visit!(ctx.visited, addr)
+    cl = get_call(ctx.tr, addr)
+    choice_grads = Gradients()
+    ret = simulate_choice_pullback(choice_grads, get_sub(ctx.select, addr), cl, args)
+    ctx.choice_grads.tree[addr] = choice_grads
+    return ret
+end
+
+# ------------ Accumulate gradients ------------ #
+
+function accumulate_parameter_gradients!(param_grads, cl::T, ret_grad) where T <: CallSite
     fn = (args, params) -> begin
-        ctx = Backpropagate(cl.trace, params)
+        ctx = ParameterBackpropagate(cl.trace, params, param_grads)
         ret = ctx(cl.fn, args...)
         (ctx.score, ret)
     end
@@ -103,8 +163,44 @@ function accumulate_param_gradients!(param_grads, cl::T, ret_grad) where T <: Ca
     return arg_grads
 end
 
-function parameter_gradients(cl::T, ret_grad) where T <: CallSite
-    param_grads = ParameterGradients()
-    accumulate_param_gradients!(param_grads, cl, ret_grad)
+# ------------ Compute choice gradients ------------ #
+
+function filter!(choice_grads, cl::BlackBoxCallSite, grad_tr::NamedTuple, sel::K) where K <: UnconstrainedSelection
+    values = ConstrainedHierarchicalSelection()
+    for (k, v) in cl.trace.choices
+        has_query(sel, k) && begin
+            push!(values, k, v.val)
+            push!(choice_grads, k, grad_tr.choices[k].val)
+        end
+    end
+    return values
+end
+
+function choice_gradients(choice_grads, choice_selection, cl, ret_grad)
+    call = cl.fn
+    fn = (args, trace) -> begin
+        ctx = ChoiceBackpropagate(trace, ParameterStore(), choice_grads, choice_selection)
+        ret = ctx(call, args...)
+        (ctx.score, ret)
+    end
+    _, back = Zygote.pullback(fn, cl.args, cl.trace)
+    arg_grads, grad_ref = back((1.0, ret_grad))
+    gs_trace = grad_ref[]
+    choice_vals = filter!(choice_grads, cl, gs_trace, choice_selection)
+    return arg_grads, choice_vals, choice_grads
+end
+
+# ------------ Convenience getters ------------ #
+
+function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
+    choice_grads = Gradients()
+    choice_selection = UnconstrainedAllSelection()
+    choice_gradients(choice_grads, choice_selection, cl, ret_grad)
+    return choice_grads
+end
+
+function get_parameter_gradients(cl::T, ret_grad) where T <: CallSite
+    param_grads = Gradients()
+    accumulate_parameter_gradients!(param_grads, cl, ret_grad)
     return param_grads
 end
