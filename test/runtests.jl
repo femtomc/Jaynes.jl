@@ -34,4 +34,8 @@ end
     include("selection_query_language.jl")
 end
 
+@time @testset "Gradient learning." begin
+    include("backpropagation.jl")
+end
+
 end #module

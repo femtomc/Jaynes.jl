@@ -6,6 +6,7 @@ using MacroTools
 using Distributions
 using DistributionsAD
 using Zygote
+using Flux.Optimise
 using Mjolnir
 using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
 using Mjolnir: Defaults
@@ -15,13 +16,13 @@ import Mjolnir: trace
 abstract type ExecutionContext end
 const Address = Union{Symbol, Pair{Symbol, Int64}}
 
-include("static.jl")
+include("compiler/static.jl")
 include("trace.jl")
 include("selections.jl")
 include("utils/numerical.jl")
 include("utils/vectorized.jl")
 include("utils/visualization.jl")
-include("diffs.jl")
+include("compiler/diffs.jl")
 include("contexts/contexts.jl")
 
 # Utility structure for collections of samples.

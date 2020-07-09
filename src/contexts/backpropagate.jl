@@ -154,7 +154,7 @@ function accumulate_parameter_gradients!(param_grads, cl::T, ret_grad) where T <
     end
     blank = ParameterStore()
     _, back = Zygote.pullback(fn, cl.args, blank)
-    arg_grads, ps_grad = back((1.0, ret_grad))
+    arg_grads, ps_grad = back((1.0, ret_grad, 1.0))
     if !(ps_grad isa Nothing)
         for (addr, grad) in ps_grad.params
             push!(param_grads, addr, grad)
