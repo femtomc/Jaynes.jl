@@ -474,7 +474,7 @@ function site_push!(chs::LearnableParameters, addr::Address, cs::BlackBoxCallSit
     for (k, v) in subtrace.calls
         site_push!(subchs, k, v)
     end
-    for (k, v) in subtrace.utility
+    for (k, v) in subtrace.params
         site_push!(subchs, k, v)
     end
     chs.tree[addr] = subchs
