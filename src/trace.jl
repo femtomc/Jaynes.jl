@@ -3,7 +3,6 @@ rand(addr::Address, d::Distribution{T}) where T = rand(d)
 rand(addr::Address, fn::Function, args...) = fn(args...)
 learnable(addr::Address, p::T) where T = p
 
-abstract type Trace <: ExecutionContext end
 abstract type RecordSite end
 abstract type CallSite <: RecordSite end
 abstract type LearnableSite <: RecordSite end
@@ -19,6 +18,15 @@ struct ParameterSite{T} <: LearnableSite
 end
 
 # ------------ Hierarchical trace ------------ #
+
+abstract type Trace end
+
+@dynamo function (tr::Trace)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    recur!(ir)
+    return ir
+end
 
 mutable struct HierarchicalTrace <: Trace
     calls::Dict{Address, CallSite}
@@ -109,9 +117,8 @@ end
 end
 
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args...)
-    n_tr = Trace()
-    ret = n_tr(call, args...)
-    add_call!(tr, addr, BlackBoxCallSite(n_tr, call, args, ret))
+    ret, cl = trace(call, args...)
+    add_call!(tr, addr, cl)
     return ret
 end
 
@@ -209,5 +216,5 @@ end
 function Jaynes.trace(fn::Function, args...)
     tr = Trace()
     ret = tr(fn, args...)
-    return BlackBoxCallSite(tr, fn, args, ret)
+    return ret, BlackBoxCallSite(tr, fn, args, ret)
 end

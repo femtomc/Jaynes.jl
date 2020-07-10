@@ -16,6 +16,7 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
 Regenerate(tr::Trace, sel::UnconstrainedSelection) = RegenerateContext(tr, sel)
+get_prev(ctx::RegenerateContext, addr) = get_call(ctx.prev, addr)
 
 # Regenerate has a special dynamo.
 @dynamo function (mx::RegenerateContext)(a...)
@@ -30,12 +31,9 @@ end
 @inline function (ctx::RegenerateContext)(call::typeof(rand), 
                                           addr::T, 
                                           d::Distribution{K}) where {T <: Address, K}
-    # Check if in previous trace's choice map.
+    visit!(ctx.visited, addr)
     in_prev_chm = has_choice(ctx.prev, addr)
-
-    # Check if in selection in meta.
     in_sel = has_query(ctx.select, addr)
-
     if in_prev_chm
         prev = get_choice(ctx.prev, addr)
         if in_sel
@@ -45,14 +43,11 @@ end
             ret = prev.val
         end
     end
-
     score = logpdf(d, ret)
     if in_prev_chm && !in_sel
-        ctx.weight += score - prev.score
+        increment!(ctx, score - prev.score)
     end
-
     add_choice!(ctx.tr, addr, ChoiceSite(score, ret))
-    visit!(ctx.visited, addr)
     return ret
 end
 
@@ -62,18 +57,19 @@ end
                                           addr::T,
                                           call::Function,
                                           args...) where T <: Address
-    ur_ctx = Regenerate(ctx.prev.chm[addr].trace, ctx.select[addr])
-    ret = ur_ctx(call, args...)
-    set_call!(ctx.tr, addr, BlackBoxCallSite(ur_ctx.tr, call, args, ret))
-    ctx.weight += ur_ctx.weight
-    ctx.visited.tree[addr] = ur_ctx.visited
+    visit!(ctx, addr)
+    ss = get_subselection(ctx, addr)
+    prev_call = get_prev(ctx, addr)
+    ret, cl, w, retdiff, d = regenerate(ss, prev_call, args...)
+    set_call!(ctx.tr, addr, cl)
+    increment!(ctx, w)
     return ret
 end
 
 # Convenience.
 function regenerate(ctx::RegenerateContext, bbcs::BlackBoxCallSite, new_args...)
     ret = ctx(bbcs.fn, new_args...)
-    return BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: UnconstrainedSelection

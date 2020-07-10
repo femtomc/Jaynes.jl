@@ -10,6 +10,7 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
 Update(select) = UpdateContext(Trace(), select)
+get_prev(ctx::UpdateContext, addr) = get_call(ctx.prev, addr)
 
 # Update has a special dynamo.
 @dynamo function (mx::UpdateContext)(a...)
@@ -51,9 +52,9 @@ end
     # Update.
     score = logpdf(d, ret)
     if in_prev_chm
-        ctx.weight += score - prev_score
+        increment!(ctx, score - prev_score)
     elseif in_selection
-        ctx.weight += score
+        increment!(ctx, score)
     end
     add_choice!(ctx.tr, addr, ChoiceSite(score, ret))
 
@@ -69,18 +70,20 @@ end
 
     has_addr = has_choice(ctx.prev, addr)
     if has_addr
-        cs = get_choice(ctx.prev, addr)
+        cs = get_prev(ctx, addr)
+        ss = get_subselection(ctx, addr)
 
         # TODO: Mjolnir.
-        new_site, lw, _, discard = update(cs, ctx.select[addr], args...; diffs = map((_) -> UndefinedChange(), args))
+        ret, new_site, lw, retdiff, discard = update(ss, cs, args...; diffs = map((_) -> UndefinedChange(), args))
 
         add_choice!(ctx.discard, addr, CallSite(discard, cs.fn, cs.args, cs.ret))
     else
-        new_site, lw = generate(call, ctx.select[addr], args...)
+        ss = get_subselection(ctx, addr)
+        ret, new_site, lw = generate(ss, call, args...)
     end
     add_call!(ctx.tr, addr, new_site)
-    ctx.weight += lw
-    return new_site.ret
+    increment!(ctx, w)
+    return ret
 end
 
 # Vectorized convenience functions for map.
@@ -215,7 +218,7 @@ end
 # Convenience.
 function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, args...)
     ret = ctx(bbcs.fn, args...)
-    return BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection

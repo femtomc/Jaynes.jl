@@ -5,31 +5,21 @@ function initialize_filter(fn::Function,
                            args::Tuple,
                            observations::ConstrainedHierarchicalSelection,
                            num_particles::Int)
-    return importance_sampling(fn, args; observations = observations, num_samples = num_particles)
+    ps, lnw = importance_sampling(fn, args; observations = observations, num_samples = num_particles)
+    return ps
 end
 
 function filter_step!(ps::Particles,
                       new_args::Tuple,
                       observations::ConstrainedHierarchicalSelection)
-
     num_particles = length(ps)
-    update_ctx = Update(Trace(), observations)
-
     for i in 1:num_particles
-        # Run update.
-        update_ctx.tr =  ps.calls[i].trace
-        ret = update_ctx(ps.calls[i].fn, new_args...)
-
-        # Store.
+        ret, u_call, uw, retdiff, d = update(observations, ps.calls[i], new_args...)
         ps.calls[i].args = new_args
         ps.calls[i].ret = ret
-        ps.lws[i] = update_ctx.weight
-        update_ctx.select = observations
-        update_ctx.visited = Visitor()
-        update_ctx.weight = 0.0
+        ps.lws[i] += uw
     end
     ltw = lse(ps.lws)
-    ps.lws = ps.lws .- ltw
     ps.lmle = ltw - log(num_particles)
 end
 
@@ -38,37 +28,22 @@ function filter_step!(ps::Particles,
                       proposal::Function,
                       proposal_args::Tuple,
                       observations::ConstrainedHierarchicalSelection)
-
     num_particles = length(ps)
-    lws = Vector{Float64}(undef, num_particles)
-    update_ctx = Update(Trace())
     for i in 1:num_particles
-        # Propose.
-        cl, p_weight = propose(proposal, ctx.ret[i], proposal_args...)
-        sel = selection(cl)
+        _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
+        sel = selection(p_cl)
         merge!(sel, observations)
-
-        # Run update.
-        update_ctx.tr =  ps.calls[i]
-        update_ctx.select = sel
-        ret = update_ctx(ps.calls[i].fn, new_args...)
-
-        # Store.
+        ret, u_cl, u_w, retdiff, d = update(sel, ps.calls[i], new_args...)
         ps.calls[i].args = new_args
         ps.calls[i].ret = ret
-        ps.lws[i] = update_ctx.weight - p_weight
-        update_ctx.visited = Visitor()
-        update_ctx.weight = 0.0
+        ps.lws[i] += u_w - p_w
     end
-
     ltw = lse(ps.lws)
-    ps.lws = ps.lws .- ltw
     ps.lmle = ltw - log(num_particles)
 end
 
 # Resample from existing set of particles, mutating the original set.
 function resample!(ps::Particles)
-
     num_particles = length(ps.calls)
     ltw, lnw = nw(ps.lws)
     weights = exp.(lnw)
@@ -83,7 +58,6 @@ end
 
 function resample!(ps::Particles,
                    num::Int)
-
     num_particles = length(ps.calls)
     ltw, lnw = nw(ps.lws)
     weights = exp.(lnw)

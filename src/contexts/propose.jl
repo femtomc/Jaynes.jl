@@ -14,7 +14,7 @@ Propose() = ProposeContext(Trace())
     s = rand(d)
     score = logpdf(d, s)
     add_choice!(ctx.tr, addr, ChoiceSite(score, s))
-    ctx.weight += score
+    increment!(ctx, score)
     return s
 end
 
@@ -24,10 +24,9 @@ end
                                         addr::T,
                                         call::Function,
                                         args...) where T <: Address
-    p_ctx = Propose()
-    ret = p_ctx(call, args...)
-    add_call!(ctx.tr, addr, BlackBoxCallSite(p_ctx.tr, call, args, ret))
-    ctx.weight += p_ctx.weight
+    ret, cl, w = propose(call, args...)
+    add_call!(ctx.tr, addr, cl)
+    increment!(ctx, w)
     return ret
 end
 
@@ -85,5 +84,5 @@ end
 function propose(fn::Function, args...)
     ctx = Propose()
     ret = ctx(fn, args...)
-    return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
+    return ret, BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
 end

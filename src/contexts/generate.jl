@@ -20,7 +20,7 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
         s = get_query(ctx.select, addr)
         score = logpdf(d, s)
         add_choice!(ctx.tr, addr, ChoiceSite(score, s))
-        ctx.weight += score
+        increment!(ctx, score)
     else
         s = rand(d)
         add_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
@@ -47,11 +47,10 @@ end
                                         addr::T,
                                         call::Function,
                                         args...) where T <: Address
-    cg_ctx = GenerateContext(Trace(), get_sub(ctx.select, addr))
-    ret = cg_ctx(call, args...)
-    ctx.weight += cg_ctx.weight
-    add_call!(ctx.tr, addr, BlackBoxCallSite(cg_ctx.tr, call, args, ret))
-    set_sub!(ctx.visited, addr, cg_ctx.visited)
+    ss = get_subselection(ctx, addr)
+    ret, cl, w = generate(ss, call, args...)
+    add_call!(ctx.tr, addr, cl)
+    increment!(ctx, w)
     return ret
 end
 
@@ -121,13 +120,13 @@ end
 function generate(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
     ctx = Generate(sel, params)
     ret = ctx(fn, args...)
-    return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
+    return ret, BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(foldr), r::typeof(rand), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection
     ctx = Generate(sel)
-    ctx(fn, r, addr, args...)
-    return ctx.tr.chm[addr], ctx.weight
+    ret = ctx(fn, r, addr, args...)
+    return ret, ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(sel::L, fn::typeof(foldr), call::Function, len::Int, args...) where L <: ConstrainedSelection
@@ -135,14 +134,14 @@ function generate(sel::L, fn::typeof(foldr), call::Function, len::Int, args...) 
     addr = gensym()
     push!(anon_sel, addr, sel)
     ctx = Generate(anon_sel)
-    ctx(fn, rand, addr, call, len, args...)
-    return ctx.tr.chm[addr], ctx.weight
+    ret = ctx(fn, rand, addr, call, len, args...)
+    return ret, ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(sel::L, fn::typeof(map), r::typeof(rand), addr::Symbol, call::Function, args::Vector) where L <: ConstrainedSelection
     ctx = Generate(sel)
-    ctx(fn, r, addr, call, args)
-    return ctx.tr.chm[addr], ctx.weight
+    ret = ctx(fn, r, addr, call, args)
+    return ret, ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(sel::L, fn::typeof(map), call::Function, args::Vector) where L <: ConstrainedSelection
@@ -150,8 +149,8 @@ function generate(sel::L, fn::typeof(map), call::Function, args::Vector) where L
     addr = gensym()
     push!(anon_sel, addr, sel)
     ctx = Generate(anon_sel)
-    ctx(fn, rand, addr, call, args)
-    return ctx.tr.chm[addr], ctx.weight
+    ret = ctx(fn, rand, addr, call, args)
+    return ret, ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(fn, args...)

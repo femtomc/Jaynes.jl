@@ -18,7 +18,7 @@ Score(obs::ConstrainedSelection) = ScoreContext(obs)
                                      d::Distribution{K}) where {T <: Address, K}
     has_query(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
     val = get_query(ctx.select, addr)
-    ctx.weight += logpdf(d, val)
+    increment!(ctx, logpdf(d, val))
     return val
 end
 
@@ -28,9 +28,9 @@ end
                                      addr::T,
                                      call::Function,
                                      args...) where T <: Address
-    s_ctx = Score(ctx.select[addr])
-    ret = s_ctx(call, args...)
-    ctx.weight += s_ctx.weight
+    ss = get_subselection(ctx, addr)
+    ret, w = score(ss, call, args...) 
+    increment!(ctx, w)
     return ret
 end
 
@@ -75,5 +75,5 @@ end
 function score(sel::L, fn::Function, args...) where L <: ConstrainedSelection
     ctx = Score(sel)
     ret = ctx(fn, args...)
-    return ctx.weight
+    return ret, ctx.weight
 end
