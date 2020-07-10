@@ -10,10 +10,10 @@ function one_shot_gradient_estimator(sel::K,
     merge!(sel, get_selection(cl))
 
     # Compute the score of the variational sample with respect to the original model.
-    _, mod_log_w = score(sel, mod, args...)
+    _, mlw = score(sel, mod, args...)
 
     # Compute the likelihood weight.
-    lw = mod_log_w - get_score(cl)
+    lw = mlw - get_score(cl)
 
     # Compute the gradients with respect to the learnable parameters, scale them by the likelihood weight.
     param_grads = get_parameter_gradients(cl, 1.0, lw)
