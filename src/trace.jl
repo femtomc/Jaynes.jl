@@ -33,8 +33,8 @@ mutable struct HierarchicalTrace <: Trace
 end
 Trace() = HierarchicalTrace()
 has_choice(tr::HierarchicalTrace, addr) = haskey(tr.choices, addr)
-has_call(tr::HierarchicalTrace, addr) = haskey(tr.calls, addr)
-get_call(tr::HierarchicalTrace, addr) = tr.calls[addr]
+has_call(tr::HierarchicalTrace, addr::Address) = haskey(tr.calls, addr)
+get_call(tr::HierarchicalTrace, addr::Address) = tr.calls[addr]
 get_choice(tr::HierarchicalTrace, addr) = tr.choices[addr]
 get_param(tr::HierarchicalTrace, addr) = tr.params[addr]
 function get_call(tr::HierarchicalTrace, addr::Pair)
