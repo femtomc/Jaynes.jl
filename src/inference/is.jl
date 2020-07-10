@@ -7,7 +7,7 @@ function importance_sampling(model::Function,
     ctx = Generate(Trace(), observations)
     for i in 1:num_samples
         ret = ctx(model, args...)
-        lws[i] = ctx.tr.score
+        lws[i] = ctx.weight
         calls[i] = BlackBoxCallSite(ctx.tr, 
                             model, 
                             args,
@@ -36,7 +36,7 @@ function importance_sampling(model::Function,
         prop_ctx(proposal, proposal_args...)
 
         # Merge proposals and observations.
-        prop_score = prop_ctx.tr.score
+        p_weight = prop_ctx.weight
         select = merge(prop_ctx.tr, observations)
         model_ctx.select = select
 
@@ -49,7 +49,7 @@ function importance_sampling(model::Function,
                             model, 
                             args,
                             ret)
-        lws[i] = model_ctx.tr.score - prop_score
+        lws[i] = model_ctx.weight - p_weight
 
         # Reset.
         model_ctx.tr = Trace()

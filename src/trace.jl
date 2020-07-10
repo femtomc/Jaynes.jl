@@ -12,6 +12,7 @@ struct ChoiceSite{T} <: RecordSite
     score::Float64
     val::T
 end
+get_score(cs::ChoiceSite) = cs.score
 
 struct ParameterSite{T} <: LearnableSite
     val::T
@@ -40,10 +41,11 @@ get_param(tr::HierarchicalTrace, addr) = tr.params[addr]
 function get_call(tr::HierarchicalTrace, addr::Pair)
     get_call(tr.calls[addr[1]], addr[2])
 end
-function set_choice!(tr::HierarchicalTrace, addr, cs::ChoiceSite)
+function add_choice!(tr::HierarchicalTrace, addr, cs::ChoiceSite)
+    tr.score += get_score(cs)
     tr.choices[addr] = cs
 end
-function set_call!(tr::HierarchicalTrace, addr, cs::CallSite)
+function add_call!(tr::HierarchicalTrace, addr, cs::CallSite)
     tr.score += get_score(cs)
     tr.calls[addr] = cs
 end
@@ -96,7 +98,7 @@ get_score(vcs::VectorizedCallSite) = vcs.score
 
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, d::Distribution{T}) where T
     s = rand(d)
-    set_choice!(tr, addr, ChoiceSite(logpdf(d, s), s))
+    add_choice!(tr, addr, ChoiceSite(logpdf(d, s), s))
     return s
 end
 
@@ -109,7 +111,7 @@ end
 @inline function (tr::HierarchicalTrace)(fn::typeof(rand), addr::Address, call::Function, args...)
     n_tr = Trace()
     ret = n_tr(call, args...)
-    set_call!(tr, addr, BlackBoxCallSite(n_tr, call, args, ret))
+    add_call!(tr, addr, BlackBoxCallSite(n_tr, call, args, ret))
     return ret
 end
 
@@ -130,7 +132,7 @@ end
     sc = sum(map(v_tr) do tr
                     get_score(tr)
                 end)
-    set_call!(tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -152,7 +154,7 @@ end
     sc = sum(map(v_tr) do tr
                     get_score(tr)
                 end)
-    set_call!(tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
+    add_call!(tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -209,4 +211,3 @@ function Jaynes.trace(fn::Function, args...)
     ret = tr(fn, args...)
     return BlackBoxCallSite(tr, fn, args, ret)
 end
-

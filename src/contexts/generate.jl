@@ -1,10 +1,11 @@
 mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection} <: ExecutionContext
     tr::T
     select::K
+    weight::Float64
     visited::Visitor
     params::LearnableParameters
-    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, Visitor(), LearnableParameters())
-    GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, Visitor(), params)
+    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), LearnableParameters())
+    GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), params)
 end
 Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
 Generate(select::ConstrainedSelection, params) = GenerateContext(Trace(), select, params)
@@ -18,11 +19,11 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
     if has_query(ctx.select, addr)
         s = get_query(ctx.select, addr)
         score = logpdf(d, s)
-        set_choice!(ctx.tr, addr, ChoiceSite(score, s))
-        ctx.tr.score += score
+        add_choice!(ctx.tr, addr, ChoiceSite(score, s))
+        ctx.weight += score
     else
         s = rand(d)
-        set_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
+        add_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
     end
     visit!(ctx.visited, addr)
     return s
@@ -48,7 +49,8 @@ end
                                         args...) where T <: Address
     cg_ctx = GenerateContext(Trace(), get_sub(ctx.select, addr))
     ret = cg_ctx(call, args...)
-    set_call!(ctx.tr, addr, BlackBoxCallSite(cg_ctx.tr, call, args, ret))
+    ctx.weight += cg_ctx.weight
+    add_call!(ctx.tr, addr, BlackBoxCallSite(cg_ctx.tr, call, args, ret))
     set_sub!(ctx.visited, addr, cg_ctx.visited)
     return ret
 end
@@ -65,6 +67,7 @@ end
     v_tr = Vector{HierarchicalTrace}(undef, len)
     v_ret[1] = ret
     v_tr[1] = ug_ctx.tr
+    ctx.weight += ug_ctx.weight
     set_sub!(ctx.visited, addr => 1, ug_ctx.visited)
     for i in 2:len
         ug_ctx.select = get_sub(ctx.select, addr => i)
@@ -73,12 +76,13 @@ end
         ret = ug_ctx(call, v_ret[i-1]...)
         v_ret[i] = ret
         v_tr[i] = ug_ctx.tr
+        ctx.weight += ug_ctx.weight
         set_sub!(ctx.visited, addr => i, ug_ctx.visited)
     end
     sc = sum(map(v_tr) do tr
                  get_score(tr)
              end)
-    set_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -94,6 +98,7 @@ end
     v_tr = Vector{HierarchicalTrace}(undef, len)
     v_ret[1] = ret
     v_tr[1] = ug_ctx.tr
+    ctx.weight += ug_ctx.weight
     set_sub!(ctx.visited, addr => 1, ug_ctx.visited)
     for i in 2:len
         ug_ctx.select = get_sub(ctx.select, addr => i)
@@ -102,12 +107,13 @@ end
         ret = ug_ctx(call, args[i]...)
         v_ret[i] = ret
         v_tr[i] = ug_ctx.tr
+        ctx.weight += ug_ctx.weight
         set_sub!(ctx.visited, addr => i, ug_ctx.visited)
     end
     sc = sum(map(v_tr) do tr
                  get_score(tr)
              end)
-    set_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -115,13 +121,13 @@ end
 function generate(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
     ctx = Generate(sel, params)
     ret = ctx(fn, args...)
-    return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.tr.score
+    return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(foldr), r::typeof(rand), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection
     ctx = Generate(sel)
     ctx(fn, r, addr, args...)
-    return ctx.tr.chm[addr], ctx.tr.chm[addr].score
+    return ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(sel::L, fn::typeof(foldr), call::Function, len::Int, args...) where L <: ConstrainedSelection
@@ -130,13 +136,13 @@ function generate(sel::L, fn::typeof(foldr), call::Function, len::Int, args...) 
     push!(anon_sel, addr, sel)
     ctx = Generate(anon_sel)
     ctx(fn, rand, addr, call, len, args...)
-    return ctx.tr.chm[addr], ctx.tr.chm[addr].score
+    return ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(sel::L, fn::typeof(map), r::typeof(rand), addr::Symbol, call::Function, args::Vector) where L <: ConstrainedSelection
     ctx = Generate(sel)
     ctx(fn, r, addr, call, args)
-    return ctx.tr.chm[addr], ctx.tr.chm[addr].score
+    return ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(sel::L, fn::typeof(map), call::Function, args::Vector) where L <: ConstrainedSelection
@@ -145,7 +151,7 @@ function generate(sel::L, fn::typeof(map), call::Function, args::Vector) where L
     push!(anon_sel, addr, sel)
     ctx = Generate(anon_sel)
     ctx(fn, rand, addr, call, args)
-    return ctx.tr.chm[addr], ctx.tr.chm[addr].score
+    return ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(fn, args...)

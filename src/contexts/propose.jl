@@ -1,7 +1,8 @@
 mutable struct ProposeContext{T <: Trace} <: ExecutionContext
     tr::T
-    params::Dict{Address, Any}
-    ProposeContext(tr::T) where T <: Trace = new{T}(tr, Dict{Address, Any}())
+    weight::Float64
+    params::LearnableParameters
+    ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, LearnableParameters())
 end
 Propose() = ProposeContext(Trace())
 
@@ -12,10 +13,9 @@ Propose() = ProposeContext(Trace())
                                        d::Distribution{K}) where {T <: Address, K}
     s = rand(d)
     score = logpdf(d, s)
-    set_choice!(ctx.tr, addr, ChoiceSite(score, s))
-    ctx.tr.score += score
+    add_choice!(ctx.tr, addr, ChoiceSite(score, s))
+    ctx.weight += score
     return s
-
 end
 
 # ------------ Call sites ------------ #
@@ -26,7 +26,8 @@ end
                                         args...) where T <: Address
     p_ctx = Propose()
     ret = p_ctx(call, args...)
-    set_call!(ctx.tr, addr, BlackBoxCallSite(p_ctx.tr, call, args, ret))
+    add_call!(ctx.tr, addr, BlackBoxCallSite(p_ctx.tr, call, args, ret))
+    ctx.weight += p_ctx.weight
     return ret
 end
 
@@ -51,7 +52,7 @@ end
     sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    set_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -76,7 +77,7 @@ end
     sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    set_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -84,5 +85,5 @@ end
 function propose(fn::Function, args...)
     ctx = Propose()
     ret = ctx(fn, args...)
-    return BlackBoxCallSite(ctx.tr, fn, args, ret), get_score(ctx.tr)
+    return BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
 end

@@ -23,9 +23,10 @@ function filter_step!(ps::Particles,
         # Store.
         ps.calls[i].args = new_args
         ps.calls[i].ret = ret
-        ps.lws[i] = update_ctx.tr.score
+        ps.lws[i] = update_ctx.weight
         update_ctx.select = observations
         update_ctx.visited = Visitor()
+        update_ctx.weight = 0.0
     end
     ltw = lse(ps.lws)
     ps.lws = ps.lws .- ltw
@@ -40,27 +41,24 @@ function filter_step!(ps::Particles,
 
     num_particles = length(ps)
     lws = Vector{Float64}(undef, num_particles)
-    prop_ctx = Proposal(Trace())
-    update_ctx = Update(Trace(), constraints)
-
+    update_ctx = Update(Trace())
     for i in 1:num_particles
         # Propose.
-        prop_ctx(proposal, ctx.ret[i], proposal_args...)
-
-        # Merge proposals and observations.
-        prop_score = prop_ctx.tr.score
-        select = merge(prop_ctx.tr, observations)
+        cl, p_weight = propose(proposal, ctx.ret[i], proposal_args...)
+        sel = selection(cl)
+        merge!(sel, observations)
 
         # Run update.
         update_ctx.tr =  ps.calls[i]
-        update_ctx.select = select
+        update_ctx.select = sel
         ret = update_ctx(ps.calls[i].fn, new_args...)
 
         # Store.
         ps.calls[i].args = new_args
         ps.calls[i].ret = ret
-        ps.lws[i] = update_ctx.score - pop_score
+        ps.lws[i] = update_ctx.weight - p_weight
         update_ctx.visited = Visitor()
+        update_ctx.weight = 0.0
     end
 
     ltw = lse(ps.lws)

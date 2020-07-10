@@ -2,15 +2,16 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
     prev::T
     tr::T
     select::L
+    weight::Float64
     discard::T
     visited::Visitor
-    params::Dict{Address, Any}
+    params::LearnableParameters
     function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
         un_sel = selection(sel)
-        new{T, typeof(un_sel)}(tr, Trace(), un_sel, Trace(), Visitor(), Dict{Address, Any}())
+        new{T, typeof(un_sel)}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), LearnableParameters())
     end
     function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-        new{T, L}(tr, Trace(), sel, Trace(), Visitor(), Dict{Address, Any}())
+        new{T, L}(tr, Trace(), sel, 0.0, Trace(), Visitor(), LearnableParameters())
     end
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
@@ -39,7 +40,7 @@ end
         prev = get_choice(ctx.prev, addr)
         if in_sel
             ret = rand(d)
-            set_choice!(ctx.discard, addr, prev)
+            add_choice!(ctx.discard, addr, prev)
         else
             ret = prev.val
         end
@@ -47,10 +48,10 @@ end
 
     score = logpdf(d, ret)
     if in_prev_chm && !in_sel
-        ctx.tr.score += score - prev.score
+        ctx.weight += score - prev.score
     end
 
-    set_choice!(ctx.tr, addr, ChoiceSite(score, ret))
+    add_choice!(ctx.tr, addr, ChoiceSite(score, ret))
     visit!(ctx.visited, addr)
     return ret
 end
@@ -63,10 +64,8 @@ end
                                           args...) where T <: Address
     ur_ctx = Regenerate(ctx.prev.chm[addr].trace, ctx.select[addr])
     ret = ur_ctx(call, args...)
-    ctx.tr.chm[addr] = BlackBoxCallSite(ur_ctx.tr, 
-                                        call, 
-                                        args, 
-                                        ret)
+    set_call!(ctx.tr, addr, BlackBoxCallSite(ur_ctx.tr, call, args, ret))
+    ctx.weight += ur_ctx.weight
     ctx.visited.tree[addr] = ur_ctx.visited
     return ret
 end
@@ -74,7 +73,7 @@ end
 # Convenience.
 function regenerate(ctx::RegenerateContext, bbcs::BlackBoxCallSite, new_args...)
     ret = ctx(bbcs.fn, new_args...)
-    return BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), UndefinedChange(), ctx.discard
+    return BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: UnconstrainedSelection

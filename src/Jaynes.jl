@@ -34,6 +34,7 @@ end
 include("inference/is.jl")
 include("inference/pf.jl")
 include("inference/mh.jl")
+include("inference/vi.jl")
 
 # Foreign models.
 include("foreign_model_interfaces/blackbox.jl")

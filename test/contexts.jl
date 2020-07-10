@@ -32,13 +32,13 @@ end
     stored_at_x = cl[:x]
     stored_at_y = cl[:y]
     sel = selection((:x, 5.0))
-    cl, retdiff, d = update(sel, cl)
+    cl, w, retdiff, d = update(sel, cl)
     # Discard should be original :x
     @test d[:x] == stored_at_x
     # New should be equal to constraint.
     @test cl[:x] == 5.0
     sel = selection((:y, 10.0))
-    cl, retdiff, d = update(sel, cl)
+    cl, w, retdiff, d = update(sel, cl)
     @test d[:y] == stored_at_y
     @test cl[:x] == 5.0
     @test cl[:y] == 10.0
@@ -49,13 +49,13 @@ end
     stored_at_x = cl[:x]
     stored_at_y = cl[:y]
     sel = selection(:x)
-    cl, retdiff, d = regenerate(sel, cl)
+    cl, w, retdiff, d = regenerate(sel, cl)
     # Discard should be original :x
     @test d[:x] == stored_at_x
     # New should not be equal to original.
     @test cl[:x] != stored_at_x
     sel = selection(:y)
-    cl, retdiff, d = regenerate(sel, cl)
+    cl, w, retdiff, d = regenerate(sel, cl)
     @test d[:y] == stored_at_y
 end
 

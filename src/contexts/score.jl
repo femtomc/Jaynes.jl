@@ -1,17 +1,15 @@
 mutable struct ScoreContext <: ExecutionContext
-    score::Float64
     select::ConstrainedSelection
-    params::Dict{Address, Any}
+    weight::Float64
+    params::LearnableParameters
     function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
         c_sel = selection(obs)
-        new(0.0, c_sel, Dict{Address, Any}())
+        new(c_sel, 0.0, LearnableParameters())
     end
-    ScoreContext(obs::K) where {K <: ConstrainedSelection} = new(0.0, obs)
-    Score() = new(0.0)
+    ScoreContext(obs::K) where {K <: ConstrainedSelection} = new(obs, 0.0, LearnableParameters())
 end
-Score(obs::Vector) = ScoreContext(obs)
+Score(obs::Vector) = ScoreContext(selection(obs))
 Score(obs::ConstrainedSelection) = ScoreContext(obs)
-Score() = ScoreContext()
 
 # ------------ Choice sites ------------ #
 
@@ -20,7 +18,7 @@ Score() = ScoreContext()
                                      d::Distribution{K}) where {T <: Address, K}
     has_query(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
     val = get_query(ctx.select, addr)
-    ctx.score += logpdf(d, val)
+    ctx.weight += logpdf(d, val)
     return val
 end
 
@@ -32,6 +30,7 @@ end
                                      args...) where T <: Address
     s_ctx = Score(ctx.select[addr])
     ret = s_ctx(call, args...)
+    ctx.weight += s_ctx.weight
     return ret
 end
 
@@ -76,5 +75,5 @@ end
 function score(sel::L, fn::Function, args...) where L <: ConstrainedSelection
     ctx = Score(sel)
     ret = ctx(fn, args...)
-    return ctx.score
+    return ctx.weight
 end

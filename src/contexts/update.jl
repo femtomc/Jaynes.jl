@@ -2,10 +2,11 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
     prev::T
     tr::T
     select::K
+    weight::Float64
     discard::T
     visited::Visitor
-    params::Dict{Address, Any}
-    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, Trace(), Visitor(), Dict{Address, Any}())
+    params::LearnableParameters
+    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, 0.0, Trace(), Visitor(), LearnableParameters())
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
 Update(select) = UpdateContext(Trace(), select)
@@ -38,7 +39,7 @@ end
     if in_selection
         ret = get_query(ctx.select, addr)
         in_prev_chm && begin
-            set_choice!(ctx.discard, addr, prev)
+            add_choice!(ctx.discard, addr, prev)
         end
         visit!(ctx.visited, addr)
     elseif in_prev_chm
@@ -50,11 +51,11 @@ end
     # Update.
     score = logpdf(d, ret)
     if in_prev_chm
-        ctx.tr.score += score - prev_score
+        ctx.weight += score - prev_score
     elseif in_selection
-        ctx.tr.score += score
+        ctx.weight += score
     end
-    set_choice!(ctx.tr, addr, ChoiceSite(score, ret))
+    add_choice!(ctx.tr, addr, ChoiceSite(score, ret))
 
     return ret
 end
@@ -73,12 +74,12 @@ end
         # TODO: Mjolnir.
         new_site, lw, _, discard = update(cs, ctx.select[addr], args...; diffs = map((_) -> UndefinedChange(), args))
 
-        set_choice!(ctx.discard, addr, CallSite(discard, cs.fn, cs.args, cs.ret))
+        add_choice!(ctx.discard, addr, CallSite(discard, cs.fn, cs.args, cs.ret))
     else
         new_site, lw = generate(call, ctx.select[addr], args...)
     end
-    set_call!(ctx.tr, addr, new_site)
-    ctx.tr.score += lw
+    add_call!(ctx.tr, addr, new_site)
+    ctx.weight += lw
     return new_site.ret
 end
 
@@ -214,7 +215,7 @@ end
 # Convenience.
 function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, args...)
     ret = ctx(bbcs.fn, args...)
-    return BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), UndefinedChange(), ctx.discard
+    return BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection
