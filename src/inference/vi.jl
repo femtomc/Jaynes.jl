@@ -4,13 +4,13 @@ function one_shot_gradient_estimator(sel::K,
                                      mod::Function,
                                      args::Tuple) where K <: ConstrainedSelection
     # Generate from variational model.
-    cl = trace(v_mod, v_args...)
+    _, cl = trace(v_mod, v_args...)
 
     # Get sample, merge into observation interfaces.
     merge!(sel, get_selection(cl))
 
     # Compute the score of the variational sample with respect to the original model.
-    mod_log_w = score(sel, mod, args...)
+    _, mod_log_w = score(sel, mod, args...)
 
     # Compute the likelihood weight.
     lw = mod_log_w - get_score(cl)
