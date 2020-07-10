@@ -6,10 +6,10 @@ function learnable_normal(x::Float64, y::Float64)
 end
 
 @testset "Convergence for learnable Normal" begin
-    cl, w = generate(selection((:q, 6.0)), learnable_normal, 5.0, 3.0)
+    ret, cl, w = generate(selection((:q, 6.0)), learnable_normal, 5.0, 3.0)
     params = get_parameters(cl)
     for i in 1:100
-        cl, w = generate(selection((:q, 6.0)), learnable_normal, 5.0, 3.0; params = params)
+        ret, cl, w = generate(selection((:q, 6.0)), learnable_normal, 5.0, 3.0; params = params)
         param_grads = get_parameter_gradients(cl, 1.0)
         update!(params, param_grads)
     end

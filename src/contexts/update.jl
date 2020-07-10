@@ -2,13 +2,15 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
     prev::T
     tr::T
     select::K
+    weight::Float64
     discard::T
     visited::Visitor
-    params::Dict{Address, Any}
-    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, Trace(), Visitor(), Dict{Address, Any}())
+    params::LearnableParameters
+    UpdateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, Trace(), select, 0.0, Trace(), Visitor(), LearnableParameters())
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
 Update(select) = UpdateContext(Trace(), select)
+get_prev(ctx::UpdateContext, addr) = get_call(ctx.prev, addr)
 
 # Update has a special dynamo.
 @dynamo function (mx::UpdateContext)(a...)
@@ -38,7 +40,7 @@ end
     if in_selection
         ret = get_query(ctx.select, addr)
         in_prev_chm && begin
-            set_choice!(ctx.discard, addr, prev)
+            add_choice!(ctx.discard, addr, prev)
         end
         visit!(ctx.visited, addr)
     elseif in_prev_chm
@@ -50,11 +52,11 @@ end
     # Update.
     score = logpdf(d, ret)
     if in_prev_chm
-        ctx.tr.score += score - prev_score
+        increment!(ctx, score - prev_score)
     elseif in_selection
-        ctx.tr.score += score
+        increment!(ctx, score)
     end
-    set_choice!(ctx.tr, addr, ChoiceSite(score, ret))
+    add_choice!(ctx.tr, addr, ChoiceSite(score, ret))
 
     return ret
 end
@@ -68,18 +70,20 @@ end
 
     has_addr = has_choice(ctx.prev, addr)
     if has_addr
-        cs = get_choice(ctx.prev, addr)
+        cs = get_prev(ctx, addr)
+        ss = get_subselection(ctx, addr)
 
         # TODO: Mjolnir.
-        new_site, lw, _, discard = update(cs, ctx.select[addr], args...; diffs = map((_) -> UndefinedChange(), args))
+        ret, new_site, lw, retdiff, discard = update(ss, cs, args...; diffs = map((_) -> UndefinedChange(), args))
 
-        set_choice!(ctx.discard, addr, CallSite(discard, cs.fn, cs.args, cs.ret))
+        add_choice!(ctx.discard, addr, CallSite(discard, cs.fn, cs.args, cs.ret))
     else
-        new_site, lw = generate(call, ctx.select[addr], args...)
+        ss = get_subselection(ctx, addr)
+        ret, new_site, lw = generate(ss, call, args...)
     end
-    set_call!(ctx.tr, addr, new_site)
-    ctx.tr.score += lw
-    return new_site.ret
+    add_call!(ctx.tr, addr, new_site)
+    increment!(ctx, w)
+    return ret
 end
 
 # Vectorized convenience functions for map.
@@ -214,7 +218,7 @@ end
 # Convenience.
 function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, args...)
     ret = ctx(bbcs.fn, args...)
-    return BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), UndefinedChange(), ctx.discard
+    return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection

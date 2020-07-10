@@ -7,20 +7,20 @@ geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 0 : 1 + rand(:geo, geo, p)
 end
 
 @testset "Trace" begin
-    cl = trace(geo, 0.5)
+    ret, cl = trace(geo, 0.5)
     @test haskey(cl.trace, :flip)
 end
 
 @testset "Generate" begin
-    cl, w = generate(geo, 0.5)
+    ret, cl, w = generate(geo, 0.5)
     @test haskey(cl.trace, :flip)
 end
 
 @testset "Update" begin
-    cl, w = generate(geo, 0.5)
+    ret, cl, w = generate(geo, 0.5)
     sel = selection((:flip, true))
-    cl, diff, w = update(sel, cl)
+    ret, cl, w, retdiff, d = update(sel, cl)
     @test cl[:flip] == true
-    cl, diff, w = update(sel, cl, 0.1)
+    ret, cl, w, retdiff, d = update(sel, cl, 0.1)
     @test cl[:flip] == true
 end
