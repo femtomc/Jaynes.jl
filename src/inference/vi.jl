@@ -3,12 +3,21 @@ function one_shot_gradient_estimator(sel::K,
                                      v_args::Tuple,
                                      mod::Function,
                                      args::Tuple) where K <: ConstrainedSelection
+    # Generate from variational model.
     cl = trace(v_mod, v_args...)
+
+    # Get sample, merge into observation interfaces.
     merge!(sel, get_selection(cl))
+
+    # Compute the score of the variational sample with respect to the original model.
     mod_log_w = score(sel, mod, args...)
-    println(mod_log_w)
+
+    # Compute the likelihood weight.
     lw = mod_log_w - get_score(cl)
-    println(lw)
+
+    # Compute the gradients with respect to the learnable parameters, scale them by the likelihood weight.
     param_grads = get_parameter_gradients(cl, 1.0, lw)
+
+    # Return the likelihood weight and the scales gradients for all learnable parameters.
     return lw, param_grads
 end
