@@ -6,7 +6,6 @@ using MacroTools
 using Distributions
 using DistributionsAD
 using Zygote
-using Flux.Optimise
 using Mjolnir
 using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
 using Mjolnir: Defaults
@@ -32,9 +31,9 @@ mutable struct Particles{C}
     lmle::Float64
 end
 
-include("inference/importance_sampling.jl")
-include("inference/particle_filtering.jl")
-include("inference/metropolis_hastings.jl")
+include("inference/is.jl")
+include("inference/pf.jl")
+include("inference/mh.jl")
 
 # Foreign models.
 include("foreign_model_interfaces/blackbox.jl")
