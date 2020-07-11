@@ -251,7 +251,7 @@ ChoiceBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K 
 """
 ```julia
 gradients = get_choice_gradients(cl::T, ret_grad) where T <: CallSite
-````
+```
 
 Returns a `Gradients` object which tracks the gradients with respect to the objective of random choices with differentiable `logpdf` in the program.
 """, get_choice_gradients)
