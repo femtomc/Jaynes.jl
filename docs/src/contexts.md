@@ -6,20 +6,25 @@ Here is a description of the set of "standard" contexts which are used frequentl
 
 ```@docs
 GenerateContext
+generate
 ```
 
 ```@docs
 ProposeContext
+propose
 ```
 
 ```@docs
 ScoreContext
+score
 ```
 
 ```@docs
 UpdateContext
+update
 ```
 
 ```@docs
 RegenerateContext
+regenerate
 ```
