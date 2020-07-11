@@ -31,7 +31,7 @@ abstract type BackpropagationContext <: ExecutionContext end
 # Learnable parameters
 mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationContext
     tr::T
-    score::Float64
+    weight::Float64
     visited::Visitor
     params::ParameterStore
     param_grads::Gradients
@@ -42,7 +42,7 @@ ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace,
 # Choice sites
 mutable struct ChoiceBackpropagateContext{T <: Trace, K <: UnconstrainedSelection} <: BackpropagationContext
     tr::T
-    score::Float64
+    weight::Float64
     visited::Visitor
     params::ParameterStore
     choice_grads::Gradients
@@ -57,7 +57,7 @@ ChoiceBackpropagate(tr::T, params, choice_grads, sel::K) where {T <: Trace, K <:
                                                       addr::T, 
                                                       d::Distribution{K}) where {T <: Address, K}
     s = get_choice(ctx.tr, addr).val
-    ctx.score += logpdf(d, s)
+    ctx.weight += logpdf(d, s)
     #visit!(ctx.visited, addr)
     return s
 end
@@ -66,7 +66,7 @@ end
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
     s = get_choice(ctx.tr, addr).val
-    ctx.score += logpdf(d, s)
+    ctx.weight += logpdf(d, s)
     #visit!(ctx.visited, addr)
     return s
 end
@@ -146,18 +146,18 @@ end
 
 # ------------ Accumulate gradients ------------ #
 
-function accumulate_parameter_gradients!(param_grads, cl::T, ret_grad) where T <: CallSite
+function accumulate_parameter_gradients!(param_grads, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl.trace, params, param_grads)
         ret = ctx(cl.fn, args...)
-        (ctx.score, ret)
+        (ctx.weight, ret)
     end
     blank = ParameterStore()
     _, back = Zygote.pullback(fn, cl.args, blank)
-    arg_grads, ps_grad = back((1.0, ret_grad, 1.0))
+    arg_grads, ps_grad = back((1.0, ret_grad))
     if !(ps_grad isa Nothing)
         for (addr, grad) in ps_grad.params
-            push!(param_grads, addr, grad)
+            push!(param_grads, addr, scaler * grad)
         end
     end
     return arg_grads
@@ -181,7 +181,7 @@ function choice_gradients(choice_grads, choice_selection, cl, ret_grad)
     fn = (args, trace) -> begin
         ctx = ChoiceBackpropagate(trace, ParameterStore(), choice_grads, choice_selection)
         ret = ctx(call, args...)
-        (ctx.score, ret)
+        (ctx.weight, ret)
     end
     _, back = Zygote.pullback(fn, cl.args, cl.trace)
     arg_grads, grad_ref = back((1.0, ret_grad))
@@ -199,8 +199,31 @@ function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     return choice_grads
 end
 
-function get_parameter_gradients(cl::T, ret_grad) where T <: CallSite
+function get_parameter_gradients(cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
     param_grads = Gradients()
-    accumulate_parameter_gradients!(param_grads, cl, ret_grad)
+    accumulate_parameter_gradients!(param_grads, cl, ret_grad, scaler)
     return param_grads
 end
+
+# ------------ Documentation ------------ #
+
+@doc(
+"""
+```julia
+mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationContext
+    tr::T
+    weight::Float64
+    visited::Visitor
+    params::ParameterStore
+    param_grads::Gradients
+end
+```
+`ParameterBackpropagationContext` is used to compute the gradients of parameters with respect to following objective:
+
+Outer constructors:
+```julia
+ParameterBackpropagate(tr::T, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, Gradients())
+ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, param_grads)
+```
+""", ParameterBackpropagateContext)
+

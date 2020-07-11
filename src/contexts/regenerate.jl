@@ -2,19 +2,21 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
     prev::T
     tr::T
     select::L
+    weight::Float64
     discard::T
     visited::Visitor
-    params::Dict{Address, Any}
+    params::LearnableParameters
     function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
         un_sel = selection(sel)
-        new{T, typeof(un_sel)}(tr, Trace(), un_sel, Trace(), Visitor(), Dict{Address, Any}())
+        new{T, typeof(un_sel)}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), LearnableParameters())
     end
     function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-        new{T, L}(tr, Trace(), sel, Trace(), Visitor(), Dict{Address, Any}())
+        new{T, L}(tr, Trace(), sel, 0.0, Trace(), Visitor(), LearnableParameters())
     end
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
 Regenerate(tr::Trace, sel::UnconstrainedSelection) = RegenerateContext(tr, sel)
+get_prev(ctx::RegenerateContext, addr) = get_call(ctx.prev, addr)
 
 # Regenerate has a special dynamo.
 @dynamo function (mx::RegenerateContext)(a...)
@@ -29,29 +31,23 @@ end
 @inline function (ctx::RegenerateContext)(call::typeof(rand), 
                                           addr::T, 
                                           d::Distribution{K}) where {T <: Address, K}
-    # Check if in previous trace's choice map.
+    visit!(ctx.visited, addr)
     in_prev_chm = has_choice(ctx.prev, addr)
-
-    # Check if in selection in meta.
     in_sel = has_query(ctx.select, addr)
-
     if in_prev_chm
         prev = get_choice(ctx.prev, addr)
         if in_sel
             ret = rand(d)
-            set_choice!(ctx.discard, addr, prev)
+            add_choice!(ctx.discard, addr, prev)
         else
             ret = prev.val
         end
     end
-
     score = logpdf(d, ret)
     if in_prev_chm && !in_sel
-        ctx.tr.score += score - prev.score
+        increment!(ctx, score - prev.score)
     end
-
-    set_choice!(ctx.tr, addr, ChoiceSite(score, ret))
-    visit!(ctx.visited, addr)
+    add_choice!(ctx.tr, addr, ChoiceSite(score, ret))
     return ret
 end
 
@@ -61,20 +57,19 @@ end
                                           addr::T,
                                           call::Function,
                                           args...) where T <: Address
-    ur_ctx = Regenerate(ctx.prev.chm[addr].trace, ctx.select[addr])
-    ret = ur_ctx(call, args...)
-    ctx.tr.chm[addr] = BlackBoxCallSite(ur_ctx.tr, 
-                                        call, 
-                                        args, 
-                                        ret)
-    ctx.visited.tree[addr] = ur_ctx.visited
+    visit!(ctx, addr)
+    ss = get_subselection(ctx, addr)
+    prev_call = get_prev(ctx, addr)
+    ret, cl, w, retdiff, d = regenerate(ss, prev_call, args...)
+    set_call!(ctx.tr, addr, cl)
+    increment!(ctx, w)
     return ret
 end
 
 # Convenience.
 function regenerate(ctx::RegenerateContext, bbcs::BlackBoxCallSite, new_args...)
     ret = ctx(bbcs.fn, new_args...)
-    return BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), UndefinedChange(), ctx.discard
+    return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: UnconstrainedSelection

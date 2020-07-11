@@ -536,11 +536,11 @@ end
 
 # ------------ Merge constrained selections and trace ------------ #
 
-function merge(tr::HierarchicalTrace,
-               sel::ConstrainedHierarchicalSelection)
-    tr_selection = get_selection(tr)
-    merge!(tr_selection, sel)
-    return tr_selection
+function merge(cl::T,
+               sel::ConstrainedHierarchicalSelection) where T <: CallSite
+    cl_selection = get_selection(cl)
+    merge!(cl_selection, sel)
+    return cl_selection
 end
 
 # ------------ Functional filter ------------ #
