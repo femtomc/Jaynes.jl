@@ -6,10 +6,6 @@ using MacroTools
 using Distributions
 using DistributionsAD
 using Zygote
-using Mjolnir
-using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
-using Mjolnir: Defaults
-import Mjolnir: trace
 
 # Toplevel importants :)
 const Address = Union{Symbol, Pair{Symbol, Int64}}
@@ -52,7 +48,12 @@ end
 
 # ------------ includes ------------ #
 
+using Mjolnir
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
+using Mjolnir: Defaults
+import Mjolnir: trace
 include("compiler/static.jl")
+
 include("trace.jl")
 include("selections.jl")
 include("utils/numerical.jl")
