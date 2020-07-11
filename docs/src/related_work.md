@@ -14,7 +14,7 @@ In the design space of compiler metaprogramming tools, the following systems hav
 1. [IRTools](https://github.com/FluxML/IRTools.jl)
 2. [Cassette](https://github.com/jrevels/Cassette.jl)
 
-In particular, `IRTools` provides thecore infrastructure for the implementation. Strictly speaking, `Jaynes` is not dependent on some fundamental mechanism which `IRTools` provides (only _generated functions_ from Julia) but `IRTools` greatly reduces the level of risk in working with generated functions and lowered code.
+In particular, `IRTools` provides a large part of the core infrastructure for the implementation. Strictly speaking, `Jaynes` is not dependent on a fundamental mechanism which only `IRTools` provides (anything can be expressed with _generated functions_ from Julia) but `IRTools` greatly reduces the level of risk in working with generated functions and lowered code.
 
 Jaynes has also been influenced by [Turing](https://turing.ml/dev/), the [Poutine effects system](https://docs.pyro.ai/en/stable/poutine.html) in Pyro, and [Unison lang](https://www.unisonweb.org/). Jaynes does not implement _algebraic effects_ in a rigorous (or static!) way, but the usage of execution contexts which control how certain method calls are executed is closely aligned with these concepts.
 
