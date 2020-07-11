@@ -2,7 +2,7 @@
 CurrentModule = Jaynes
 ```
 
-```@doc
+```@docs
 importance_sampling
 ```
 
