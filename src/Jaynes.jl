@@ -6,15 +6,51 @@ using MacroTools
 using Distributions
 using DistributionsAD
 using Zygote
-using Flux.Optimise
 using Mjolnir
 using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
 using Mjolnir: Defaults
 import Mjolnir: trace
 
 # Toplevel importants :)
-abstract type ExecutionContext end
 const Address = Union{Symbol, Pair{Symbol, Int64}}
+
+# ------------ Com-pirate fixes ------------ #
+
+# TODO: This chunk below me is currently required to fix an unknown performance issue in Base. Don't be alarmed if this suddenly disappears in future versions.
+unwrap(gr::GlobalRef) = gr.name
+unwrap(gr) = gr
+
+# Whitelist includes vectorized calls.
+whitelist = [:rand, :learnable, :foldr, :map, :soss_fmi, :gen_fmi, :turing_fmi]
+
+# Fix for specialized tracing.
+function recur!(ir, to = self)
+    for (x, st) in ir
+        isexpr(st.expr, :call) && begin
+            ref = unwrap(st.expr.args[1])
+            ref in whitelist || 
+            !(unwrap(st.expr.args[1]) in names(Base)) ||
+            continue
+            ir[x] = Expr(:call, to, st.expr.args...)
+        end
+    end
+    return ir
+end
+
+# Fix for _apply_iterate.
+function f_push!(arr::Array, t::Tuple{}) end
+f_push!(arr::Array, t::Array) = append!(arr, t)
+f_push!(arr::Array, t::Tuple) = append!(arr, t)
+f_push!(arr, t) = push!(arr, t)
+function flatten(t::Tuple)
+    arr = Any[]
+    for sub in t
+        f_push!(arr, sub)
+    end
+    return arr
+end
+
+# ------------ includes ------------ #
 
 include("compiler/static.jl")
 include("trace.jl")
@@ -23,18 +59,8 @@ include("utils/numerical.jl")
 include("utils/vectorized.jl")
 include("utils/visualization.jl")
 include("compiler/diffs.jl")
-include("contexts/contexts.jl")
-
-# Utility structure for collections of samples.
-mutable struct Particles{C}
-    calls::Vector{C}
-    lws::Vector{Float64}
-    lmle::Float64
-end
-
-include("inference/importance_sampling.jl")
-include("inference/particle_filtering.jl")
-include("inference/metropolis_hastings.jl")
+include("contexts.jl")
+include("inference.jl")
 
 # Foreign models.
 include("foreign_model_interfaces/blackbox.jl")

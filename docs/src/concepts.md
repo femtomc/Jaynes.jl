@@ -1,4 +1,4 @@
-The majority of the concepts used in the initial implementation of this package come from a combination of research papers and research systems (the most notable in the Julia ecosystem is [Gen](https://www.gen.dev/)). See [Related Work](related_work.md) for a comprehensive list of references.
+The majority of the concepts used in the initial implementation of this package come from a combination of research papers and research systems (the most notable in the Julia ecosystem is [Gen](https://www.gen.dev/)). See [Related Work](related_work.md) for a more comprehensive list of references.
 
 ## Universal probabilistic programming
 
@@ -35,45 +35,17 @@ Here, `rand` call sites are also given addresses and recursive calls produce a h
           val  = true
 ```
 
-One simple question arises: what exactly does this _distribution over choice maps_ look like in a mathematical sense? To answer this question, we have to ask how control flow and iteration language features affect the "abstract space" of the shape of the program trace. For the moment, we will consider only randomness which occurs explicitly at addresses in each method call (i.e. `rand` calls with distributions as target) - it turns out that we can safely focus on the shape of the trace in this case without loss of generalization. Randomness which occurs inside of a `rand` call where the target of the call is another method call can be handled by the same techniques we introduce to analyze the shape of a single method body without target calls. Let's make this concrete by analyzing the following program:
+One simple question arises: what exactly does this _distribution over choice maps_ look like in a mathematical sense? To answer this question, we have to ask how control flow and iteration language features affect the "abstract space" of the shape of the program trace. For the moment, we will consider only randomness which occurs explicitly at addresses in each method call (i.e. `rand` calls with distributions as target) - it turns out that we can safely focus on the shape of the trace in this case without loss of generalization. Randomness which occurs inside of a `rand` call where the target of the call is another method call can be handled by the same techniques we introduce to analyze the shape of a single method body without target calls.
 
-```julia
-function foo(x::Float64)
-    y = rand(:y, Normal, (x, 1.0))
-    if y > 1.0
-        z = rand(:z, Normal, (y, 1.0))
-    end
-    return y
-end
-```
+## Choice and call site abstractions
 
-So, there are basically two "branches" in the trace. One branch produces a distribution over the values of the addressed random variables
+Ideally, we'd like the construction of probabilistic programs to parallel the construction of regular programs - we'd like the additional probabilistic semantics to leave the original execution semantics invariant (mostly). In other words, we don't want to give up the powerful abstractions and features which we have become accustomed to while programming in Julia normally. Well, there's good news - you don't have to! You will have to keep a few new things in mind (see [the modeling language section](modeling_language.md) for more details) but the whole language should remain open for your use.
 
-```math
-P(y, z; x) = P(z | y)P(y | x)
-```
+One of the ways which Jaynes accomplishes this is by creating a set of "record site" abstractions which denote places where the tracer can take over for the normal execution or call semantics which the programmer expects. This notion of an interception site is central to a number of compiler plug-in style systems (`IRTools` and `Cassette` included). Systems like these might see a call and intercept the call, possible replacing the call with another call with extra points of overloadability. Oh, I should also mention that these systems do this recursively through the call stack 🐱. As far as I know, it is rare to be able to do this in languages. You definitely need your language to be dynamic, and probably also JIT compiled - in other words, Julia.
 
-and the other branch produces a distribution:
+To facilitate probabilistic programming, Jaynes intercepts calls to `rand` (as you might have guessed) and interprets them differently depending on the _execution context_ which the user calls on their toplevel function. The normal Julia execution context is activated by simply calling the toplevel function directly - but Jaynes provides access to a number of additional contexts which perform useful functionality for the design and implementation of sample-based inference algorithms. In general:
 
-```math
-P(y ; x) = P(y | x)
-```
+1. When Jaynes sees an addressed rand site `rand(:x, d)` where `d` is a `Distribution` instance from the `Distributions.jl` package, it intercepts it and creates a `ChoiceSite` record of the interception as well as some metadata to facilitate inference. 
+2. When Jaynes sees an addressed rand site `rand(:x, fn, args...)`, it intercepts it and creates `CallSite` record of the interception, and then recurses into the call to find other points of interception.
 
-but how do you express this as a valid measure _itself_? One way is to think about an auxiliary "indicator" measure over the possible sets of _addresses_ in the program:
-
-```math
-P(A), \text{where $A$ takes a set as a value}
-```
-
-We actually know a bit about the space of values of ``A`` and about this measure.  
-
-1. The space of values is the powerset of the set of all addresses.
-2. The measure ``P(A)`` is unknown, but if the program halts, it is normalized.
-
-So we can imagine that the generative process selects an ``A``
-
-## Programming the distribution over choice maps
-
-When interacting with a probabilistic programming framework which utilizes the choice map abstraction, the programming model requires that the user keep unique properties of the desired distribution over choice maps in mind. Here are a set of key difference between classical parametric Bayesian models and universal probabilistic programs:
-
-## Inference
+These are the two basic patterns which are repeated throughout the implementation of execution contexts.
