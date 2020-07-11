@@ -242,8 +242,8 @@ end
 
 Outer constructors:
 ```julia
-ParameterBackpropagate(tr::T, params) where T <: Trace = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, Gradients())
-ChoiceBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, param_grads)
+ChoiceBackpropagate(tr::T, params, choice_grads) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, choice_grads, UnconstrainedAllSelection())
+ChoiceBackpropagate(tr::T, params, choice_grads, sel::K) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, choice_grads, sel)
 ```
 """, ChoiceBackpropagateContext)
 
@@ -259,7 +259,7 @@ Returns a `Gradients` object which tracks the gradients with respect to the obje
 @doc(
 """
 ```julia
-parameter_gradients = get_parameter_gradients(cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+gradients = get_parameter_gradients(cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
 ```
 
 Returns a `Gradients` object which tracks the gradients of the objective with respect to parameters in the program.
