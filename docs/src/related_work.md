@@ -4,15 +4,15 @@ In contrast to Gen (which provides powerful optimizations for programs written i
 
 Jaynes uses many concepts from the design and implementation of Gen. First and foremost, I would recommend users of Jaynes become familiar with Gen - to understand the problems which Jaynes attempts to solve. The following papers may be useful in this regard:
 
-    1. [Gen: a general-purpose probabilistic programming system with programmable inference](https://dl.acm.org/doi/10.1145/3314221.3314642)
-    2. [Probabilistic programming with programmable inference](https://people.csail.mit.edu/rinard/paper/pldi18.pdf)
-    3. [A new approach to probabilistic programming inference](http://proceedings.mlr.press/v33/wood14.pdf)
-    4. [Lightweight Implementations of probabilistic programming languages via transformational compilation](http://proceedings.mlr.press/v15/wingate11a/wingate11a.pdf)
+1. [Gen: a general-purpose probabilistic programming system with programmable inference](https://dl.acm.org/doi/10.1145/3314221.3314642)
+2. [Probabilistic programming with programmable inference](https://people.csail.mit.edu/rinard/paper/pldi18.pdf)
+3. [A new approach to probabilistic programming inference](http://proceedings.mlr.press/v33/wood14.pdf)
+4. [Lightweight Implementations of probabilistic programming languages via transformational compilation](http://proceedings.mlr.press/v15/wingate11a/wingate11a.pdf)
 
 In the design space of compiler metaprogramming tools, the following systems have been highly influential in the design of Jaynes
 
-    1. [IRTools](https://github.com/FluxML/IRTools.jl)
-    2. [Cassette](https://github.com/jrevels/Cassette.jl)
+1. [IRTools](https://github.com/FluxML/IRTools.jl)
+2. [Cassette](https://github.com/jrevels/Cassette.jl)
 
 In particular, `IRTools` provides thecore infrastructure for the implementation. Strictly speaking, `Jaynes` is not dependent on some fundamental mechanism which `IRTools` provides (only _generated functions_ from Julia) but `IRTools` greatly reduces the level of risk in working with generated functions and lowered code.
 

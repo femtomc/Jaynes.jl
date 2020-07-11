@@ -2,11 +2,11 @@ using Documenter
 using Jaynes
 
 makedocs(sitename = "Jaynes.jl",
-         pages = ["Architecture" => "index.md",
+         pages = ["Introduction" => "index.md",
+                  "Concepts" => "concepts.md",
                   "Modeling language" => "modeling_lang.md",
                   "Examples" => "examples.md",
-                  #"Concepts" => "concepts.md",
-                  #"Trace types" => "trace_types.md",
+                  "Architecture" => "architecture.md",
                   "Library" => ["Execution contexts" => "contexts.md",
                                 "Selection interfaces" => "selection_interface.md",
                                 "Inference" => "inference.md",
