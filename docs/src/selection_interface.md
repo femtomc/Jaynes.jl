@@ -1,1 +1,1 @@
-Jaynes features an extensive selection query language for addressing sources of randomness.
+Jaynes features an extensive selection query language for addressing sources of randomness. The ability to constrain random choices, compute proposals for random choices in MCMC kernels, as well as gradients requires a solid set of interfaces for selecting addresses in `rand` calls in your program. Here, we present the main interfaces which you are likely to use.

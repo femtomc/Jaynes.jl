@@ -19,20 +19,11 @@ geo(p::Float64) = rand(:flip, Bernoulli, (p, )) == 1 ? 0 : 1 + rand(:geo, geo, p
 Here, `rand` call sites are also given addresses and recursive calls produce a hierarchical address space. A sample from the distribution over choice maps for this program might produce the following map:
 
 ```julia
- :geo => :flip
-          val  = false
-
- flip
-          val  = false
-
- :geo => (:geo => :flip)
-          val  = false
-
- :geo => (:geo => (:geo => :flip))
-          val  = false
-
- :geo => (:geo => (:geo => (:geo => :flip)))
-          val  = true
+ :geo => :flip : false
+ flip : false
+ :geo => (:geo => :flip) : false
+ :geo => (:geo => (:geo => :flip)) : false
+ :geo => (:geo => (:geo => (:geo => :flip))) : true
 ```
 
 One simple question arises: what exactly does this _distribution over choice maps_ look like in a mathematical sense? To answer this question, we have to ask how control flow and iteration language features affect the "abstract space" of the shape of the program trace. For the moment, we will consider only randomness which occurs explicitly at addresses in each method call (i.e. `rand` calls with distributions as target) - it turns out that we can safely focus on the shape of the trace in this case without loss of generalization. Randomness which occurs inside of a `rand` call where the target of the call is another method call can be handled by the same techniques we introduce to analyze the shape of a single method body without target calls.
@@ -41,7 +32,7 @@ One simple question arises: what exactly does this _distribution over choice map
 
 Ideally, we'd like the construction of probabilistic programs to parallel the construction of regular programs - we'd like the additional probabilistic semantics to leave the original execution semantics invariant (mostly). In other words, we don't want to give up the powerful abstractions and features which we have become accustomed to while programming in Julia normally. Well, there's good news - you don't have to! You will have to keep a few new things in mind (see [the modeling language section](modeling_language.md) for more details) but the whole language should remain open for your use.
 
-One of the ways which Jaynes accomplishes this is by creating a set of "record site" abstractions which denote places where the tracer can take over for the normal execution or call semantics which the programmer expects. This notion of an interception site is central to a number of compiler plug-in style systems (`IRTools` and `Cassette` included). Systems like these might see a call and intercept the call, possible replacing the call with another call with extra points of overloadability. Oh, I should also mention that these systems do this recursively through the call stack 🐱. As far as I know, it is rare to be able to do this in languages. You definitely need your language to be dynamic, and probably also JIT compiled - in other words, Julia.
+One of the ways which Jaynes accomplishes this is by creating a set of "record site" abstractions which denote places where the tracer can take over for the normal execution or call semantics which the programmer expects. This notion of an interception site is central to a number of compiler plug-in style systems (`IRTools` and `Cassette` included). Systems like these might see a call and intercept the call, possible replacing the call with another call with extra points of overloadability. Oh, I should also mention that these systems do this recursively through the call stack 😺. As far as I know, it is rare to be able to do this natively in languages. You definitely need your language to be dynamic and likely JIT compiled (so that you can access parts of the intermediate representation) - in other words, Julia.
 
 To facilitate probabilistic programming, Jaynes intercepts calls to `rand` (as you might have guessed) and interprets them differently depending on the _execution context_ which the user calls on their toplevel function. The normal Julia execution context is activated by simply calling the toplevel function directly - but Jaynes provides access to a number of additional contexts which perform useful functionality for the design and implementation of sample-based inference algorithms. In general:
 
