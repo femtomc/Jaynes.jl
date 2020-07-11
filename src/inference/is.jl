@@ -45,4 +45,4 @@ particles, normalized_weights = importance_sampling(model::Function, args::Tuple
 Run importance sampling on the posterior over unconstrained addresses and values. Returns an instance of `Particles` and normalized weights.
 
 `importance_sampling` can be customized with custom proposal functions.
-"""
+""", importance_sampling)
