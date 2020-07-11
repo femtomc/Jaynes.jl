@@ -156,3 +156,31 @@ end
 function generate(fn, args...)
     return generate(ConstrainedHierarchicalSelection(), fn, args...)
 end
+
+# ------------ Documentation ------------ #
+
+@doc(
+"""
+```julia
+mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection} <: ExecutionContext
+    tr::T
+    select::K
+    weight::Float64
+    visited::Visitor
+    params::LearnableParameters
+end
+```
+`GenerateContext` is used to generate traces, as well as record and accumulate likelihood weights given observations at addressed randomness.
+
+Inner constructors:
+```julia
+GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), LearnableParameters())
+GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), params)
+```
+Outer constructs:
+```julia
+Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
+Generate(select::ConstrainedSelection, params) = GenerateContext(Trace(), select, params)
+Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
+```
+""", GenerateContext)
