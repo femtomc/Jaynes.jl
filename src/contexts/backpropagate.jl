@@ -218,7 +218,7 @@ mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationConte
     param_grads::Gradients
 end
 ```
-`ParameterBackpropagationContext` is used to compute the gradients of parameters with respect to following objective:
+`ParameterBackpropagateContext` is used to compute the gradients of parameters with respect to following objective:
 
 Outer constructors:
 ```julia
@@ -227,3 +227,31 @@ ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace,
 ```
 """, ParameterBackpropagateContext)
 
+@doc(
+"""
+```julia
+mutable struct ChoiceBackpropagateContext{T <: Trace} <: BackpropagationContext
+    tr::T
+    weight::Float64
+    visited::Visitor
+    params::ParameterStore
+    param_grads::Gradients
+end
+```
+`ChoiceBackpropagateContext` is used to compute the gradients of choices with respect to following objective:
+
+Outer constructors:
+```julia
+ParameterBackpropagate(tr::T, params) where T <: Trace = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, Gradients())
+ChoiceBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, param_grads)
+```
+""", ChoiceBackpropagateContext)
+
+@doc(
+"""
+```julia
+gradients = get_choice_gradients(cl::T, ret_grad) where T <: CallSite
+````
+
+Returns a `Gradients` object which tracks the gradients with respect to the objective of random choices with differentiable `logpdf` in the program.
+""", get_choice_gradients)
