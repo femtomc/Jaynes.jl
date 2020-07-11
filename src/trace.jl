@@ -218,3 +218,86 @@ function Jaynes.trace(fn::Function, args...)
     ret = tr(fn, args...)
     return ret, BlackBoxCallSite(tr, fn, args, ret)
 end
+
+# ------------ Documentation ------------ #
+
+@doc(
+"""
+```julia
+abstract type Trace end
+```
+Abstract base type of all traces.
+""", Trace)
+
+@doc(
+"""
+```julia
+mutable struct HierarchicalTrace <: Trace
+    calls::Dict{Address, CallSite}
+    choices::Dict{Address, ChoiceSite}
+    params::Dict{Address, LearnableSite}
+    score::Float64
+    function HierarchicalTrace()
+        new(Dict{Address, CallSite}(), 
+            Dict{Address, ChoiceSite}(),
+            Dict{Address, LearnableSite}(),
+            0.0)
+    end
+end
+```
+Structured execution trace with tracked randomness in a function call.
+""", HierarchicalTrace)
+
+@doc(
+"""
+```julia
+struct ChoiceSite{T} <: RecordSite
+    score::Float64
+    val::T
+end
+```
+A record of a random sample at an addressed `rand` call with a `Distribution` instance. Keeps the value of the random sample and the `logpdf` score.
+""", ChoiceSite)
+
+@doc(
+"""
+```julia
+abstract type CallSite <: RecordSite end
+```
+Abstract base type of all call sites.
+""", CallSite)
+
+@doc(
+"""
+```julia
+mutable struct BlackBoxCallSite{T <: Trace, J, K} <: CallSite
+    trace::T
+    fn::Function
+    args::J
+    ret::K
+end
+```
+A record of a black-box call (e.g. no special tracer language features). Records the `fn` and `args` for the call, as well as the `ret` return value.
+""", BlackBoxCallSite)
+
+@doc(
+"""
+```julia
+mutable struct VectorizedCallSite{F <: Function, T <: Trace, J, K} <: CallSite
+    subtraces::Vector{T}
+    score::Float64
+    fn::Function
+    args::J
+    ret::Vector{K}
+end
+```
+A record of a call site using the special `map` and `foldr` tracer language features. Informs the tracer that the call conforms to a special pattern of randomness dependency, which allows the storing of `Trace` instances sequentially in a vector.
+""", VectorizedCallSite)
+
+@doc(
+"""
+```julia
+ret, black_box_call_site = Jaynes.trace(fn::Function, args...)
+```
+Convenience function which traces the call for addressed randomness, returns the return value and a call site representation.
+""", trace)

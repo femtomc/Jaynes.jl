@@ -39,11 +39,22 @@ end
 
 @doc(
 """
+Samples from the model prior.
 ```julia
-particles, normalized_weights = importance_sampling(model::Function, args::Tuple; observations::ConstrainedSelection = ConstrainedAnywhereSelection(), num_samples::Int = 5000)
-particles, normalized_weights = importance_sampling(model::Function, args::Tuple, proposal::Function, proposal_args::Tuple; observations::ConstrainedSelection = ConstrainedAnywhereSelection(), num_samples::Int = 5000)
+particles, normalized_weights = importance_sampling(model::Function, 
+                                                    args::Tuple; 
+                                                    observations::ConstrainedSelection = ConstrainedAnywhereSelection(), 
+                                                    num_samples::Int = 5000)
 ```
-Run importance sampling on the posterior over unconstrained addresses and values. Returns an instance of `Particles` and normalized weights.
+Samples from a programmer-provided proposal function.
+```julia
+particles, normalized_weights = importance_sampling(model::Function, 
+                                                    args::Tuple, 
+                                                    proposal::Function, 
+                                                    proposal_args::Tuple; 
+                                                    observations::ConstrainedSelection = ConstrainedAnywhereSelection(), 
+                                                    num_samples::Int = 5000)
+```
 
-`importance_sampling` can be customized with custom proposal functions.
+Run importance sampling on the posterior over unconstrained addresses and values. Returns an instance of `Particles` and normalized weights.
 """, importance_sampling)
