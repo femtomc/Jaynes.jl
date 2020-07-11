@@ -104,7 +104,7 @@ Inner constructors:
 ```julia
 ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, LearnableParameters())
 ```
-Outer constructs:
+Outer constructors:
 ```julia
 Propose() = ProposeContext(Trace())
 ```

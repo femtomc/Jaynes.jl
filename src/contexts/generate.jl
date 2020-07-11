@@ -177,7 +177,7 @@ Inner constructors:
 GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), LearnableParameters())
 GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), params)
 ```
-Outer constructs:
+Outer constructors:
 ```julia
 Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
 Generate(select::ConstrainedSelection, params) = GenerateContext(Trace(), select, params)

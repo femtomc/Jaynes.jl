@@ -2,8 +2,6 @@
 CurrentModule = Jaynes
 ```
 
-## Execution contexts
-
 ```@docs
 GenerateContext
 ```

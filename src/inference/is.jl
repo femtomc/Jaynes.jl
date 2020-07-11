@@ -18,7 +18,7 @@ function importance_sampling(model::Function,
                              proposal::Function,
                              proposal_args::Tuple; 
                              observations::ConstrainedSelection = ConstrainedAnywhereSelection(),
-                             num_samples::Int = 5000) where T
+                             num_samples::Int = 5000)
     calls = Vector{BlackBoxCallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     prop_ctx = Propose()
@@ -34,3 +34,15 @@ function importance_sampling(model::Function,
     lnw = lws .- ltw
     return Particles(calls, lws, lmle), lnw
 end
+
+# ------------ Documentation ------------ #
+@doc(
+"""
+```julia
+particles, normalized_weights = importance_sampling(model::Function, args::Tuple; observations::ConstrainedSelection = ConstrainedAnywhereSelection(), num_samples::Int = 5000)
+particles, normalized_weights = importance_sampling(model::Function, args::Tuple, proposal::Function, proposal_args::Tuple; observations::ConstrainedSelection = ConstrainedAnywhereSelection(), num_samples::Int = 5000)
+```
+Run importance sampling on the posterior over unconstrained addresses and values. Returns an instance of `Particles` and normalized weights.
+
+`importance_sampling` can be customized with custom proposal functions.
+"""

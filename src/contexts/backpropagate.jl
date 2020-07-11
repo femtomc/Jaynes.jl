@@ -220,7 +220,7 @@ end
 ```
 `ParameterBackpropagationContext` is used to compute the gradients of parameters with respect to following objective:
 
-Outer constructs:
+Outer constructors:
 ```julia
 ParameterBackpropagate(tr::T, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, Gradients())
 ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, param_grads)
