@@ -36,6 +36,7 @@ function importance_sampling(model::Function,
 end
 
 # ------------ Documentation ------------ #
+
 @doc(
 """
 ```julia
