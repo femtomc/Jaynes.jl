@@ -255,3 +255,12 @@ gradients = get_choice_gradients(cl::T, ret_grad) where T <: CallSite
 
 Returns a `Gradients` object which tracks the gradients with respect to the objective of random choices with differentiable `logpdf` in the program.
 """, get_choice_gradients)
+
+@doc(
+"""
+```julia
+parameter_gradients = get_parameter_gradients(cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+```
+
+Returns a `Gradients` object which tracks the gradients of the objective with respect to parameters in the program.
+""", get_parameter_gradients)
