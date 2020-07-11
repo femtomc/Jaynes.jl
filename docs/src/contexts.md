@@ -25,5 +25,5 @@ RegenerateContext
 ```
 
 ```@docs
-BackpropagateContext
+ParameterBackpropagateContext
 ```

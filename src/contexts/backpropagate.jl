@@ -204,3 +204,26 @@ function get_parameter_gradients(cl::T, ret_grad, scaler::Float64 = 1.0) where T
     accumulate_parameter_gradients!(param_grads, cl, ret_grad, scaler)
     return param_grads
 end
+
+# ------------ Documentation ------------ #
+
+@doc(
+"""
+```julia
+mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationContext
+    tr::T
+    weight::Float64
+    visited::Visitor
+    params::ParameterStore
+    param_grads::Gradients
+end
+```
+`ParameterBackpropagationContext` is used to compute the gradients of parameters with respect to following objective:
+
+Outer constructs:
+```julia
+ParameterBackpropagate(tr::T, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, Gradients())
+ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, param_grads)
+```
+""", ParameterBackpropagateContext)
+
