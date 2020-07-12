@@ -7,7 +7,7 @@
 [![Build Status](https://travis-ci.org/femtomc/Jaynes.jl.svg?branch=master)](https://travis-ci.org/femtomc/Jaynes.jl)
 [![codecov](https://codecov.io/gh/femtomc/Jaynes.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/femtomc/Jaynes.jl)
 
-_Jaynes_ is a universal probabilistic programming framework which uses IR transformations and contextual dispatch to implement the core routines for modeling and inference.
+_Jaynes_ is a (research-oriented) universal probabilistic programming framework which uses IR transformations and contextual dispatch to implement the core routines for modeling and inference.
 
 Jaynes currently supports the following inference algorithms:
 
