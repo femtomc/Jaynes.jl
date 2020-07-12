@@ -35,21 +35,24 @@ end
     return ret
 end
 
+# ------------ Vectorized call sites ------------ #
+
 @inline function (ctx::ScoreContext)(c::typeof(foldr), 
                                      fn::typeof(rand), 
                                      addr::Address, 
                                      call::Function, 
                                      len::Int, 
                                      args...)
-    s_ctx = Score(ctx.select[addr => 1])
-    ret = s_ctx(call, args...)
+    ss = get_subselection(ctx, addr => 1)
+    ret, w = score(ss, call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_ret[1] = ret
+    increment!(ctx, w)
     for i in 2:len
-        s_ctx.select = ctx.select[addr => i]
-        s_ctx.tr = Trace()
-        ret = s_ctx(call, v_ret[i-1]...)
+        ss = get_subselection(ctx, addr => i)
+        ret, w = score(ss, call, v_ret[i-1]...)
         v_ret[i] = ret
+        increment!(ctx, w)
     end
     return v_ret
 end
@@ -59,20 +62,22 @@ end
                                      addr::Address, 
                                      call::Function, 
                                      args::Vector)
-    s_ctx = Score(ctx.select[addr => 1])
-    ret = s_ctx(call, args[1]...)
-    len = length(args)
+    ss = get_subselection(ctx, addr => 1)
+    ret, w = score(ss, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_ret[1] = ret
+    increment!(ctx, w)
     for i in 2:len
-        s_ctx.select = ctx.select[addr => i]
-        ret = s_ctx(call, args[i]...)
+        ss = get_subselection(ctx, addr => i)
+        ret, w = score(ss, call, args[i]...)
         v_ret[i] = ret
+        increment!(ctx, w)
     end
     return v_ret
 end
 
-# Convenience.
+# ------------ Convenience ------------ #
+
 function score(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
     ctx = Score(sel, params)
     ret = ctx(fn, args...)

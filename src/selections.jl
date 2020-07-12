@@ -98,6 +98,10 @@ has_param(ps::LearnableParameters, addr) = haskey(ps.utility, addr)
 
 get_param(ps::LearnableParameters, addr) = getindex(ps.utility, addr)
 
+has_sub(ps::LearnableParameters, addr) = haskey(ps.tree, addr)
+
+get_sub(ps::LearnableParameters, addr) = getindex(ps.tree, addr)
+
 function push!(ps::LearnableParameters, addr, val)
     ps.utility[addr] = val
 end

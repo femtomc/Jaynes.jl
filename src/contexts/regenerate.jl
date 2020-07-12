@@ -51,7 +51,7 @@ end
     return ret
 end
 
-# ------------ Call sites ------------ #
+# ------------ Black box call sites ------------ #
 
 @inline function (ctx::RegenerateContext)(c::typeof(rand),
                                           addr::T,
@@ -66,7 +66,8 @@ end
     return ret
 end
 
-# Convenience.
+# ------------ Convenience ------------ #
+
 function regenerate(ctx::RegenerateContext, bbcs::BlackBoxCallSite, new_args...)
     ret = ctx(bbcs.fn, new_args...)
     return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard

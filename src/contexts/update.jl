@@ -10,7 +10,6 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection} <: Execution
 end
 Update(tr::Trace, select) = UpdateContext(tr, select)
 Update(select) = UpdateContext(Trace(), select)
-get_prev(ctx::UpdateContext, addr) = get_call(ctx.prev, addr)
 
 # Update has a special dynamo.
 @dynamo function (mx::UpdateContext)(a...)
@@ -61,7 +60,7 @@ end
     return ret
 end
 
-# ------------ Call sites ------------ #
+# ------------ Black box call sites ------------ #
 
 @inline function (ctx::UpdateContext)(c::typeof(rand),
                                       addr::T,
@@ -86,7 +85,10 @@ end
     return ret
 end
 
+# ------------ Vectorized call sites ------------ #
+
 # Vectorized convenience functions for map.
+
 function retrace_retained(addr::Address,
                           new_trs::Vector{T},
                           vcs::VectorizedCallSite{typeof(map), T, J, K}, 
@@ -166,6 +168,7 @@ end
 end
 
 # Vectorized convenience functions for foldr.
+
 function retrace_retained(addr::Address,
                           new_trs::Vector{T},
                           vcs::VectorizedCallSite{typeof(foldr), T, J, K}, 
@@ -215,7 +218,8 @@ end
     return new_ret
 end
 
-# Convenience.
+# ------------ Convenience ------------ #
+
 function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, args...)
     ret = ctx(bbcs.fn, args...)
     return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard

@@ -123,18 +123,16 @@ end
 end
 
 # Vectorized foldr call.
-@inline function (tr::HierarchicalTrace)(c::typeof(foldr), r::typeof(rand), addr::Address, call::Function, len::Int, args...)
-    n_tr = Trace()
-    ret = n_tr(call, args...)
+@inline function (tr::HierarchicalTrace)(c::typeof(foldr), addr::Address, call::Function, len::Int, args...)
+    ret, cl = trace(call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_tr = Vector{HierarchicalTrace}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = n_tr
+    v_tr[1] = cl.trace
     for i in 2:len
-        n_tr = Trace()
-        ret = n_tr(call, v_ret[i-1]...)
+        ret, cl = trace(call, v_ret[i-1]...)
         v_ret[i] = ret
-        v_tr[i] = n_tr
+        v_tr[i] = cl.trace
     end
     sc = sum(map(v_tr) do tr
                     get_score(tr)
@@ -144,19 +142,17 @@ end
 end
 
 # Vectorized map call.
-@inline function (tr::HierarchicalTrace)(c::typeof(map), r::typeof(rand), addr::Address, call::Function, args::Vector)
-    n_tr = Trace()
-    ret = n_tr(call, args[1]...)
+@inline function (tr::HierarchicalTrace)(c::typeof(map), addr::Address, call::Function, args::Vector)
     len = length(args)
+    ret, cl = trace(call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_tr = Vector{HierarchicalTrace}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = n_tr
+    v_tr[1] = cl.trace
     for i in 2:len
-        n_tr = Trace()
-        ret = n_tr(call, args[i]...)
+        ret, cl = trace(call, args[i]...)
         v_ret[i] = ret
-        v_tr[i] = n_tr
+        v_tr[i] = cl.trace
     end
     sc = sum(map(v_tr) do tr
                     get_score(tr)

@@ -28,7 +28,7 @@ end
     return ret
 end
 
-# ------------ Call sites ------------ #
+# ------------ Black box call sites ------------ #
 
 @inline function (ctx::SimulateContext)(c::typeof(rand),
                                         addr::T,
@@ -40,29 +40,22 @@ end
     return ret
 end
 
+# ------------ Vectorized call sites ------------ #
+
 @inline function (ctx::SimulateContext)(c::typeof(foldr), 
-                                        fn::typeof(rand), 
                                         addr::Address, 
                                         call::Function, 
                                         len::Int, 
                                         args...)
-    ug_ctx = Simulate(Trace(), get_sub(ctx.select, addr => 1))
-    ret = ug_ctx(call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_tr = Vector{HierarchicalTrace}(undef, len)
-    v_ret[1] = ret
-    v_tr[1] = ug_ctx.tr
-    ctx.weight += ug_ctx.weight
-    set_sub!(ctx.visited, addr => 1, ug_ctx.visited)
-    for i in 2:len
-        ug_ctx.select = get_sub(ctx.select, addr => i)
-        ug_ctx.tr = Trace()
-        ug_ctx.visited = Visitor()
-        ret = ug_ctx(call, v_ret[i-1]...)
+    ret = args
+    for i in 1:len
+        visit!(ctx, addr => i)
+        ss = get_subselection(ctx, addr => i)
+        ret, cl = simulate(ss, call, ret...)
         v_ret[i] = ret
-        v_tr[i] = ug_ctx.tr
-        ctx.weight += ug_ctx.weight
-        set_sub!(ctx.visited, addr => i, ug_ctx.visited)
+        v_tr[i] = cl.tr
     end
     sc = sum(map(v_tr) do tr
                  get_score(tr)
@@ -72,37 +65,27 @@ end
 end
 
 @inline function (ctx::SimulateContext)(c::typeof(map), 
-                                        fn::typeof(rand), 
                                         addr::Address, 
                                         call::Function, 
                                         args::Vector)
-    ug_ctx = Simulate(Trace(), get_sub(ctx.select, addr => 1))
-    ret = ug_ctx(call, args[1]...)
-    len = length(args)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_tr = Vector{HierarchicalTrace}(undef, len)
-    v_ret[1] = ret
-    v_tr[1] = ug_ctx.tr
-    ctx.weight += ug_ctx.weight
-    set_sub!(ctx.visited, addr => 1, ug_ctx.visited)
-    for i in 2:len
-        ug_ctx.select = get_sub(ctx.select, addr => i)
-        ug_ctx.tr = Trace()
-        ug_ctx.visited = Visitor()
-        ret = ug_ctx(call, args[i]...)
+    for i in 1:len
+        visit!(ctx, addr => i)
+        ss = get_subselection(ctx, addr => i)
+        ret, cl = simulate(ss, call, args[i]...)
         v_ret[i] = ret
-        v_tr[i] = ug_ctx.tr
-        ctx.weight += ug_ctx.weight
-        set_sub!(ctx.visited, addr => i, ug_ctx.visited)
+        v_tr[i] = cl.tr
     end
     sc = sum(map(v_tr) do tr
                  get_score(tr)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
-# Convenience.
+# ------------ Convenience ------------ #
+
 function simulate(fn::Function, args...; params = LearnableParameters())
     ctx = SimulateContext(params)
     ret = ctx(fn, args...)

@@ -10,9 +10,10 @@ using Distributions
     include("contexts.jl")
 end
 
-#@time @testset "Vectorized interfaces." begin
-#    include("vectorized.jl")
-#end
+@time @testset "Vectorized interfaces." begin
+    include("vectorized.jl")
+end
+
 @time @testset "Importance sampling." begin
     include("importance_sampling.jl")
 end
