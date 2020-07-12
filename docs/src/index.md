@@ -1,4 +1,4 @@
-This is the documentation for the Jaynes probabilistic programming system.
+This is the documentation for the [Jaynes probabilistic programming system](https://github.com/femtomc/Jaynes.jl).
 
 If you are familiar with probabilistic programming, you might start with [Modeling Language](modeling_lang.md), move into [Architecture](architecture.md), and then into [execution contexts](contexts.md) in the library API reference.
 
