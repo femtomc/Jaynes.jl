@@ -28,7 +28,7 @@ get_choice_gradients
 
 In the future, Jaynes will support a context which allows the automatic training of neural network components (`Flux.jl` or otherwise) facilitated by custom call sites. [See the foreign model interface for more details](fmi.md).
 
-As part of standard usage, itt's likely that you'd like to update learnable parameters in your model (which you declare with `learnable(addr, initial_value)`. Given a `CallSite`, you can extract parameters using `get_parameters`
+As part of standard usage, it's likely that you'd like to update learnable parameters in your model (which you declare with `learnable(addr, initial_value)`. Given a `CallSite`, you can extract parameters using `get_parameters`
 
 ```julia
 ret, cl, w = generate(selection((:q, -0.5)), learnable_hypers)
