@@ -56,12 +56,6 @@ mutable struct HierarchicalTrace <: Trace
     choices::Dict{Address, ChoiceSite}
     params::Dict{Address, LearnableSite}
     score::Float64
-    function HierarchicalTrace()
-        new(Dict{Address, CallSite}(), 
-            Dict{Address, ChoiceSite}(),
-            Dict{Address, LearnableSite}(),
-            0.0)
-    end
 end
 ```
 
