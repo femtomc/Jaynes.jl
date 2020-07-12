@@ -20,6 +20,17 @@ Propose() = ProposeContext(Trace())
     return s
 end
 
+# ------------ Learnable ------------ #
+
+@inline function (ctx::ProposeContext)(fn::typeof(learnable), addr::Address, p::T) where T
+    visit!(ctx, addr)
+    ret = p
+    if has_param(ctx.params, addr)
+        ret = get_param(ctx.params, addr)
+    end
+    return ret
+end
+
 # ------------ Black box call sites ------------ #
 
 @inline function (ctx::ProposeContext)(c::typeof(rand),
