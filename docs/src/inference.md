@@ -29,7 +29,7 @@ resample!
 
 `resample!` can be applied to both instances of `Particles` produced by particle filtering, as well as instances of `Particles` produced by importance sampling.
 
-## MCMC
+## Markov chain Monte Carlo
 
 ```@docs
 metropolis_hastings
