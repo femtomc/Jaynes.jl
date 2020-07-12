@@ -15,6 +15,7 @@ which defines how instances of inheritors of `ExecutionContext` act on function 
 
 ```
 GenerateContext
+SimulateContext
 ProposalContext
 UpdateContext
 RegenerateContext

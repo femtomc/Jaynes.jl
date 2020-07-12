@@ -10,6 +10,11 @@ generate
 ```
 
 ```@docs
+SimulateContext
+simulate
+```
+
+```@docs
 ProposeContext
 propose
 ```
