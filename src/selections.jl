@@ -129,7 +129,7 @@ end
 function update!(a::LearnableParameters, b::Gradients)
     for (k, v) in a.utility
         if has_grad(b, k)
-            a.utility[k] = v + get_grad(b, k)
+            a.utility[k] = v .+ get_grad(b, k)
         end
     end
 

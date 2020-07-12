@@ -56,18 +56,18 @@ ChoiceBackpropagate(tr::T, params, choice_grads, sel::K) where {T <: Trace, K <:
 @inline function (ctx::ParameterBackpropagateContext)(call::typeof(rand), 
                                                       addr::T, 
                                                       d::Distribution{K}) where {T <: Address, K}
+    #visit!(ctx.visited, addr)
     s = get_choice(ctx.tr, addr).val
     ctx.weight += logpdf(d, s)
-    #visit!(ctx.visited, addr)
     return s
 end
 
 @inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
+    #visit!(ctx.visited, addr)
     s = get_choice(ctx.tr, addr).val
     ctx.weight += logpdf(d, s)
-    #visit!(ctx.visited, addr)
     return s
 end
 
@@ -157,7 +157,7 @@ function accumulate_parameter_gradients!(param_grads, cl::T, ret_grad, scaler::F
     arg_grads, ps_grad = back((1.0, ret_grad))
     if !(ps_grad isa Nothing)
         for (addr, grad) in ps_grad.params
-            push!(param_grads, addr, scaler * grad)
+            push!(param_grads, addr, scaler .* grad)
         end
     end
     return arg_grads
