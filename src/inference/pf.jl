@@ -70,3 +70,44 @@ function resample!(ps::Particles,
     ps.calls = calls
     ps.lws = zeros(length(ps.calls))
 end
+
+# ------------ Documentation ------------ #
+
+@doc(
+"""
+```julia
+particles = initialize_filter(fn::Function, 
+                              args::Tuple,
+                              observations::ConstrainedHierarchicalSelection,
+                              num_particles::Int)
+```
+Instantiate a set of particles using a call to `importance_sampling`.
+""", initialize_filter)
+
+@doc(
+"""
+```julia
+filter_step!(ps::Particles,
+             new_args::Tuple,
+             observations::ConstrainedHierarchicalSelection)
+```
+Perform a single filter step from an instance `ps` of `Particles`, applying the constraints specified by `observations`.
+
+```julia
+filter_step!(ps::Particles,
+             new_args::Tuple,
+             proposal::Function,
+             proposal_args::Tuple,
+             observations::ConstrainedHierarchicalSelection)
+```
+Perform a single filter step using a custom proposal function, applying the constraints specified by `observations`.
+""", filter_step!)
+
+@doc(
+"""
+```julia
+resample!(ps::Particles)
+resample!(ps::Particles, num::Int)
+```
+Resample from an existing instance of `Particles` by mutation in place.
+""", resample!)
