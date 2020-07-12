@@ -7,15 +7,6 @@ function metropolis_hastings(call::BlackBoxCallSite,
 end
 
 function metropolis_hastings(call::BlackBoxCallSite,
-                             sel::UnconstrainedSelection,
-                             obs::ConstrainedSelection)
-    ctx = Regenerate(call.trace, sel, obs)
-    prop, discard = ctx(call.fn, call.args...)
-    log(rand()) < ctx.weight && return (BlackBoxCallSite(ctx.tr, call.fn, call.args, ret), true)
-    return (call, false)
-end
-
-function metropolis_hastings(call::BlackBoxCallSite,
                              proposal::Function,
                              proposal_args::Tuple,
                              sel::UnconstrainedSelection)
@@ -36,3 +27,24 @@ function metropolis_hastings(call::BlackBoxCallSite,
     log(rand()) < ratio && return (BlackBoxCallSite(ctx.tr, call.fn, call.args, ret), true)
     return (call, false)
 end
+
+# ------------ Documentation ------------ #
+
+@doc(
+"""
+```julia
+call, accepted, metropolis_hastings(call::BlackBoxCallSite,
+                                    sel::UnconstrainedSelection)
+```
+
+Perform a Metropolis-Hastings step by proposing new choices using the prior at addressed specified by `sel`. Returns a call site, as well as a Boolean value `accepted` to indicate if the proposal was accepted or rejected.
+
+```julia
+call, accepted = metropolis_hastings(call::BlackBoxCallSite,
+                                     proposal::Function,
+                                     proposal_args::Tuple,
+                                     sel::UnconstrainedSelection)
+```
+
+Perform a Metropolis-Hastings step by proposing new choices using a custom proposal at addressed specified by `sel`. Returns a call site, as well as a Boolean value `accepted` to indicate if the proposal was accepted or rejected.
+""", metropolis_hastings)
