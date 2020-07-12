@@ -2,22 +2,38 @@ function one_shot_gradient_estimator(sel::K,
                                      v_mod::Function,
                                      v_args::Tuple,
                                      mod::Function,
-                                     args::Tuple) where K <: ConstrainedSelection
-    # Generate from variational model.
-    _, cl = trace(v_mod, v_args...)
-
-    # Get sample, merge into observation interfaces.
-    merge!(sel, get_selection(cl))
-
-    # Compute the score of the variational sample with respect to the original model.
-    _, mlw = score(sel, mod, args...)
-
-    # Compute the likelihood weight.
+                                     args::Tuple;
+                                     params = LearnableParameters()) where K <: ConstrainedSelection
+    _, cl = simulate(v_mod, v_args...; params = params)
+    obs = merge(cl, sel)
+    _, mlw = score(obs, mod, args...; params = params)
     lw = mlw - get_score(cl)
+    gs = get_parameter_gradients(cl, nothing, lw)
+    return gs, lw, cl
+end
 
-    # Compute the gradients with respect to the learnable parameters, scale them by the likelihood weight.
-    param_grads = get_parameter_gradients(cl, 1.0, lw)
-
-    # Return the likelihood weight and the scales gradients for all learnable parameters.
-    return lw, param_grads
+function multi_shot_gradient_estimator(sel::K,
+                                       v_mod::Function,
+                                       v_args::Tuple,
+                                       mod::Function,
+                                       args::Tuple;
+                                       num_samples::Int = 5000,
+                                       params = LearnableParameters()) where K <: ConstrainedSelection
+    cs = Vector{CallSite}(undef, num_samples)
+    lws = Vector{Float64}(undef, num_samples)
+    for i in 1:num_samples
+        _, cs[i] = simulate(v_mod, v_args...; params = params)
+        obs = merge(cs[i], sel)
+        ret, mlw = score(obs, mod, args...)
+        lws[i] = mlw - get_score(cs[i])
+    end
+    ltw = lse(lws)
+    L = ltw - log(num_samples)
+    nw = exp.(lws .- ltw)
+    gs = Gradients()
+    for i in 1:num_samples
+        ls = L - nw[i]
+        accumulate_parameter_gradients!(gs, cs[i], nothing, ls)
+    end
+    return gs, L, cs, nw
 end

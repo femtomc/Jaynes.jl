@@ -14,6 +14,7 @@ function (mx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(rand
 end
 
 include("contexts/generate.jl")
+include("contexts/simulate.jl")
 include("contexts/propose.jl")
 include("contexts/score.jl")
 include("contexts/update.jl")

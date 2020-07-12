@@ -503,6 +503,8 @@ end
 
 # ------------ Wrapper to builders ------------ #
 
+selection() = ConstrainedHierarchicalSelection()
+
 function selection(a::Vector{Tuple{K, T}}; anywhere = false) where {T, K}
     anywhere && return ConstrainedAnywhereSelection(a)
     return ConstrainedHierarchicalSelection(a)

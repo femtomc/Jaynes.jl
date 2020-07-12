@@ -78,6 +78,7 @@ export @load_turing_fmi
 
 # Contexts.
 export Generate, generate
+export Simulate, simulate
 export Update, update
 export Propose, propose
 export Regenerate, regenerate

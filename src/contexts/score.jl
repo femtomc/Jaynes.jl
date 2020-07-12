@@ -6,10 +6,11 @@ mutable struct ScoreContext <: ExecutionContext
         c_sel = selection(obs)
         new(c_sel, 0.0, LearnableParameters())
     end
-    ScoreContext(obs::K) where {K <: ConstrainedSelection} = new(obs, 0.0, LearnableParameters())
+    ScoreContext(obs::K, params) where {K <: ConstrainedSelection} = new(obs, 0.0, params)
 end
 Score(obs::Vector) = ScoreContext(selection(obs))
-Score(obs::ConstrainedSelection) = ScoreContext(obs)
+Score(obs::ConstrainedSelection) = ScoreContext(obs, LearnableParameters())
+Score(obs::ConstrainedSelection, params) = ScoreContext(obs, params)
 
 # ------------ Choice sites ------------ #
 
@@ -72,8 +73,8 @@ end
 end
 
 # Convenience.
-function score(sel::L, fn::Function, args...) where L <: ConstrainedSelection
-    ctx = Score(sel)
+function score(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
+    ctx = Score(sel, params)
     ret = ctx(fn, args...)
     return ret, ctx.weight
 end
