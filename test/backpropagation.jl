@@ -8,12 +8,12 @@ end
 @testset "Convergence for learning - MAP 1" begin
     ret, cl, w = generate(selection((:q, 6.0)), learnable_normal, 5.0, 3.0)
     params = get_parameters(cl)
-    for i in 1:100
+    for i in 1:200
         ret, cl, w = generate(selection((:q, 6.0)), learnable_normal, 5.0, 3.0; params = params)
         param_grads = get_parameter_gradients(cl, 1.0)
-        update!(params, param_grads)
+        params = update_parameters(ADAM(0.05, (0.9, 0.8)), params, param_grads)
     end
-    @test params.utility[:l] ≈ 6.0 atol = 1e-3
+    @test params.utility[:l] ≈ 6.0 atol = 1e-2
     @test params.utility[:m] ≈ 0.0 atol = 1e-3
 end
 
