@@ -4,8 +4,13 @@ using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
 using MacroTools
 using Distributions
-using DistributionsAD
+
+# Differentiable.
 using Zygote
+using DistributionsAD
+using Flux.Optimise: update!
+using Flux.Optimise: Descent, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW, InvDecay, ExpDecay, WeightDecay
+export Descent, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW, InvDecay, ExpDecay, WeightDecay
 
 # Toplevel importants :)
 const Address = Union{Symbol, Pair{Symbol, Int64}}
@@ -56,6 +61,7 @@ include("compiler/static.jl")
 
 include("trace.jl")
 include("selections.jl")
+include("learnable.jl")
 include("utils/numerical.jl")
 include("utils/vectorized.jl")
 include("utils/visualization.jl")
@@ -78,6 +84,7 @@ export @load_turing_fmi
 
 # Contexts.
 export Generate, generate
+export Simulate, simulate
 export Update, update
 export Propose, propose
 export Regenerate, regenerate
@@ -88,7 +95,7 @@ export Backpropagate, get_parameter_gradients, get_choice_gradients
 export Trace, trace, get_score, learnable
 
 # Selections.
-export selection, get_selection, get_parameters, compare, has_query, update!
+export selection, get_selection, get_parameters, compare, has_query, update_parameters
 
 # Inference.
 export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!

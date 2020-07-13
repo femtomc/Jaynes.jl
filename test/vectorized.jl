@@ -2,15 +2,15 @@ function kernel(x::Float64)
     y = rand(:y, Normal(x, 1.0))
     return y
 end
-test_foldr = () -> foldr(rand, :k, kernel, 10, 1.0)
-test_map = () -> map(rand, :k, kernel, [1.0, 2.0, 3.0, 4.0, 5.0])
+test_foldr = () -> foldr(:k, kernel, 10, 1.0)
+test_map = () -> map(:k, kernel, [1.0, 2.0, 3.0, 4.0, 5.0])
 
 @testset "Trace" begin
-    cl = trace(test_map)
+    ret, cl = trace(test_map)
     for i in 1:5
         @test haskey(cl, :k => i => :y)
     end
-    cl = trace(test_foldr)
+    ret, cl = trace(test_foldr)
     for i in 1:10
         @test haskey(cl, :k => i => :y)
     end
@@ -18,12 +18,12 @@ end
 
 @testset "Constrained generate" begin
     sel = selection((:k => 3 => :y, 5.0))
-    cl, _ = generate(sel, test_map)
+    ret, cl, _ = generate(sel, test_map)
     for i in 1:5
         @test haskey(cl, :k => i => :y)
     end
     @test cl[:k => 3 => :y] == 5.0
-    cl, _ = generate(sel, test_foldr)
+    ret, cl, _ = generate(sel, test_foldr)
     for i in 1:10
         @test haskey(cl, :k => i => :y)
     end

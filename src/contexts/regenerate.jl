@@ -50,8 +50,18 @@ end
     add_choice!(ctx.tr, addr, ChoiceSite(score, ret))
     return ret
 end
+# ------------ Learnable ------------ #
 
-# ------------ Call sites ------------ #
+@inline function (ctx::RegenerateContext)(fn::typeof(learnable), addr::Address, p::T) where T
+    visit!(ctx, addr)
+    ret = p
+    if has_param(ctx.params, addr)
+        ret = get_param(ctx.params, addr)
+    end
+    return ret
+end
+
+# ------------ Black box call sites ------------ #
 
 @inline function (ctx::RegenerateContext)(c::typeof(rand),
                                           addr::T,
@@ -66,7 +76,8 @@ end
     return ret
 end
 
-# Convenience.
+# ------------ Convenience ------------ #
+
 function regenerate(ctx::RegenerateContext, bbcs::BlackBoxCallSite, new_args...)
     ret = ctx(bbcs.fn, new_args...)
     return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard

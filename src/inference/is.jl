@@ -21,10 +21,7 @@ function importance_sampling(model::Function,
                              num_samples::Int = 5000)
     calls = Vector{BlackBoxCallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    prop_ctx = Propose()
-    model_ctx = Generate(Trace(), observations)
     for i in 1:num_samples
-        prop_ctx(proposal, proposal_args...)
         ret, pcall, pw = propose(proposal, proposal_args...)
         select = merge(pcall, observations)
         _, calls[i], lws[i] = generate(select, model, args...)
