@@ -49,6 +49,8 @@ function from_array(val::Vector{T}, arr::Vector{T}, f_ind::Int) where T
     (n, arr[f_ind : f_ind + n - 1])
 end
 
+# ------------ Utility selection, grads and params ------------ #
+
 abstract type UtilitySelection <: Selection end
 
 function fill_array!(val::T, arr::Vector{K}, f_ind::Int) where {K, T <: UtilitySelection}
@@ -165,7 +167,7 @@ end
 
 +(a_grads::Gradients, b_grads::Gradients) = merge(a_grads, b_grads)
 
-# ------------ LearnableParameters ------------ #
+# ------------ Learnable parameters ------------ #
 
 struct LearnableParameters <: UtilitySelection
     tree::Dict{Address, LearnableParameters}
