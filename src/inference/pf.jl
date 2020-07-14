@@ -11,10 +11,11 @@ end
 
 function filter_step!(ps::Particles,
                       new_args::Tuple,
-                      observations::ConstrainedHierarchicalSelection)
+                      observations::ConstrainedHierarchicalSelection,
+                      argdiffs::D = UndefinedChange()) where D <: Diff
     num_particles = length(ps)
     for i in 1:num_particles
-        ret, u_call, uw, retdiff, d = update(observations, ps.calls[i], new_args...)
+        ret, u_call, uw, retdiff, d = update(observations, argdiffs, ps.calls[i], new_args...)
         ps.calls[i].args = new_args
         ps.calls[i].ret = ret
         ps.lws[i] += uw
@@ -27,13 +28,14 @@ function filter_step!(ps::Particles,
                       new_args::Tuple,
                       proposal::Function,
                       proposal_args::Tuple,
-                      observations::ConstrainedHierarchicalSelection)
+                      observations::ConstrainedHierarchicalSelection,
+                      argdiffs::D = UndefinedChange()) where D <: Diff
     num_particles = length(ps)
     for i in 1:num_particles
         _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
         sel = selection(p_cl)
         merge!(sel, observations)
-        ret, u_cl, u_w, retdiff, d = update(sel, ps.calls[i], new_args...)
+        ret, u_cl, u_w, retdiff, d = update(sel, argdiffs, ps.calls[i], new_args...)
         ps.calls[i].args = new_args
         ps.calls[i].ret = ret
         ps.lws[i] += u_w - p_w

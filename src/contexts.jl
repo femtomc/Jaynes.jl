@@ -1,7 +1,8 @@
 abstract type ExecutionContext end
 
 # These are "soft" interfaces, not all of these methods apply to every subtype of ExecutionContext.
-increment!(ctx::T, w::Float64) where T <: ExecutionContext = ctx.weight += w
+increment_weight!(ctx::T, w::Float64) where T <: ExecutionContext = ctx.weight += w
+increment_score!(ctx::T, w::Float64) where T <: ExecutionContext = ctx.weight += w
 get_subselection(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.select, addr)
 get_subparameters(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.params, addr)
 visit!(ctx::T, addr) where T <: ExecutionContext = visit!(ctx.visited, addr)

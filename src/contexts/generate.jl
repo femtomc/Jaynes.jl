@@ -2,10 +2,11 @@ mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection} <: Executi
     tr::T
     select::K
     weight::Float64
+    score::Float64
     visited::Visitor
     params::LearnableParameters
-    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), LearnableParameters())
-    GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), params)
+    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, 0.0, Visitor(), LearnableParameters())
+    GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, 0.0, Visitor(), params)
 end
 Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
 Generate(select::ConstrainedSelection, params) = GenerateContext(Trace(), select, params)
@@ -21,10 +22,12 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
         s = get_query(ctx.select, addr)
         score = logpdf(d, s)
         add_choice!(ctx.tr, addr, ChoiceSite(score, s))
-        increment!(ctx, score)
+        increment_weight!(ctx, score)
+        increment_score!(ctx, score)
     else
         s = rand(d)
         add_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
+        increment_score!(ctx, score)
     end
     return s
 end
@@ -51,7 +54,8 @@ end
     ss = get_subselection(ctx, addr)
     ret, cl, w = generate(ss, call, args...)
     add_call!(ctx.tr, addr, cl)
-    increment!(ctx, w)
+    increment_weight!(ctx, w)
+    increment_score!(ctx, get_score(cl))
     return ret
 end
 
@@ -69,18 +73,19 @@ end
     v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
     v_cl[1] = cl
-    increment!(ctx, w)
+    increment_weight!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
         ss = get_subselection(ctx, addr => i)
         ret, cl, w = generate(ss, call, v_ret[i-1]...)
         v_ret[i] = ret
         v_cl[i] = cl
-        increment!(ctx, w)
+        increment_weight!(ctx, w)
     end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
+    increment_score!(ctx, sc)
     add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
@@ -97,18 +102,19 @@ end
     v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
     v_cl[1] = cl
-    increment!(ctx, w)
+    increment_weight!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
         ss = get_subselection(ctx, addr => i)
         ret, cl, w = generate(ss, call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl
-        increment!(ctx, w)
+        increment_weight!(ctx, w)
     end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
+    increment_score!(ctx, sc)
     add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
@@ -118,7 +124,7 @@ end
 function generate(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
     ctx = Generate(sel, params)
     ret = ctx(fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
+    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(markov), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection

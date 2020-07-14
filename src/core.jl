@@ -38,12 +38,10 @@ mutable struct HierarchicalTrace <: Trace
     calls::Dict{Address, CallSite}
     choices::Dict{Address, ChoiceSite}
     params::Dict{Address, LearnableSite}
-    score::Float64
     function HierarchicalTrace()
         new(Dict{Address, CallSite}(), 
             Dict{Address, ChoiceSite}(),
-            Dict{Address, LearnableSite}(),
-            0.0)
+            Dict{Address, LearnableSite}())
     end
 end
 Trace() = HierarchicalTrace()
@@ -56,20 +54,41 @@ function get_call(tr::HierarchicalTrace, addr::Pair)
     get_call(tr.calls[addr[1]], addr[2])
 end
 function add_choice!(tr::HierarchicalTrace, addr, cs::ChoiceSite)
-    tr.score += get_score(cs)
     tr.choices[addr] = cs
 end
 function add_call!(tr::HierarchicalTrace, addr, cs::CallSite)
-    tr.score += get_score(cs)
     tr.calls[addr] = cs
 end
-get_score(tr::HierarchicalTrace) = tr.score
+
+# ------------ Vectorized trace ------------ #
+
+mutable struct VectorizedTrace{C <: RecordSite} <: Trace
+    subrecords::Vector{C}
+    params::Dict{Address, LearnableSite}
+end
+has_choice(tr::VectorizedTrace{C <: CallSite}, addr) = false
+function has_choice(tr::VectorizedTrace{ChoiceSite}, addr)
+    return addr < length(tr.subrecords)
+end
+has_call(tr::VectorizedTrace{C <: ChoiceSite}, addr) = false
+function has_call(tr::VectorizedTrace{C <: CallSite}, addr)
+    return addr <: length(tr.subrecords)
+end
+
+# ------------ Branch trace ------------ #
+
+mutable struct BranchTrace{T <: RecordSite, B <: RecordSite} <: Trace
+    condtrace::T
+    branchtrace::B
+    params::Dict{Address, LearnableSite}
+end
 
 # ------------ Call sites ------------ #
 
 # Black-box
-mutable struct BlackBoxCallSite{T <: Trace, J, K} <: CallSite
-    trace::T
+mutable struct BlackBoxCallSite{J, K} <: CallSite
+    trace::HierarchicalTrace
+    score::Float64
     fn::Function
     args::J
     ret::K
@@ -81,7 +100,7 @@ get_score(bbcs::BlackBoxCallSite) = get_score(bbcs.trace)
 
 # Vectorized
 mutable struct VectorizedSite{F, D, C <: RecordSite, J, K} <: CallSite
-    subcalls::Vector{C}
+    trace::VectorizedTrace{C}
     score::Float64
     kernel::D
     args::J
@@ -91,29 +110,22 @@ mutable struct VectorizedSite{F, D, C <: RecordSite, J, K} <: CallSite
     end
 end
 function has_choice(vcs::VectorizedSite, addr)
-    for tr in vcs.subcalls
-        has_choice(tr, addr) && return true
-    end
+    has_choice(vcs.trace, addr) && return true
     return false
 end
 function has_call(vcs::VectorizedSite, addr)
-    for tr in vcs.subcalls
-        has_call(tr, addr) && return true
-    end
+    has_call(vcs.trace, addr) && return true
     return false
 end
 function get_call(vcs::VectorizedSite, addr)
-    for tr in vcs.subcalls
-        has_call(tr, addr) && return get_call(tr, addr)
-    end
+    has_call(tr, addr) && return get_call(tr, addr)
     error("VectorizedSite (get_call): no call at $addr.")
 end
 get_score(vcs::VectorizedSite) = vcs.score
 
 # If-else branch site
 mutable struct ConditionalBranchSite{C, A, B, T <: RecordSite, K <: RecordSite, J, L, R}
-    cond::T
-    branch::K
+    trace::BranchTrace
     score::Float64
     cond_kernel::C
     cond_args::J
