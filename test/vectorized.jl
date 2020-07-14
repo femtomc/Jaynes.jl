@@ -2,7 +2,7 @@ function kernel(x::Float64)
     y = rand(:y, Normal(x, 1.0))
     return y
 end
-test_markov = () -> markov(:k, kernel, 10, 1.0)
+test_markov = () -> markov(:k, kernel, 5, 1.0)
 test_plate = () -> plate(:k, kernel, [1.0, 2.0, 3.0, 4.0, 5.0])
 
 @testset "Trace" begin
@@ -11,7 +11,7 @@ test_plate = () -> plate(:k, kernel, [1.0, 2.0, 3.0, 4.0, 5.0])
         @test haskey(cl, :k => i => :y)
     end
     ret, cl = trace(test_markov)
-    for i in 1:10
+    for i in 1:5
         @test haskey(cl, :k => i => :y)
     end
 end
@@ -24,7 +24,7 @@ end
     end
     @test cl[:k => 3 => :y] == 5.0
     ret, cl, _ = generate(sel, test_markov)
-    for i in 1:10
+    for i in 1:5
         @test haskey(cl, :k => i => :y)
     end
     @test cl[:k => 3 => :y] == 5.0
@@ -68,16 +68,23 @@ end
 #    cl, retdiff, d = regenerate(sel, cl)
 #    @test d.query[:y] == stored_at_y
 #end
-#
-#@testset "Propose" begin
-#    cl, w = propose(LinearGaussian, 0.5, 3.0)
-#    # Propose should track score.
-#    @test score(cl) != 0.0
-#end
-#
-#@testset "Score" begin
-#    sel = selection([(:x, 5.0), (:y, 10.0)])
-#    sc = score(sel, LinearGaussian, 0.5, 3.0)
-#    @test sc != 0.0
-#end
+
+@testset "Propose" begin
+    ret, cl, w = propose(test_markov)
+    @test get_score(cl) != 0.0
+    ret, cl, w = propose(test_plate)
+    @test get_score(cl) != 0.0
+end
+
+@testset "Score" begin
+    sel = selection([(:k => 1 => :y, 5.0), 
+                     (:k => 2 => :y, 5.0), 
+                     (:k => 3 => :y, 5.0),
+                     (:k => 4 => :y, 5.0),
+                     (:k => 5 => :y, 5.0)])
+    ret, sc = score(sel, test_markov)
+    @test sc != 0.0
+    ret, sc = score(sel, test_plate)
+    @test sc != 0.0
+end
 

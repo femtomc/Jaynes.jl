@@ -38,7 +38,6 @@ end
 # ------------ Vectorized call sites ------------ #
 
 @inline function (ctx::ScoreContext)(c::typeof(markov), 
-                                     fn::typeof(rand), 
                                      addr::Address, 
                                      call::Function, 
                                      len::Int, 
@@ -58,11 +57,11 @@ end
 end
 
 @inline function (ctx::ScoreContext)(c::typeof(plate), 
-                                     fn::typeof(rand), 
                                      addr::Address, 
                                      call::Function, 
                                      args::Vector)
     ss = get_subselection(ctx, addr => 1)
+    len = length(args)
     ret, w = score(ss, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_ret[1] = ret

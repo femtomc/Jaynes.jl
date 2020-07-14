@@ -5,8 +5,8 @@ import Base: rand
 rand(addr::Address, d::Distribution{T}) where T = rand(d)
 rand(addr::Address, fn::Function, args...) = fn(args...)
 learnable(addr::Address, p::T) where T = p
-plate(addr::Address, args...) = error("plate with address $addr evaluated outside of the tracer.")
-markov(addr::Address, args...) = error("markov with address $addr evaluated outside of the tracer.")
+plate(addr::Address, args...) = error("(plate) call with address $addr evaluated outside of the tracer.")
+markov(addr::Address, args...) = error("(markov) call with address $addr evaluated outside of the tracer.")
 
 # Record sites for choices, calls, and parameters.
 abstract type RecordSite end
