@@ -63,6 +63,7 @@ add_choice!(tr::HierarchicalTrace, addr, cs::ChoiceSite) = tr.choices[addr] = cs
 mutable struct VectorizedTrace{C <: RecordSite} <: Trace
     subrecords::Vector{C}
     params::Dict{Address, LearnableSite}
+    VectorizedTrace{C}() where C = new{C}(Vector{C}(), Dict{Address, LearnableSite}())
     VectorizedTrace(arr::Vector{C}) where C <: RecordSite = new{C}(arr, Dict{Address, LearnableSite}()) 
 end
 has_choice(tr::VectorizedTrace{<: CallSite}, addr) = false
