@@ -98,10 +98,10 @@ function regenerate(bbcs::BlackBoxCallSite, new_args...) where L <: Unconstraine
     return regenerate(ctx, bbcs, new_args...)
 end
 
-function regenerate(ctx::RegenerateContext, vcs::VectorizedCallSite, new_args...)
+function regenerate(ctx::RegenerateContext, vcs::VectorizedSite, new_args...)
 end
 
-function regenerate(sel::L, vcs::VectorizedCallSite, new_args...) where L <: UnconstrainedSelection
+function regenerate(sel::L, vcs::VectorizedSite, new_args...) where L <: UnconstrainedSelection
 end
 
 # ------------ Documentation ------------ #

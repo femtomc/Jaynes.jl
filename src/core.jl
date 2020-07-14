@@ -80,38 +80,38 @@ get_call(bbcs::BlackBoxCallSite, addr) = bbcs.tr.calls[addr]
 get_score(bbcs::BlackBoxCallSite) = get_score(bbcs.trace)
 
 # Vectorized
-mutable struct VectorizedCallSite{F, D, C <: RecordSite, J, K} <: CallSite
+mutable struct VectorizedSite{F, D, C <: RecordSite, J, K} <: CallSite
     subcalls::Vector{C}
     score::Float64
     kernel::D
     args::J
     ret::Vector{K}
-    function VectorizedCallSite{F}(sub::Vector{C}, sc::Float64, kernel::D, args::J, ret::Vector{K}) where {F, D, C <: RecordSite, J, K}
+    function VectorizedSite{F}(sub::Vector{C}, sc::Float64, kernel::D, args::J, ret::Vector{K}) where {F, D, C <: RecordSite, J, K}
         new{F, D, C, J, K}(sub, sc, kernel, args, ret)
     end
 end
-function has_choice(vcs::VectorizedCallSite, addr)
+function has_choice(vcs::VectorizedSite, addr)
     for tr in vcs.subcalls
         has_choice(tr, addr) && return true
     end
     return false
 end
-function has_call(vcs::VectorizedCallSite, addr)
+function has_call(vcs::VectorizedSite, addr)
     for tr in vcs.subcalls
         has_call(tr, addr) && return true
     end
     return false
 end
-function get_call(vcs::VectorizedCallSite, addr)
+function get_call(vcs::VectorizedSite, addr)
     for tr in vcs.subcalls
         has_call(tr, addr) && return get_call(tr, addr)
     end
-    error("VectorizedCallSite (get_call): no call at $addr.")
+    error("VectorizedSite (get_call): no call at $addr.")
 end
-get_score(vcs::VectorizedCallSite) = vcs.score
+get_score(vcs::VectorizedSite) = vcs.score
 
 # If-else branch
-mutable struct ConditionalBranchCallSite{C, A, B, T <: RecordSite, K <: RecordSite, J, L, R}
+mutable struct ConditionalBranchSite{C, A, B, T <: RecordSite, K <: RecordSite, J, L, R}
     cond::T
     branch::K
     score::Float64
@@ -158,7 +158,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
                 end)
-    add_call!(tr, addr, VectorizedCallSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -178,7 +178,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
                 end)
-    add_call!(tr, addr, VectorizedCallSite{typeof(plate)}(v_cl, sc, call, args, v_ret))
+    add_call!(tr, addr, VectorizedSite{typeof(plate)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -187,13 +187,13 @@ end
 import Base.getindex
 getindex(cs::ChoiceSite, addr::Address) = nothing
 getindex(cs::BlackBoxCallSite, addr) = getindex(cs.trace, addr)
-getindex(vcs::VectorizedCallSite, addr::Int) = cs.subcalls[addr]
-function getindex(vcs::VectorizedCallSite, addr::Pair)
+getindex(vcs::VectorizedSite, addr::Int) = cs.subcalls[addr]
+function getindex(vcs::VectorizedSite, addr::Pair)
     getindex(vcs.subcalls[addr[1]], addr[2])
 end
 unwrap(cs::ChoiceSite) = cs.val
 unwrap(cs::BlackBoxCallSite) = cs.ret
-unwrap(cs::VectorizedCallSite) = cs.ret
+unwrap(cs::VectorizedSite) = cs.ret
 function getindex(tr::HierarchicalTrace, addr::Address)
     if has_choice(tr, addr)
         return unwrap(get_choice(tr, addr))
@@ -214,7 +214,7 @@ end
 import Base.haskey
 haskey(cs::ChoiceSite, addr::Address) = false
 haskey(cs::BlackBoxCallSite, addr) = haskey(cs.trace, addr)
-function haskey(vcs::VectorizedCallSite, addr::Pair)
+function haskey(vcs::VectorizedSite, addr::Pair)
     addr[1] <= length(vcs.subcalls) && haskey(vcs.subcalls[addr[1]], addr[2])
 end
 function Base.haskey(tr::HierarchicalTrace, addr::Address)
@@ -295,7 +295,7 @@ A record of a black-box call (e.g. no special tracer language features). Records
 @doc(
 """
 ```julia
-mutable struct VectorizedCallSite{F <: Function, C <: RecordSite, J, K} <: CallSite
+mutable struct VectorizedSite{F <: Function, C <: RecordSite, J, K} <: CallSite
     subcalls::Vector{T}
     score::Float64
     fn::Function
@@ -304,7 +304,7 @@ mutable struct VectorizedCallSite{F <: Function, C <: RecordSite, J, K} <: CallS
 end
 ```
 A record of a call site using the special `plate` and `markov` tracer language features. Informs the tracer that the call conforms to a special pattern of randomness dependency, which allows the storing of `Trace` instances sequentially in a vector.
-""", VectorizedCallSite)
+""", VectorizedSite)
 
 @doc(
 """

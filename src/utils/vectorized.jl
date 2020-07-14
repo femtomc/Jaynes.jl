@@ -15,7 +15,7 @@ function keyset(sel::L, new_length::Int) where L <: UnconstrainedSelection
     return keyset
 end
 
-function score_adj(vcs::VectorizedCallSite{T, J, K}, o_len::Int, n_len::Int) where {T, J, K, L <: Selection}
+function score_adj(vcs::VectorizedSite{T, J, K}, o_len::Int, n_len::Int) where {T, J, K, L <: Selection}
     score_acc = 0.0
     for k in n_len + 1 : o_len
         sub = vcs.subtraces[k]

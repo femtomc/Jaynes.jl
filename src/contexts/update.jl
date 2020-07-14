@@ -91,7 +91,7 @@ end
 
 function retrace_retained(addr::Address,
                           trs::Vector{T},
-                          vcs::VectorizedCallSite{typeof(plate), T, J, K}, 
+                          vcs::VectorizedSite{typeof(plate), T, J, K}, 
                           sel::L, 
                           args::Vector,
                           key::Int,
@@ -109,7 +109,7 @@ function retrace_retained(addr::Address,
 end
 
 function generate_new(addr::Address, 
-                      vcs::VectorizedCallSite{typeof(plate), T, J, K}, 
+                      vcs::VectorizedSite{typeof(plate), T, J, K}, 
                       sel::L,
                       args::Vector, 
                       prev_length::Int,
@@ -156,8 +156,8 @@ end
     # Update the total set of traces, calculate the score adjustment and new returns.
     sc_adj, updated, new_ret = retrace_retained(addr, retained, vcs, ctx.select, args, ks, o_len, n_len)
 
-    # Create a new VectorizedCallSite.
-    ctx.tr.chm[addr] = VectorizedCallSite{typeof(plate)}(retained, vcs.score - sc_adj, vcs.fn, args, new_ret)
+    # Create a new VectorizedSite.
+    ctx.tr.chm[addr] = VectorizedSite{typeof(plate)}(retained, vcs.score - sc_adj, vcs.fn, args, new_ret)
 
     return new_ret
 end
@@ -166,7 +166,7 @@ end
 
 function retrace_retained(addr::Address,
                           new_trs::Vector{T},
-                          vcs::VectorizedCallSite{typeof(markov), T, J, K}, 
+                          vcs::VectorizedSite{typeof(markov), T, J, K}, 
                           sel::L, 
                           args::Vector,
                           targeted::Set{Int},
@@ -241,8 +241,8 @@ function update(bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelec
     return update(ctx, bbcs, new_args...)
 end
 
-function update(ctx::UpdateContext, vcs::VectorizedCallSite, new_args...)
+function update(ctx::UpdateContext, vcs::VectorizedSite, new_args...)
 end
 
-function update(sel::L, vcs::VectorizedCallSite, new_args...) where L <: ConstrainedSelection
+function update(sel::L, vcs::VectorizedSite, new_args...) where L <: ConstrainedSelection
 end

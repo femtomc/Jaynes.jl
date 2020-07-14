@@ -64,7 +64,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -89,7 +89,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 
