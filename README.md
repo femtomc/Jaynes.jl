@@ -13,6 +13,6 @@ Jaynes currently supports the following inference algorithms:
 
 1. Importance sampling (with and without custom proposals)
 2. Particle filtering (with and without custom proposals)
-3. Metropolis-hastings (with and without custom proposals)
+3. Metropolis-Hastings (with and without custom proposals)
 
 [Jaynes also supports the integration of differentiable programming with probabilistic programming.](https://femtomc.github.io/Jaynes.jl/dev/diff_prog/)

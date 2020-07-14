@@ -110,7 +110,7 @@ function get_call(vcs::VectorizedSite, addr)
 end
 get_score(vcs::VectorizedSite) = vcs.score
 
-# If-else branch
+# If-else branch site
 mutable struct ConditionalBranchSite{C, A, B, T <: RecordSite, K <: RecordSite, J, L, R}
     cond::T
     branch::K
