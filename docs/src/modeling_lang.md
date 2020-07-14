@@ -20,7 +20,7 @@ However, this doesn't give you free reign to write anything with `rand` calls an
 
 ## Specialized call sites
 
-Jaynes also offers a set of primitive language features for creating _specialized call sites_ which are similar to the combinators of [Gen](https://www.gen.dev/dev/ref/combinators/#Generative-Function-Combinators-1). These special features are treated as simple "functional" higher-order functions
+Jaynes also offers a set of primitive language features for creating _specialized call sites_ which are similar to the combinators of [Gen](https://www.gen.dev/dev/ref/combinators/#Generative-Function-Combinators-1). These special features can be activated by a special set of calls (below, `markov` and `plate`).
 
 ```julia
 using Jaynes
@@ -42,7 +42,7 @@ cl = trace(foo)
 display(cl.trace; show_values = true)
 ```
 
-the `markov` and `plate` calls indicate to the tracer that the generation of randomness conforms to a computation pattern which can be vectorized. This allows the tracer to construct an efficient `VectorizedSite` which allows more efficient updates/regenerations than a "black-box" `CallSite` where the dependency information may not be known. This is a simple way for the user to increase the efficiency of inference algorithms, by informing the tracer of information which it can't derive on its own (at least for now 😺).
+Here, the `markov` and `plate` calls provide explicit knowledge to the tracer that the generation of randomness conforms to a computation pattern which can be vectorized. This allows the tracer to construct an efficient `VectorizedSite` which allows more efficient updates/regenerations than a "black-box" `CallSite` where the dependency information may not be known. This is a simple way for the user to increase the efficiency of inference algorithms, by informing the tracer of information which it can't derive on its own (at least for now 😺).
 
 `markov` requires that the user provide a function `f` with
 
@@ -54,4 +54,4 @@ as well as a first argument which denotes the number of fold operations to compu
 
 `plate` does not place requirements on the function `f` (other than the implicit requirements for valid programs, as described above) but does require that the arguments be a `Vector` with each element matching the signature of `f`. `plate` then iteratively applies the function as a kernel for each element in the argument vector (similar to the functional `map` operation).
 
-In the future, a number of other specialized call sites are planned. The fallback is always black-box tracing, but if you provide the tracer with more information about the dependency structure of your probabilistic program, it can utilize this to accelerate iterative inference algorithms.
+In the future, a number of other specialized call sites are planned. The fallback is always black-box tracing, but if you provide the tracer with more information about the dependency structure of your probabilistic program, it can utilize this to accelerate iterative inference algorithms. One interesting research direction is the automatic discovery of these patterns in programs: if you're interested in this, please contribute to the [open issue about automatic structure discovery](https://github.com/femtomc/Jaynes.jl/issues/31).
