@@ -46,7 +46,7 @@ end
 
 # ------------ Vectorized call sites ------------ #
 
-@inline function (ctx::ProposeContext)(c::typeof(foldr), 
+@inline function (ctx::ProposeContext)(c::typeof(markov), 
                                         addr::Address, 
                                         call::Function, 
                                         len::Int, 
@@ -68,11 +68,11 @@ end
     sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
-@inline function (ctx::ProposeContext)(c::typeof(map), 
+@inline function (ctx::ProposeContext)(c::typeof(plate), 
                                         addr::Address, 
                                         call::Function, 
                                         args::Vector)
@@ -91,7 +91,7 @@ end
     sc = sum(map(v_tr) do tr
                     score(tr)
                 end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(plate)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 

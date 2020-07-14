@@ -57,7 +57,7 @@ end
 
 # ------------ Vectorized call sites ------------ #
 
-@inline function (ctx::GenerateContext)(c::typeof(foldr), 
+@inline function (ctx::GenerateContext)(c::typeof(markov), 
                                         addr::Address, 
                                         call::Function, 
                                         len::Int, 
@@ -81,11 +81,11 @@ end
     sc = sum(map(v_tr) do tr
                  get_score(tr)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
-@inline function (ctx::GenerateContext)(c::typeof(map), 
+@inline function (ctx::GenerateContext)(c::typeof(plate), 
                                         addr::Address, 
                                         call::Function, 
                                         args::Vector)
@@ -109,7 +109,7 @@ end
     sc = sum(map(v_tr) do tr
                  get_score(tr)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_tr, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -121,13 +121,13 @@ function generate(sel::L, fn::Function, args...; params = LearnableParameters())
     return ret, BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
 end
 
-function generate(sel::L, fn::typeof(foldr), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection
+function generate(sel::L, fn::typeof(markov), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection
     ctx = Generate(sel)
     ret = ctx(fn, r, addr, args...)
     return ret, ctx.tr.chm[addr], ctx.weight
 end
 
-function generate(sel::L, fn::typeof(map), addr::Symbol, call::Function, args::Vector) where L <: ConstrainedSelection
+function generate(sel::L, fn::typeof(plate), addr::Symbol, call::Function, args::Vector) where L <: ConstrainedSelection
     ctx = Generate(sel)
     ret = ctx(fn, r, addr, call, args)
     return ret, ctx.tr.chm[addr], ctx.weight

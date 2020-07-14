@@ -22,7 +22,7 @@ get_prev(ctx::RegenerateContext, addr) = get_call(ctx.prev, addr)
 @dynamo function (mx::RegenerateContext)(a...)
     ir = IR(a...)
     ir == nothing && return
-    recurse!(ir)
+    recur!(ir)
     return ir
 end
 
