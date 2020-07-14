@@ -15,7 +15,7 @@ Update(select) = UpdateContext(Trace(), select)
 @dynamo function (mx::UpdateContext)(a...)
     ir = IR(a...)
     ir == nothing && return
-    recurse!(ir)
+    recur!(ir)
     return ir
 end
 
@@ -24,7 +24,7 @@ end
 @inline function (ctx::UpdateContext)(call::typeof(rand), 
                                       addr::T, 
                                       d::Distribution{K}) where {T <: Address, K}
-    # Check if in previous trace's choice map.
+    # Check if in previous trace's choice plate.
     in_prev_chm = has_choice(ctx.prev, addr)
     in_prev_chm && begin
         prev = get_choice(ctx.prev, addr)
@@ -87,26 +87,21 @@ end
 
 # ------------ Vectorized call sites ------------ #
 
-# Vectorized convenience functions for map.
+# Vectorized convenience functions for plate.
 
 function retrace_retained(addr::Address,
-                          new_trs::Vector{T},
-                          vcs::VectorizedCallSite{typeof(map), T, J, K}, 
+                          trs::Vector{T},
+                          vcs::VectorizedSite{typeof(plate), T, J, K}, 
                           sel::L, 
                           args::Vector,
+                          key::Int,
                           targeted::Set{Int},
                           prev_length::Int,
                           new_length::Int) where {T <: Trace, J, K, L <: ConstrainedSelection}
-    u_ctx = Update(sel[addr][1])
-    updated = Vector{T}(undef, new_length)
-    n_ret = typeof(vcs.ret)(undef, new_length)
-    for k in 1 : min(prev_length, new_length)
-        u_ctx.prev = new_trs[k]
-        u_ctx.select = sel[addr][k]
-        ret = u_ctx(vcs.fn, args[k]...)
-        n_ret[k] = ret
-        updated[k] = u_ctx.tr
-    end
+    s = get_sub(sel, addr)
+    k_args = args[key]
+    ret, cl, w, retdiff, d = update(sel, trs[key], vcs.fn, k_args...)
+    increment!(ctx, w)
     score_adj = sum(map(updated) do tr
                         score(tr)
                     end)
@@ -114,7 +109,7 @@ function retrace_retained(addr::Address,
 end
 
 function generate_new(addr::Address, 
-                      vcs::VectorizedCallSite{typeof(map), T, J, K}, 
+                      vcs::VectorizedSite{typeof(plate), T, J, K}, 
                       sel::L,
                       args::Vector, 
                       prev_length::Int,
@@ -133,7 +128,7 @@ function generate_new(addr::Address,
     return Vector{T}()
 end
 
-@inline function (ctx::UpdateContext)(c::typeof(map), 
+@inline function (ctx::UpdateContext)(c::typeof(plate), 
                                       fn::typeof(rand), 
                                       addr::Address, 
                                       call::Function, 
@@ -161,17 +156,17 @@ end
     # Update the total set of traces, calculate the score adjustment and new returns.
     sc_adj, updated, new_ret = retrace_retained(addr, retained, vcs, ctx.select, args, ks, o_len, n_len)
 
-    # Create a new VectorizedCallSite.
-    ctx.tr.chm[addr] = VectorizedCallSite{typeof(map)}(retained, vcs.score - sc_adj, vcs.fn, args, new_ret)
+    # Create a new VectorizedSite.
+    ctx.tr.chm[addr] = VectorizedSite{typeof(plate)}(retained, vcs.score - sc_adj, vcs.fn, args, new_ret)
 
     return new_ret
 end
 
-# Vectorized convenience functions for foldr.
+# Vectorized convenience functions for markov.
 
 function retrace_retained(addr::Address,
                           new_trs::Vector{T},
-                          vcs::VectorizedCallSite{typeof(foldr), T, J, K}, 
+                          vcs::VectorizedSite{typeof(markov), T, J, K}, 
                           sel::L, 
                           args::Vector,
                           targeted::Set{Int},
@@ -193,7 +188,7 @@ function retrace_retained(addr::Address,
     return score_adj, updated, ret
 end
 
-@inline function (ctx::UpdateContext)(c::typeof(foldr), 
+@inline function (ctx::UpdateContext)(c::typeof(markov), 
                                       fn::typeof(rand), 
                                       addr::Address, 
                                       call::Function, 
@@ -225,6 +220,12 @@ function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, args...)
     return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
+function update(sel::L, tr::T, fn::Function, new_args...) where {T <: Trace, L <: ConstrainedSelection}
+    ctx = UpdateContext(tr, sel)
+    ret = ctx(fn, new_args...)
+    return ret, BlackBoxCallSite(ctx.tr, fn, new_args, ret), ctx.weight, UndefinedChange, ctx.discard
+end
+
 function update(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection
     ctx = UpdateContext(bbcs.trace, sel)
     return update(ctx, bbcs, new_args...)
@@ -240,8 +241,8 @@ function update(bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelec
     return update(ctx, bbcs, new_args...)
 end
 
-function update(ctx::UpdateContext, vcs::VectorizedCallSite, new_args...)
+function update(ctx::UpdateContext, vcs::VectorizedSite, new_args...)
 end
 
-function update(sel::L, vcs::VectorizedCallSite, new_args...) where L <: ConstrainedSelection
+function update(sel::L, vcs::VectorizedSite, new_args...) where L <: ConstrainedSelection
 end

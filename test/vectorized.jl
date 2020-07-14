@@ -2,15 +2,15 @@ function kernel(x::Float64)
     y = rand(:y, Normal(x, 1.0))
     return y
 end
-test_foldr = () -> foldr(:k, kernel, 10, 1.0)
-test_map = () -> map(:k, kernel, [1.0, 2.0, 3.0, 4.0, 5.0])
+test_markov = () -> markov(:k, kernel, 10, 1.0)
+test_plate = () -> plate(:k, kernel, [1.0, 2.0, 3.0, 4.0, 5.0])
 
 @testset "Trace" begin
-    ret, cl = trace(test_map)
+    ret, cl = trace(test_plate)
     for i in 1:5
         @test haskey(cl, :k => i => :y)
     end
-    ret, cl = trace(test_foldr)
+    ret, cl = trace(test_markov)
     for i in 1:10
         @test haskey(cl, :k => i => :y)
     end
@@ -18,12 +18,12 @@ end
 
 @testset "Constrained generate" begin
     sel = selection((:k => 3 => :y, 5.0))
-    ret, cl, _ = generate(sel, test_map)
+    ret, cl, _ = generate(sel, test_plate)
     for i in 1:5
         @test haskey(cl, :k => i => :y)
     end
     @test cl[:k => 3 => :y] == 5.0
-    ret, cl, _ = generate(sel, test_foldr)
+    ret, cl, _ = generate(sel, test_markov)
     for i in 1:10
         @test haskey(cl, :k => i => :y)
     end
@@ -31,8 +31,8 @@ end
 end
 
 #@testset "Update" begin
-#    @testset "Vectorized map" begin
-#        cl, w = generate(test_map)
+#    @testset "Vectorized plate" begin
+#        cl, w = generate(test_plate)
 #        stored_at_y = cl[:k => 3 => :y]
 #        sel = selection((:k => 3 => :y, 5.0))
 #        cl, retdiff, d = update(sel, cl)
@@ -42,8 +42,8 @@ end
 #        @test cl[:k => 3 => :y] == 5.0
 #    end
 #    
-#    @testset "Vectorized foldr" begin
-#        cl, w = generate(test_foldr)
+#    @testset "Vectorized markov" begin
+#        cl, w = generate(test_markov)
 #        stored_at_y = cl[:k => 3 => :y]
 #        sel = selection((:k => 3 => :y, 5.0))
 #        cl, retdiff, d = update(sel, cl)

@@ -46,7 +46,7 @@ end
 
 # ------------ Vectorized call sites ------------ #
 
-@inline function (ctx::ProposeContext)(c::typeof(foldr), 
+@inline function (ctx::ProposeContext)(c::typeof(markov), 
                                         addr::Address, 
                                         call::Function, 
                                         len::Int, 
@@ -54,25 +54,25 @@ end
     visit!(ctx, addr => 1)
     ret, cl, w = propose(call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = cl.trace
+    v_cl[1] = cl
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
         ret, cl, w = propose(call, v_ret[i-1]...)
         v_ret[i] = ret
-        v_tr[i] = cl.trace
+        v_cl[i] = cl
         increment!(ctx, w)
     end
-    sc = sum(map(v_tr) do tr
-                    score(tr)
+    sc = sum(map(v_cl) do cl
+                 score(cl)
                 end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 
-@inline function (ctx::ProposeContext)(c::typeof(map), 
+@inline function (ctx::ProposeContext)(c::typeof(plate), 
                                         addr::Address, 
                                         call::Function, 
                                         args::Vector)
@@ -80,18 +80,21 @@ end
     len = length(args)
     ret, cl, w = propose(call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = cl.trace
+    v_cl[1] = cl
+    increment!(ctx, w)
     for i in 2:len
+        visit!(ctx, addr => i)
         ret, cl, w = propose(call, args[i]...)
         v_ret[i] = ret
-        v_tr[i] = p_ctx.tr
+        v_cl[i] = cl
+        increment!(ctx, w)
     end
-    sc = sum(map(v_tr) do tr
-                    score(tr)
+    sc = sum(map(v_cl) do cl
+                 score(cl)
                 end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(map)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedSite{typeof(plate)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 

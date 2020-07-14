@@ -37,7 +37,7 @@ end
 
 # ------------ Vectorized call sites ------------ #
 
-@inline function (ctx::ScoreContext)(c::typeof(foldr), 
+@inline function (ctx::ScoreContext)(c::typeof(markov), 
                                      fn::typeof(rand), 
                                      addr::Address, 
                                      call::Function, 
@@ -57,7 +57,7 @@ end
     return v_ret
 end
 
-@inline function (ctx::ScoreContext)(c::typeof(map), 
+@inline function (ctx::ScoreContext)(c::typeof(plate), 
                                      fn::typeof(rand), 
                                      addr::Address, 
                                      call::Function, 
