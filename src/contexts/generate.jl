@@ -2,10 +2,11 @@ mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection} <: Executi
     tr::T
     select::K
     weight::Float64
+    score::Float64
     visited::Visitor
     params::LearnableParameters
-    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), LearnableParameters())
-    GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, Visitor(), params)
+    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, 0.0, Visitor(), LearnableParameters())
+    GenerateContext(tr::T, select::K, params) where {T <: Trace, K <: ConstrainedSelection} = new{T, K}(tr, select, 0.0, 0.0, Visitor(), params)
 end
 Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
 Generate(select::ConstrainedSelection, params) = GenerateContext(Trace(), select, params)
@@ -20,11 +21,11 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
     if has_query(ctx.select, addr)
         s = get_query(ctx.select, addr)
         score = logpdf(d, s)
-        add_choice!(ctx.tr, addr, ChoiceSite(score, s))
+        add_choice!(ctx, addr, ChoiceSite(score, s))
         increment!(ctx, score)
     else
         s = rand(d)
-        add_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
+        add_choice!(ctx, addr, ChoiceSite(logpdf(d, s), s))
     end
     return s
 end
@@ -50,7 +51,7 @@ end
     visit!(ctx, addr)
     ss = get_subselection(ctx, addr)
     ret, cl, w = generate(ss, call, args...)
-    add_call!(ctx.tr, addr, cl)
+    add_call!(ctx, addr, cl)
     increment!(ctx, w)
     return ret
 end
@@ -81,7 +82,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 
@@ -109,7 +110,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 
@@ -118,7 +119,7 @@ end
 function generate(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
     ctx = Generate(sel, params)
     ret = ctx(fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
+    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(markov), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection

@@ -27,12 +27,11 @@ end
 
     @testset "Anywhere" begin
         anywhere = selection([(:x, 5.0), (:q => 21, 10.0)]; anywhere = true)
-        ctx = Generate(Trace(), anywhere)
-        call = ctx(AnywhereTopLevel)
-        @test ctx.tr[:x] == 5.0
-        @test ctx.tr[:y => :x] == 5.0
-        @test ctx.tr[:y => :y => :x] == 5.0
-        @test ctx.tr[:y => :y => :loop => :q => 21] == 10.0
+        ret, cl, w = generate(anywhere, AnywhereTopLevel)
+        @test cl[:x] == 5.0
+        @test cl[:y => :x] == 5.0
+        @test cl[:y => :y => :x] == 5.0
+        @test cl[:y => :y => :loop => :q => 21] == 10.0
     end
     
     @testset "Filtering" begin

@@ -6,9 +6,10 @@ macro primitive(ex)
     expr = quote
         $ex
 
-        @inline function (tr::Jaynes.HierarchicalTrace)(call::typeof(rand), addr::Jaynes.Address, $argname::$name, args...)
+        @inline function (ctx::Jaynes.SimulateContext)(call::typeof(rand), addr::Jaynes.Address, $argname::$name, args...)
+            Jaynes.visit!(ctx.visited, addr)
             s = $argname(args...)
-            Jaynes.add_choice!(tr, addr, Jaynes.ChoiceSite(logpdf($argname, args..., s), s))
+            Jaynes.add_choice!(ctx, addr, Jaynes.ChoiceSite(logpdf($argname, args..., s), s))
             return s
         end
 

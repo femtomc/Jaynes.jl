@@ -60,9 +60,8 @@ end
 # ------------ includes ------------ #
 
 using Mjolnir
-using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
 using Mjolnir: Defaults
-import Mjolnir: trace
 include("compiler/static.jl")
 
 include("core.jl")
@@ -97,9 +96,6 @@ export Regenerate, regenerate
 export Score, score
 export Backpropagate, get_parameter_gradients, get_choice_gradients
 
-# Trace.
-export Trace, trace, get_score
-
 # Tracer language features.
 export learnable, plate, markov
 
@@ -110,6 +106,6 @@ export selection, get_selection, get_parameters, compare, has_query, update_para
 export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!
 
 # Utilities.
-export display, merge
+export display, merge, get_score
 
 end # module
