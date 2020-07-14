@@ -22,11 +22,9 @@ There are also numerous papers about current systems:
 
 ## Implementation and design
 
-Jaynes is a _context-oriented programming_ system for probabilistic programming. Internally, the current implementation closely follows the design of [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. 
+Jaynes is a _context-oriented programming_ system for probabilistic programming. Internally, the current implementation closely follows the design of the dynamic DSL in [Gen](https://www.gen.dev/) which also uses the notion of stateful execution contexts to produce the interfaces required for inference. Jaynes is focused on an optimized dynamic language which allows most of the Julia language to be used in expressing probabilistic programs.
 
-In contrast to Gen (which provides powerful optimizations for programs written in the [static DSL](https://www.gen.dev/dev/ref/modeling/#Static-Modeling-Language-1)), Jaynes is focused on an optimized dynamic language which allows most of the Julia language to be used in expressing probabilistic programs.
-
-Jaynes uses many concepts from the design and implementation of Gen. First and foremost, I would recommend users of Jaynes become familiar with Gen - to understand the problems which Jaynes attempts to solve. The following papers may be useful in this regard:
+I would recommend users of Jaynes become familiar with Gen - to understand the problems which Jaynes attempts to solve. The following papers may be useful in this regard:
 
 1. [Gen: a general-purpose probabilistic programming system with programmable inference](https://dl.acm.org/doi/10.1145/3314221.3314642)
 2. [Probabilistic programming with programmable inference](https://people.csail.mit.edu/rinard/paper/pldi18.pdf)
