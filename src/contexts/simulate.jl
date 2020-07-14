@@ -42,45 +42,54 @@ end
 
 # ------------ Vectorized call sites ------------ #
 
-@inline function (ctx::SimulateContext)(c::typeof(foldr), 
+@inline function (ctx::SimulateContext)(c::typeof(markov), 
                                         addr::Address, 
                                         call::Function, 
                                         len::Int, 
                                         args...)
+    visit!(ctx, addr => i)
+    ss = get_subselection(ctx, addr => i)
+    ret, cl = simulate(ss, call, ret...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
-    ret = args
+    v_cl = Vector{typeof(cl)}(undef, len)
+    v_ret[i] = ret
+    v_cl[i] = cl
     for i in 1:len
         visit!(ctx, addr => i)
         ss = get_subselection(ctx, addr => i)
-        ret, cl = simulate(ss, call, ret...)
+        ret, cl = simulate(ss, call, v_ret[i-1]...)
         v_ret[i] = ret
-        v_tr[i] = cl.tr
+        v_cl[i] = cl
     end
-    sc = sum(map(v_tr) do tr
-                 get_score(tr)
+    sc = sum(map(v_cl) do cl
+                 get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 
-@inline function (ctx::SimulateContext)(c::typeof(map), 
+@inline function (ctx::SimulateContext)(c::typeof(plate), 
                                         addr::Address, 
                                         call::Function, 
                                         args::Vector)
+    visit!(ctx, addr => 1)
+    ss = get_subselection(ctx, addr => 1)
+    ret, cl = simulate(ss, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_cl = Vector{typeof(cl)}(undef, len)
+    v_ret[i] = ret
+    v_cl[i] = cl
     for i in 1:len
         visit!(ctx, addr => i)
         ss = get_subselection(ctx, addr => i)
         ret, cl = simulate(ss, call, args[i]...)
         v_ret[i] = ret
-        v_tr[i] = cl.tr
+        v_cl[i] = cl
     end
-    sc = sum(map(v_tr) do tr
-                 get_score(tr)
+    sc = sum(map(v_cl) do cl
+                 get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(foldr)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 

@@ -21,8 +21,8 @@ function bar(m, n)
 end
 
 function foo()
-    x = foldr(rand, :x, bar, 10, 0.3, 3.0)
-    y = map(rand, :y, bar, x)
+    x = markov(rand, :x, bar, 10, 0.3, 3.0)
+    y = plate(rand, :y, bar, x)
     return y
 end
 
@@ -30,14 +30,14 @@ cl = trace(foo)
 display(cl.trace; show_values = true)
 ```
 
-the `foldr` and `map` calls indicate to the tracer that the generation of randomness conforms to a computation pattern which can be vectorized. This allows the tracer to construct an efficient `VectorizedCallSite` which allows more efficient updates/regenerations than a "black-box" `CallSite` where the dependency information may not be known. This is a simple way for the user to increase the efficiency of inference algorithms, by informing the tracer of information which it can't derive on its own (at least for now 😺).
+the `markov` and `plate` calls indicate to the tracer that the generation of randomness conforms to a computation pattern which can be vectorized. This allows the tracer to construct an efficient `VectorizedCallSite` which allows more efficient updates/regenerations than a "black-box" `CallSite` where the dependency information may not be known. This is a simple way for the user to increase the efficiency of inference algorithms, by informing the tracer of information which it can't derive on its own (at least for now 😺).
 
-`foldr` requires that the user provide a function `f` with
+`markov` requires that the user provide a function `f` with
 
 ```math
 f: (X, Y) \rightarrow (X, Y)
 ```
 
-as well as a first argument which denotes the number of fold operations to compute (in the example above, `10`). `foldr` will then iteratively compute the function, passing the return value as arguments to the next computation (from left to right).
+as well as a first argument which denotes the number of fold operations to compute (in the example above, `10`). `markov` will then iteratively compute the function, passing the return value as arguments to the next computation (from left to right).
 
-`map` does not place requirements on the function `f` (other than the implicit requirements for valid programs, as described above) but does require that the arguments be a `Vector` with each element matching the signature of `f`. `map` then iteratively applies the function as a kernel for each element in the argument vector.
+`plate` does not place requirements on the function `f` (other than the implicit requirements for valid programs, as described above) but does require that the arguments be a `Vector` with each element matching the signature of `f`. `plate` then iteratively applies the function as a kernel for each element in the argument vector (similar to the functional `map` operation).
