@@ -10,11 +10,10 @@ function LinearGaussianProposal()
     x = rand(:x, Normal(α * 3.0, 3.0))
 end
 
-@testset "Trace" begin
-    tr = Trace()
-    tr(LinearGaussian, 0.5, 3.0)
-    @test haskey(tr, :x)
-    @test haskey(tr, :y)
+@testset "Simulate" begin
+    ret, cl = simulate(LinearGaussian, 0.5, 3.0)
+    @test haskey(cl, :x)
+    @test haskey(cl, :y)
 end
 
 @testset "Generate" begin

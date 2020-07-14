@@ -21,13 +21,11 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
     if has_query(ctx.select, addr)
         s = get_query(ctx.select, addr)
         score = logpdf(d, s)
-        add_choice!(ctx.tr, addr, ChoiceSite(score, s))
-        increment_weight!(ctx, score)
-        increment_score!(ctx, score)
+        add_choice!(ctx, addr, ChoiceSite(score, s))
+        increment!(ctx, score)
     else
         s = rand(d)
-        add_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
-        increment_score!(ctx, score)
+        add_choice!(ctx, addr, ChoiceSite(logpdf(d, s), s))
     end
     return s
 end
@@ -53,9 +51,8 @@ end
     visit!(ctx, addr)
     ss = get_subselection(ctx, addr)
     ret, cl, w = generate(ss, call, args...)
-    add_call!(ctx.tr, addr, cl)
-    increment_weight!(ctx, w)
-    increment_score!(ctx, get_score(cl))
+    add_call!(ctx, addr, cl)
+    increment!(ctx, w)
     return ret
 end
 
@@ -73,20 +70,19 @@ end
     v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
     v_cl[1] = cl
-    increment_weight!(ctx, w)
+    increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
         ss = get_subselection(ctx, addr => i)
         ret, cl, w = generate(ss, call, v_ret[i-1]...)
         v_ret[i] = ret
         v_cl[i] = cl
-        increment_weight!(ctx, w)
+        increment!(ctx, w)
     end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    increment_score!(ctx, sc)
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 
@@ -102,20 +98,19 @@ end
     v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
     v_cl[1] = cl
-    increment_weight!(ctx, w)
+    increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
         ss = get_subselection(ctx, addr => i)
         ret, cl, w = generate(ss, call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl
-        increment_weight!(ctx, w)
+        increment!(ctx, w)
     end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    increment_score!(ctx, sc)
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 

@@ -3,11 +3,12 @@ mutable struct UpdateContext{T <: Trace, K <: ConstrainedSelection, D <: Diff} <
     tr::T
     select::K
     weight::Float64
+    score::Float64
     discard::T
     visited::Visitor
     params::LearnableParameters
     argdiff::D
-    UpdateContext(tr::T, select::K, argdiffs::D) where {T <: Trace, K <: ConstrainedSelection, D <: Diff} = new{T, K, D}(tr, Trace(), select, 0.0, Trace(), Visitor(), LearnableParameters(), argdiffs)
+    UpdateContext(tr::T, select::K, argdiffs::D) where {T <: Trace, K <: ConstrainedSelection, D <: Diff} = new{T, K, D}(tr, Trace(), select, 0.0, 0.0, Trace(), Visitor(), LearnableParameters(), argdiffs)
 end
 Update(tr::Trace, select, argdiffs) = UpdateContext(tr, select, argdiffs)
 Update(tr::Trace, select) = UpdateContext(tr, select, UndefinedChange())
@@ -77,7 +78,7 @@ end
         # TODO: Mjolnir.
         ret, new_site, lw, retdiff, discard = update(ss, cs, args...)
 
-        add_choice!(ctx.discard, addr, CallSite(discard, cs.fn, cs.args, cs.ret))
+        add_choice!(ctx.discard, addr, CallSite(discard, cs.score, cs.fn, cs.args, cs.ret))
     else
         ss = get_subselection(ctx, addr)
         ret, new_site, lw = generate(ss, call, args...)
@@ -207,13 +208,13 @@ end
 
 function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, args...)
     ret = ctx(bbcs.fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, BlackBoxCallSite(ctx.tr, ctx.score, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, tr::T, fn::Function, new_args...) where {T <: Trace, L <: ConstrainedSelection}
     ctx = UpdateContext(tr, sel)
     ret = ctx(fn, new_args...)
-    return ret, BlackBoxCallSite(ctx.tr, fn, new_args, ret), ctx.weight, UndefinedChange, ctx.discard
+    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, new_args, ret), ctx.weight, UndefinedChange, ctx.discard
 end
 
 function update(sel::L, bbcs::BlackBoxCallSite) where L <: ConstrainedSelection

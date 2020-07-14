@@ -1,8 +1,9 @@
 mutable struct SimulateContext{T <: Trace} <: ExecutionContext
     tr::T
+    score::Float64
     visited::Visitor
     params::LearnableParameters
-    SimulateContext(params) = new{HierarchicalTrace}(Trace(), Visitor(), params)
+    SimulateContext(params) = new{HierarchicalTrace}(Trace(), 0.0, Visitor(), params)
 end
 
 # ------------ Choice sites ------------ #
@@ -10,9 +11,9 @@ end
 @inline function (ctx::SimulateContext)(call::typeof(rand), 
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
-    s = rand(d)
-    add_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
     visit!(ctx.visited, addr)
+    s = rand(d)
+    add_choice!(ctx, addr, ChoiceSite(logpdf(d, s), s))
     return s
 end
 
@@ -36,7 +37,7 @@ end
                                         args...) where T <: Address
     ss = get_subselection(ctx, addr)
     ret, cl = simulate(ss, call, args...)
-    add_call!(ctx.tr, addr, cl)
+    add_call!(ctx, addr, cl)
     return ret
 end
 
@@ -47,24 +48,22 @@ end
                                         call::Function, 
                                         len::Int, 
                                         args...)
-    visit!(ctx, addr => i)
-    ss = get_subselection(ctx, addr => i)
-    ret, cl = simulate(ss, call, ret...)
+    visit!(ctx, addr => 1)
+    ret, cl = simulate(call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_cl = Vector{typeof(cl)}(undef, len)
-    v_ret[i] = ret
-    v_cl[i] = cl
-    for i in 1:len
+    v_ret[1] = ret
+    v_cl[1] = cl
+    for i in 2:len
         visit!(ctx, addr => i)
-        ss = get_subselection(ctx, addr => i)
-        ret, cl = simulate(ss, call, v_ret[i-1]...)
+        ret, cl = simulate(call, v_ret[i-1]...)
         v_ret[i] = ret
         v_cl[i] = cl
     end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 
@@ -73,23 +72,22 @@ end
                                         call::Function, 
                                         args::Vector)
     visit!(ctx, addr => 1)
-    ss = get_subselection(ctx, addr => 1)
-    ret, cl = simulate(ss, call, args[1]...)
+    len = length(args)
+    ret, cl = simulate(call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_cl = Vector{typeof(cl)}(undef, len)
-    v_ret[i] = ret
-    v_cl[i] = cl
-    for i in 1:len
+    v_ret[1] = ret
+    v_cl[1] = cl
+    for i in 2:len
         visit!(ctx, addr => i)
-        ss = get_subselection(ctx, addr => i)
-        ret, cl = simulate(ss, call, args[i]...)
+        ret, cl = simulate(call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl
     end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 
@@ -98,7 +96,7 @@ end
 function simulate(fn::Function, args...; params = LearnableParameters())
     ctx = SimulateContext(params)
     ret = ctx(fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, fn, args, ret)
+    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
 # ------------ Documentation ------------ #

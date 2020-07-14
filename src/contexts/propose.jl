@@ -1,9 +1,10 @@
 mutable struct ProposeContext{T <: Trace} <: ExecutionContext
     tr::T
     weight::Float64
+    score::Float64
     visited::Visitor
     params::LearnableParameters
-    ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, Visitor(), LearnableParameters())
+    ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, 0.0, Visitor(), LearnableParameters())
 end
 Propose() = ProposeContext(Trace())
 
@@ -15,7 +16,7 @@ Propose() = ProposeContext(Trace())
     visit!(ctx, addr)
     s = rand(d)
     score = logpdf(d, s)
-    add_choice!(ctx.tr, addr, ChoiceSite(score, s))
+    add_choice!(ctx, addr, ChoiceSite(score, s))
     increment!(ctx, score)
     return s
 end
@@ -39,7 +40,7 @@ end
                                         args...) where T <: Address
     visit!(ctx, addr)
     ret, cl, w = propose(call, args...)
-    add_call!(ctx.tr, addr, cl)
+    add_call!(ctx, addr, cl)
     increment!(ctx, w)
     return ret
 end
@@ -68,7 +69,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
                 end)
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 
@@ -94,7 +95,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
                 end)
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(plate)}(v_cl, sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(plate)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 
@@ -103,7 +104,7 @@ end
 function propose(fn::Function, args...)
     ctx = Propose()
     ret = ctx(fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, fn, args, ret), ctx.weight
+    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 # ------------ Documentation ------------ #

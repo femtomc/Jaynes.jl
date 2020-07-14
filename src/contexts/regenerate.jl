@@ -3,15 +3,16 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
     tr::T
     select::L
     weight::Float64
+    score::Float64
     discard::T
     visited::Visitor
     params::LearnableParameters
     function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
         un_sel = selection(sel)
-        new{T, typeof(un_sel)}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), LearnableParameters())
+        new{T, typeof(un_sel)}(tr, Trace(), un_sel, 0.0, 0.0, Trace(), Visitor(), LearnableParameters())
     end
     function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-        new{T, L}(tr, Trace(), sel, 0.0, Trace(), Visitor(), LearnableParameters())
+        new{T, L}(tr, Trace(), sel, 0.0, 0.0, Trace(), Visitor(), LearnableParameters())
     end
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
@@ -47,7 +48,7 @@ end
     if in_prev_chm && !in_sel
         increment!(ctx, score - prev.score)
     end
-    add_choice!(ctx.tr, addr, ChoiceSite(score, ret))
+    add_choice!(ctx, addr, ChoiceSite(score, ret))
     return ret
 end
 # ------------ Learnable ------------ #
@@ -80,7 +81,7 @@ end
 
 function regenerate(ctx::RegenerateContext, bbcs::BlackBoxCallSite, new_args...)
     ret = ctx(bbcs.fn, new_args...)
-    return ret, BlackBoxCallSite(ctx.tr, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, BlackBoxCallSite(ctx.tr, ctx.score, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: UnconstrainedSelection
@@ -114,6 +115,7 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
     tr::T
     select::L
     weight::Float64
+    score::Float64
     discard::T
     visited::Visitor
     params::LearnableParameters

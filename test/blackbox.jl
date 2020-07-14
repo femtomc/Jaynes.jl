@@ -7,7 +7,7 @@ geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 0 : 1 + rand(:geo, geo, p)
 end
 
 @testset "Trace" begin
-    ret, cl = trace(geo, 0.5)
+    ret, cl = simulate(geo, 0.5)
     @test haskey(cl.trace, :flip)
 end
 

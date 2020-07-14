@@ -11,11 +11,11 @@ function LinearGaussianProposal()
 end
 
 @testset "Importance sampling" begin
+    ret, cl = simulate(LinearGaussian, 0.0, 1.0)
     sel = Jaynes.selection(:x)
-    ret, cl = trace(LinearGaussian, 0.0, 1.0)
 
     @testset "Linear Gaussian model" begin
-        tr, discard = Jaynes.metropolis_hastings(cl, sel)
+        cl, discard = Jaynes.metropolis_hastings(cl, sel)
     end
 
     @testset "Linear Gaussian proposal" begin
