@@ -66,22 +66,22 @@ end
     ss = get_subselection(ctx, addr => 1)
     ret, cl, w = generate(ss, call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = cl.trace
+    v_cl[1] = cl
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
         ss = get_subselection(ctx, addr => i)
         ret, cl, w = generate(ss, call, v_ret[i-1]...)
         v_ret[i] = ret
-        v_tr[i] = cl.trace
+        v_cl[i] = cl
         increment!(ctx, w)
     end
-    sc = sum(map(v_tr) do tr
-                 get_score(tr)
+    sc = sum(map(v_cl) do cl
+                 get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -94,22 +94,22 @@ end
     ss = get_subselection(ctx, addr => 1)
     ret, cl, w = generate(ss, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = cl.trace
+    v_cl[1] = cl
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
         ss = get_subselection(ctx, addr => i)
         ret, cl, w = generate(ss, call, args[i]...)
         v_ret[i] = ret
-        v_tr[i] = cl.trace
+        v_cl[i] = cl
         increment!(ctx, w)
     end
-    sc = sum(map(v_tr) do tr
-                 get_score(tr)
+    sc = sum(map(v_cl) do cl
+                 get_score(cl)
              end)
-    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_tr, sc, call, args, v_ret))
+    add_call!(ctx.tr, addr, VectorizedCallSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 

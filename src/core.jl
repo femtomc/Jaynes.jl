@@ -1,3 +1,6 @@
+# ------------ Core ------------ #
+
+# Special calls recognized by tracer.
 import Base: rand
 rand(addr::Address, d::Distribution{T}) where T = rand(d)
 rand(addr::Address, fn::Function, args...) = fn(args...)
@@ -5,6 +8,7 @@ learnable(addr::Address, p::T) where T = p
 plate(addr::Address, args...) = error("plate with address $addr evaluated outside of the tracer.")
 markov(addr::Address, args...) = error("markov with address $addr evaluated outside of the tracer.")
 
+# Record sites for choices, calls, and parameters.
 abstract type RecordSite end
 abstract type CallSite <: RecordSite end
 abstract type LearnableSite <: RecordSite end
@@ -76,14 +80,14 @@ get_call(bbcs::BlackBoxCallSite, addr) = bbcs.tr.calls[addr]
 get_score(bbcs::BlackBoxCallSite) = get_score(bbcs.trace)
 
 # Vectorized
-mutable struct VectorizedCallSite{F <: Function, C <: RecordSite, J, K} <: CallSite
+mutable struct VectorizedCallSite{F, D, C <: RecordSite, J, K} <: CallSite
     subcalls::Vector{C}
     score::Float64
-    fn::Function
+    kernel::D
     args::J
     ret::Vector{K}
-    function VectorizedCallSite{F}(sub::Vector{T}, sc::Float64, fn::Function, args::J, ret::Vector{K}) where {F <: Function, T <: Trace, J, K}
-        new{F, T, J, K}(sub, sc, fn, args, ret)
+    function VectorizedCallSite{F}(sub::Vector{C}, sc::Float64, kernel::D, args::J, ret::Vector{K}) where {F, D, C <: RecordSite, J, K}
+        new{F, D, C, J, K}(sub, sc, kernel, args, ret)
     end
 end
 function has_choice(vcs::VectorizedCallSite, addr)
@@ -107,14 +111,14 @@ end
 get_score(vcs::VectorizedCallSite) = vcs.score
 
 # If-else branch
-mutable struct ConditionalBranchCallSite{T <: Trace, K <: Trace, J, L, R}
+mutable struct ConditionalBranchCallSite{C, A, B, T <: RecordSite, K <: RecordSite, J, L, R}
     cond::T
     branch::K
     score::Float64
-    cond_fn::Function
+    cond_kernel::C
     cond_args::J
-    a::Function
-    b::Function
+    a::A
+    b::B
     branch_args::L
     ret::R
 end
@@ -143,18 +147,18 @@ end
 @inline function (tr::HierarchicalTrace)(c::typeof(markov), addr::Address, call::Function, len::Int, args...)
     ret, cl = trace(call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = cl.trace
+    v_cl[1] = cl
     for i in 2:len
         ret, cl = trace(call, v_ret[i-1]...)
         v_ret[i] = ret
-        v_tr[i] = cl.trace
+        v_cl[i] = cl
     end
-    sc = sum(map(v_tr) do tr
-                    get_score(tr)
+    sc = sum(map(v_cl) do cl
+                 get_score(cl)
                 end)
-    add_call!(tr, addr, VectorizedCallSite{typeof(markov)}(v_tr, sc, call, args, v_ret))
+    add_call!(tr, addr, VectorizedCallSite{typeof(markov)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 
@@ -163,18 +167,18 @@ end
     len = length(args)
     ret, cl = trace(call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_tr = Vector{HierarchicalTrace}(undef, len)
+    v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
-    v_tr[1] = cl.trace
+    v_cl[1] = cl
     for i in 2:len
         ret, cl = trace(call, args[i]...)
         v_ret[i] = ret
-        v_tr[i] = cl.trace
+        v_cl[i] = cl
     end
-    sc = sum(map(v_tr) do tr
-                    get_score(tr)
+    sc = sum(map(v_cl) do cl
+                 get_score(cl)
                 end)
-    add_call!(tr, addr, VectorizedCallSite{typeof(plate)}(v_tr, sc, call, args, v_ret))
+    add_call!(tr, addr, VectorizedCallSite{typeof(plate)}(v_cl, sc, call, args, v_ret))
     return v_ret
 end
 

@@ -65,7 +65,7 @@ using Mjolnir: Defaults
 import Mjolnir: trace
 include("compiler/static.jl")
 
-include("trace.jl")
+include("core.jl")
 include("selections.jl")
 include("learnable.jl")
 include("utils/numerical.jl")
