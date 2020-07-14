@@ -33,7 +33,7 @@ In the future, Jaynes will support a context which allows the automatic training
 As part of standard usage, it's likely that you'd like to update learnable parameters in your model (which you declare with `learnable(addr, initial_value)`. 
 
 !!! warning
-    Currently, there's a bug with declarating learnable structures which will prevent the usage of parameters other than `Float64` or `Array{Float64, 1}` type. If you run into Zygote errors with mutating arrays, you can try to alleviate the problem by annotating your parameters (e.g. `Float64[1.0, 3.0, ...]`). You'll mostly be okay if you can stick to scalar parameters and 1D arrays - I'm working to identify this issue and fix it so higher-rank tensors can also be used.
+    Currently, there's a bug with declaring learnable structures which prevents the usage of parameters of type other than `Float64` or `Array{Float64, 1}`. If you run into Zygote errors with mutating arrays, you can try to alleviate the problem by annotating your parameters (e.g. `Float64[1.0, 3.0, ...]`). You'll mostly be okay if you can stick to scalar parameters and 1D arrays - I'm working to identify this issue and fix it so higher-rank tensors can also be used.
 
 Given a `CallSite`, you can extract parameters using `get_parameters`
 
