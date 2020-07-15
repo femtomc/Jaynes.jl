@@ -14,7 +14,12 @@ end
         params = update_parameters(ADAM(0.05, (0.9, 0.8)), params, param_grads)
     end
     @test params.utility[:l] ≈ 6.0 atol = 1e-2
-    @test params.utility[:m] ≈ 0.0 atol = 1e-3
+    @test params.utility[:m] ≈ 0.0 atol = 1e-2
+
+    # Train.
+    params = train(selection((:q, 6.0)), learnable_normal, 5.0, 3.0; opt = ADAM(0.05, (0.9, 0.8)), iters = 2000)
+    @test params.utility[:l] ≈ 6.0 atol = 1e-2
+    @test params.utility[:m] ≈ 0.0 atol = 1e-2
 end
 
 function model()
@@ -31,23 +36,14 @@ function var()
     intercept = rand(:intercept, Normal(intercept_mu, exp(intercept_log_std)))
 end
 
-#@testset "Convergence for learning - VI 1" begin
-#    sel = selection()
-#    ret, cl, w = generate(sel, var)
-#    params = get_parameters(cl)
-#    for i in 1:100
-#        _, cl = simulate(var; params = params)
-#        obs = merge(cl, sel)
-#        _, mlw = score(obs, model; params = params)
-#        lw = mlw - get_score(cl)
-#        gs = get_parameter_gradients(cl, nothing, lw)
-#        update!(params, gs)
-#    end
-#    @test params.utility[:slope_mu] ≈ -1.0 atol = 1e-3
-#    @test params.utility[:slope_log_std] ≈ 0.5 atol = 1e-3
-#    @test params.utility[:intercept_mu] ≈ 1.0 atol = 1e-3
-#    @test params.utility[:intercept_log_std] ≈ 2.0 atol = 1e-3
-#end
+@testset "Convergence for learning - VI 1" begin
+    sel = selection()
+    params, _, _ = advi(sel, var, (), model, (); iters = 2000, opt = ADAM(0.005, (0.9, 0.999)))
+    @test params.utility[:slope_mu] ≈ -1.0 atol = 5e-2
+    @test params.utility[:slope_log_std] ≈ 0.5 atol = 5e-2
+    @test params.utility[:intercept_mu] ≈ 1.0 atol = 5e-2
+    @test params.utility[:intercept_log_std] ≈ 2.0 atol = 5e-2
+end
 
 #function learnable_hypers(x::Float64, y::Float64)
 #    l = learnable(:l, 3.0)
