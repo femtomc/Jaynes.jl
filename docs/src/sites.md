@@ -11,6 +11,14 @@ HierarchicalTrace
 ```
 
 ```@docs
+VectorizedTrace
+```
+
+```@docs
+BranchTrace
+```
+
+```@docs
 ChoiceSite
 ```
 
@@ -19,5 +27,9 @@ BlackBoxCallSite
 ```
 
 ```@docs
-VectorizedCallSite
+VectorizedSite
+```
+
+```@docs
+IfElseBranchSite
 ```

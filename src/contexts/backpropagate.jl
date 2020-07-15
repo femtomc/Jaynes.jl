@@ -205,6 +205,30 @@ function get_parameter_gradients(cl::T, ret_grad, scaler::Float64 = 1.0) where T
     return param_grads
 end
 
+# ------------ train ------------ #
+
+function train(fn::Function, args...; opt = ADAM(), iters = 1000)
+    _, cl = simulate(fn, args...)
+    params = get_parameters(cl)
+    for i in 1 : iters
+        grads = get_parameter_gradients(cl, 1.0)
+        params = update_parameters(opt, params, grads)
+        _, cl = simulate(fn, args...; params = params)
+    end
+    return params
+end
+
+function train(sel, fn::Function, args...; opt = ADAM(), iters = 1000)
+    _, cl = generate(sel, fn, args...)
+    params = get_parameters(cl)
+    for i in 1 : iters
+        grads = get_parameter_gradients(cl, 1.0)
+        params = update_parameters(opt, params, grads)
+        _, cl = generate(sel, fn, args...; params = params)
+    end
+    return params
+end
+
 # ------------ Documentation ------------ #
 
 @doc(

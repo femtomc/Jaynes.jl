@@ -43,6 +43,7 @@ struct Gradients <: UtilitySelection
     tree::Dict{Address, Gradients}
     utility::Dict{Address, Any}
     Gradients() = new(Dict{Address, Gradients}(), Dict{Address, Any}())
+    Gradients(tree, utility) = new(tree, utility)
 end
 
 has_grad(ps::Gradients, addr) = haskey(ps.utility, addr)

@@ -29,6 +29,12 @@ resample!
 
 `resample!` can be applied to both instances of `Particles` produced by particle filtering, as well as instances of `Particles` produced by importance sampling.
 
+## Variational inference
+
+```@docs
+advi
+```
+
 ## Markov chain Monte Carlo
 
 ```@docs

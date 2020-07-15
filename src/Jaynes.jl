@@ -94,7 +94,7 @@ export Update, update
 export Propose, propose
 export Regenerate, regenerate
 export Score, score
-export Backpropagate, get_parameter_gradients, get_choice_gradients
+export Backpropagate, get_parameter_gradients, get_choice_gradients, train
 
 # Tracer language features.
 export learnable, plate, markov
@@ -103,7 +103,7 @@ export learnable, plate, markov
 export selection, get_selection, get_parameters, compare, has_query, update_parameters
 
 # Inference.
-export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!
+export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!, advi
 
 # Utilities.
 export display, merge, get_score
