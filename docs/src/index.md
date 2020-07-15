@@ -5,3 +5,6 @@ If you are familiar with probabilistic programming, you might start with [Modeli
 If you're new to probabilistic programming, you might start with [Concepts](concepts.md), which provides some background about probabilistic programming, as well as some of the key conceptual ideas of this library.
 
 > Bon appetit!
+
+!!! info
+    This library used to be called _Walkman.jl_, hence the colored Walkman logo. The original logo artwork came from [an interesting article](https://www.eastbayexpress.com/oakland/ode-to-the-walkman-in-memorium/Content?oid=2295035) about the late and great musical device.
