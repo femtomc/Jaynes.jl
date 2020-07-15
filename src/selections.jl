@@ -451,21 +451,38 @@ end
 
 addresses(csa::ConstrainedByAddress) = keys(csa.query)
 addresses(usa::UnconstrainedSelectByAddress) = usa.query
-function compare(chs::ConstrainedHierarchicalSelection, v::Visitor)::Bool
+function compare!(arr, par, chs::ConstrainedHierarchicalSelection, v::Visitor)::Bool
     for addr in addresses(chs.query)
-        addr in v.addrs || return false
+        addr in v.addrs && continue
+        push!(arr, par => addr)
     end
     for addr in keys(chs.tree)
-        haskey(v.tree, addr) || return false
-        compare(chs.tree[addr], v.tree[addr]) || return false
+        haskey(v.tree, addr) && begin
+            compare!(arr, par => addr, chs.tree[addr], v.tree[addr])
+            continue
+        end
+        push!(arr, addr)
     end
-    return true
+end
+function compare(chs::ConstrainedHierarchicalSelection, v::Visitor)
+    addrs = []
+    for addr in addresses(chs.query)
+        addr in v.addrs && continue
+        push!(addrs, addr)
+    end
+    for addr in keys(chs.tree)
+        haskey(v.tree, addr) && begin
+            compare!(addrs, addr, chs.tree[addr], v.tree[addr])
+            continue
+        end
+        push!(addrs, addr)
+    end
+    return isempty(addrs), addrs
 end
 
 # ------------ Merge constrained selections and trace ------------ #
 
-function merge(cl::T,
-               sel::ConstrainedHierarchicalSelection) where T <: CallSite
+function merge(cl::T, sel::ConstrainedHierarchicalSelection) where T <: CallSite
     cl_selection = get_selection(cl)
     merge!(cl_selection, sel)
     return cl_selection

@@ -32,7 +32,7 @@ end
 @inline function (ctx::RegenerateContext)(call::typeof(rand), 
                                           addr::T, 
                                           d::Distribution{K}) where {T <: Address, K}
-    visit!(ctx.visited, addr)
+    visit!(ctx, addr)
     in_prev_chm = has_choice(ctx.prev, addr)
     in_sel = has_query(ctx.select, addr)
     if in_prev_chm
