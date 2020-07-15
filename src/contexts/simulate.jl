@@ -96,7 +96,31 @@ end
 function simulate(fn::Function, args...; params = LearnableParameters())
     ctx = SimulateContext(params)
     ret = ctx(fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, args, ret)
+    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
+end
+
+function simulate(fn::typeof(rand), addr::Address, d::Distribution{T}; params = LearnableParameters()) where T
+    ctx = SimulateContext(params)
+    ret = ctx(rand, addr, d)
+    return ret, GenericCallSite(ctx.tr, ctx.score, fn, d, ret)
+end
+
+function simulate(c::typeof(plate), addr::Address, fn::Function, args::Vector; params = LearnableParameters()) where T
+    ctx = SimulateContext(params)
+    ret = ctx(plate, addr, fn, args)
+    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
+end
+
+function simulate(c::typeof(plate), addr::Address, d::Distribution{T}; params = LearnableParameters()) where T
+    ctx = SimulateContext(params)
+    ret = ctx(plate, addr, fn, args)
+    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
+end
+
+function simulate(c::typeof(markov), addr::Address, fn::Function, len::Int, args...; params = LearnableParameters())
+    ctx = SimulateContext(params)
+    ret = ctx(markov, addr, fn, len, args...)
+    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
 # ------------ Documentation ------------ #

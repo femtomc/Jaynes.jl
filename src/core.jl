@@ -87,17 +87,17 @@ end
 # ------------ Call sites ------------ #
 
 # Black-box
-mutable struct BlackBoxCallSite{J, K} <: CallSite
+mutable struct GenericCallSite{J, K} <: CallSite
     trace::HierarchicalTrace
     score::Float64
     fn::Function
     args::J
     ret::K
 end
-has_choice(bbcs::BlackBoxCallSite, addr) = haskey(bbcs.tr.choices, addr)
-has_call(bbcs::BlackBoxCallSite, addr) = haskey(bbcs.tr.calls, addr)
-get_call(bbcs::BlackBoxCallSite, addr) = bbcs.tr.calls[addr]
-get_score(bbcs::BlackBoxCallSite) = bbcs.score
+has_choice(bbcs::GenericCallSite, addr) = haskey(bbcs.tr.choices, addr)
+has_call(bbcs::GenericCallSite, addr) = haskey(bbcs.tr.calls, addr)
+get_call(bbcs::GenericCallSite, addr) = bbcs.tr.calls[addr]
+get_score(bbcs::GenericCallSite) = bbcs.score
 
 # Vectorized
 mutable struct VectorizedSite{F, D, C <: RecordSite, J, K} <: CallSite
@@ -139,13 +139,13 @@ end
 # ------------ getindex ------------ #
 
 getindex(cs::ChoiceSite, addr::Address) = nothing
-getindex(cs::BlackBoxCallSite, addr) = getindex(cs.trace, addr)
+getindex(cs::GenericCallSite, addr) = getindex(cs.trace, addr)
 getindex(vcs::VectorizedSite, addr::Int) = getindex(cs.trace, addr)
 function getindex(vcs::VectorizedSite, addr::Pair)
     getindex(vcs.trace[addr[1]], addr[2])
 end
 unwrap(cs::ChoiceSite) = cs.val
-unwrap(cs::BlackBoxCallSite) = cs.ret
+unwrap(cs::GenericCallSite) = cs.ret
 unwrap(cs::VectorizedSite) = cs.ret
 function getindex(tr::HierarchicalTrace, addr::Address)
     if has_choice(tr, addr)
@@ -166,7 +166,7 @@ end
 
 import Base.haskey
 haskey(cs::ChoiceSite, addr::Address) = false
-haskey(cs::BlackBoxCallSite, addr) = haskey(cs.trace, addr)
+haskey(cs::GenericCallSite, addr) = haskey(cs.trace, addr)
 function haskey(vcs::VectorizedSite, addr::Pair)
     addr[1] <= length(vcs.trace.subrecords) && haskey(vcs.trace[addr[1]], addr[2])
 end
@@ -198,7 +198,6 @@ mutable struct HierarchicalTrace <: Trace
     calls::Dict{Address, CallSite}
     choices::Dict{Address, ChoiceSite}
     params::Dict{Address, LearnableSite}
-    score::Float64
     end
 end
 ```
@@ -227,15 +226,16 @@ Abstract base type of all call sites.
 @doc(
 """
 ```julia
-mutable struct BlackBoxCallSite{T <: Trace, J, K} <: CallSite
-    trace::T
+mutable struct GenericCallSite{J, K} <: CallSite
+    trace::HierarchicalTrace
+    score::Float64
     fn::Function
     args::J
     ret::K
 end
 ```
 A record of a black-box call (e.g. no special tracer language features). Records the `fn` and `args` for the call, as well as the `ret` return value.
-""", BlackBoxCallSite)
+""", GenericCallSite)
 
 @doc(
 """

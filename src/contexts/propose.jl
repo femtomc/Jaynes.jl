@@ -104,7 +104,7 @@ end
 function propose(fn::Function, args...)
     ctx = Propose()
     ret = ctx(fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 # ------------ Documentation ------------ #

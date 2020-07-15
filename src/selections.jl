@@ -364,7 +364,7 @@ function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::Ch
     push!(chs, addr, cs.val)
 end
 
-function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::BlackBoxCallSite)
+function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::GenericCallSite)
     subtrace = cs.trace
     subchs = ConstrainedHierarchicalSelection()
     for k in keys(subtrace.calls)
@@ -404,7 +404,7 @@ function get_selection(tr::HierarchicalTrace)
     return top
 end
 
-function get_selection(cl::BlackBoxCallSite)
+function get_selection(cl::GenericCallSite)
     top = ConstrainedHierarchicalSelection()
     push!(top, cl.trace)
     return top

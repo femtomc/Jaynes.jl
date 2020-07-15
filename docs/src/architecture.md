@@ -108,7 +108,7 @@ end
 Here, I'm showing `HierarchicalTrace` which is the generic (and currently, only) trace type. We just encountered `ChoiceSite` above - let's look at an example `CallSite`
 
 ```julia
-mutable struct BlackBoxCallSite{T <: Trace, J, K} <: CallSite
+mutable struct GenericCallSite{T <: Trace, J, K} <: CallSite
     trace::T
     fn::Function
     args::J

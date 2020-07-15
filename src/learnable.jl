@@ -128,7 +128,7 @@ function site_push!(chs::LearnableParameters, addr::Address, cs::LearnableSite)
     push!(chs, addr, cs.val)
 end
 
-function site_push!(chs::LearnableParameters, addr::Address, cs::BlackBoxCallSite)
+function site_push!(chs::LearnableParameters, addr::Address, cs::GenericCallSite)
     subtrace = cs.trace
     subchs = LearnableParameters()
     for (k, v) in subtrace.calls
@@ -155,7 +155,7 @@ function get_parameters(tr::HierarchicalTrace)
     return top
 end
 
-function get_parameters(cl::BlackBoxCallSite)
+function get_parameters(cl::GenericCallSite)
     top = LearnableParameters()
     push!(top, cl.trace)
     return top

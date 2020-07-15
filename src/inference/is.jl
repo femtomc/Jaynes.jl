@@ -2,7 +2,7 @@ function importance_sampling(model::Function,
                              args::Tuple;
                              observations::ConstrainedSelection = ConstrainedAnywhereSelection(), 
                              num_samples::Int = 5000)
-    calls = Vector{BlackBoxCallSite}(undef, num_samples)
+    calls = Vector{GenericCallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     for i in 1:num_samples
         _, calls[i], lws[i] = generate(observations, model, args...)
@@ -19,7 +19,7 @@ function importance_sampling(model::Function,
                              proposal_args::Tuple; 
                              observations::ConstrainedSelection = ConstrainedAnywhereSelection(),
                              num_samples::Int = 5000)
-    calls = Vector{BlackBoxCallSite}(undef, num_samples)
+    calls = Vector{GenericCallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     for i in 1:num_samples
         ret, pcall, pw = propose(proposal, proposal_args...)

@@ -156,38 +156,38 @@ end
 
 # ------------ Convenience ------------ #
 
-function update(ctx::UpdateContext, bbcs::BlackBoxCallSite, args...)
+function update(ctx::UpdateContext, bbcs::GenericCallSite, args...)
     ret = ctx(bbcs.fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, ctx.score, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, GenericCallSite(ctx.tr, ctx.score, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, tr::T, fn::Function, new_args...) where {T <: Trace, L <: ConstrainedSelection}
     ctx = UpdateContext(tr, sel)
     ret = ctx(fn, new_args...)
-    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, new_args, ret), ctx.weight, UndefinedChange, ctx.discard
+    return ret, GenericCallSite(ctx.tr, ctx.score, fn, new_args, ret), ctx.weight, UndefinedChange, ctx.discard
 end
 
-function update(sel::L, bbcs::BlackBoxCallSite) where L <: ConstrainedSelection
+function update(sel::L, bbcs::GenericCallSite) where L <: ConstrainedSelection
     ctx = UpdateContext(bbcs, sel, NoChange())
     return update(ctx, bbcs, bbcs.args...)
 end
 
-function update(bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection
+function update(bbcs::GenericCallSite, new_args...) where L <: ConstrainedSelection
     ctx = UpdateContext(bbcs, ConstrainedHierarchicalSelection())
     return update(ctx, bbcs, new_args...)
 end
 
-function update(sel::L, bbcs::BlackBoxCallSite, new_args...) where L <: ConstrainedSelection
+function update(sel::L, bbcs::GenericCallSite, new_args...) where L <: ConstrainedSelection
     ctx = UpdateContext(bbcs, sel, UndefinedChange())
     return update(ctx, bbcs, new_args...)
 end
 
-function update(argdiffs::D, bbcs::BlackBoxCallSite, new_args...) where {L <: ConstrainedSelection, D <: Diff}
+function update(argdiffs::D, bbcs::GenericCallSite, new_args...) where {L <: ConstrainedSelection, D <: Diff}
     ctx = UpdateContext(bbcs, ConstrainedHierarchicalSelection(), argdiffs)
     return update(ctx, bbcs, new_args...)
 end
 
-function update(sel::L, argdiffs::D, bbcs::BlackBoxCallSite, new_args...) where {L <: ConstrainedSelection, D <: Diff}
+function update(sel::L, argdiffs::D, bbcs::GenericCallSite, new_args...) where {L <: ConstrainedSelection, D <: Diff}
     ctx = UpdateContext(bbcs, sel, argdiffs)
     return update(ctx, bbcs, new_args...)
 end

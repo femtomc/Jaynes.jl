@@ -119,18 +119,18 @@ end
 function generate(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
     ctx = Generate(sel, params)
     ret = ctx(fn, args...)
-    return ret, BlackBoxCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(markov), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection
     ctx = Generate(sel)
-    ret = ctx(fn, r, addr, args...)
+    ret = ctx(fn, addr, args...)
     return ret, ctx.tr.chm[addr], ctx.weight
 end
 
 function generate(sel::L, fn::typeof(plate), addr::Symbol, call::Function, args::Vector) where L <: ConstrainedSelection
     ctx = Generate(sel)
-    ret = ctx(fn, r, addr, call, args)
+    ret = ctx(fn, addr, call, args)
     return ret, ctx.tr.chm[addr], ctx.weight
 end
 

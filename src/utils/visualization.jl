@@ -51,9 +51,9 @@ function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Sy
     for (k, v) in tr.calls
         if v isa CallSite
             collect!(par => k, addrs, chd, v.trace, meta)
-        elseif v isa VectorizedCallSite
-            for i in 1:length(v.subtraces)
-                collect!(par => k => i, addrs, chd, v.subtraces[i], meta)
+        elseif v isa VectorizedSite
+            for i in 1:length(v.trace.subrecords)
+                collect!(par => k => i, addrs, chd, v.trace.subrecords[i].trace, meta)
             end
         end
     end
@@ -70,11 +70,11 @@ function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pa
         chd[k] = v.val
     end
     for (k, v) in tr.calls
-        if v isa BlackBoxCallSite
+        if v isa GenericCallSite
             collect!(k, addrs, chd, v.trace, meta)
-        elseif v isa VectorizedCallSite
-            for i in 1:length(v.subtraces)
-                collect!(k => i, addrs, chd, v.subtraces[i], meta)
+        elseif v isa VectorizedSite
+            for i in 1:length(v.trace.subrecords)
+                collect!(k => i, addrs, chd, v.trace.subrecords[i].trace, meta)
             end
         end
     end
