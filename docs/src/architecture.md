@@ -11,7 +11,52 @@ Jaynes is organized around a central `IRTools` _dynamo_
 end
 ```
 
-which defines how instances of inheritors of `ExecutionContext` act on function calls. There are a number of such inheritors
+which defines how instances of inheritors of `ExecutionContext` act on function calls. This dynamo is customized, to make the tracer lightweight
+
+```julia
+unwrap(gr::GlobalRef) = gr.name
+unwrap(gr) = gr
+
+# Whitelist includes vectorized calls.
+whitelist = [:rand, 
+             :learnable, 
+             :markov, 
+             :plate, 
+             :ifelse, 
+             # Foreign model interfaces
+             :soss_fmi, :gen_fmi, :turing_fmi]
+
+# Fix for specialized tracing.
+function recur!(ir, to = self)
+    for (x, st) in ir
+        isexpr(st.expr, :call) && begin
+            ref = unwrap(st.expr.args[1])
+            ref in whitelist || 
+            !(unwrap(st.expr.args[1]) in names(Base)) ||
+            continue
+            ir[x] = Expr(:call, to, st.expr.args...)
+        end
+    end
+    return ir
+end
+
+# Fix for _apply_iterate.
+function f_push!(arr::Array, t::Tuple{}) end
+f_push!(arr::Array, t::Array) = append!(arr, t)
+f_push!(arr::Array, t::Tuple) = append!(arr, t)
+f_push!(arr, t) = push!(arr, t)
+function flatten(t::Tuple)
+    arr = Any[]
+    for sub in t
+        f_push!(arr, sub)
+    end
+    return arr
+end
+```
+
+so the tracer is only allowed to look at certain calls, and uses a few fixes for some common issues. This drastically improves the performance over a "heavyweight" tracer which looks at everything. For the use case of probability programming, this is perfectly acceptable.
+
+There are a number of inheritors for `ExecutionContext`
 
 ```
 GenerateContext
