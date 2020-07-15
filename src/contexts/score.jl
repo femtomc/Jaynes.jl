@@ -82,3 +82,36 @@ function score(sel::L, fn::Function, args...; params = LearnableParameters()) wh
     ret = ctx(fn, args...)
     return ret, ctx.weight
 end
+
+# ------------ Documentation ------------ #
+
+@doc(
+"""
+```julia
+mutable struct ScoreContext <: ExecutionContext
+    select::ConstrainedSelection
+    weight::Float64
+    params::LearnableParameters
+end
+```
+
+The `ScoreContext` is used to score selections according to a model function. For computation in the `ScoreContext` to execute successfully, the `select` selection must provide a choice for every address visited in the model function.
+
+Inner constructors:
+
+```julia
+function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
+    c_sel = selection(obs)
+    new(c_sel, 0.0, LearnableParameters())
+end
+```
+
+Outer constructors:
+
+```julia
+ScoreContext(obs::K, params) where {K <: ConstrainedSelection} = new(obs, 0.0, params)
+Score(obs::Vector) = ScoreContext(selection(obs))
+Score(obs::ConstrainedSelection) = ScoreContext(obs, LearnableParameters())
+Score(obs::ConstrainedSelection, params) = ScoreContext(obs, params)
+```
+""", ScoreContext)

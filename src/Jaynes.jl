@@ -14,6 +14,7 @@ export Descent, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, AdaMax, ADADelta, AM
 
 # Toplevel importants :)
 const Address = Union{Symbol, Pair{Symbol, Int64}}
+import Base.ifelse
 
 # ------------ Com-pirate fixes ------------ #
 
@@ -97,7 +98,7 @@ export Score, score
 export Backpropagate, get_parameter_gradients, get_choice_gradients, train
 
 # Tracer language features.
-export learnable, plate, markov
+export learnable, plate, markov, ifelse
 
 # Selections.
 export selection, get_selection, get_parameters, compare, has_query, update_parameters

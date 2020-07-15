@@ -21,6 +21,28 @@ Propose() = ProposeContext(Trace())
     return s
 end
 
+@inline function (ctx::ProposeContext)(c::typeof(plate), 
+                                        addr::T, 
+                                        d::Distribution{K},
+                                        len::Int) where {T <: Address, K}
+    v_ret = Vector{eltype(d)}(undef, len)
+    v_cs = Vector{ChoiceSite{eltype(d)}}(undef, len)
+    for i in 1:len
+        visit!(ctx, addr => i)
+        s = rand(d)
+        score = logpdf(d, s)
+        cs = ChoiceSite(score, s)
+        v_ret[i] = s
+        v_cs[i] = cs
+        increment!(ctx, score)
+    end
+    sc = sum(map(v_cs) do cs
+                 get_score(cs)
+             end)
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cs), sc, d, (), v_ret))
+    return v_ret
+end
+
 # ------------ Learnable ------------ #
 
 @inline function (ctx::ProposeContext)(fn::typeof(learnable), addr::Address, p::T) where T
@@ -107,6 +129,34 @@ function propose(fn::Function, args...)
     return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
+function propose(fn::typeof(rand), d::Distribution{K}) where K
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, d)
+    return ret, get_choice(ctx.tr, addr), ctx.weight
+end
+
+function propose(fn::typeof(markov), call::Function, len::Int, args...)
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, call, len, args...)
+    return ret, get_call(ctx.tr, addr), ctx.weight
+end
+
+function propose(fn::typeof(plate), call::Function, args::Vector)
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, call, args)
+    return ret, get_call(ctx.tr, addr), ctx.weight
+end
+
+function propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, d, len)
+    return ret, get_call(ctx.tr, addr), ctx.weight
+end
+
 # ------------ Documentation ------------ #
 
 @doc(
@@ -115,11 +165,13 @@ end
 mutable struct ProposeContext{T <: Trace} <: ExecutionContext
     tr::T
     weight::Float64
+    score::Float64
+    visited::Visitor
     params::LearnableParameters
 end
 ```
 
-`ProposeContext` is used to generate traces for inference algorithms which use custom proposals. `ProposeContext` instances can be passed sets of `LearnableParameters` to configure the propose with parameters which have been learned by differentiable programming.
+`ProposeContext` is used to propose traces for inference algorithms which use custom proposals. `ProposeContext` instances can be passed sets of `LearnableParameters` to configure the propose with parameters which have been learned by differentiable programming.
 
 Inner constructors:
 
@@ -134,3 +186,14 @@ Propose() = ProposeContext(Trace())
 ```
 """, ProposeContext)
 
+@doc(
+"""
+```julia
+ret, g_cl, w = propose(fn::Function, args...)
+ret, cs, w = propose(fn::typeof(rand), d::Distribution{K}) where K
+ret, v_cl, w = propose(fn::typeof(markov), call::Function, len::Int, args...)
+ret, v_cl, w = propose(fn::typeof(plate), call::Function, args::Vector)
+ret, v_cl, w = propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
+```
+The convenience `propose` function provides an easy API to the `Propose` context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score/weight `w`.
+""", propose)

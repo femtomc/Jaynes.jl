@@ -17,6 +17,25 @@ end
     return s
 end
 
+@inline function (ctx::SimulateContext)(c::typeof(plate), 
+                                        addr::T, 
+                                        d::Distribution{K},
+                                        len::Int) where {T <: Address, K}
+    v_ret = Vector{eltype(d)}(undef, len)
+    v_cl = Vector{ChoiceSite{eltype(d)}}(undef, len)
+    for i in 1:len
+        visit!(ctx, addr => i)
+        s = rand(d)
+        v_ret[i] = s
+        v_cl[i] = ChoiceSite(logpdf(d, s), s)
+    end
+    sc = sum(map(v_cl) do cl
+                 get_score(cl)
+             end)
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, d, (), v_ret))
+    return v_ret
+end
+
 # ------------ Learnable ------------ #
 
 @inline function (ctx::SimulateContext)(fn::typeof(learnable), addr::Address, p::T) where T
@@ -99,28 +118,32 @@ function simulate(fn::Function, args...; params = LearnableParameters())
     return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
-function simulate(fn::typeof(rand), addr::Address, d::Distribution{T}; params = LearnableParameters()) where T
+function simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableParameters()) where T
     ctx = SimulateContext(params)
+    addr = gensym()
     ret = ctx(rand, addr, d)
-    return ret, GenericCallSite(ctx.tr, ctx.score, fn, d, ret)
+    return ret, get_choice(ctx.tr, addr)
 end
 
-function simulate(c::typeof(plate), addr::Address, fn::Function, args::Vector; params = LearnableParameters()) where T
+function simulate(c::typeof(plate), fn::Function, args::Vector; params = LearnableParameters()) where T
     ctx = SimulateContext(params)
+    addr = gensym()
     ret = ctx(plate, addr, fn, args)
-    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
+    return ret, get_call(ctx.tr, addr)
 end
 
-function simulate(c::typeof(plate), addr::Address, d::Distribution{T}; params = LearnableParameters()) where T
+function simulate(fn::typeof(plate), d::Distribution{T}, len::Int; params = LearnableParameters()) where T
     ctx = SimulateContext(params)
-    ret = ctx(plate, addr, fn, args)
-    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
+    addr = gensym()
+    ret = ctx(plate, addr, d, len)
+    return ret, get_call(ctx.tr, addr)
 end
 
-function simulate(c::typeof(markov), addr::Address, fn::Function, len::Int, args...; params = LearnableParameters())
+function simulate(c::typeof(markov), fn::Function, len::Int, args...; params = LearnableParameters())
     ctx = SimulateContext(params)
+    addr = gensym()
     ret = ctx(markov, addr, fn, len, args...)
-    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
+    return ret, get_call(ctx.tr, addr)
 end
 
 # ------------ Documentation ------------ #

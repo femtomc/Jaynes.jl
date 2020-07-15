@@ -30,6 +30,35 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
     return s
 end
 
+@inline function (ctx::GenerateContext)(c::typeof(plate), 
+                                        addr::T, 
+                                        d::Distribution{K},
+                                        len::Int) where {T <: Address, K}
+    v_ret = Vector{eltype(d)}(undef, len)
+    v_cs = Vector{ChoiceSite{eltype(d)}}(undef, len)
+    ss = get_subselection(ctx, addr)
+    for i in 1:len
+        visit!(ctx, addr => i)
+        if has_query(ss, i)
+            s = get_query(ss, i)
+            score = logpdf(d, s)
+            cs = ChoiceSite(score, s)
+            increment!(ctx, score)
+        else
+            s = rand(d)
+            score = logpdf(d, s)
+            cs = ChoiceSite(score, s)
+        end
+        v_ret[i] = s
+        v_cs[i] = cs
+    end
+    sc = sum(map(v_cs) do cs
+                 get_score(cs)
+             end)
+    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cs), sc, d, (), v_ret))
+    return v_ret
+end
+
 # ------------ Learnable ------------ #
 
 @inline function (ctx::GenerateContext)(fn::typeof(learnable), addr::Address, p::T) where T
@@ -122,20 +151,34 @@ function generate(sel::L, fn::Function, args...; params = LearnableParameters())
     return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
-function generate(sel::L, fn::typeof(markov), addr::Symbol, call::Function, args...) where L <: ConstrainedSelection
+function generate(sel::L, fn::typeof(rand), d::Distribution{K}) where {L <: ConstrainedSelection, K}
     ctx = Generate(sel)
-    ret = ctx(fn, addr, args...)
-    return ret, ctx.tr.chm[addr], ctx.weight
+    addr = gensym()
+    ret = ctx(fn, addr, d)
+    return ret, get_choice(ctx.tr, addr), ctx.weight
 end
 
-function generate(sel::L, fn::typeof(plate), addr::Symbol, call::Function, args::Vector) where L <: ConstrainedSelection
+function generate(sel::L, fn::typeof(markov), call::Function, len::Int, args...) where L <: ConstrainedSelection
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = Generate(v_sel)
+    ret = ctx(fn, addr, call, len, args...)
+    return ret, get_call(ctx.tr, addr), ctx.weight
+end
+
+function generate(sel::L, fn::typeof(plate), call::Function, args::Vector) where L <: ConstrainedSelection
     ctx = Generate(sel)
+    addr = gensym()
     ret = ctx(fn, addr, call, args)
-    return ret, ctx.tr.chm[addr], ctx.weight
+    return ret, get_call(ctx.tr, addr), ctx.weight
 end
 
-function generate(fn, args...)
-    return generate(ConstrainedHierarchicalSelection(), fn, args...)
+function generate(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int) where {L <: ConstrainedSelection, K}
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = Generate(v_sel)
+    ret = ctx(fn, addr, d, len)
+    return ret, get_call(ctx.tr, addr), ctx.weight
 end
 
 # ------------ Documentation ------------ #
@@ -147,6 +190,7 @@ mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection} <: Executi
      tr::T
      select::K
      weight::Float64
+     score::Float64
      visited::Visitor
      params::LearnableParameters
 end
@@ -165,3 +209,16 @@ Generate(select::ConstrainedSelection, params) = GenerateContext(Trace(), select
 Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
 ```
 """, GenerateContext)
+
+@doc(
+"""
+```julia
+ret, cl, w = generate(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
+ret, cs, w = generate(sel::L, fn::typeof(rand), d::Distribution{K}) where {L <: ConstrainedSelection, K}
+ret, v_cl, w = generate(sel::L, fn::typeof(markov), call::Function, len::Int, args...) where L <: ConstrainedSelection
+ret, v_cl, w = generate(sel::L, fn::typeof(plate), call::Function, args::Vector) where L <: ConstrainedSelection
+ret, v_cl, w = generate(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int) where {L <: ConstrainedSelection, K}
+```
+The convenience `generate` function provides an easy API to the `Generate` context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score/weight `w` computed with respect to the constraints `sel`.
+""", generate)
+

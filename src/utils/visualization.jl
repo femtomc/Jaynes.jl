@@ -43,7 +43,7 @@ function Base.display(call::C;
     println("  __________________________________\n")
 end
 
-function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace, meta) where T <: Union{Symbol, Pair}
+function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Trace, meta) where T <: Union{Symbol, Int, Pair}
     for (k, v) in tr.choices
         push!(addrs, par => k)
         chd[par => k] = v.val
@@ -64,7 +64,7 @@ function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Sy
     end
 end
 
-function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, tr::Trace, meta)
+function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace, meta)
     for (k, v) in tr.choices
         push!(addrs, k)
         chd[k] = v.val
@@ -85,16 +85,38 @@ function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pa
     end
 end
 
+function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, meta)
+    for (k, v) in enumerate(tr.subrecords)
+        if v isa ChoiceSite
+            push!(addrs, k)
+            chd[k] = v.val
+        elseif v isa GenericCallSite
+            collect!(k, addrs, chd, v.trace, meta)
+        elseif v isa VectorizedSite
+            for i in 1:length(v.trace.subrecords)
+                collect!(k => i, addrs, chd, v.trace.subrecords[i].trace, meta)
+            end
+        end
+    end
+    for (k, v) in tr.params
+        push!(meta, k)
+        push!(addrs, k)
+        chd[k] = v.val
+    end
+end
+
 import Base.collect
 function collect(tr::Trace)
-    addrs = Union{Symbol, Pair}[]
-    chd = Dict{Union{Symbol, Pair}, Any}()
-    meta = Union{Symbol, Pair}[]
+    addrs = Any[]
+    chd = Dict{Any, Any}()
+    meta = Any[]
     collect!(addrs, chd, tr, meta)
     return addrs, chd, meta
 end
 
-function Base.display(tr::Trace; show_values = false)
+function Base.display(tr::Trace; 
+                      show_values = false, 
+                      show_types = false)
     println("  __________________________________\n")
     println("               Addresses\n")
     addrs, chd, meta = collect(tr)
@@ -106,30 +128,28 @@ function Base.display(tr::Trace; show_values = false)
                 println(" $(a) : $(chd[a])")
             end
         end
+    elseif show_types
+        for a in addrs
+            if a in meta
+                println(" (Learnable)  $(a) : $(typeof(chd[a]))")
+            else
+                println(" $(a) : $(typeof(chd[a]))")
+            end
+        end
+    elseif show_types && show_values
+        for a in addrs
+            if a in meta
+                println(" (Learnable)  $(a) : $(chd[a]) : $(typeof(chd[a]))")
+            else
+                println(" $(a) : $(chd[a]) : $(typeof(chd[a]))")
+            end
+        end
     else
         for a in addrs
             if a in meta
                 println(" (Learnable)  $(a)")
             else
                 println(" $(a)")
-            end
-        end
-    end
-    println("  __________________________________\n")
-end
-
-function Base.display(trs::Array{T, 1}; show_values = false) where T <: Trace
-    println("  __________________________________\n")
-    println("               Addresses\n")
-    map(enumerate(trs)) do (i, tr)
-        addrs, chd = collect(tr)
-        if show_values
-            for a in addrs
-                println(" $(i => a) : $(chd[a])")
-            end
-        else
-            for a in addrs
-                println(" $(i => a)")
             end
         end
     end
