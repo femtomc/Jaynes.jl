@@ -39,6 +39,8 @@ function multi_shot_gradient_estimator(sel::K,
     return gs, L, cs, nw
 end
 
+# ------------ Automatic differentiation variational inference ------------ #
+
 function advi(sel::K,
               v_mod::Function,
               v_args::Tuple,
@@ -65,3 +67,20 @@ function advi(sel::K,
     end
     params, elbows, cls
 end
+
+# ------------ Documentation ------------ #
+
+@doc(
+"""
+```julia
+params, elbows, call_sites =  advi(sel::K,
+                                   v_mod::Function,
+                                   v_args::Tuple,
+                                   mod::Function,
+                                   args::Tuple;
+                                   opt = ADAM(),
+                                   iters = 1000, 
+                                   gs_samples = 100) where K <: ConstrainedSelection
+```
+Given a selection `sel`, perform _automatic-differentiation variational inference_ with a proposal model `v_mod`. The result is a new set of trained parameters `params` for the variational model, the history of ELBO estimates `elbows`, and the call sites `calls` produced by the gradient estimator computation.
+""", advi)
