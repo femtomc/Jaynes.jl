@@ -1,6 +1,6 @@
 # TODO: specialize to different call sites.
 mutable struct UpdateContext{C <: CallSite, 
-                             T <: Trace, 
+                             T <: Trace,
                              K <: ConstrainedSelection, 
                              P <: Parameters, 
                              D <: Diff} <: ExecutionContext
@@ -14,11 +14,8 @@ mutable struct UpdateContext{C <: CallSite,
     params::P
     argdiff::D
     # Re-write with dispatch for specialized vs. black box.
-    UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, NoParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
+    UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, NoParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, typeof(cl.trace)(), Visitor(), Parameters(), argdiffs)
 end
-Update(tr::Trace, select, argdiffs) = UpdateContext(tr, select, argdiffs)
-Update(tr::Trace, select) = UpdateContext(tr, select, UndefinedChange())
-Update(select) = UpdateContext(Trace(), select, UndefinedChange())
 
 # Update has a special dynamo.
 @dynamo function (mx::UpdateContext)(a...)
@@ -90,7 +87,7 @@ end
         ret, new_site, lw = generate(ss, call, args...)
     end
     add_call!(ctx.tr, addr, new_site)
-    increment!(ctx, w)
+    increment!(ctx, lw)
     return ret
 end
 
@@ -103,13 +100,17 @@ end
                                       call::Function, 
                                       args::Vector)
     local sc_adj::Float64
-    local new::Vector{CallSite}
 
-    vcs = get_prev(ctx, addr)
+    if has_call(ctx.prev.trace, addr) 
+        vcs = get_prev(ctx, addr)
+    else
+        vcs = ctx.prev
+    end
     n_len, o_len = length(args), length(vcs.args)
+    ss = get_subselection(ctx, addr)
 
     # Get targeted for update.
-    ks = keyset(ctx.select, n_len)
+    ks = keyset(ss, n_len)
 
     # Get score adjustment if vector is reduced in length, otherwise generate new traces which have selection applied.
     if n_len < o_len
@@ -130,78 +131,64 @@ end
    
     # Otherwise, generate new with constraints from o_len to n_len, then call update on the old call sites.
     else
-        new = Vector{CallSite}(undef, n_len)
+        sc_adj = 0.0
         new_ret = typeof(vcs.ret)(undef, n_len)
+        new = vcs.trace.subrecords
         for i in o_len : n_len
             s = get_subselection(ctx, addr => i)
-            ret, cl, w = generate(s, fn, args[i]...)
+            ret, cl, w = generate(s, call, args[i]...)
             new_ret[i] = ret
             new[i] = cl
             sc_adj += w
         end
-        sc_adj = 0.0
         for i in 1 : o_len
             i in ks && begin
                 s = get_subselection(ctx, addr => i)
-                ret, u_cl, u_w, rd, d = update(s, vcs.subcalls[i], args[i]...)
+                ret, u_cl, u_w, rd, d = update(s, get_call(vcs, i), NoChange(), args[i]...)
                 new_ret[i] = ret
                 new[i] = u_cl
-                score_adj += u_w - get_score(vcs.subcalls[i])
+                sc_adj += u_w - get_score(get_call(vcs, i))
                 continue
             end
-            new[i] = vcs.subcalls[i]
         end
     end
 
     # Add new vectorized site.
-    add_call!(ctx.tr, addr, VectorizedSite{typeof(plate)}(new, vcs.score + sc_adj, vcs.fn, args, new_ret))
+    for n in new
+        add_call!(ctx.tr, n)
+    end
+    increment!(ctx, sc_adj)
     return new_ret
 end
 
 # ------------ Convenience ------------ #
 
-function update(ctx::UpdateContext, bbcs::GenericCallSite, args...)
+function update(ctx::UpdateContext, bbcs::GenericCallSite, args...) where D <: Diff
     ret = ctx(bbcs.fn, args...)
     return ret, GenericCallSite(ctx.tr, ctx.score, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function update(sel::L, tr::T, fn::Function, new_args...) where {T <: Trace, L <: ConstrainedSelection}
-    ctx = UpdateContext(tr, sel)
-    ret = ctx(fn, new_args...)
-    return ret, GenericCallSite(ctx.tr, ctx.score, fn, new_args, ret), ctx.weight, UndefinedChange, ctx.discard
-end
-
 function update(sel::L, bbcs::GenericCallSite) where L <: ConstrainedSelection
-    ctx = UpdateContext(bbcs, sel, NoChange())
+    argdiffs = NoChange()
+    ctx = UpdateContext(bbcs, sel, argdiffs)
     return update(ctx, bbcs, bbcs.args...)
 end
 
-function update(bbcs::GenericCallSite, new_args...) where L <: ConstrainedSelection
-    ctx = UpdateContext(bbcs, ConstrainedHierarchicalSelection())
-    return update(ctx, bbcs, new_args...)
-end
-
-function update(sel::L, bbcs::GenericCallSite, new_args...) where L <: ConstrainedSelection
-    ctx = UpdateContext(bbcs, sel, UndefinedChange())
-    return update(ctx, bbcs, new_args...)
-end
-
-function update(argdiffs::D, bbcs::GenericCallSite, new_args...) where {L <: ConstrainedSelection, D <: Diff}
-    ctx = UpdateContext(bbcs, ConstrainedHierarchicalSelection(), argdiffs)
-    return update(ctx, bbcs, new_args...)
-end
-
-function update(sel::L, argdiffs::D, bbcs::GenericCallSite, new_args...) where {L <: ConstrainedSelection, D <: Diff}
+function update(sel::L, bbcs::GenericCallSite, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
     ctx = UpdateContext(bbcs, sel, argdiffs)
     return update(ctx, bbcs, new_args...)
 end
 
-function update(sel::L, vcs::VectorizedSite, new_args...) where L <: ConstrainedSelection
-    ctx = UpdateContext(vcs, sel)
+function update(sel::L, vcs::VectorizedSite, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
+    ctx = UpdateContext(vcs, sel, argdiffs)
     return update(ctx, vcs, new_args...)
 end
 
-function update(sel::L, argdiffs::D, vcs::VectorizedSite, new_args...) where {L <: ConstrainedSelection, D <: Diff}
-    ctx = UpdateContext(vcs, sel, argdiffs)
-    return update(ctx, vcs, new_args...)
+function update(sel::L, vcs::VectorizedSite{typeof(plate)}) where {L <: ConstrainedSelection, D <: Diff}
+    argdiffs = NoChange()
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = UpdateContext(vcs, v_sel, argdiffs)
+    ret = ctx(plate, addr, vcs.kernel, vcs.args)
+    return ret, VectorizedSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end

@@ -41,7 +41,7 @@ end
     sc = sum(map(v_cs) do cs
                  get_score(cs)
              end)
-    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cs), sc, d, (), v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(plate)}(VectorizedTrace(v_cs), sc, d, (), v_ret))
     return v_ret
 end
 

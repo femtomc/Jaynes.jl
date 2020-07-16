@@ -23,6 +23,6 @@ end
     sel = selection((:flip, true))
     ret, cl, w, retdiff, d = update(sel, cl)
     @test cl[:flip] == true
-    ret, cl, w, retdiff, d = update(sel, cl, 0.1)
+    ret, cl, w, retdiff, d = update(sel, cl, UndefinedChange(), 0.1)
     @test cl[:flip] == true
 end

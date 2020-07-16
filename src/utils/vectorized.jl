@@ -1,5 +1,5 @@
 # Vectorized utilities.
-function keyset(sel::L, new_length::Int) where L <: ConstrainedSelection
+function keyset(sel::L, n_len::Int) where L <: ConstrainedSelection
     keyset = Set{Int}()
     for (k, _) in sel.tree
         k isa Int && k > 0 && k <= n_len && push!(keyset, k)
@@ -7,7 +7,7 @@ function keyset(sel::L, new_length::Int) where L <: ConstrainedSelection
     return keyset
 end
 
-function keyset(sel::L, new_length::Int) where L <: UnconstrainedSelection
+function keyset(sel::L, n_len::Int) where L <: UnconstrainedSelection
     keyset = Set{Int}()
     for (k, _) in sel.tree
         k isa Int && k > 0 && k <= n_len && push!(keyset, k)

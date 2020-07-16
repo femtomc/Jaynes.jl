@@ -32,7 +32,7 @@ end
                                      call::Function,
                                      args...) where T <: Address
     visit!(ctx, addr)
-    ss = get_sub(ctx, addr)
+    ss = get_subselection(ctx, addr)
     ret, w = score(ss, call, args...) 
     increment!(ctx, w)
     return ret
@@ -46,7 +46,7 @@ end
                                      len::Int, 
                                      args...)
     visit!(ctx, addr => 1)
-    ss = get_sub(ctx, addr)
+    ss = get_subselection(ctx, addr)
     ret, w = score(get_sub(ss, 1), call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_ret[1] = ret
@@ -65,7 +65,7 @@ end
                                      call::Function, 
                                      args::Vector)
     visit!(ctx, addr => 1)
-    ss = get_sub(ctx, addr => 1)
+    ss = get_subselection(ctx, addr => 1)
     len = length(args)
     ret, w = score(ss, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
@@ -73,7 +73,7 @@ end
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
-        ss = get_sub(ctx, addr => i)
+        ss = get_subselection(ctx, addr => i)
         ret, w = score(ss, call, args[i]...)
         v_ret[i] = ret
         increment!(ctx, w)

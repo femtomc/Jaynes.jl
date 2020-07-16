@@ -71,9 +71,12 @@ function has_choice(tr::VectorizedTrace{ChoiceSite}, addr)
     return addr < length(tr.subrecords)
 end
 has_call(tr::VectorizedTrace{<: ChoiceSite}, addr) = false
-function has_call(tr::VectorizedTrace{<: CallSite}, addr)
-    return addr <: length(tr.subrecords)
+has_call(tr::VectorizedTrace{<: CallSite}, addr) = false
+function has_call(tr::VectorizedTrace{<: CallSite}, addr::Int)
+    return addr <= length(tr.subrecords)
 end
+get_call(tr::VectorizedTrace{<: CallSite}, addr) = return tr.subrecords[addr]
+add_call!(tr::VectorizedTrace{<: CallSite}, cs::CallSite) = push!(tr.subrecords, cs)
 Base.getindex(vt::VectorizedTrace, addr::Int) = vt.subrecords[addr]
 
 # ------------ Branch trace ------------ #
@@ -119,7 +122,7 @@ function has_call(vcs::VectorizedSite, addr)
     return false
 end
 function get_call(vcs::VectorizedSite, addr)
-    has_call(tr, addr) && return get_call(tr, addr)
+    has_call(vcs.trace, addr) && return get_call(vcs.trace, addr)
     error("VectorizedSite (get_call): no call at $addr.")
 end
 get_score(vcs::VectorizedSite) = vcs.score

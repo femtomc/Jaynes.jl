@@ -32,7 +32,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, d, (), v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(plate)}(VectorizedTrace(v_cl), sc, d, (), v_ret))
     return v_ret
 end
 
@@ -54,8 +54,7 @@ end
                                         addr::T,
                                         call::Function,
                                         args...) where T <: Address
-    ss = get_subselection(ctx, addr)
-    ret, cl = simulate(ss, call, args...)
+    ret, cl = simulate(call, args...)
     add_call!(ctx, addr, cl)
     return ret
 end
@@ -106,7 +105,7 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedSite{typeof(plate)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
     return v_ret
 end
 
