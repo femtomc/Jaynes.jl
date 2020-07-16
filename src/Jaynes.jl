@@ -101,7 +101,7 @@ export Backpropagate, get_parameter_gradients, get_choice_gradients, train
 export learnable, plate, markov, ifelse
 
 # Diffs
-export UndefinedChange, VectorDiff
+export NoChange, UndefinedChange, VectorDiff
 
 # Selections.
 export selection, get_selection, get_parameters, compare, has_query, update_parameters

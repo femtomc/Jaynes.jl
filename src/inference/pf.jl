@@ -15,9 +15,7 @@ function filter_step!(ps::Particles,
                       argdiffs::D = UndefinedChange()) where D <: Diff
     num_particles = length(ps)
     for i in 1:num_particles
-        ret, u_call, uw, retdiff, d = update(observations, ps.calls[i], argdiffs, new_args...)
-        ps.calls[i].args = new_args
-        ps.calls[i].ret = ret
+        ret, ps.calls[i], uw, retdiff, d = update(observations, ps.calls[i], argdiffs, new_args...)
         ps.lws[i] += uw
     end
     ltw = lse(ps.lws)
@@ -35,9 +33,7 @@ function filter_step!(ps::Particles,
         _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
         sel = selection(p_cl)
         merge!(sel, observations)
-        ret, u_cl, u_w, retdiff, d = update(sel, ps.calls[i], argdiffs, new_args...)
-        ps.calls[i].args = new_args
-        ps.calls[i].ret = ret
+        ret, u_cl, ps.calls[i], retdiff, d = update(sel, ps.calls[i], argdiffs, new_args...)
         ps.lws[i] += u_w - p_w
     end
     ltw = lse(ps.lws)

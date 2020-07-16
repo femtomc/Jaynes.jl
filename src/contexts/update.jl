@@ -70,13 +70,16 @@ function update(sel::L, vcs::VectorizedSite{typeof(markov)}) where {L <: Constra
     return ret, VectorizedSite{typeof(markov)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function update(sel::L, vcs::VectorizedSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, D <: Diff}
-    argdiffs = NoChange()
+function update(sel::L, vcs::VectorizedSite{typeof(markov)}, d::NoChange, len::Int) where {L <: ConstrainedSelection, D <: Diff}
     addr = gensym()
     v_sel = selection(addr => sel)
-    ctx = UpdateContext(vcs, v_sel, argdiffs)
+    ctx = UpdateContext(vcs, v_sel, d)
     ret = ctx(markov, addr, vcs.kernel, len, vcs.args[2]...)
     return ret, VectorizedSite{typeof(markov)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, vcs::VectorizedSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, D <: Diff}
+    return update(sel, vcs, NoChange(), len)
 end
 
 # ------------ includes ------------ #
