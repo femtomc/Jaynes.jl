@@ -18,4 +18,4 @@ Jaynes currently supports the following inference algorithms:
 3. Metropolis-Hastings (with and without custom proposals)
 4. ADVI (with Flux optimisers, currently uses Zygote for reverse-mode AD)
 
-[Jaynes also supports the integration of differentiable programming with probabilistic programming.](https://femtomc.github.io/Jaynes.jl/dev/diff_prog/)
+[Jaynes also supports the integration of differentiable programming with probabilistic programming.](https://femtomc.github.io/Jaynes.jl/dev/library_api/diff_prog/)

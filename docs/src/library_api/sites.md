@@ -23,7 +23,7 @@ ChoiceSite
 ```
 
 ```@docs
-BlackBoxCallSite
+GenericCallSite
 ```
 
 ```@docs

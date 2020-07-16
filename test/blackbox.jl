@@ -12,15 +12,17 @@ end
 end
 
 @testset "Generate" begin
-    ret, cl, w = generate(geo, 0.5)
+    sel = selection((:flip, true))
+    ret, cl, w = generate(sel, geo, 0.5)
     @test haskey(cl.trace, :flip)
+    @test cl[:flip] == true
 end
 
 @testset "Update" begin
-    ret, cl, w = generate(geo, 0.5)
+    ret, cl = simulate(geo, 0.5)
     sel = selection((:flip, true))
     ret, cl, w, retdiff, d = update(sel, cl)
     @test cl[:flip] == true
-    ret, cl, w, retdiff, d = update(sel, cl, 0.1)
+    ret, cl, w, retdiff, d = update(sel, cl, UndefinedChange(), 0.1)
     @test cl[:flip] == true
 end

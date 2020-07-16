@@ -16,6 +16,7 @@ struct VectorDiff <: Diff
     new_length::Int
     prev_length::Int
     updated::Dict{Int,Diff} 
+    VectorDiff(nl::Int, pl::Int, updated::Dict{Int, Diff}) = new(nl, pl, updated)
 end
 struct IntDiff <: Diff
     difference::Int # new - old

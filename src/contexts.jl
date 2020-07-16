@@ -15,6 +15,12 @@ function add_call!(ctx::T, addr, cs::CallSite) where T <: ExecutionContext
     add_call!(ctx.tr, addr, cs)
 end
 
+function add_call!(ctx::T, cs::CallSite) where T <: ExecutionContext
+    ctx.score += get_score(cs)
+    # TODO: should only work for VectorizedTraces - make error explicit here.
+    add_call!(ctx.tr, cs)
+end
+
 @dynamo function (mx::ExecutionContext)(a...)
     ir = IR(a...)
     ir == nothing && return
