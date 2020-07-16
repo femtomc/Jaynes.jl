@@ -52,19 +52,33 @@ end
 # ------------ Lightweight visitor ------------ #
 
 struct Visitor <: Selection
-    addrs::Vector{Address}
-    Visitor() = new(Address[])
+    addrs::Vector{Union{Symbol, Pair}}
+    Visitor() = new(Union{Symbol, Pair}[])
 end
 
 push!(vs::Visitor, addr::Address) = push!(vs.addrs, addr)
 
-function visit!(vs::Visitor, addr::Address)
-    addr in vs.addrs && error("VisitorError (visit!): already visited this address.")
+function visit!(vs::Visitor, addr)
+    addr in vs.addrs && error("VisitorError (visit!): already visited address $(addr).")
     push!(vs, addr)
 end
 
+function visit!(vs::Visitor, addrs::Vector)
+    for addr in addrs
+        addr in vs.addrs && error("VisitorError (visit!): already visited address $(addr).")
+        push!(vs, addr)
+    end
+end
+
+function visit!(vs::Visitor, par::Address, addrs::Vector)
+    for addr in addrs
+        addr in vs.addrs && error("VisitorError (visit!): already visited address $(addr).")
+        push!(vs, par => addr)
+    end
+end
+
 function set_sub!(vs::Visitor, addr::Address, sub::Visitor)
-    haskey(vs.tree, addr) && error("VisitorError (set_sub!): already visited this address.")
+    haskey(vs.tree, addr) && error("VisitorError (set_sub!): already visited address $(addr).")
     vs.tree[addr] = sub
 end
 
