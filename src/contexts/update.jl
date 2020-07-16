@@ -9,12 +9,12 @@ mutable struct UpdateContext{C <: CallSite,
     select::K
     weight::Float64
     score::Float64
-    discard::T
+    discard::HierarchicalTrace
     visited::Visitor
     params::P
     argdiff::D
     # Re-write with dispatch for specialized vs. black box.
-    UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, NoParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, typeof(cl.trace)(), Visitor(), Parameters(), argdiffs)
+    UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, NoParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
 end
 
 # Update has a special dynamo.
@@ -27,18 +27,18 @@ end
 
 # ------------ Convenience ------------ #
 
-function update(ctx::UpdateContext, bbcs::GenericCallSite, args...) where D <: Diff
+function update(ctx::UpdateContext, bbcs::HierarchicalCallSite, args...) where D <: Diff
     ret = ctx(bbcs.fn, args...)
-    return ret, GenericCallSite(ctx.tr, ctx.score, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function update(sel::L, bbcs::GenericCallSite) where L <: ConstrainedSelection
+function update(sel::L, bbcs::HierarchicalCallSite) where L <: ConstrainedSelection
     argdiffs = NoChange()
     ctx = UpdateContext(bbcs, sel, argdiffs)
     return update(ctx, bbcs, bbcs.args...)
 end
 
-function update(sel::L, bbcs::GenericCallSite, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
+function update(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
     ctx = UpdateContext(bbcs, sel, argdiffs)
     return update(ctx, bbcs, new_args...)
 end

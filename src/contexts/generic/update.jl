@@ -55,7 +55,7 @@ end
         # TODO: Mjolnir.
         ret, new_site, lw, retdiff, discard = update(ss, cs, args...)
 
-        add_choice!(ctx.discard, addr, CallSite(discard, cs.score, cs.fn, cs.args, cs.ret))
+        add_call!(ctx.discard, addr, CallSite(discard, cs.score, cs.fn, cs.args, cs.ret))
     else
         ss = get_subselection(ctx, addr)
         ret, new_site, lw = generate(ss, call, args...)

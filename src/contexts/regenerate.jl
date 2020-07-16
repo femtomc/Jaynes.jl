@@ -31,22 +31,22 @@ end
 
 # ------------ Convenience ------------ #
 
-function regenerate(ctx::RegenerateContext, bbcs::GenericCallSite, new_args...)
+function regenerate(ctx::RegenerateContext, bbcs::HierarchicalCallSite, new_args...)
     ret = ctx(bbcs.fn, new_args...)
-    return ret, GenericCallSite(ctx.tr, ctx.score, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function regenerate(sel::L, bbcs::GenericCallSite, new_args...) where L <: UnconstrainedSelection
+function regenerate(sel::L, bbcs::HierarchicalCallSite, new_args...) where L <: UnconstrainedSelection
     ctx = RegenerateContext(bbcs.trace, sel)
     return regenerate(ctx, bbcs, new_args...)
 end
 
-function regenerate(sel::L, bbcs::GenericCallSite) where L <: UnconstrainedSelection
+function regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection
     ctx = RegenerateContext(bbcs.trace, sel)
     return regenerate(ctx, bbcs, bbcs.args...)
 end
 
-function regenerate(bbcs::GenericCallSite, new_args...) where L <: UnconstrainedSelection
+function regenerate(bbcs::HierarchicalCallSite, new_args...) where L <: UnconstrainedSelection
     ctx = RegenerateContext(bbcs.trace, ConstrainedHierarchicalSelection())
     return regenerate(ctx, bbcs, new_args...)
 end
@@ -107,8 +107,8 @@ The `RegenerateContext` is used for MCMC algorithms, to propose new choices for 
 @doc(
 """
 ```julia
-ret, call_site = regenerate(sel::L, bbcs::GenericCallSite, new_args...) where L <: UnconstrainedSelection
-ret, call_site = regenerate(sel::L, bbcs::GenericCallSite) where L <: UnconstrainedSelection
+ret, call_site = regenerate(sel::L, bbcs::HierarchicalCallSite, new_args...) where L <: UnconstrainedSelection
+ret, call_site = regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection
 ```
 Users will likely interact with the `RegenerateContext` through the convenience method `regenerate` which requires that users provide an `UnconstrainedSelection`, an original call site, and possibly a set of new arguments to be used in the regeneration step. This context internally keeps track of the bookkeeping required to increment likelihood weights, as well as prune off parts of the trace which are invalid if a regenerated choice changes the shape of the trace (e.g. control flow).
 """, regenerate)

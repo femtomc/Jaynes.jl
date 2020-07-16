@@ -17,7 +17,7 @@ Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
 function generate(sel::L, fn::Function, args...; params = Parameters()) where L <: ConstrainedSelection
     ctx = Generate(sel, params)
     ret = ctx(fn, args...)
-    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(rand), d::Distribution{K}; params = Parameters()) where {L <: ConstrainedSelection, K}

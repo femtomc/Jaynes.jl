@@ -113,7 +113,7 @@ end
 
 # ------------ Compute choice gradients ------------ #
 
-function filter!(choice_grads, cl::GenericCallSite, grad_tr::NamedTuple, sel::K) where K <: UnconstrainedSelection
+function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr::NamedTuple, sel::K) where K <: UnconstrainedSelection
     values = ConstrainedHierarchicalSelection()
     for (k, v) in cl.trace.choices
         has_query(sel, k) && begin

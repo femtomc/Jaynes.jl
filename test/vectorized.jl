@@ -30,17 +30,21 @@ end
     @test cl[:k => 3 => :y] == 5.0
 end
 
-#@testset "Update" begin
-#    @testset "Vectorized plate" begin
-#        cl, w = generate(test_plate)
-#        stored_at_y = cl[:k => 3 => :y]
-#        sel = selection((:k => 3 => :y, 5.0))
-#        cl, retdiff, d = update(sel, cl)
-#        # Discard should be original :x
-#        @test d[:k => 3 => :y] == stored_at_y
-#        # New should be equal to constraint.
-#        @test cl[:k => 3 => :y] == 5.0
-#    end
+@testset "Update" begin
+    @testset "Vectorized plate" begin
+        ret, cl = simulate(test_plate)
+        original_score = get_score(cl)
+        stored_at_y = cl[:k => 3 => :y]
+        sel = selection((:k => 3 => :y, 5.0))
+        ret, cl, w, rd, d = update(sel, cl)
+        # Discard should be original :x
+        #@test d[:k => 3 => :y] == stored_at_y
+        # New should be equal to constraint.
+        #@test cl[:k => 3 => :y] == 5.0
+        @test get_score(cl) - w ≈ original_score
+    end
+end
+
 #    
 #    @testset "Vectorized markov" begin
 #        cl, w = generate(test_markov)

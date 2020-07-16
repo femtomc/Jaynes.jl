@@ -49,7 +49,7 @@ function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Hierarchi
         chd[par => k] = v.val
     end
     for (k, v) in tr.calls
-        if v isa GenericCallSite
+        if v isa HierarchicalCallSite
             collect!(par => k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedSite
             for i in 1:length(v.trace.subrecords)
@@ -69,7 +69,7 @@ function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Vectorize
         if v isa ChoiceSite
             push!(addrs, par => k)
             chd[par => k] = v.val
-        elseif v isa GenericCallSite
+        elseif v isa HierarchicalCallSite
             collect!(par => k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedSite
             for i in 1:length(v.trace.subrecords)
@@ -90,7 +90,7 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace
         chd[k] = v.val
     end
     for (k, v) in tr.calls
-        if v isa GenericCallSite
+        if v isa HierarchicalCallSite
             collect!(k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedSite
             for i in 1:length(v.trace.subrecords)
@@ -110,7 +110,7 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, 
         if v isa ChoiceSite
             push!(addrs, k)
             chd[k] = v.val
-        elseif v isa GenericCallSite
+        elseif v isa HierarchicalCallSite
             collect!(k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedSite
             for i in 1:length(v.trace.subrecords)

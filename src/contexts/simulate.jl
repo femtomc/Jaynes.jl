@@ -11,7 +11,7 @@ end
 function simulate(fn::Function, args...; params = LearnableParameters())
     ctx = SimulateContext(params)
     ret = ctx(fn, args...)
-    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret)
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
 function simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableParameters()) where T

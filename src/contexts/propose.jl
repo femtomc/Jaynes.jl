@@ -15,7 +15,7 @@ Propose(params) = ProposeContext(Trace(), params)
 function propose(fn::Function, args...; params = LearnableParameters())
     ctx = Propose(params)
     ret = ctx(fn, args...)
-    return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 function propose(fn::typeof(rand), d::Distribution{K}; params = LearnableParameters()) where K
