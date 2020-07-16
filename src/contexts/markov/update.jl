@@ -36,6 +36,7 @@ function trace_retained(vcs::VectorizedSite,
     return w_adj, new, new_ret
 end
 
+# TODO: finish.
 function trace_new(vcs::VectorizedSite, 
                    s::ConstrainedSelection, 
                    ks::Set, 
