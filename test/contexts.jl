@@ -27,7 +27,7 @@ end
 end
 
 @testset "Update" begin
-    ret, cl, w = generate(LinearGaussian, 0.5, 3.0)
+    ret, cl = simulate(LinearGaussian, 0.5, 3.0)
     stored_at_x = cl[:x]
     stored_at_y = cl[:y]
     sel = selection((:x, 5.0))
@@ -44,7 +44,7 @@ end
 end
 
 @testset "Regenerate" begin
-    ret, cl, w = generate(LinearGaussian, 0.5, 3.0)
+    ret, cl = simulate(LinearGaussian, 0.5, 3.0)
     stored_at_x = cl[:x]
     stored_at_y = cl[:y]
     sel = selection(:x)

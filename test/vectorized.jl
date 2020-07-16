@@ -7,7 +7,6 @@ test_plate = () -> plate(:k, kernel, [1.0, 2.0, 3.0, 4.0, 5.0])
 
 @testset "Simulate" begin
     ret, cl = simulate(test_plate)
-    display(cl)
     for i in 1:5
         @test haskey(cl, :k => i => :y)
     end

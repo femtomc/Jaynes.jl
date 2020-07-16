@@ -1,4 +1,6 @@
-mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: ExecutionContext
+mutable struct RegenerateContext{T <: Trace, 
+                                 L <: UnconstrainedSelection,
+                                 P <: Parameters} <: ExecutionContext
     prev::T
     tr::T
     select::L
@@ -6,13 +8,13 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
     score::Float64
     discard::T
     visited::Visitor
-    params::LearnableParameters
+    params::P
     function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
         un_sel = selection(sel)
-        new{T, typeof(un_sel)}(tr, Trace(), un_sel, 0.0, 0.0, Trace(), Visitor(), LearnableParameters())
+        new{T, typeof(un_sel), NoParameters}(tr, Trace(), un_sel, 0.0, 0.0, Trace(), Visitor(), Parameters())
     end
     function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-        new{T, L}(tr, Trace(), sel, 0.0, 0.0, Trace(), Visitor(), LearnableParameters())
+        new{T, L, NoParameters}(tr, Trace(), sel, 0.0, 0.0, Trace(), Visitor(), Parameters())
     end
 end
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
@@ -110,7 +112,9 @@ end
 @doc(
 """
 ```julia
-mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: ExecutionContext
+mutable struct RegenerateContext{T <: Trace, 
+                                 L <: UnconstrainedSelection,
+                                 P <: Parameters} <: ExecutionContext
     prev::T
     tr::T
     select::L
@@ -118,7 +122,7 @@ mutable struct RegenerateContext{T <: Trace, L <: UnconstrainedSelection} <: Exe
     score::Float64
     discard::T
     visited::Visitor
-    params::LearnableParameters
+    params::P
 end
 ```
 
@@ -127,10 +131,10 @@ Inner constructors:
 ```julia
 function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
     un_sel = selection(sel)
-    new{T, typeof(un_sel)}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), LearnableParameters())
+    new{T, typeof(un_sel), NoParameters}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), Parameters())
 end
 function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-    new{T, L}(tr, Trace(), sel, 0.0, Trace(), Visitor(), LearnableParameters())
+    new{T, L, NoParameters}(tr, Trace(), sel, 0.0, Trace(), Visitor(), Parameters())
 end
 ```
 

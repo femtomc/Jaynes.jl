@@ -82,20 +82,27 @@ end
 
 +(a_grads::Gradients, b_grads::Gradients) = merge(a_grads, b_grads)
 
-# ------------ Learnable parameters ------------ #
+# ------------ Parameters, empty and learnable ------------ #
 
-struct LearnableParameters <: UtilitySelection
+abstract type Parameters <: UtilitySelection end
+
+struct NoParameters <: Parameters end
+
+Parameters() = NoParameters()
+has_param(np::NoParameters) = false
+get_param(np::NoParameters) = error("(get_param) called on instance of NoParameters. No parameters!")
+has_sub(np::NoParameters, addr) = false
+get_sub(np::NoParameters, addr) = error("(get_sub) called on instance of NoParameters. No parameters!")
+
+struct LearnableParameters <: Parameters
     tree::Dict{Address, LearnableParameters}
     utility::Dict{Address, Any}
     LearnableParameters() = new(Dict{Address, LearnableParameters}(), Dict{Address, Any}())
 end
 
 has_param(ps::LearnableParameters, addr) = haskey(ps.utility, addr)
-
 get_param(ps::LearnableParameters, addr) = getindex(ps.utility, addr)
-
 has_sub(ps::LearnableParameters, addr) = haskey(ps.tree, addr)
-
 get_sub(ps::LearnableParameters, addr) = getindex(ps.tree, addr)
 
 function push!(ps::LearnableParameters, addr, val)

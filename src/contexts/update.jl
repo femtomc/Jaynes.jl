@@ -1,5 +1,9 @@
 # TODO: specialize to different call sites.
-mutable struct UpdateContext{C <: CallSite, T <: Trace, K <: ConstrainedSelection, D <: Diff} <: ExecutionContext
+mutable struct UpdateContext{C <: CallSite, 
+                             T <: Trace, 
+                             K <: ConstrainedSelection, 
+                             P <: Parameters, 
+                             D <: Diff} <: ExecutionContext
     prev::C
     tr::T
     select::K
@@ -7,10 +11,10 @@ mutable struct UpdateContext{C <: CallSite, T <: Trace, K <: ConstrainedSelectio
     score::Float64
     discard::T
     visited::Visitor
-    params::LearnableParameters
+    params::P
     argdiff::D
     # Re-write with dispatch for specialized vs. black box.
-    UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), LearnableParameters(), argdiffs)
+    UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, NoParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
 end
 Update(tr::Trace, select, argdiffs) = UpdateContext(tr, select, argdiffs)
 Update(tr::Trace, select) = UpdateContext(tr, select, UndefinedChange())

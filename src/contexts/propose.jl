@@ -5,8 +5,10 @@ mutable struct ProposeContext{T <: Trace} <: ExecutionContext
     visited::Visitor
     params::LearnableParameters
     ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, 0.0, Visitor(), LearnableParameters())
+    ProposeContext(tr::T, params::LearnableParameters) where T <: Trace = new{T}(tr, 0.0, 0.0, Visitor(), params)
 end
 Propose() = ProposeContext(Trace())
+Propose(params) = ProposeContext(Trace(), params)
 
 # ------------ Choice sites ------------ #
 
@@ -123,35 +125,35 @@ end
 
 # ------------ Convenience ------------ #
 
-function propose(fn::Function, args...)
-    ctx = Propose()
+function propose(fn::Function, args...; params = LearnableParameters())
+    ctx = Propose(params)
     ret = ctx(fn, args...)
     return ret, GenericCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
-function propose(fn::typeof(rand), d::Distribution{K}) where K
-    ctx = Propose()
+function propose(fn::typeof(rand), d::Distribution{K}; params = LearnableParameters()) where K
+    ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, d)
     return ret, get_choice(ctx.tr, addr), ctx.weight
 end
 
-function propose(fn::typeof(markov), call::Function, len::Int, args...)
-    ctx = Propose()
+function propose(fn::typeof(markov), call::Function, len::Int, args...; params = LearnableParameters())
+    ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, call, len, args...)
     return ret, get_call(ctx.tr, addr), ctx.weight
 end
 
-function propose(fn::typeof(plate), call::Function, args::Vector)
-    ctx = Propose()
+function propose(fn::typeof(plate), call::Function, args::Vector; params = LearnableParameters())
+    ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, call, args)
     return ret, get_call(ctx.tr, addr), ctx.weight
 end
 
-function propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
-    ctx = Propose()
+function propose(fn::typeof(plate), d::Distribution{K}, len::Int; params = LearnableParameters()) where K
+    ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, d, len)
     return ret, get_call(ctx.tr, addr), ctx.weight

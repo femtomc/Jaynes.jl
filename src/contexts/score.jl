@@ -1,16 +1,16 @@
-mutable struct ScoreContext <: ExecutionContext
+mutable struct ScoreContext{P <: Parameters} <: ExecutionContext
     select::ConstrainedSelection
     weight::Float64
     visited::Visitor
-    params::LearnableParameters
+    params::P
     function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
         c_sel = selection(obs)
-        new(c_sel, 0.0, LearnableParameters())
+        new{NoParameters}(c_sel, 0.0, Parameters())
     end
-    ScoreContext(obs::K, params) where {K <: ConstrainedSelection} = new(obs, 0.0, Visitor(), params)
+    ScoreContext(obs::K, params::P) where {K <: ConstrainedSelection, P <: Parameters} = new{P}(obs, 0.0, Visitor(), params)
 end
 Score(obs::Vector) = ScoreContext(selection(obs))
-Score(obs::ConstrainedSelection) = ScoreContext(obs, LearnableParameters())
+Score(obs::ConstrainedSelection) = ScoreContext(obs, Parameters())
 Score(obs::ConstrainedSelection, params) = ScoreContext(obs, params)
 
 # ------------ Choice sites ------------ #
@@ -32,7 +32,7 @@ end
                                      call::Function,
                                      args...) where T <: Address
     visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
+    ss = get_sub(ctx, addr)
     ret, w = score(ss, call, args...) 
     increment!(ctx, w)
     return ret
@@ -46,15 +46,14 @@ end
                                      len::Int, 
                                      args...)
     visit!(ctx, addr => 1)
-    ss = get_subselection(ctx, addr => 1)
-    ret, w = score(ss, call, args...)
+    ss = get_sub(ctx, addr)
+    ret, w = score(get_sub(ss, 1), call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_ret[1] = ret
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
-        ss = get_subselection(ctx, addr => i)
-        ret, w = score(ss, call, v_ret[i-1]...)
+        ret, w = score(get_sub(ss, i), call, v_ret[i-1]...)
         v_ret[i] = ret
         increment!(ctx, w)
     end
@@ -66,7 +65,7 @@ end
                                      call::Function, 
                                      args::Vector)
     visit!(ctx, addr => 1)
-    ss = get_subselection(ctx, addr => 1)
+    ss = get_sub(ctx, addr => 1)
     len = length(args)
     ret, w = score(ss, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
@@ -74,7 +73,7 @@ end
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
-        ss = get_subselection(ctx, addr => i)
+        ss = get_sub(ctx, addr => i)
         ret, w = score(ss, call, args[i]...)
         v_ret[i] = ret
         increment!(ctx, w)
@@ -84,10 +83,48 @@ end
 
 # ------------ Convenience ------------ #
 
-function score(sel::L, fn::Function, args...; params = LearnableParameters()) where L <: ConstrainedSelection
+function score(sel::L, fn::Function, args...; params = Parameters()) where L <: ConstrainedSelection
     ctx = Score(sel, params)
     ret = ctx(fn, args...)
-    b, missed = compare(sel, ctx.visited)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end
+
+function score(sel::L, fn::typeof(rand), d::Distribution{K}; params = Parameters()) where {L <: ConstrainedSelection, K}
+    ctx = Score(sel, params)
+    addr = gensym()
+    ret = ctx(fn, addr, d)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end
+
+function score(sel::L, fn::typeof(markov), call::Function, len::Int, args...; params = Parameters()) where L <: ConstrainedSelection
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = Score(v_sel, params)
+    ret = ctx(fn, addr, call, len, args...)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end
+
+function score(sel::L, fn::typeof(plate), call::Function, args::Vector; params = Parameters()) where L <: ConstrainedSelection
+    ctx = Score(sel, params)
+    addr = gensym()
+    ret = ctx(fn, addr, call, args)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end
+
+function score(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params = Parameters()) where {L <: ConstrainedSelection, K}
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = Score(v_sel, params)
+    ret = ctx(fn, addr, d, len)
+    b, missed = compare(sel.query, ctx.visited)
     b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
     return ret, ctx.weight
 end
@@ -97,10 +134,10 @@ end
 @doc(
 """
 ```julia
-mutable struct ScoreContext <: ExecutionContext
+mutable struct ScoreContext{P <: Parameters} <: ExecutionContext
     select::ConstrainedSelection
     weight::Float64
-    params::LearnableParameters
+    params::P
 end
 ```
 
@@ -111,7 +148,7 @@ Inner constructors:
 ```julia
 function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
     c_sel = selection(obs)
-    new(c_sel, 0.0, LearnableParameters())
+    new{NoParameters}(c_sel, 0.0, Parameters())
 end
 ```
 
@@ -120,7 +157,7 @@ Outer constructors:
 ```julia
 ScoreContext(obs::K, params) where {K <: ConstrainedSelection} = new(obs, 0.0, params)
 Score(obs::Vector) = ScoreContext(selection(obs))
-Score(obs::ConstrainedSelection) = ScoreContext(obs, LearnableParameters())
+Score(obs::ConstrainedSelection) = ScoreContext(obs, Parameters())
 Score(obs::ConstrainedSelection, params) = ScoreContext(obs, params)
 ```
 """, ScoreContext)
