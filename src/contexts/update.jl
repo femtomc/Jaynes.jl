@@ -12,7 +12,7 @@ mutable struct UpdateContext{C <: CallSite,
     discard::HierarchicalTrace
     visited::Visitor
     params::P
-    argdiff::D
+    argdiffs::D
     # Re-write with dispatch for specialized vs. black box.
     UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, NoParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
 end
@@ -43,13 +43,14 @@ function update(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) wh
     return update(ctx, bbcs, new_args...)
 end
 
-function update(sel::L, vcs::VectorizedSite{typeof(plate)}, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    ctx = UpdateContext(vcs, v_sel, argdiffs)
-    ret = ctx(plate, addr, vcs.kernel, new_args...)
-    return ret, VectorizedSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
+# TODO: disallowed for now.
+#function update(sel::L, vcs::VectorizedSite{typeof(plate)}, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
+#    addr = gensym()
+#    v_sel = selection(addr => sel)
+#    ctx = UpdateContext(vcs, v_sel, argdiffs)
+#    ret = ctx(plate, addr, vcs.kernel, new_args...)
+#    return ret, VectorizedSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+#end
 
 function update(sel::L, vcs::VectorizedSite{typeof(plate)}) where {L <: ConstrainedSelection, D <: Diff}
     argdiffs = NoChange()
@@ -58,6 +59,24 @@ function update(sel::L, vcs::VectorizedSite{typeof(plate)}) where {L <: Constrai
     ctx = UpdateContext(vcs, v_sel, argdiffs)
     ret = ctx(plate, addr, vcs.kernel, vcs.args)
     return ret, VectorizedSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, vcs::VectorizedSite{typeof(markov)}) where {L <: ConstrainedSelection, D <: Diff}
+    argdiffs = NoChange()
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = UpdateContext(vcs, v_sel, argdiffs)
+    ret = ctx(markov, addr, vcs.kernel, vcs.args[1], vcs.args[2]...)
+    return ret, VectorizedSite{typeof(markov)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, vcs::VectorizedSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, D <: Diff}
+    argdiffs = NoChange()
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = UpdateContext(vcs, v_sel, argdiffs)
+    ret = ctx(markov, addr, vcs.kernel, len, vcs.args[2]...)
+    return ret, VectorizedSite{typeof(markov)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 # ------------ includes ------------ #
