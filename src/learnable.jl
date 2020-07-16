@@ -89,8 +89,8 @@ abstract type Parameters <: UtilitySelection end
 struct NoParameters <: Parameters end
 
 Parameters() = NoParameters()
-has_param(np::NoParameters) = false
-get_param(np::NoParameters) = error("(get_param) called on instance of NoParameters. No parameters!")
+has_param(np::NoParameters, addr) = false
+get_param(np::NoParameters, addr) = error("(get_param) called on instance of NoParameters. No parameters!")
 has_sub(np::NoParameters, addr) = false
 get_sub(np::NoParameters, addr) = error("(get_sub) called on instance of NoParameters. No parameters!")
 

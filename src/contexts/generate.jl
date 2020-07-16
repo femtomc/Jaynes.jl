@@ -36,7 +36,7 @@ end
                                         len::Int) where {T <: Address, K}
     v_ret = Vector{eltype(d)}(undef, len)
     v_cs = Vector{ChoiceSite{eltype(d)}}(undef, len)
-    ss = get_subselection(ctx, addr)
+    ss = get_sub(ctx, addr)
     for i in 1:len
         visit!(ctx, addr => i)
         if has_query(ss, i)
@@ -78,7 +78,7 @@ end
                                         call::Function,
                                         args...) where T <: Address
     visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
+    ss = get_sub(ctx, addr)
     ret, cl, w = generate(ss, call, args...)
     add_call!(ctx, addr, cl)
     increment!(ctx, w)
@@ -93,7 +93,7 @@ end
                                         len::Int, 
                                         args...)
     visit!(ctx, addr => 1)
-    ss = get_subselection(ctx, addr => 1)
+    ss = get_sub(ctx, addr => 1)
     ret, cl, w = generate(ss, call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_cl = Vector{typeof(cl)}(undef, len)
@@ -102,7 +102,7 @@ end
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
-        ss = get_subselection(ctx, addr => i)
+        ss = get_sub(ctx, addr => i)
         ret, cl, w = generate(ss, call, v_ret[i-1]...)
         v_ret[i] = ret
         v_cl[i] = cl
@@ -121,7 +121,7 @@ end
                                         args::Vector)
     visit!(ctx, addr => 1)
     len = length(args)
-    ss = get_subselection(ctx, addr => 1)
+    ss = get_sub(ctx, addr => 1)
     ret, cl, w = generate(ss, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_cl = Vector{typeof(cl)}(undef, len)
@@ -130,7 +130,7 @@ end
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
-        ss = get_subselection(ctx, addr => i)
+        ss = get_sub(ctx, addr => i)
         ret, cl, w = generate(ss, call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl
