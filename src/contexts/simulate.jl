@@ -54,6 +54,7 @@ end
 include("generic/simulate.jl")
 include("plate/simulate.jl")
 include("markov/simulate.jl")
+include("cond/simulate.jl")
 
 # ------------ Documentation ------------ #
 

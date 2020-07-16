@@ -14,7 +14,6 @@ export Descent, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, AdaMax, ADADelta, AM
 
 # Toplevel importants :)
 const Address = Union{Symbol, Pair{Symbol, Int64}}
-import Base.ifelse
 
 # ------------ Com-pirate fixes ------------ #
 
@@ -27,7 +26,7 @@ whitelist = [:rand,
              :learnable, 
              :markov, 
              :plate, 
-             :ifelse, 
+             :cond, 
              # Foreign model interfaces
              :soss_fmi, :gen_fmi, :turing_fmi]
 
@@ -98,7 +97,7 @@ export Score, score
 export Backpropagate, get_parameter_gradients, get_choice_gradients, train
 
 # Tracer language features.
-export learnable, plate, markov, ifelse
+export learnable, plate, markov, cond
 
 # Diffs
 export NoChange, UndefinedChange, VectorDiff

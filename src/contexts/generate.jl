@@ -56,6 +56,7 @@ end
 include("generic/generate.jl")
 include("plate/generate.jl")
 include("markov/generate.jl")
+include("cond/generate.jl")
 
 # ------------ Documentation ------------ #
 

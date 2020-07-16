@@ -1,4 +1,4 @@
-import Base: getindex, haskey, rand
+import Base: getindex, haskey
 
 # ------------ Core ------------ #
 
@@ -8,6 +8,7 @@ rand(addr::Address, fn::Function, args...) = fn(args...)
 learnable(addr::Address, p::T) where T = p
 plate(addr::Address, args...) = error("(plate) call with address $addr evaluated outside of the tracer.")
 markov(addr::Address, args...) = error("(markov) call with address $addr evaluated outside of the tracer.")
+cond(addr::Address, args...) = error("(cond) call with address $addr evaluated outside of the tracer.")
 
 # Generic abstract types..
 abstract type RecordSite end
@@ -37,7 +38,7 @@ abstract type Trace end
 
 include("traces/hierarchical.jl")
 include("traces/vectorized.jl")
-include("traces/ifelse.jl")
+include("traces/cond.jl")
 
 # ------------ Documentation ------------ #
 
