@@ -43,13 +43,13 @@ function Base.display(call::C;
     println("  __________________________________\n")
 end
 
-function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Trace, meta) where T <: Union{Symbol, Int, Pair}
+function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace, meta) where T <: Union{Symbol, Int, Pair}
     for (k, v) in tr.choices
         push!(addrs, par => k)
         chd[par => k] = v.val
     end
     for (k, v) in tr.calls
-        if v isa CallSite
+        if v isa GenericCallSite
             collect!(par => k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedSite
             for i in 1:length(v.trace.subrecords)
@@ -61,6 +61,26 @@ function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Trace, me
         push!(meta, par => k)
         push!(addrs, par => k)
         chd[par => k] = v.val
+    end
+end
+
+function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, meta) where T <: Union{Symbol, Int, Pair}
+    for (k, v) in enumerate(tr.subrecords)
+        if v isa ChoiceSite
+            push!(addrs, par => k)
+            chd[par => k] = v.val
+        elseif v isa GenericCallSite
+            collect!(par => k, addrs, chd, v.trace, meta)
+        elseif v isa VectorizedSite
+            for i in 1:length(v.trace.subrecords)
+                collect!(par => k => i, addrs, chd, v.trace.subrecords[i].trace, meta)
+            end
+        end
+    end
+    for (k, v) in tr.params
+        push!(meta, k)
+        push!(addrs, k)
+        chd[k] = v.val
     end
 end
 

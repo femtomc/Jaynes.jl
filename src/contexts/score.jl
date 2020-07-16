@@ -13,74 +13,6 @@ Score(obs::Vector) = ScoreContext(selection(obs))
 Score(obs::ConstrainedSelection) = ScoreContext(obs, Parameters())
 Score(obs::ConstrainedSelection, params) = ScoreContext(obs, params)
 
-# ------------ Choice sites ------------ #
-
-@inline function (ctx::ScoreContext)(call::typeof(rand), 
-                                     addr::T, 
-                                     d::Distribution{K}) where {T <: Address, K}
-    visit!(ctx, addr)
-    has_query(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
-    val = get_query(ctx.select, addr)
-    increment!(ctx, logpdf(d, val))
-    return val
-end
-
-# ------------ Call sites ------------ #
-
-@inline function (ctx::ScoreContext)(c::typeof(rand),
-                                     addr::T,
-                                     call::Function,
-                                     args...) where T <: Address
-    visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
-    ret, w = score(ss, call, args...) 
-    increment!(ctx, w)
-    return ret
-end
-
-# ------------ Vectorized call sites ------------ #
-
-@inline function (ctx::ScoreContext)(c::typeof(markov), 
-                                     addr::Address, 
-                                     call::Function, 
-                                     len::Int, 
-                                     args...)
-    visit!(ctx, addr => 1)
-    ss = get_subselection(ctx, addr)
-    ret, w = score(get_sub(ss, 1), call, args...)
-    v_ret = Vector{typeof(ret)}(undef, len)
-    v_ret[1] = ret
-    increment!(ctx, w)
-    for i in 2:len
-        visit!(ctx, addr => i)
-        ret, w = score(get_sub(ss, i), call, v_ret[i-1]...)
-        v_ret[i] = ret
-        increment!(ctx, w)
-    end
-    return v_ret
-end
-
-@inline function (ctx::ScoreContext)(c::typeof(plate), 
-                                     addr::Address, 
-                                     call::Function, 
-                                     args::Vector)
-    visit!(ctx, addr => 1)
-    ss = get_subselection(ctx, addr => 1)
-    len = length(args)
-    ret, w = score(ss, call, args[1]...)
-    v_ret = Vector{typeof(ret)}(undef, len)
-    v_ret[1] = ret
-    increment!(ctx, w)
-    for i in 2:len
-        visit!(ctx, addr => i)
-        ss = get_subselection(ctx, addr => i)
-        ret, w = score(ss, call, args[i]...)
-        v_ret[i] = ret
-        increment!(ctx, w)
-    end
-    return v_ret
-end
-
 # ------------ Convenience ------------ #
 
 function score(sel::L, fn::Function, args...; params = Parameters()) where L <: ConstrainedSelection
@@ -128,6 +60,12 @@ function score(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params =
     b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
     return ret, ctx.weight
 end
+
+# ------------ includes ------------ #
+
+include("generic/score.jl")
+include("plate/score.jl")
+include("markov/score.jl")
 
 # ------------ Documentation ------------ #
 

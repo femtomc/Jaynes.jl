@@ -1,5 +1,6 @@
 import Base.getindex
 import Base: rand
+import Base: literal_pow
 
 # ------------ Core ------------ #
 

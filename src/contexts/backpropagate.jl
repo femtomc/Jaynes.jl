@@ -51,26 +51,6 @@ end
 ChoiceBackpropagate(tr::T, params, choice_grads) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, choice_grads, UnconstrainedAllSelection())
 ChoiceBackpropagate(tr::T, params, choice_grads, sel::K) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, choice_grads, sel)
 
-# ------------ Choice sites ------------ #
-
-@inline function (ctx::ParameterBackpropagateContext)(call::typeof(rand), 
-                                                      addr::T, 
-                                                      d::Distribution{K}) where {T <: Address, K}
-    #visit!(ctx.visited, addr)
-    s = get_choice(ctx.tr, addr).val
-    ctx.weight += logpdf(d, s)
-    return s
-end
-
-@inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
-                                                   addr::T, 
-                                                   d::Distribution{K}) where {T <: Address, K}
-    #visit!(ctx.visited, addr)
-    s = get_choice(ctx.tr, addr).val
-    ctx.weight += logpdf(d, s)
-    return s
-end
-
 # ------------ Learnable ------------ #
 
 read_parameter(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.params, addr)
@@ -86,17 +66,9 @@ Zygote.@adjoint function read_parameter(ctx, params, addr)
     return ret, fn
 end
 
-@inline function (ctx::ParameterBackpropagateContext)(fn::typeof(learnable), addr::Address, p::T) where T
-    return read_parameter(ctx, addr)
-end
-
-@inline function (ctx::ChoiceBackpropagateContext)(fn::typeof(learnable), addr::Address, p::T) where T
-    return read_parameter(ctx, addr)
-end
-
 # ------------ Call sites ------------ #
 
-# Learnable parameters.
+# Grads for learnable parameters.
 simulate_call_pullback(param_grads, cl::T, args) where T <: CallSite = cl.ret
 
 Zygote.@adjoint function simulate_call_pullback(param_grads, cl, args)
@@ -108,19 +80,7 @@ Zygote.@adjoint function simulate_call_pullback(param_grads, cl, args)
     return ret, fn
 end
 
-@inline function (ctx::ParameterBackpropagateContext)(c::typeof(rand),
-                                                      addr::T,
-                                                      call::Function,
-                                                      args...) where T <: Address
-    #visit!(ctx.visited, addr)
-    cl = get_call(ctx.tr, addr)
-    param_grads = Gradients()
-    ret = simulate_call_pullback(param_grads, cl, args)
-    ctx.param_grads.tree[addr] = param_grads
-    return ret
-end
-
-# Choices.
+# Grads for choices with differentiable logpdfs.
 simulate_choice_pullback(choice_grads, choice_selection, cl::T, args) where T <: CallSite = cl.ret
 
 Zygote.@adjoint function simulate_choice_pullback(choice_grads, choice_selection, cl, args)
@@ -130,18 +90,6 @@ Zygote.@adjoint function simulate_choice_pullback(choice_grads, choice_selection
         (nothing, nothing, (choice_vals, choice_grads), arg_grads)
     end
     return ret, fn
-end
-
-@inline function (ctx::ChoiceBackpropagateContext)(c::typeof(rand),
-                                                   addr::T,
-                                                   call::Function,
-                                                   args...) where T <: Address
-    #visit!(ctx.visited, addr)
-    cl = get_call(ctx.tr, addr)
-    choice_grads = Gradients()
-    ret = simulate_choice_pullback(choice_grads, get_sub(ctx.select, addr), cl, args)
-    ctx.choice_grads.tree[addr] = choice_grads
-    return ret
 end
 
 # ------------ Accumulate gradients ------------ #
@@ -228,6 +176,12 @@ function train(sel, fn::Function, args...; opt = ADAM(), iters = 1000)
     end
     return params
 end
+
+# ------------ includes ------------ #
+
+include("generic/backpropagate.jl")
+include("plate/backpropagate.jl")
+include("markov/backpropagate.jl")
 
 # ------------ Documentation ------------ #
 
