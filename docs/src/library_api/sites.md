@@ -23,7 +23,7 @@ ChoiceSite
 ```
 
 ```@docs
-GenericCallSite
+HierarchicalCallSite
 ```
 
 ```@docs
