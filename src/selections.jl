@@ -105,6 +105,24 @@ abstract type SelectQuery <: Selection end
 abstract type ConstrainedSelectQuery <: SelectQuery end
 abstract type UnconstrainedSelectQuery <: SelectQuery end
 
+# ----------- Empty constrained selection ------------ #
+
+struct ConstrainedEmptySelection <: ConstrainedSelection end
+
+has_query(cas::ConstrainedEmptySelection, addr) = false
+dump_queries(cas::ConstrainedEmptySelection) = nothing
+get_query(cas::ConstrainedEmptySelection, addr) = error("ConstrainedEmptySelection has no queries!")
+get_sub(cas::ConstrainedEmptySelection, addr) = cas
+isempty(cas::ConstrainedEmptySelection) = true
+
+# ----------- Empty unconstrained selection ------------ #
+
+struct UnconstrainedEmptySelection <: UnconstrainedSelection end
+
+has_query(cas::UnconstrainedEmptySelection, addr) = false
+get_sub(cas::UnconstrainedEmptySelection, addr) = cas
+isempty(cas::UnconstrainedEmptySelection) = true
+
 # ------------ Constraints to direct addresses ------------ #
 
 struct ConstrainedByAddress <: ConstrainedSelectQuery
@@ -173,12 +191,12 @@ end
 
 function get_sub(chs::ConstrainedHierarchicalSelection, addr)
     haskey(chs.tree, addr) && return chs.tree[addr]
-    return ConstrainedHierarchicalSelection()
+    return ConstrainedEmptySelection()
 end
 
 function get_sub(chs::ConstrainedHierarchicalSelection, addr::Pair)
     haskey(chs.tree, addr[1]) && return get_sub(chs.tree[addr[1]], addr[2])
-    return ConstrainedHierarchicalSelection()
+    return ConstrainedEmptySelection()
 end
 function set_sub!(chs::ConstrainedHierarchicalSelection, addr::Address, sub::K) where K <: ConstrainedSelection
     chs.tree[addr] = sub
@@ -206,12 +224,12 @@ end
 
 function get_sub(uhs::UnconstrainedHierarchicalSelection, addr)
     haskey(uhs.tree, addr) && return uhs.tree[addr]
-    return UnconstrainedHierarchicalSelection()
+    return UnconstrainedEmptySelection()
 end
 
 function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::Pair)
     haskey(uhs.tree, addr[1]) && return get_sub(uhs.tree[addr[1]], addr[2])
-    return UnconstrainedHierarchicalSelection()
+    return UnconstrainedEmptySelection()
 end
 
 has_query(uhs::UnconstrainedHierarchicalSelection, addr) = has_query(uhs.query, addr)

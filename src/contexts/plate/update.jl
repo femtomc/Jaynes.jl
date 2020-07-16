@@ -52,11 +52,10 @@ end
                                             addr::Address, 
                                             call::Function, 
                                             args::Vector) where {C <: HierarchicalCallSite, T <: HierarchicalTrace}
-
     vcs = get_prev(ctx, addr)
     n_len, o_len = length(args), length(vcs.args)
     s = get_subselection(ctx, addr)
-    ks = keyset(s, n_len)
+    _, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)
     else
@@ -72,11 +71,10 @@ end
                                             addr::Address, 
                                             call::Function, 
                                             args::Vector) where {C <: VectorizedSite, T <: VectorizedTrace}
-
     vcs = ctx.prev
     n_len, o_len = length(args), length(vcs.args)
     s = get_subselection(ctx, addr)
-    ks = keyset(s, n_len)
+    _, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)
     else
