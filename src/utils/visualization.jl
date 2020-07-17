@@ -93,9 +93,7 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace
         if v isa HierarchicalCallSite
             collect!(k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedCallSite
-            for i in 1:length(v.trace.subrecords)
-                collect!(k => i, addrs, chd, v.trace.subrecords[i].trace, meta)
-            end
+            collect!(k, addrs, chd, v.trace, meta)
         end
     end
     for (k, v) in tr.params
@@ -113,9 +111,7 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, 
         elseif v isa HierarchicalCallSite
             collect!(k, addrs, chd, v.trace, meta)
         elseif v isa VectorizedCallSite
-            for i in 1:length(v.trace.subrecords)
-                collect!(k => i, addrs, chd, v.trace.subrecords[i].trace, meta)
-            end
+            collect!(k => i, addrs, chd, v.trace, meta)
         end
     end
     for (k, v) in tr.params
@@ -135,7 +131,7 @@ function collect(tr::Trace)
 end
 
 function Base.display(tr::Trace; 
-                      show_values = false, 
+                      show_values = true, 
                       show_types = false)
     println("  __________________________________\n")
     println("               Addresses\n")
