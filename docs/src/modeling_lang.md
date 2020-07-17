@@ -33,12 +33,12 @@ function bar(m, n)
 end
 
 function foo()
-    x = markov(rand, :x, bar, 10, 0.3, 3.0)
-    y = plate(rand, :y, bar, x)
+    x = markov(:x, bar, 10, 0.3, 3.0)
+    y = plate(:y, bar, x)
     return y
 end
 
-cl = trace(foo)
+ret, cl = simulate(foo)
 display(cl.trace; show_values = true)
 ```
 
