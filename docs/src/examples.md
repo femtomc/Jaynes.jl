@@ -74,3 +74,38 @@ println("\nChoice gradients:\n$(grads)")
 
 end # module
 ```
+
+## Specialized Markov call sites
+
+This example illustrates how specialized call sites (accessed through the tracer language features) can be used to accelerate inference.
+
+```julia
+module HiddenMarkovModel
+
+using Jaynes
+using Distributions
+
+function kernel(prev_latent::Float64)
+    z = rand(:z, Normal(prev_latent, 1.0))
+    x = rand(:x, Normal(z, 3.0))
+    return z
+end
+
+# Specialized Markov call site informs tracer of dependency information.
+kernelize = n -> markov(:k, kernel, n, 5.0)
+
+simulation = () -> begin
+    ps = initialize_filter(selection(), 5000, kernelize, (1, ))
+    for i in 2:50
+        sel = selection((:k => i => :x, 5.0))
+
+        # Complexity of filter step is constant as a size of the trace.
+        @time filter_step!(sel, ps, NoChange(), (i,))
+    end
+    return ps
+end
+
+test()
+
+end # module
+```

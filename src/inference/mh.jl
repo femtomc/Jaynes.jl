@@ -1,14 +1,14 @@
-function metropolis_hastings(call::HierarchicalCallSite,
-                             sel::UnconstrainedSelection)
+function metropolis_hastings(sel::K,
+                             call::HierarchicalCallSite) where K <: UnconstrainedSelection
     ret, cl, w, retdiff, d = regenerate(sel, call, call.args...)
     log(rand()) < w && return (cl, true)
     return (call, false)
 end
 
-function metropolis_hastings(call::HierarchicalCallSite,
+function metropolis_hastings(sel::K,
+                             call::HierarchicalCallSite,
                              proposal::Function,
-                             proposal_args::Tuple,
-                             sel::UnconstrainedSelection)
+                             proposal_args::Tuple) where K <: UnconstrainedSelection
     p_ret, p_cl, p_w= propose(proposal, call, proposal_args...)
     s = selection(p_cl)
     u_ret, u_cl, u_w, retdiff, d = update(s, call.fn, call.args...)
@@ -18,24 +18,3 @@ function metropolis_hastings(call::HierarchicalCallSite,
     log(rand()) < ratio && return (u_cl, true)
     return (call, false)
 end
-
-# ------------ Documentation ------------ #
-
-@doc(
-"""
-```julia
-call, accepted, metropolis_hastings(call::HierarchicalCallSite,
-                                    sel::UnconstrainedSelection)
-```
-
-Perform a Metropolis-Hastings step by proposing new choices using the prior at addressed specified by `sel`. Returns a call site, as well as a Boolean value `accepted` to indicate if the proposal was accepted or rejected.
-
-```julia
-call, accepted = metropolis_hastings(call::HierarchicalCallSite,
-                                     proposal::Function,
-                                     proposal_args::Tuple,
-                                     sel::UnconstrainedSelection)
-```
-
-Perform a Metropolis-Hastings step by proposing new choices using a custom proposal at addressed specified by `sel`. Returns a call site, as well as a Boolean value `accepted` to indicate if the proposal was accepted or rejected.
-""", metropolis_hastings)

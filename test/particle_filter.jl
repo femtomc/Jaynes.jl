@@ -57,24 +57,17 @@ end
 
     @testset "Categorical hidden Markov model" begin
         tol = 0.1
-        checks = [-1.05, 
-                  -2.18, 
-                  -2.57, 
-                  -2.907, 
-                  -4.19]
+        checks = [-1.05, -2.18, -2.57, -2.907, -4.19]
         xs = [1, 1, 2, 2, 1]
         lmles = []
 
         # Testing.
         init_obs = Jaynes.selection([(:x => 1, xs[1])])
-        ps = Jaynes.initialize_filter(CategoricalHiddenMarkovModel, 
-                                      (1, ),
-        init_obs, 
-        50000)
+        ps = Jaynes.initialize_filter(init_obs, 50000, CategoricalHiddenMarkovModel, (1, ))
         push!(lmles, ps.lmle)
         for t=2:5
             obs = Jaynes.selection([(:x => t, xs[t])])
-            Jaynes.filter_step!(ps, (t,), obs)
+            Jaynes.filter_step!(obs, ps, NoChange(), (t,))
             push!(lmles, ps.lmle)
         end
         map(enumerate(checks)) do (k, v)
