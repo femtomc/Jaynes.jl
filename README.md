@@ -40,7 +40,7 @@ Jaynes currently supports the following inference algorithms:
 1. Importance sampling (with and without custom proposals)
 2. Particle filtering (with and without custom proposals)
 3. Metropolis-Hastings (with and without custom proposals)
-4. ADVI (with Flux optimisers, currently uses Zygote for reverse-mode AD)
+4. ADVI (with [Flux.jl](https://github.com/FluxML/Flux.jl) optimisers, currently uses [Zygote.jl](https://github.com/FluxML/Zygote.jl) for reverse-mode AD)
 
 [Jaynes also supports the integration of differentiable programming with probabilistic programming.](https://femtomc.github.io/Jaynes.jl/dev/library_api/diff_prog/)
 
