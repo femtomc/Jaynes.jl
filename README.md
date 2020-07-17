@@ -12,7 +12,7 @@
 ---
 
 ```julia
-] add Jaynes
+] add https://github.com/femtomc/Jaynes.jl.git
 ```
 
 _Jaynes_ is a (research-oriented) universal probabilistic programming framework which uses IR transformations and contextual dispatch to implement the core routines for modeling and inference. This allows the usage of pure Julia as the primary modeling language:
