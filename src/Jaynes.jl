@@ -1,16 +1,20 @@
 module Jaynes
 
+# Yarrrr I'm a com-pirate!
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
+using Mjolnir
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
+using Mjolnir: Defaults
 using MacroTools
-using Distributions
+
+using Reexport
+@reexport using Distributions
 
 # Differentiable.
 using Zygote
 using DistributionsAD
-using Flux.Optimise: update!
-using Flux.Optimise: Descent, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW, InvDecay, ExpDecay, WeightDecay
-export Descent, ADAM, Momentum, Nesterov, RMSProp, ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM, ADAMW, InvDecay, ExpDecay, WeightDecay
+@reexport using Flux.Optimise
 
 # Toplevel importants :)
 const Address = Union{Symbol, Pair{Symbol, Int64}}
@@ -59,11 +63,7 @@ end
 
 # ------------ includes ------------ #
 
-using Mjolnir
-using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
-using Mjolnir: Defaults
 include("compiler/static.jl")
-
 include("core.jl")
 include("selections.jl")
 include("learnable.jl")

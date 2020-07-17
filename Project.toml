@@ -10,6 +10,7 @@ Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 IRTools = "7869d1d1-7146-5819-86e3-90919afe41df"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 Mjolnir = "1154507a-7ac2-44fe-9f15-34617bca9db5"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
@@ -19,6 +20,7 @@ Flux = "0.8, 0.11"
 IRTools = "0.3, 0.4"
 MacroTools = "0.5"
 Mjolnir = "0.1"
+Reexport = "0.2"
 Zygote = "0.4, 0.5"
 julia = "1"
 
