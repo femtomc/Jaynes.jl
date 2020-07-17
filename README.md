@@ -7,11 +7,13 @@
 [![Build Status](https://travis-ci.org/femtomc/Jaynes.jl.svg?branch=master)](https://travis-ci.org/femtomc/Jaynes.jl)
 [![codecov](https://codecov.io/gh/femtomc/Jaynes.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/femtomc/Jaynes.jl)
 
+> This is alpha software!
+
+---
+
 ```julia
 ] add Jaynes
 ```
-
-> This is alpha software!
 
 _Jaynes_ is a (research-oriented) universal probabilistic programming framework which uses IR transformations and contextual dispatch to implement the core routines for modeling and inference. This allows the usage of pure Julia as the primary modeling language:
 
@@ -30,6 +32,8 @@ ps, ret = importance_sampling(obs, 5000, bayesian_linear_regression, (100, ))
 ```
 
 See [Examples](https://femtomc.github.io/Jaynes.jl/dev/examples/) for some more code snippets - including arbitrary control flow!
+
+---
 
 Jaynes currently supports the following inference algorithms:
 
