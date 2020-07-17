@@ -44,9 +44,7 @@ function trace_new(vcs::VectorizedCallSite,
                    o_len::Int, 
                    n_len::Int, 
                    args...)
-    w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
-                     get_score(cl)
-                 end)
+    w_adj = 0.0
     new = vcs.trace.subrecords[1 : min - 1]
     new_ret = vcs.ret[1 : min - 1]
 

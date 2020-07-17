@@ -14,7 +14,7 @@ function filter_step!(observations::K,
                       argdiffs::D,
                       new_args::Tuple) where {K <: ConstrainedSelection, D <: Diff}
     num_particles = length(ps)
-    for i in 1:num_particles
+    Threads.@threads for i in 1:num_particles
         ret, ps.calls[i], uw, retdiff, d = update(observations, ps.calls[i], argdiffs, new_args...)
         ps.lws[i] += uw
     end
@@ -29,7 +29,7 @@ function filter_step!(observations::K,
                       proposal::Function,
                       proposal_args::Tuple) where {K <: ConstrainedSelection, D <: Diff}
     num_particles = length(ps)
-    for i in 1:num_particles
+    Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
         sel = selection(p_cl)
         merge!(sel, observations)

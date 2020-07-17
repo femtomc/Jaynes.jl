@@ -22,7 +22,7 @@ function multi_shot_gradient_estimator(sel::K,
                                        params = LearnableParameters()) where K <: ConstrainedSelection
     cs = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
-    for i in 1:num_samples
+    Threads.@threads for i in 1:num_samples
         _, cs[i] = simulate(v_mod, v_args...; params = params)
         obs = merge(cs[i], sel)
         ret, mlw = score(obs, mod, args...)
@@ -32,7 +32,7 @@ function multi_shot_gradient_estimator(sel::K,
     L = ltw - log(num_samples)
     nw = exp.(lws .- ltw)
     gs = Gradients()
-    for i in 1:num_samples
+    Threads.@threads for i in 1:num_samples
         ls = L - nw[i]
         accumulate_parameter_gradients!(gs, cs[i], nothing, ls)
     end
@@ -53,7 +53,7 @@ function advi(sel::K,
     elbows = Vector{Float64}(undef, iters)
     _, cl = simulate(v_mod, v_args...)
     params = get_parameters(cl)
-    for i in 1 : iters
+    Threads.@threads for i in 1 : iters
         elbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples
