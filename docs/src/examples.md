@@ -105,7 +105,7 @@ simulation = () -> begin
     return ps
 end
 
-test()
+ps = simulation()
 
 end # module
 ```
