@@ -1,4 +1,20 @@
-This page keeps a set of common model examples expressed in Jaynes.
+This page keeps a set of small examples expressed in Jaynes.
+
+## Geometric program
+
+```julia
+module Geometric
+
+using Jaynes
+using Distributions
+
+geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 1 : 1 + rand(:geo, geo, p)
+
+ret, cl = simulate(geo, 0.2)
+display(cl.trace)
+
+end # module
+```
 
 ## Bayesian linear regression
 
