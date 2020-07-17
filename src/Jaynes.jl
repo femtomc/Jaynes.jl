@@ -14,6 +14,7 @@ using Reexport
 # Differentiable.
 using Zygote
 using DistributionsAD
+using Flux.Optimise: update!
 @reexport using Flux.Optimise
 
 # Toplevel importants :)
