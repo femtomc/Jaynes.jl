@@ -12,7 +12,7 @@
 _Jaynes_ is a (research-oriented) universal probabilistic programming framework which uses IR transformations and contextual dispatch to implement the core routines for modeling and inference. This allows the usage of pure Julia as the primary modeling language:
 
 ```julia
-function bayeslinreg(N::Int)
+function bayesian_linear_regression(N::Int)
     σ = rand(:σ, InverseGamma(2, 3))
     β = rand(:β, Normal(0.0, 1.0))
     y = plate(:y, x -> rand(:draw, Normal(β*x, σ)), [Float64(i) for i in 1 : N])
@@ -22,7 +22,7 @@ obs = selection(map(1 : 100) do i
                     (:y => i => :draw, Float64(i) + rand())
                 end)
 
-ps, ret = importance_sampling(obs, 5000, bayeslinreg, (100, ))
+ps, ret = importance_sampling(obs, 5000, bayesian_linear_regression, (100, ))
 ```
 
 Jaynes currently supports the following inference algorithms:
