@@ -92,7 +92,7 @@ end
 
 ```
 Structured execution trace for `markov` and `plate` calls. The dependency structure interpretation of the `subrecords` vector depends on the call. For `markov`, the structure is Markovian. For `plate`, each element is drawn IID from the program or distribution provided to `plate`.
-""", HierarchicalTrace)
+""", VectorizedTrace)
 
 @doc(
 """
