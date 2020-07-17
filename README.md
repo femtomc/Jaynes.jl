@@ -43,3 +43,5 @@ Jaynes currently supports the following inference algorithms:
 4. ADVI (with Flux optimisers, currently uses Zygote for reverse-mode AD)
 
 [Jaynes also supports the integration of differentiable programming with probabilistic programming.](https://femtomc.github.io/Jaynes.jl/dev/library_api/diff_prog/)
+
+Beginning in version 0.1.4, these algorithms automatically support adaptive multi-threading - enabled by setting your `JULIA_NUM_THREADS` environment variable. See [Multi-Threading](https://docs.julialang.org/en/v1/base/multi-threading/) for more details.
