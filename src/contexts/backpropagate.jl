@@ -179,7 +179,7 @@ end
 
 # ------------ includes ------------ #
 
-include("generic/backpropagate.jl")
+include("hierarchical/backpropagate.jl")
 include("plate/backpropagate.jl")
 include("markov/backpropagate.jl")
 

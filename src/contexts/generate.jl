@@ -53,7 +53,7 @@ end
 
 # ------------ includes ------------ #
 
-include("generic/generate.jl")
+include("hierarchical/generate.jl")
 include("plate/generate.jl")
 include("markov/generate.jl")
 include("cond/generate.jl")

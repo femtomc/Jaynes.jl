@@ -8,7 +8,7 @@ mutable struct BranchTrace{T <: RecordSite, B <: RecordSite} <: Trace
 end
 
 # If-else branch site
-mutable struct ConditionalBranchSite{C, A, J, L, R} <: CallSite
+mutable struct ConditionalBranchCallSite{C, A, J, L, R} <: CallSite
     trace::BranchTrace
     score::Float64
     cond_kernel::C
@@ -18,4 +18,4 @@ mutable struct ConditionalBranchSite{C, A, J, L, R} <: CallSite
     branch_args::L
     ret::R
 end
-get_score(cbs::ConditionalBranchSite) = cbs.score
+get_score(cbs::ConditionalBranchCallSite) = cbs.score

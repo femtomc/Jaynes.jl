@@ -42,7 +42,7 @@ cl = trace(foo)
 display(cl.trace; show_values = true)
 ```
 
-Here, the `markov` and `plate` calls provide explicit knowledge to the tracer that the generation of randomness conforms to a computation pattern which can be vectorized. This allows the tracer to construct an efficient `VectorizedSite` which allows more efficient updates/regenerations than a "black-box" `CallSite` where the dependency information may not be known. This is a simple way for the user to increase the efficiency of inference algorithms, by informing the tracer of information which it can't derive on its own (at least for now 😺).
+Here, the `markov` and `plate` calls provide explicit knowledge to the tracer that the generation of randomness conforms to a computation pattern which can be vectorized. This allows the tracer to construct an efficient `VectorizedCallSite` which allows more efficient updates/regenerations than a "black-box" `CallSite` where the dependency information may not be known. This is a simple way for the user to increase the efficiency of inference algorithms, by informing the tracer of information which it can't derive on its own (at least for now 😺).
 
 `markov` requires that the user provide a function `f` with
 

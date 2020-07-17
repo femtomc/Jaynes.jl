@@ -21,37 +21,37 @@ Base.getindex(vt::VectorizedTrace, addr::Int) = vt.subrecords[addr]
 
 # ------------ Vectorized site ------------ #
 
-mutable struct VectorizedSite{F, D, C <: RecordSite, J, K} <: CallSite
+mutable struct VectorizedCallSite{F, D, C <: RecordSite, J, K} <: CallSite
     trace::VectorizedTrace{C}
     score::Float64
     kernel::D
     args::J
     ret::Vector{K}
-    function VectorizedSite{F}(sub::VectorizedTrace{C}, sc::Float64, kernel::D, args::J, ret::Vector{K}) where {F, D, C <: RecordSite, J, K}
+    function VectorizedCallSite{F}(sub::VectorizedTrace{C}, sc::Float64, kernel::D, args::J, ret::Vector{K}) where {F, D, C <: RecordSite, J, K}
         new{F, D, C, J, K}(sub, sc, kernel, args, ret)
     end
 end
-function has_choice(vcs::VectorizedSite, addr)
+function has_choice(vcs::VectorizedCallSite, addr)
     has_choice(vcs.trace, addr) && return true
     return false
 end
-function has_call(vcs::VectorizedSite, addr)
+function has_call(vcs::VectorizedCallSite, addr)
     has_call(vcs.trace, addr) && return true
     return false
 end
-function get_call(vcs::VectorizedSite, addr)
+function get_call(vcs::VectorizedCallSite, addr)
     has_call(vcs.trace, addr) && return get_call(vcs.trace, addr)
-    error("VectorizedSite (get_call): no call at $addr.")
+    error("VectorizedCallSite (get_call): no call at $addr.")
 end
-get_score(vcs::VectorizedSite) = vcs.score
-getindex(vcs::VectorizedSite, addr::Int) = getindex(cs.trace, addr)
-function getindex(vcs::VectorizedSite, addr::Pair)
+get_score(vcs::VectorizedCallSite) = vcs.score
+getindex(vcs::VectorizedCallSite, addr::Int) = getindex(cs.trace, addr)
+function getindex(vcs::VectorizedCallSite, addr::Pair)
     getindex(vcs.trace[addr[1]], addr[2])
 end
-function haskey(vcs::VectorizedSite, addr::Pair)
+function haskey(vcs::VectorizedCallSite, addr::Pair)
     addr[1] <= length(vcs.trace.subrecords) && haskey(vcs.trace[addr[1]], addr[2])
 end
-unwrap(cs::VectorizedSite) = cs.ret
+unwrap(cs::VectorizedCallSite) = cs.ret
 
 # ------------ Vectorized discard trace ------------ #
 

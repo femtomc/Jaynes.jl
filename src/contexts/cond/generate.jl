@@ -15,11 +15,11 @@
         ss = get_subselection(ctx, addr => :A)
         branch_ret, branch_cl, branch_w = generate(ss, a, a_args...)
         br_tr = BranchTrace(cl, branch_cl)
-        add_call!(ctx, addr, ConditionalBranchSite(br_tr, get_score(branch_cl) + get_score(cl), c, args, ret, a, a_args, branch_ret))
+        add_call!(ctx, addr, ConditionalBranchCallSite(br_tr, get_score(branch_cl) + get_score(cl), c, args, ret, a, a_args, branch_ret))
     else
         ss = get_subselection(ctx, addr => :B)
         branch_ret, branch_cl, branch_w = generate(ss, b, b_args...)
         br_tr = BranchTrace(cl, branch_cl)
-        add_call!(ctx, addr, ConditionalBranchSite(br_tr, get_score(branch_cl) + get_score(cl), c, args, ret, b, b_args, ret))
+        add_call!(ctx, addr, ConditionalBranchCallSite(br_tr, get_score(branch_cl) + get_score(cl), c, args, ret, b, b_args, ret))
     end
 end

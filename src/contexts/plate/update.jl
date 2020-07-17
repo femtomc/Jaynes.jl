@@ -1,6 +1,6 @@
 # ------------ Utilities ------------ #
 
-function trace_retained(vcs::VectorizedSite, s::ConstrainedSelection, ks, o_len::Int, n_len::Int, args::Vector)
+function trace_retained(vcs::VectorizedCallSite, s::ConstrainedSelection, ks, o_len::Int, n_len::Int, args::Vector)
     w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
                       get_score(cl)
                   end)
@@ -21,7 +21,7 @@ function trace_retained(vcs::VectorizedSite, s::ConstrainedSelection, ks, o_len:
     return w_adj, new, new_ret
 end
 
-function trace_new(vcs::VectorizedSite, s::ConstrainedSelection, ks, o_len::Int, n_len::Int, args::Vector)
+function trace_new(vcs::VectorizedCallSite, s::ConstrainedSelection, ks, o_len::Int, n_len::Int, args::Vector)
     w_adj = 0.0
     new_ret = typeof(vcs.ret)(undef, n_len)
     new = vcs.trace.subrecords
@@ -61,7 +61,7 @@ end
     else
         w_adj, new, new_ret = trace_new(vcs, s, ks, o_len, n_len, args)
     end
-    add_call!(ctx, addr, VectorizedSite{typeof(plate)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, args, new_ret))
+    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, args, new_ret))
     increment!(ctx, w_adj)
 
     return new_ret
@@ -70,7 +70,7 @@ end
 @inline function (ctx::UpdateContext{C, T})(c::typeof(plate), 
                                             addr::Address, 
                                             call::Function, 
-                                            args::Vector) where {C <: VectorizedSite, T <: VectorizedTrace}
+                                            args::Vector) where {C <: VectorizedCallSite, T <: VectorizedTrace}
     vcs = ctx.prev
     n_len, o_len = length(args), length(vcs.args)
     s = get_subselection(ctx, addr)

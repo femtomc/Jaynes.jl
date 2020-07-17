@@ -99,7 +99,7 @@ A record of a black-box call (e.g. no special tracer language features). Records
 @doc(
 """
 ```julia
-mutable struct VectorizedSite{F <: Function, C <: RecordSite, J, K} <: CallSite
+mutable struct VectorizedCallSite{F <: Function, C <: RecordSite, J, K} <: CallSite
     trace::VectorizedTrace{C}
     score::Float64
     fn::Function
@@ -108,4 +108,4 @@ mutable struct VectorizedSite{F <: Function, C <: RecordSite, J, K} <: CallSite
 end
 ```
 A record of a call site using the special `plate` and `markov` tracer language features. Informs the tracer that the call conforms to a special pattern of randomness dependency, which allows the storing of `Trace` instances sequentially in a vector.
-""", VectorizedSite)
+""", VectorizedCallSite)

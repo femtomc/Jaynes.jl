@@ -51,7 +51,7 @@ end
 
 # ------------ includes ------------ #
 
-include("generic/simulate.jl")
+include("hierarchical/simulate.jl")
 include("plate/simulate.jl")
 include("markov/simulate.jl")
 include("cond/simulate.jl")

@@ -51,15 +51,15 @@ function regenerate(bbcs::HierarchicalCallSite, new_args...) where L <: Unconstr
     return regenerate(ctx, bbcs, new_args...)
 end
 
-function regenerate(ctx::RegenerateContext, vcs::VectorizedSite, new_args...)
+function regenerate(ctx::RegenerateContext, vcs::VectorizedCallSite, new_args...)
 end
 
-function regenerate(sel::L, vcs::VectorizedSite, new_args...) where L <: UnconstrainedSelection
+function regenerate(sel::L, vcs::VectorizedCallSite, new_args...) where L <: UnconstrainedSelection
 end
 
 # ------------ includes ------------ #
 
-include("generic/regenerate.jl")
+include("hierarchical/regenerate.jl")
 include("plate/regenerate.jl")
 include("markov/regenerate.jl")
 

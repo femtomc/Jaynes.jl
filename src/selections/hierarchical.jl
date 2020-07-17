@@ -140,7 +140,7 @@ function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::Hi
     end
     chs.tree[addr] = subchs
 end
-function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::VectorizedSite)
+function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::VectorizedCallSite)
     for (k, subtrace) in enumerate(cs.subtraces)
         subchs = ConstrainedHierarchicalSelection()
         for k in keys(subtrace.calls)

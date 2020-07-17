@@ -27,7 +27,7 @@ HierarchicalCallSite
 ```
 
 ```@docs
-VectorizedSite
+VectorizedCallSite
 ```
 
 ```@docs

@@ -63,7 +63,7 @@ end
 
 # ------------ includes ------------ #
 
-include("generic/score.jl")
+include("hierarchical/score.jl")
 include("plate/score.jl")
 include("markov/score.jl")
 

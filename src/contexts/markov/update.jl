@@ -1,6 +1,6 @@
 # ------------ Utilities ------------ #
 
-function trace_retained(vcs::VectorizedSite, 
+function trace_retained(vcs::VectorizedCallSite, 
                         s::ConstrainedSelection, 
                         ks::Set, 
                         min::Int, 
@@ -37,7 +37,7 @@ function trace_retained(vcs::VectorizedSite,
 end
 
 # TODO: finish.
-function trace_new(vcs::VectorizedSite, 
+function trace_new(vcs::VectorizedCallSite, 
                    s::ConstrainedSelection, 
                    ks::Set, 
                    min::Int, 
@@ -102,7 +102,7 @@ end
     else
         w_adj, new, new_ret = trace_new(vcs, s, ks, min, o_len, n_len, args...)
     end
-    add_call!(ctx, addr, VectorizedSite{typeof(markov)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, args, new_ret))
+    add_call!(ctx, addr, VectorizedCallSite{typeof(markov)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, args, new_ret))
     increment!(ctx, w_adj)
 
     return new_ret
@@ -112,7 +112,7 @@ end
                                             addr::Address, 
                                             call::Function, 
                                             len::Int,
-                                            args...) where {C <: VectorizedSite, T <: VectorizedTrace}
+                                            args...) where {C <: VectorizedCallSite, T <: VectorizedTrace}
     vcs = ctx.prev
     n_len, o_len = len, length(vcs.ret)
     s = get_subselection(ctx, addr)

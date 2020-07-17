@@ -48,7 +48,7 @@ end
 
 # ------------ includes ------------ #
 
-include("generic/propose.jl")
+include("hierarchical/propose.jl")
 include("plate/propose.jl")
 include("markov/propose.jl")
 
