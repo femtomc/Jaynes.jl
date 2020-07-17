@@ -97,19 +97,19 @@ The structured representation of program execution is a `Trace`
 
 ```julia
 abstract type Trace end
-mutable struct HierarchicalTrace <: Trace
+struct HierarchicalTrace <: Trace
     calls::Dict{Address, CallSite}
     choices::Dict{Address, ChoiceSite}
     params::Dict{Address, LearnableSite}
-    score::Float64
 end
 ```
 
 Here, I'm showing `HierarchicalTrace` which is the generic (and currently, only) trace type. We just encountered `ChoiceSite` above - let's look at an example `CallSite`
 
 ```julia
-mutable struct HierarchicalCallSite{T <: Trace, J, K} <: CallSite
-    trace::T
+struct HierarchicalCallSite{J, K} <: CallSite
+    trace::HierarchicalTrace
+    score::Float64
     fn::Function
     args::J
     ret::K

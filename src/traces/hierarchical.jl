@@ -48,7 +48,7 @@ end
 
 # ------------ Hierarchical call site ------------ #
 
-mutable struct HierarchicalCallSite{J, K} <: CallSite
+struct HierarchicalCallSite{J, K} <: CallSite
     trace::HierarchicalTrace
     score::Float64
     fn::Function

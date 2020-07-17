@@ -1,6 +1,6 @@
 # ------------ Vectorized trace ------------ #
 
-mutable struct VectorizedTrace{C <: RecordSite} <: Trace
+struct VectorizedTrace{C <: RecordSite} <: Trace
     subrecords::Vector{C}
     params::Dict{Address, LearnableSite}
     VectorizedTrace{C}() where C = new{C}(Vector{C}(), Dict{Address, LearnableSite}())
@@ -21,7 +21,7 @@ Base.getindex(vt::VectorizedTrace, addr::Int) = vt.subrecords[addr]
 
 # ------------ Vectorized site ------------ #
 
-mutable struct VectorizedCallSite{F, D, C <: RecordSite, J, K} <: CallSite
+struct VectorizedCallSite{F, D, C <: RecordSite, J, K} <: CallSite
     trace::VectorizedTrace{C}
     score::Float64
     kernel::D
@@ -55,7 +55,7 @@ unwrap(cs::VectorizedCallSite) = cs.ret
 
 # ------------ Vectorized discard trace ------------ #
 
-mutable struct VectorizedDiscard <: Trace
+struct VectorizedDiscard <: Trace
     subrecords::Dict{Int, RecordSite}
     VectorizedDiscard() = new(Dict{Int, RecordSite}())
 end

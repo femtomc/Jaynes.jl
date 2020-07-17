@@ -32,6 +32,8 @@ function (mx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(rand
     return mx(c, flatten(args)...)
 end
 
+# ------------ includes ------------ #
+
 include("contexts/generate.jl")
 include("contexts/simulate.jl")
 include("contexts/propose.jl")

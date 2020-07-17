@@ -72,7 +72,7 @@ Abstract base type of all traces.
 @doc(
 """
 ```julia
-mutable struct HierarchicalTrace <: Trace
+struct HierarchicalTrace <: Trace
     calls::Dict{Address, CallSite}
     choices::Dict{Address, ChoiceSite}
     params::Dict{Address, LearnableSite}
@@ -85,7 +85,7 @@ Execution trace which allows the tracking of randomness metadata in a function c
 @doc(
 """
 ```julia
-mutable struct VectorizedTrace{C <: RecordSite} <: Trace
+struct VectorizedTrace{C <: RecordSite} <: Trace
     subrecords::Vector{C}
     params::Dict{Address, LearnableSite}
 end
@@ -97,7 +97,7 @@ Structured execution trace for `markov` and `plate` calls. The dependency struct
 @doc(
 """
 ```julia
-mutable struct HierarchicalCallSite{J, K} <: CallSite
+struct HierarchicalCallSite{J, K} <: CallSite
     trace::HierarchicalTrace
     score::Float64
     fn::Function
@@ -111,7 +111,7 @@ A record of a black-box call (e.g. no special tracer language features). Records
 @doc(
 """
 ```julia
-mutable struct VectorizedCallSite{F <: Function, C <: RecordSite, J, K} <: CallSite
+struct VectorizedCallSite{F <: Function, C <: RecordSite, J, K} <: CallSite
     trace::VectorizedTrace{C}
     score::Float64
     fn::Function

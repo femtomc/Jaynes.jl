@@ -1,6 +1,6 @@
 # ------------ Branch trace ------------ #
 
-mutable struct BranchTrace{T <: RecordSite, B <: RecordSite} <: Trace
+struct BranchTrace{T <: RecordSite, B <: RecordSite} <: Trace
     cond::T
     branch::B
     params::Dict{Address, LearnableSite}
@@ -8,7 +8,7 @@ mutable struct BranchTrace{T <: RecordSite, B <: RecordSite} <: Trace
 end
 
 # If-else branch site
-mutable struct ConditionalBranchCallSite{C, A, J, L, R} <: CallSite
+struct ConditionalBranchCallSite{C, A, J, L, R} <: CallSite
     trace::BranchTrace
     score::Float64
     cond_kernel::C
