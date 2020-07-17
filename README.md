@@ -25,6 +25,8 @@ obs = selection(map(1 : 100) do i
 ps, ret = importance_sampling(obs, 5000, bayesian_linear_regression, (100, ))
 ```
 
+See [Examples](https://femtomc.github.io/Jaynes.jl/dev/examples/) for some more code snippets - including arbitrary control flow!
+
 Jaynes currently supports the following inference algorithms:
 
 1. Importance sampling (with and without custom proposals)
