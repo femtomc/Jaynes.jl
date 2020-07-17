@@ -15,10 +15,6 @@ VectorizedTrace
 ```
 
 ```@docs
-BranchTrace
-```
-
-```@docs
 ChoiceSite
 ```
 
@@ -28,8 +24,4 @@ HierarchicalCallSite
 
 ```@docs
 VectorizedCallSite
-```
-
-```@docs
-IfElseBranchSite
 ```

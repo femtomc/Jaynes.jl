@@ -45,27 +45,6 @@ include("traces/cond.jl")
 @doc(
 """
 ```julia
-abstract type Trace end
-```
-Abstract base type of all traces.
-""", Trace)
-
-@doc(
-"""
-```julia
-mutable struct HierarchicalTrace <: Trace
-    calls::Dict{Address, CallSite}
-    choices::Dict{Address, ChoiceSite}
-    params::Dict{Address, LearnableSite}
-    end
-end
-```
-Structured execution trace with tracked randomness in a function call.
-""", HierarchicalTrace)
-
-@doc(
-"""
-```julia
 struct ChoiceSite{T} <: RecordSite
     score::Float64
     val::T
@@ -81,6 +60,39 @@ abstract type CallSite <: RecordSite end
 ```
 Abstract base type of all call sites.
 """, CallSite)
+
+@doc(
+"""
+```julia
+abstract type Trace end
+```
+Abstract base type of all traces.
+""", Trace)
+
+@doc(
+"""
+```julia
+mutable struct HierarchicalTrace <: Trace
+    calls::Dict{Address, CallSite}
+    choices::Dict{Address, ChoiceSite}
+    params::Dict{Address, LearnableSite}
+    end
+end
+```
+Execution trace which allows the tracking of randomness metadata in a function call.
+""", HierarchicalTrace)
+
+@doc(
+"""
+```julia
+mutable struct VectorizedTrace{C <: RecordSite} <: Trace
+    subrecords::Vector{C}
+    params::Dict{Address, LearnableSite}
+end
+
+```
+Structured execution trace for `markov` and `plate` calls. The dependency structure interpretation of the `subrecords` vector depends on the call. For `markov`, the structure is Markovian. For `plate`, each element is drawn IID from the program or distribution provided to `plate`.
+""", HierarchicalTrace)
 
 @doc(
 """
