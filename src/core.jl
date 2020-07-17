@@ -1,4 +1,4 @@
-import Base: getindex, haskey
+import Base: getindex, haskey, rand
 
 # ------------ Core ------------ #
 
