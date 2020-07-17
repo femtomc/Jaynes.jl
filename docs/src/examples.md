@@ -18,27 +18,29 @@ end # module
 
 ## Bayesian linear regression
 
+This example uses the `plate` special language feature (equivalent to plate notation) to perform IID draws from the `Normal` specified in the program. This is more concise than a loop, and also allows inference algorithms to utilize efficient operations for updating and regenerating choices.
+
 ```julia
 module BayesianLinearRegression
 
 using Jaynes
 using Distributions
 
-function bayeslinreg(N::Int)
+function bayesian_linear_regression(N::Int)
     σ = rand(:σ, InverseGamma(2, 3))
     β = rand(:β, Normal(0.0, 1.0))
     y = plate(:y, x -> rand(:draw, Normal(β*x, σ)), [Float64(i) for i in 1 : N])
 end
 
 # Example trace.
-ret, cl = simulate(bayeslinreg, 10)
+ret, cl = simulate(bayesian_linear_regression, 10)
 display(cl.trace)
 
 sel = selection(map(1 : 100) do i
                     (:y => i => :draw, Float64(i) + rand())
                 end)
 
-@time ps, ret = importance_sampling(sel, 5000, bayeslinreg, (100, ))
+@time ps, ret = importance_sampling(sel, 5000, bayesian_linear_regression, (100, ))
 
 num_res = 1000
 resample!(ps, num_res)
