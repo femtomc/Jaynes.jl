@@ -74,16 +74,16 @@ each of which has a special dispatch definition which allows the dynamo to dispa
 @inline function (ctx::GenerateContext)(call::typeof(rand), 
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
+    visit!(ctx, addr)
     if has_query(ctx.select, addr)
         s = get_query(ctx.select, addr)
         score = logpdf(d, s)
-        add_choice!(ctx.tr, addr, ChoiceSite(score, s))
+        add_choice!(ctx, addr, ChoiceSite(score, s))
         increment!(ctx, score)
     else
         s = rand(d)
-        add_choice!(ctx.tr, addr, ChoiceSite(logpdf(d, s), s))
+        add_choice!(ctx, addr, ChoiceSite(logpdf(d, s), s))
     end
-    visit!(ctx.visited, addr)
     return s
 end
 
