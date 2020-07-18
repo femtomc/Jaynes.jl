@@ -87,3 +87,5 @@ end
 include("hierarchical/update.jl")
 include("plate/update.jl")
 include("markov/update.jl")
+
+# ------------ Documentation ------------ #
