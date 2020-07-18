@@ -90,5 +90,6 @@ ret, v_cl, w = propose(fn::typeof(markov), call::Function, len::Int, args...)
 ret, v_cl, w = propose(fn::typeof(plate), call::Function, args::Vector)
 ret, v_cl, w = propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
 ```
-The convenience `propose` function provides an easy API to the `Propose` context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score/weight `w`.
+
+`propose` provides an API to the `ProposeContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score/weight `w`.
 """, propose)

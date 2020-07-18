@@ -96,6 +96,7 @@ ret, v_cl, w = generate(sel::L, fn::typeof(markov), call::Function, len::Int, ar
 ret, v_cl, w = generate(sel::L, fn::typeof(plate), call::Function, args::Vector; params = Parameters()) where L <: ConstrainedSelection
 ret, v_cl, w = generate(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params = Parameters()) where {L <: ConstrainedSelection, K}
 ```
-The convenience `generate` function provides an easy API to the `Generate` context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score/weight `w` computed with respect to the constraints `sel`.
+
+`generate` provides an API to the `GenerateContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score/weight `w` computed with respect to the constraints `sel`.
 """, generate)
 

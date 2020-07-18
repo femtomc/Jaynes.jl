@@ -110,7 +110,7 @@ ret, w = score(sel::L, fn::typeof(plate), call::Function, args::Vector; params =
 ret, w = score(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params = Parameters()) where {L <: ConstrainedSelection, K}
 ```
 
-The convenience `score` function provides an API to the `ScoreContext` context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and the likelihood weight score of the user-provided selection `sel`. The selection should satisfy the following requirement:
+`score` provides an API to the `ScoreContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and the likelihood weight score of the user-provided selection `sel`. The selection should satisfy the following requirement:
 
 1. At any random choice in any branch traveled according to the constraints of `sel`, `sel` must provide a constraint for that choice.
 

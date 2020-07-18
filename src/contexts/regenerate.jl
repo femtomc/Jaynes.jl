@@ -107,8 +107,8 @@ The `RegenerateContext` is used for MCMC algorithms, to propose new choices for 
 @doc(
 """
 ```julia
-ret, call_site = regenerate(sel::L, bbcs::HierarchicalCallSite, new_args...) where L <: UnconstrainedSelection
-ret, call_site = regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection
+ret, cl = regenerate(sel::L, bbcs::HierarchicalCallSite, new_args...) where L <: UnconstrainedSelection
+ret, cl = regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection
 ```
-Users will likely interact with the `RegenerateContext` through the convenience method `regenerate` which requires that users provide an `UnconstrainedSelection`, an original call site, and possibly a set of new arguments to be used in the regeneration step. This context internally keeps track of the bookkeeping required to increment likelihood weights, as well as prune off parts of the trace which are invalid if a regenerated choice changes the shape of the trace (e.g. control flow).
+`regenerate` is an API to the `RegenerateContext` execution context. `regenerate` requires that users provide an `UnconstrainedSelection`, an original call site, and possibly a set of new arguments to be used in the regeneration step. This context internally keeps track of the bookkeeping required to increment likelihood weights, as well as prune off parts of the trace which are invalid if a regenerated choice changes the shape of the trace (e.g. control flow), and returns a new return value `ret` as well as the modified call site `cl`.
 """, regenerate)
