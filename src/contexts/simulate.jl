@@ -80,11 +80,11 @@ SimulateContext(params) = new{HierarchicalTrace}(Trace(), Visitor(), params)
 @doc(
 """
 ```julia
-simulate(fn::Function, args...; params = LearnableParameters())
-simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableParameters()) where T
-simulate(c::typeof(plate), fn::Function, args::Vector; params = LearnableParameters()) where T
-simulate(fn::typeof(plate), d::Distribution{T}, len::Int; params = LearnableParameters()) where T
-simulate(c::typeof(markov), fn::Function, len::Int, args...; params = LearnableParameters())
+ret, cl = simulate(fn::Function, args...; params = LearnableParameters())
+ret, cl = simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableParameters()) where T
+ret, v_cl = simulate(c::typeof(plate), fn::Function, args::Vector; params = LearnableParameters()) where T
+ret, v_cl = simulate(fn::typeof(plate), d::Distribution{T}, len::Int; params = LearnableParameters()) where T
+ret, v_cl = simulate(c::typeof(markov), fn::Function, len::Int, args...; params = LearnableParameters())
 ```
 
 The convenience `simulate` function provides an API to the `Simulate` context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and a `RecordSite` instance specialized to the call. `simulate` is used to express unconstrained generation of a probabilistic program trace, without likelihood weight recording.
