@@ -5,7 +5,7 @@ function initialize_filter(observations::K,
                            num_particles::Int,
                            fn::Function, 
                            args::Tuple) where K <: ConstrainedSelection
-    ps, lnw = importance_sampling(observations, num_particles, fn, args)
+    ps, _ = importance_sampling(observations, num_particles, fn, args)
     return ps
 end
 
@@ -15,7 +15,7 @@ function filter_step!(observations::K,
                       new_args::Tuple) where {K <: ConstrainedSelection, D <: Diff}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
-        ret, ps.calls[i], uw, retdiff, d = update(observations, ps.calls[i], argdiffs, new_args...)
+        _, ps.calls[i], uw, _, _ = update(observations, ps.calls[i], argdiffs, new_args...)
         ps.lws[i] += uw
     end
     ltw = lse(ps.lws)
@@ -33,7 +33,7 @@ function filter_step!(observations::K,
         _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
         sel = selection(p_cl)
         merge!(sel, observations)
-        ret, u_cl, ps.calls[i], retdiff, d = update(sel, ps.calls[i], argdiffs, new_args...)
+        _, ps.calls[i], u_w, _, _ = update(sel, ps.calls[i], argdiffs, new_args...)
         ps.lws[i] += u_w - p_w
     end
     ltw = lse(ps.lws)

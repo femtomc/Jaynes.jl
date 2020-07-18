@@ -3,9 +3,9 @@ using Jaynes
 
 makedocs(sitename = "Jaynes.jl",
          pages = ["Introduction" => "index.md",
-                  "Concepts" => "concepts.md",
                   "Modeling language" => "modeling_lang.md",
                   "Examples" => "examples.md",
+                  "Concepts" => "concepts.md",
                   "Architecture" => "architecture.md",
                   "Library" => ["Traces, choices, and call sites" => "library_api/sites.md",
                                 "Execution contexts" => "library_api/contexts.md",

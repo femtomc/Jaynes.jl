@@ -44,7 +44,7 @@ These are the two basic patterns which are repeated throughout the implementatio
 
 ## Implementing a context
 
-In this section, we'll walk through the implementation of the `Generate` context in full. This should give users of the library a good baseline understanding about how these contexts are implemented, and how they do what they do.
+In this section, we'll walk through the implementation of the `GenerateContext` execution context in full. This should give users of the library a good baseline understanding about how these execution contexts are implemented, and how they do what they do.
 
 First, each context is a _dynamo_ - which is safe `IRTools` version of Julia's [generated functions](https://docs.julialang.org/en/v1/manual/metaprogramming/#Generated-functions-1). Generated functions have access to type information and, thus, method bodies at compile time. Generated functions are typically used to push computation to compile time, but [you can do wild things with them](https://github.com/femtomc/Mixtape.jl/blob/937068b7fd1ead7dbbc9837903cf52d0ab3a48c8/src/Mixtape.jl#L42-L57). This link showcases a generated function and IR pass which recursively wraps function calls in itself, allow you to use dispatch to intercept function calls and do whatever you want with them at any level of the call stack. This fundamental idea is how libraries like `Cassette` and the dynamos of `IRTools` do what they do - this is compiler metaprogramming at its finest (although it is currently hard on the compiler).
 
@@ -104,4 +104,4 @@ where `Address` is a `Union{Symbol, Pair{Symbol, Int}}` and is used by the user 
 
 This is exactly what happens in the `GenerateContext` every time the dynamo sees a call of the `rand` form above instead of the normal execution. But this is exactly what we need to allow sampling of probabilistic programs where some of the address have user-provided constraints. And it all happens automatically, courtesy of compiler metaprogramming.
 
-The other contexts are implemented in the same way - and you'll also notice that this implementation is repeated in the set of _specialized call sites_ which the user can activate if they'd like to express part of a probabilistic program which confirms to a certain structure of randomness dependency. As long as the required interception occurs at the function call level, this compiler metaprogramming technique can be used. Very powerful!
+The other execution contexts are implemented in the same way - you'll also notice that this implementation is repeated in the set of _specialized call sites_ which the user can activate if they'd like to express part of a probabilistic program which confirms to a certain structure of randomness dependency. As long as the required interception occurs at the function call level, this compiler metaprogramming technique can be used. Very powerful!
