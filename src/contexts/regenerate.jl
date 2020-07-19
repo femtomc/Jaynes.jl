@@ -51,10 +51,43 @@ function regenerate(bbcs::HierarchicalCallSite, new_args...) where L <: Unconstr
     return regenerate(ctx, bbcs, new_args...)
 end
 
-function regenerate(ctx::RegenerateContext, vcs::VectorizedCallSite, new_args...)
+# TODO: disallowed for now.
+#function regenerate(sel::L, vcs::VectorizedCallSite{typeof(plate)}, argdiffs::D, new_args...) where {L <: UnconstrainedSelection, D <: Diff}
+#    addr = gensym()
+#    v_sel = selection(addr => sel)
+#    ctx = RegenerateContext(vcs, v_sel, argdiffs)
+#    ret = ctx(plate, addr, vcs.kernel, new_args...)
+#    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+#end
+
+function regenerate(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: UnconstrainedSelection, D <: Diff}
+    argdiffs = NoChange()
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = RegenerateContext(vcs, v_sel, argdiffs)
+    ret = ctx(plate, addr, vcs.kernel, vcs.args)
+    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function regenerate(sel::L, vcs::VectorizedCallSite, new_args...) where L <: UnconstrainedSelection
+function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: UnconstrainedSelection, D <: Diff}
+    argdiffs = NoChange()
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = RegenerateContext(vcs, v_sel, argdiffs)
+    ret = ctx(markov, addr, vcs.kernel, vcs.args[1], vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: UnconstrainedSelection, D <: Diff}
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = RegenerateContext(vcs, v_sel, d)
+    ret = ctx(markov, addr, vcs.kernel, len, vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: UnconstrainedSelection, D <: Diff}
+    return regenerate(sel, vcs, NoChange(), len)
 end
 
 # ------------ includes ------------ #
