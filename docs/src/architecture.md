@@ -54,7 +54,7 @@ function flatten(t::Tuple)
 end
 ```
 
-so we see that the tracer is only allowed to look at certain calls, and uses a few fixes for some common issues. This drastically improves the performance over a "heavyweight" tracer which looks at everything. For the use case of probability programming [implemented in this style](http://proceedings.mlr.press/v15/wingate11a/wingate11a.pdf), it's perfectly acceptable.
+so we see that the tracer is only allowed to look at certain calls, and uses a few fixes for some common issues. This drastically improves the performance over a "heavyweight" tracer which looks at everything. For the use case of probabilistic programming [implemented in this style](http://proceedings.mlr.press/v15/wingate11a/wingate11a.pdf), it's perfectly acceptable.
 
 There are a number of inheritors for `ExecutionContext`
 
@@ -111,7 +111,7 @@ end
 
 A `ChoiceSite` is just a record of a random selection, along with the log probability of the selection with respect to the user-specified distribution at that site. These are created by calls of the form `rand(addr::Address, d::Distribution)` where `Distribution` is the type from the `Distributions` library.
 
-The structured recorded representation of randomness in a program execution is a `Trace`:
+The structured representation of recorded randomness in a program execution is a `Trace`:
 
 ```julia
 struct HierarchicalTrace <: Trace

@@ -22,6 +22,7 @@ makedocs(sitename = "Jaynes.jl",
                   #               "Autoencoding with black box extensions" => "autoencoding.md",
                   #               "Gaussian process kernel synthesis" => "gp_kernel_synth.md",
                   #               "Inference compilation" => "infcomp.md"],
+                  "Benchmarks" => "benchmarks/index.md",
                   "Related work" => "related_work.md"
                  ],
          format = Documenter.HTML(prettyurls = true,
