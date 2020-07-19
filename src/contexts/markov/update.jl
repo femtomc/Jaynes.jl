@@ -1,12 +1,12 @@
 # ------------ Utilities ------------ #
 
 function trace_retained(vcs::VectorizedCallSite, 
-                        s::ConstrainedSelection, 
+                        s::K, 
                         ks::Set, 
                         min::Int, 
                         o_len::Int, 
                         n_len::Int, 
-                        args...)
+                        args...) where K <: ConstrainedSelection
     w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
                      get_score(cl)
                  end)
@@ -38,12 +38,12 @@ end
 
 # TODO: finish.
 function trace_new(vcs::VectorizedCallSite, 
-                   s::ConstrainedSelection, 
+                   s::K, 
                    ks::Set, 
                    min::Int, 
                    o_len::Int, 
                    n_len::Int, 
-                   args...)
+                   args...) where K <: ConstrainedSelection
     w_adj = 0.0
     new = vcs.trace.subrecords[1 : min - 1]
     new_ret = vcs.ret[1 : min - 1]
@@ -121,6 +121,7 @@ end
         w_adj, new, new_ret = trace_new(vcs, s, ks, min, o_len, n_len, args)
     end
 
+    # TODO: fix - allocate full vector.
     for n in new
         add_call!(ctx, n)
     end

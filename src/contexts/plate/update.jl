@@ -1,9 +1,14 @@
 # ------------ Utilities ------------ #
 
-function trace_retained(vcs::VectorizedCallSite, s::ConstrainedSelection, ks, o_len::Int, n_len::Int, args::Vector)
+function trace_retained(vcs::VectorizedCallSite, 
+                        s::K, 
+                        ks, 
+                        o_len::Int, 
+                        n_len::Int, 
+                        args::Vector) where K <: ConstrainedSelection
     w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
-                      get_score(cl)
-                  end)
+                     get_score(cl)
+                 end)
     new = vcs.trace.subrecords[1 : n_len]
     new_ret = typeof(vcs.ret)(undef, n_len)
     for i in 1 : n_len
@@ -21,7 +26,12 @@ function trace_retained(vcs::VectorizedCallSite, s::ConstrainedSelection, ks, o_
     return w_adj, new, new_ret
 end
 
-function trace_new(vcs::VectorizedCallSite, s::ConstrainedSelection, ks, o_len::Int, n_len::Int, args::Vector)
+function trace_new(vcs::VectorizedCallSite, 
+                   s::K, 
+                   ks, 
+                   o_len::Int, 
+                   n_len::Int, 
+                   args::Vector) where K <: ConstrainedSelection
     w_adj = 0.0
     new_ret = typeof(vcs.ret)(undef, n_len)
     new = vcs.trace.subrecords
