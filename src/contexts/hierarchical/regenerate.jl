@@ -16,7 +16,7 @@
         end
     end
     score = logpdf(d, ret)
-    if in_prev_chm && !in_sel
+    if in_prev_chm && in_sel
         increment!(ctx, score - prev.score)
     end
     add_choice!(ctx, addr, ChoiceSite(score, ret))
