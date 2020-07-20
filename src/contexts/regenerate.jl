@@ -1,25 +1,19 @@
-mutable struct RegenerateContext{T <: Trace, 
-                                 L <: UnconstrainedSelection,
-                                 P <: Parameters} <: ExecutionContext
-    prev::T
+mutable struct RegenerateContext{C <: CallSite,
+                                 T <: Trace, 
+                                 K <: UnconstrainedSelection,
+                                 P <: Parameters,
+                                 D <: Diff} <: ExecutionContext
+    prev::C
     tr::T
-    select::L
+    select::K
     weight::Float64
     score::Float64
-    discard::T
+    discard::HierarchicalTrace
     visited::Visitor
     params::P
-    function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
-        un_sel = selection(sel)
-        new{T, typeof(un_sel), NoParameters}(tr, Trace(), un_sel, 0.0, 0.0, Trace(), Visitor(), Parameters())
-    end
-    function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-        new{T, L, NoParameters}(tr, Trace(), sel, 0.0, 0.0, Trace(), Visitor(), Parameters())
-    end
+    argdiffs::D
+    RegenerateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: UnconstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, NoParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
 end
-Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
-Regenerate(tr::Trace, sel::UnconstrainedSelection) = RegenerateContext(tr, sel)
-get_prev(ctx::RegenerateContext, addr) = get_call(ctx.prev, addr)
 
 # Regenerate has a special dynamo.
 @dynamo function (mx::RegenerateContext)(a...)
@@ -36,18 +30,14 @@ function regenerate(ctx::RegenerateContext, bbcs::HierarchicalCallSite, new_args
     return ret, HierarchicalCallSite(ctx.tr, ctx.score, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function regenerate(sel::L, bbcs::HierarchicalCallSite, new_args...) where L <: UnconstrainedSelection
-    ctx = RegenerateContext(bbcs.trace, sel)
-    return regenerate(ctx, bbcs, new_args...)
-end
-
 function regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection
-    ctx = RegenerateContext(bbcs.trace, sel)
+    argdiffs = NoChange()
+    ctx = RegenerateContext(bbcs, sel, argdiffs)
     return regenerate(ctx, bbcs, bbcs.args...)
 end
 
-function regenerate(bbcs::HierarchicalCallSite, new_args...) where L <: UnconstrainedSelection
-    ctx = RegenerateContext(bbcs.trace, ConstrainedHierarchicalSelection())
+function regenerate(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: UnconstrainedSelection, D <: Diff}
+    ctx = RegenerateContext(bbcs, sel, argdiffs)
     return regenerate(ctx, bbcs, new_args...)
 end
 

@@ -53,8 +53,8 @@ end
 # ----------- Selection to direct addresses ------------ #
 
 struct UnconstrainedByAddress <: UnconstrainedSelectQuery
-    query::Vector{Address}
-    UnconstrainedByAddress() = new(Address[])
+    query::Vector{Any}
+    UnconstrainedByAddress() = new(Any[])
 end
 
 has_query(csa::UnconstrainedByAddress, addr) = addr in csa.query
@@ -64,6 +64,9 @@ function push!(sel::UnconstrainedByAddress, addr::Symbol)
     push!(sel.query, addr)
 end
 function push!(sel::UnconstrainedByAddress, addr::Pair{Symbol, Int64})
+    push!(sel.query, addr)
+end
+function push!(sel::UnconstrainedByAddress, addr::Int64)
     push!(sel.query, addr)
 end
 addresses(usa::UnconstrainedByAddress) = usa.query

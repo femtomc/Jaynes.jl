@@ -55,8 +55,8 @@ struct HierarchicalCallSite{J, K} <: CallSite
     args::J
     ret::K
 end
-has_choice(bbcs::HierarchicalCallSite, addr) = haskey(bbcs.tr.choices, addr)
-has_call(bbcs::HierarchicalCallSite, addr) = haskey(bbcs.tr.calls, addr)
+has_choice(bbcs::HierarchicalCallSite, addr) = haskey(bbcs.trace.choices, addr)
+has_call(bbcs::HierarchicalCallSite, addr) = haskey(bbcs.trace.calls, addr)
 get_call(bbcs::HierarchicalCallSite, addr) = get_call(bbcs.trace, addr)
 get_score(bbcs::HierarchicalCallSite) = bbcs.score
 getindex(cs::HierarchicalCallSite, addr) = getindex(cs.trace, addr)

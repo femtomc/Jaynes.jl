@@ -84,7 +84,7 @@ function selection(a::Vector{Tuple{Int, T}}; anywhere = false) where T
     return ConstrainedHierarchicalSelection(a)
 end
 
-function selection(a::Vector{K}) where K <: Union{Symbol, Pair}
+function selection(a::Vector{K}) where K <: Union{Symbol, Int, Pair}
     return UnconstrainedHierarchicalSelection(a)
 end
 
@@ -95,6 +95,12 @@ end
 
 function selection(p::Pair{K, C}) where {K <: Address, C <: ConstrainedSelection}
     top = ConstrainedHierarchicalSelection()
+    set_sub!(top, p[1], p[2])
+    return top
+end
+
+function selection(p::Pair{K, C}) where {K <: Address, C <: UnconstrainedSelection}
+    top = UnconstrainedHierarchicalSelection()
     set_sub!(top, p[1], p[2])
     return top
 end

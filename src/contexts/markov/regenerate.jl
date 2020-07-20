@@ -113,9 +113,9 @@ end
     s = get_subselection(ctx, addr)
     min, ks = keyset(s, n_len)
     if n_len <= o_len
-        w_adj, new, new_ret = trace_retained(vcs, s, ks, min, o_len, n_len, args)
+        w_adj, new, new_ret = trace_retained(vcs, s, ks, min, o_len, n_len, args...)
     else
-        w_adj, new, new_ret = trace_new(vcs, s, ks, min, o_len, n_len, args)
+        w_adj, new, new_ret = trace_new(vcs, s, ks, min, o_len, n_len, args...)
     end
 
     # TODO: fix - allocate full vector.

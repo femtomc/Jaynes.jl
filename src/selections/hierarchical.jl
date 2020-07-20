@@ -73,13 +73,13 @@ function filter(k_fn::Function, v_fn::Function, chs::ConstrainedHierarchicalSele
 end
 
 # Used for pretty printing.
-function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::ConstrainedHierarchicalSelection) where T <: Union{Symbol, Pair}
+function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, chs::ConstrainedHierarchicalSelection) where T <: Any
     collect!(par, addrs, chd, chs.query)
     for (k, v) in chs.tree
         collect!(par => k, addrs, chd, v)
     end
 end
-function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::ConstrainedHierarchicalSelection)
+function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, chs::ConstrainedHierarchicalSelection)
     collect!(addrs, chd, chs.query)
     for (k, v) in chs.tree
         collect!(k, addrs, chd, v)
@@ -87,8 +87,8 @@ function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pa
 end
 
 function collect(chs::ConstrainedHierarchicalSelection)
-    addrs = Union{Symbol, Pair}[]
-    chd = Dict{Union{Symbol, Pair}, Any}()
+    addrs = Any[]
+    chd = Dict{Any, Any}()
     collect!(addrs, chd, chs)
     return addrs, chd
 end
@@ -174,7 +174,7 @@ end
 # ------------ Unconstrained selection in call hierarchy ------------ #
 
 struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: UnconstrainedSelection
-    tree::Dict{Address, UnconstrainedHierarchicalSelection}
+    tree::Dict{Union{Int, Address}, UnconstrainedHierarchicalSelection}
     query::T
     UnconstrainedHierarchicalSelection() = new{UnconstrainedByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedByAddress())
 end
@@ -189,14 +189,19 @@ end
 has_query(uhs::UnconstrainedHierarchicalSelection, addr) = has_query(uhs.query, addr)
 dump_queries(uhs::UnconstrainedHierarchicalSelection) = dump_queries(uhs.query)
 isempty(uhs::UnconstrainedHierarchicalSelection) = isempty(uhs.tree) && isempty(uhs.query)
+function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::Address, sub::K) where K <: UnconstrainedSelection
+    uhs.tree[addr] = sub
+end
 
 # Used to build.
-function push!(sel::UnconstrainedHierarchicalSelection, addr::Symbol)
+function push!(sel::UnconstrainedHierarchicalSelection, addr::T) where T <: Address
     push!(sel.query, addr)
 end
-function push!(sel::UnconstrainedHierarchicalSelection, addr::Pair{Symbol, Int64})
+
+function push!(sel::UnconstrainedHierarchicalSelection, addr::Int)
     push!(sel.query, addr)
 end
+
 function push!(sel::UnconstrainedHierarchicalSelection, addr::Pair)
     if !(haskey(sel.tree, addr[1]))
         new = UnconstrainedHierarchicalSelection()
@@ -209,7 +214,7 @@ end
 
 # ------------ UHS from vectors ------------ #
 
-function UnconstrainedHierarchicalSelection(a::Vector{K}) where K <: Union{Symbol, Pair}
+function UnconstrainedHierarchicalSelection(a::Vector{K}) where K <: Union{Symbol, Int, Pair}
     top = UnconstrainedHierarchicalSelection()
     for addr in a
         push!(top, addr)
@@ -227,14 +232,14 @@ function filter(k_fn::Function, chs::UnconstrainedHierarchicalSelection) where T
 end
 
 # Used in pretty printing.
-function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarchicalSelection) where T <: Union{Symbol, Pair}
+function collect!(par::T, addrs::Vector{Any}, chs::UnconstrainedHierarchicalSelection) where T <: Any
     collect!(par, chs.query)
     for (k, v) in chs.tree
         collect!(par => k, addrs, v)
     end
 end
 
-function collect!(addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarchicalSelection)
+function collect!(addrs::Vector{Any}, chs::UnconstrainedHierarchicalSelection)
     collect!(addrs, chs.query)
     for (k, v) in chs.tree
         collect!(k, addrs, v)
@@ -242,7 +247,7 @@ function collect!(addrs::Vector{Union{Symbol, Pair}}, chs::UnconstrainedHierarch
 end
 
 function collect(chs::UnconstrainedHierarchicalSelection)
-    addrs = Union{Symbol, Pair}[]
+    addrs = Any[]
     collect!(addrs, chs)
     return addrs
 end

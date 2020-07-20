@@ -7,7 +7,7 @@
     in_prev_chm = has_choice(ctx.prev, addr)
     in_sel = has_query(ctx.select, addr)
     if in_prev_chm
-        prev = get_choice(ctx.prev, addr)
+        prev = get_choice(ctx.prev.trace, addr)
         if in_sel
             ret = rand(d)
             add_choice!(ctx.discard, addr, prev)
