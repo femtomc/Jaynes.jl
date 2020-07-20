@@ -18,7 +18,7 @@ function trace_retained(vcs::VectorizedCallSite,
             ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), args[i]...)
             new_ret[i] = ret
             new[i] = u_cl
-            w_adj += u_w
+            w_adj += get_score(u_cl) - get_score(prev_cl)
         else
             new_ret[i] = unwrap(get_call(vcs, i))
         end
