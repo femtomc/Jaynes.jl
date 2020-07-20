@@ -1,17 +1,17 @@
 function metropolis_hastings(sel::K,
-                             call::HierarchicalCallSite) where K <: UnconstrainedSelection
-    ret, cl, w, retdiff, d = regenerate(sel, call, call.args...)
+                             call::C) where {K <: UnconstrainedSelection, C <: CallSite}
+    ret, cl, w, retdiff, d = regenerate(sel, call)
     log(rand()) < w && return (cl, true)
     return (call, false)
 end
 
 function metropolis_hastings(sel::K,
-                             call::HierarchicalCallSite,
+                             call::C,
                              proposal::Function,
-                             proposal_args::Tuple) where K <: UnconstrainedSelection
-    p_ret, p_cl, p_w= propose(proposal, call, proposal_args...)
+                             proposal_args::Tuple) where {K <: UnconstrainedSelection, C <: CallSite}
+    p_ret, p_cl, p_w = propose(proposal, call, proposal_args...)
     s = selection(p_cl)
-    u_ret, u_cl, u_w, retdiff, d = update(s, call.fn, call.args...)
+    u_ret, u_cl, u_w, retdiff, d = update(s, call.fn, NoChange(), call.args...)
     d_s = selection(d)
     s_ret, s_w = score(d_s, proposal, u_cl, proposal_args...)
     ratio = u_w - p_w + s_w
