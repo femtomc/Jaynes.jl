@@ -12,6 +12,13 @@ function merge(cl::T, sel::ConstrainedEmptySelection) where T <: CallSite
     return cl_selection
 end
 
+# Pretty printing.
+function Base.display(chs::ConstrainedEmptySelection; show_values = false)
+    println("  __________________________________\n")
+    println("            Empty Selection\n")
+    println("  __________________________________\n")
+end
+
 # ----------- Empty unconstrained selection ------------ #
 
 struct UnconstrainedEmptySelection <: UnconstrainedSelection end
@@ -19,3 +26,4 @@ struct UnconstrainedEmptySelection <: UnconstrainedSelection end
 has_query(cas::UnconstrainedEmptySelection, addr) = false
 get_sub(cas::UnconstrainedEmptySelection, addr) = cas
 isempty(cas::UnconstrainedEmptySelection) = true
+

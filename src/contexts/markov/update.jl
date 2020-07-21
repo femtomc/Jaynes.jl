@@ -19,7 +19,7 @@ function trace_retained(vcs::VectorizedCallSite,
     if min == 1
         ret, u_cl, u_w, rd, ds = update(ss, prev_cl, UndefinedChange(), args...)
     else
-        ret, u_cl, u_w, rd, ds = update(ss, prev_cl, UndefinedChange(), new_ret[min - 1])
+        ret, u_cl, u_w, rd, ds = update(ss, prev_cl, UndefinedChange(), new_ret[min - 1]...)
     end
     push!(new_ret, ret)
     push!(new, u_cl)
@@ -49,13 +49,13 @@ function trace_new(vcs::VectorizedCallSite,
     new_ret = vcs.ret[1 : min - 1]
 
     # Start at min, check if it's less than old length. Otherwise, constraints will be applied during generate.
-    if min < o_len
+    if min <= o_len
         ss = get_sub(s, min)
         prev_cl = get_call(vcs, min)
         if min == 1
             ret, u_cl, u_w, rd, ds = update(ss, prev_cl, UndefinedChange(), args...)
         else
-            ret, u_cl, u_w, rd, ds = update(ss, prev_cl, UndefinedChange(), new_ret[min - 1])
+            ret, u_cl, u_w, rd, ds = update(ss, prev_cl, UndefinedChange(), new_ret[min - 1]...)
         end
         push!(new_ret, ret)
         push!(new, u_cl)
@@ -71,14 +71,37 @@ function trace_new(vcs::VectorizedCallSite,
             w_adj += u_w
         end
     end
-
+    
     # Now, generate new call sites with constraints.
     for i in o_len + 1 : n_len
         ss = get_sub(s, i)
-        ret, g_cl, g_w = generate(ss, vcs.kernel, new_ret[i - 1])
+        ret, g_cl, g_w = generate(ss, vcs.kernel, new_ret[i - 1]...)
         push!(new_ret, ret)
         push!(new, g_cl)
         w_adj += g_w
+    end
+
+    return w_adj, new, new_ret
+end
+
+# TODO: finish.
+function trace_new(vcs::VectorizedCallSite, 
+                   s::ConstrainedEmptySelection, 
+                   ks::Set, 
+                   min::Int, 
+                   o_len::Int, 
+                   n_len::Int, 
+                   args...)
+    w_adj = 0.0
+    new = vcs.trace.subrecords[1 : min - 1]
+    new_ret = vcs.ret[1 : min - 1]
+
+    # Now, generate new call sites with constraints.
+    for i in o_len + 1 : n_len
+        ret, g_cl = simulate(vcs.kernel, new_ret[i - 1]...)
+        push!(new_ret, ret)
+        push!(new, g_cl)
+        w_adj += get_score(g_cl)
     end
 
     return w_adj, new, new_ret

@@ -1,10 +1,10 @@
 # ------------ Constrain in call hierarchy ------------ #
 
 struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: ConstrainedSelection
-    tree::Dict{Union{Int, Address}, ConstrainedSelection}
+    tree::Dict{Address, ConstrainedSelection}
     query::T
-    ConstrainedHierarchicalSelection() = new{ConstrainedByAddress}(Dict{Union{Int, Address}, ConstrainedHierarchicalSelection}(), ConstrainedByAddress())
-    ConstrainedHierarchicalSelection(csa::T) where T <: ConstrainedSelectQuery = new{T}(Dict{Union{Int, Address}, ConstrainedHierarchicalSelection}(), csa)
+    ConstrainedHierarchicalSelection() = new{ConstrainedByAddress}(Dict{Address, ConstrainedHierarchicalSelection}(), ConstrainedByAddress())
+    ConstrainedHierarchicalSelection(csa::T) where T <: ConstrainedSelectQuery = new{T}(Dict{Address, ConstrainedHierarchicalSelection}(), csa)
 end
 function get_sub(chs::ConstrainedHierarchicalSelection, addr)
     haskey(chs.tree, addr) && return chs.tree[addr]
@@ -27,7 +27,13 @@ function has_query(chs::ConstrainedHierarchicalSelection, addr::Pair)
 end
 dump_queries(chs::ConstrainedHierarchicalSelection) = dump_queries(chs.query)
 get_query(chs::ConstrainedHierarchicalSelection, addr) = get_query(chs.query, addr)
-isempty(chs::ConstrainedHierarchicalSelection) = isempty(chs.tree) && isempty(chs.query)
+isempty(chs::ConstrainedHierarchicalSelection) = begin
+    !isempty(chs.query) && return false
+    for (k, v) in chs.tree
+        !isempty(chs.tree[k]) && return false
+    end
+    return true
+end
 
 # Used to merge observations.
 function merge!(sel1::ConstrainedHierarchicalSelection, sel2::ConstrainedHierarchicalSelection)
@@ -69,6 +75,7 @@ function filter(k_fn::Function, v_fn::Function, chs::ConstrainedHierarchicalSele
     for (k, v) in chs.tree
         top.tree[k] = filter(k_fn, v_fn, v)
     end
+    isempty(top) && return ConstrainedEmptySelection()
     return top
 end
 
@@ -108,6 +115,7 @@ function from_array(schema::T, arr::Vector{K}, f_ind::Int) where {K, T <: Constr
 end
 
 # Used for pretty printing.
+function collect!(args...) end
 function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, chs::ConstrainedHierarchicalSelection) where T <: Any
     collect!(par, addrs, chd, chs.query)
     for (k, v) in chs.tree
@@ -164,27 +172,12 @@ end
 function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::ChoiceSite)
     push!(chs, addr, cs.val)
 end
-function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::HierarchicalCallSite)
-    subtrace = cs.trace
-    subchs = ConstrainedHierarchicalSelection()
-    for k in keys(subtrace.calls)
-        site_push!(subchs, k, subtrace.calls[k])
-    end
-    for k in keys(subtrace.choices)
-        site_push!(subchs, k, subtrace.choices[k])
-    end
-    chs.tree[addr] = subchs
+function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::CallSite)
+    chs.tree[addr] = get_selection(cs)
 end
-function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::VectorizedCallSite)
-    for (k, subtrace) in enumerate(cs.subtraces)
-        subchs = ConstrainedHierarchicalSelection()
-        for k in keys(subtrace.calls)
-            site_push!(subchs, k, subtrace.calls[k])
-        end
-        for k in keys(subtrace.choices)
-            site_push!(subchs, k, subtrace.choices[k])
-        end
-        chs.tree[addr] = subchs
+function push!(chs::ConstrainedHierarchicalSelection, tr::VectorizedTrace)
+    for (k, cs) in enumerate(tr.subrecords)
+        site_push!(chs, k, cs)
     end
 end
 function push!(chs::ConstrainedHierarchicalSelection, tr::HierarchicalTrace)
@@ -195,9 +188,19 @@ function push!(chs::ConstrainedHierarchicalSelection, tr::HierarchicalTrace)
         site_push!(chs, k, tr.choices[k])
     end
 end
+function get_selection(tr::VectorizedTrace)
+    top = ConstrainedHierarchicalSelection()
+    push!(top, tr)
+    return top
+end
 function get_selection(tr::HierarchicalTrace)
     top = ConstrainedHierarchicalSelection()
     push!(top, tr)
+    return top
+end
+function get_selection(cl::VectorizedCallSite)
+    top = ConstrainedHierarchicalSelection()
+    push!(top, cl.trace)
     return top
 end
 function get_selection(cl::HierarchicalCallSite)
@@ -209,7 +212,7 @@ end
 # ------------ Unconstrained selection in call hierarchy ------------ #
 
 struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: UnconstrainedSelection
-    tree::Dict{Union{Int, Address}, UnconstrainedHierarchicalSelection}
+    tree::Dict{Address, UnconstrainedHierarchicalSelection}
     query::T
     UnconstrainedHierarchicalSelection() = new{UnconstrainedByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedByAddress())
 end
@@ -263,6 +266,7 @@ function filter(k_fn::Function, chs::UnconstrainedHierarchicalSelection) where T
     for (k, v) in chs.tree
         top.tree[k] = filter(k_fn, v)
     end
+    isempty(top) && return UnconstrainedEmptySelection()
     return top
 end
 
