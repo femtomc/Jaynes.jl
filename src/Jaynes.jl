@@ -107,7 +107,11 @@ export NoChange, UndefinedChange, VectorDiff
 export selection, get_selection, get_parameters, compare, has_query, update_parameters
 
 # Inference.
-export importance_sampling, initialize_filter, filter_step!, metropolis_hastings, resample!, advi
+export importance_sampling, is
+export initialize_filter, filter_step!, resample!
+export metropolis_hastings, mh
+export advi
+export hamiltonian_monte_carlo, hmc
 
 # Utilities.
 export display, merge, get_score

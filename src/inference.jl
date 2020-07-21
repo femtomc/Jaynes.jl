@@ -9,6 +9,11 @@ include("inference/is.jl")
 include("inference/pf.jl")
 include("inference/mh.jl")
 include("inference/vi.jl")
+include("inference/hmc.jl")
+
+const hmc = hamiltonian_monte_carlo
+const mh = metropolis_hastings
+const is = importance_sampling
 
 # ------------ Documentation (IS) ------------ #
 

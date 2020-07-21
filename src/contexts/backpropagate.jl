@@ -133,8 +133,7 @@ function choice_gradients(choice_grads, choice_selection, cl, ret_grad)
     end
     _, back = Zygote.pullback(fn, cl.args, cl.trace)
     arg_grads, grad_ref = back((1.0, ret_grad))
-    gs_trace = grad_ref[]
-    choice_vals = filter!(choice_grads, cl, gs_trace, choice_selection)
+    choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
     return arg_grads, choice_vals, choice_grads
 end
 
@@ -145,6 +144,12 @@ function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     choice_selection = UnconstrainedAllSelection()
     choice_gradients(choice_grads, choice_selection, cl, ret_grad)
     return choice_grads
+end
+
+function get_choice_gradients(cl::T, sel::K, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
+    choice_grads = Gradients()
+    _, vals, _ = choice_gradients(choice_grads, sel, cl, ret_grad)
+    return vals, choice_grads
 end
 
 function get_parameter_gradients(cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite

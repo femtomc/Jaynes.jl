@@ -72,6 +72,41 @@ function filter(k_fn::Function, v_fn::Function, chs::ConstrainedHierarchicalSele
     return top
 end
 
+# To and from arrays.
+function fill_array!(val::T, arr::Vector{K}, f_ind::Int) where {K, T <: ConstrainedHierarchicalSelection}
+    sorted_toplevel_keys = sort(collect(addresses(val.query)))
+    sorted_tree_keys  = sort(collect(keys(val.tree)))
+    idx = f_ind
+    for k in sorted_toplevel_keys
+        v = val.utility[k]
+        n = fill_array!(v, arr, idx)
+        idx += n
+    end
+    for k in sorted_tree_keys
+        n = fill_array!(get_sub(val, k), arr, idx)
+        idx += n
+    end
+    idx - f_ind
+end
+
+function from_array(schema::T, arr::Vector{K}, f_ind::Int) where {K, T <: ConstrainedHierarchicalSelection}
+    sel = T()
+    sorted_toplevel_keys = sort(collect(addresses(schema.query)))
+    sorted_tree_keys  = sort(collect(keys(schema.tree)))
+    idx = f_ind
+    for k in sorted_toplevel_keys
+        (n, v) = from_array(schema.utility[k], arr, idx)
+        idx += n
+        sel.utility[k] = v
+    end
+    for k in sorted_tree_keys
+        (n, v) = from_array(get_sub(schema, k), arr, idx)
+        idx += n
+        sel.tree[k] = v
+    end
+    (idx - f_ind, sel)
+end
+
 # Used for pretty printing.
 function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, chs::ConstrainedHierarchicalSelection) where T <: Any
     collect!(par, addrs, chd, chs.query)

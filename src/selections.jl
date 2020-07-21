@@ -13,7 +13,7 @@ abstract type Selection end
 # Subtypes of Selection should implement their own fill_array! and from_array.
 # Right now, these methods are really only used for gradient-based learning.
 
-function array(gs::Selection, ::Type{T}) where T
+function array(gs::K, ::Type{T}) where {T, K}
     arr = Vector{T}(undef, 32)
     n = fill_array!(gs, arr, 1)
     resize!(arr, n)
