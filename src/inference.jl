@@ -104,7 +104,7 @@ Perform a Metropolis-Hastings step by proposing new choices using a custom propo
 """
 ```julia
 params, elbows, call_sites =  advi(sel::K,
-                                   iters = 1000, 
+                                   iters::Int,
                                    v_mod::Function,
                                    v_args::Tuple,
                                    mod::Function,
