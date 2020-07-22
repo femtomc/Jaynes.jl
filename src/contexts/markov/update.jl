@@ -96,12 +96,10 @@ function trace_new(vcs::VectorizedCallSite,
     new = vcs.trace.subrecords[1 : min - 1]
     new_ret = vcs.ret[1 : min - 1]
 
-    # Now, generate new call sites with constraints.
     for i in o_len + 1 : n_len
         ret, g_cl = simulate(vcs.kernel, new_ret[i - 1]...)
         push!(new_ret, ret)
         push!(new, g_cl)
-        w_adj += get_score(g_cl)
     end
 
     return w_adj, new, new_ret

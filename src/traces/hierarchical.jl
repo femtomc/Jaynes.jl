@@ -22,18 +22,12 @@ end
 add_call!(tr::HierarchicalTrace, addr, cs::T) where T <: CallSite = tr.calls[addr] = cs
 add_choice!(tr::HierarchicalTrace, addr, cs::ChoiceSite) = tr.choices[addr] = cs
 function getindex(tr::HierarchicalTrace, addr::Address)
-    if has_choice(tr, addr)
-        return unwrap(get_choice(tr, addr))
-    else
-        return nothing
-    end
+    has_choice(tr, addr) && return unwrap(get_choice(tr, addr))
+    return nothing
 end
-function getindex(tr::HierarchicalTrace, addr::Pair)
-    if has_call(tr, addr[1])
-        return getindex(get_call(tr, addr[1]), addr[2])
-    else
-        return nothing
-    end
+function getindex(tr::HierarchicalTrace, hd::T, next::K, addrs...) where {K <: Address, T <: Address}
+    has_call(tr, hd) && return getindex(get_call(tr, hd), next, addrs...)
+    return nothing
 end
 function Base.haskey(tr::HierarchicalTrace, addr::Address)
     has_choice(tr, addr)
@@ -59,6 +53,6 @@ has_choice(bbcs::HierarchicalCallSite, addr) = haskey(bbcs.trace.choices, addr)
 has_call(bbcs::HierarchicalCallSite, addr) = haskey(bbcs.trace.calls, addr)
 get_call(bbcs::HierarchicalCallSite, addr) = get_call(bbcs.trace, addr)
 get_score(bbcs::HierarchicalCallSite) = bbcs.score
-getindex(cs::HierarchicalCallSite, addr) = getindex(cs.trace, addr)
+getindex(cs::HierarchicalCallSite, addrs...) = getindex(cs.trace, addrs...)
 haskey(cs::HierarchicalCallSite, addr) = haskey(cs.trace, addr)
 unwrap(cs::HierarchicalCallSite) = cs.ret

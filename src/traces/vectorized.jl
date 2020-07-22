@@ -44,7 +44,7 @@ function get_call(vcs::VectorizedCallSite, addr)
     error("VectorizedCallSite (get_call): no call at $addr.")
 end
 get_score(vcs::VectorizedCallSite) = vcs.score
-getindex(vcs::VectorizedCallSite, addr::Int) = getindex(cs.trace, addr)
+getindex(vcs::VectorizedCallSite, addr::Int) = getindex(vcs.trace, addr)
 function getindex(vcs::VectorizedCallSite, addr::Pair)
     getindex(vcs.trace[addr[1]], addr[2])
 end
