@@ -8,9 +8,8 @@ function importance_sampling(observations::K,
         _, calls[i], lws[i] = generate(observations, model, args...)
     end
     ltw = lse(lws)
-    lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return Particles(calls, lws, lmle), lnw
+    return Particles(calls, lws, 0.0), lnw
 end
 
 function importance_sampling(observations::K,
@@ -27,7 +26,6 @@ function importance_sampling(observations::K,
         _, calls[i], lws[i] = generate(select, model, args...)
     end
     ltw = lse(lws)
-    lmle = ltw - log(num_samples)
     lnw = lws .- ltw
-    return Particles(calls, lws, lmle), lnw
+    return Particles(calls, lws, 0.0), lnw
 end

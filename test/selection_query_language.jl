@@ -29,9 +29,9 @@ end
         anywhere = selection([(:x, 5.0), (:q => 21, 10.0)]; anywhere = true)
         ret, cl, w = generate(anywhere, AnywhereTopLevel)
         @test cl[:x] == 5.0
-        @test cl[:y => :x] == 5.0
-        @test cl[:y => :y => :x] == 5.0
-        @test cl[:y => :y => :loop => :q => 21] == 10.0
+        @test cl[:y, :x] == 5.0
+        @test cl[:y, :y, :x] == 5.0
+        @test cl[:y, :y, :loop, :q => 21] == 10.0
     end
     
     @testset "Filtering" begin

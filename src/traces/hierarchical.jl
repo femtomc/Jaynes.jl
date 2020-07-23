@@ -25,7 +25,7 @@ function getindex(tr::HierarchicalTrace, addr::Address)
     has_choice(tr, addr) && return unwrap(get_choice(tr, addr))
     return nothing
 end
-function getindex(tr::HierarchicalTrace, hd::T, next::K, addrs...) where {K <: Address, T <: Address}
+function getindex(tr::HierarchicalTrace, hd::T, next::K, addrs...) where {K, T <: Address}
     has_call(tr, hd) && return getindex(get_call(tr, hd), next, addrs...)
     return nothing
 end
