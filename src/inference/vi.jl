@@ -41,14 +41,14 @@ end
 
 # ------------ Automatic differentiation variational inference ------------ #
 
-function advi(sel::K,
-              v_mod::Function,
-              v_args::Tuple,
-              mod::Function,
-              args::Tuple;
-              opt = ADAM(),
-              iters = 1000, 
-              gs_samples = 100) where K <: ConstrainedSelection
+function automatic_differentiation_variational_inference(sel::K,
+                                                         v_mod::Function,
+                                                         v_args::Tuple,
+                                                         mod::Function,
+                                                         args::Tuple;
+                                                         opt = ADAM(),
+                                                         iters = 1000, 
+                                                         gs_samples = 100) where K <: ConstrainedSelection
     cls = Vector{CallSite}(undef, gs_samples)
     elbows = Vector{Float64}(undef, iters)
     _, cl = simulate(v_mod, v_args...)
@@ -67,4 +67,3 @@ function advi(sel::K,
     end
     params, elbows, cls
 end
-

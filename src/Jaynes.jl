@@ -108,9 +108,9 @@ export selection, anywhere, intersection, union, get_selection, get_parameters, 
 
 # Inference.
 export importance_sampling, is
-export initialize_filter, filter_step!, resample!, get_lmle
+export initialize_filter, filter_step!, check_ess_resample!, get_lmle, particle_filter, pf
 export metropolis_hastings, mh
-export advi
+export automatic_differentiation_variational_inference, advi
 export hamiltonian_monte_carlo, hmc
 
 # Utilities.

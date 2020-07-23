@@ -14,6 +14,8 @@ include("inference/hmc.jl")
 const hmc = hamiltonian_monte_carlo
 const mh = metropolis_hastings
 const is = importance_sampling
+const pf = particle_filter
+const advi = automatic_differentiation_variational_inference
 
 # ------------ Documentation (IS) ------------ #
 
