@@ -18,7 +18,7 @@ end
 
 @testset "Importance sampling" begin
     z = 3.0
-    observations = Jaynes.selection((:z, z))
+    observations = Jaynes.selection([(:z,) =>  z])
     n_traces = 5
 
     @testset "Linear Gaussian model" begin

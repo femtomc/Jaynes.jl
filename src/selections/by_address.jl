@@ -10,10 +10,7 @@ has_query(csa::ConstrainedByAddress, addr) = haskey(csa.query, addr)
 dump_queries(csa::ConstrainedByAddress) = keys(csa.query)
 get_query(csa::ConstrainedByAddress, addr) = getindex(csa.query, addr)
 isempty(csa::ConstrainedByAddress) = isempty(csa.query)
-function push!(sel::ConstrainedByAddress, addr::Symbol, val)
-    sel.query[addr] = val
-end
-function push!(sel::ConstrainedByAddress, addr::Pair{Symbol, Int64}, val)
+function push!(sel::ConstrainedByAddress, addr, val)
     sel.query[addr] = val
 end
 function merge!(sel1::ConstrainedByAddress,

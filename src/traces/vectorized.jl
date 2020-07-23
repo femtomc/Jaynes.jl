@@ -18,6 +18,10 @@ end
 get_call(tr::VectorizedTrace{<: CallSite}, addr) = return tr.subrecords[addr]
 add_call!(tr::VectorizedTrace{<: CallSite}, cs::CallSite) = push!(tr.subrecords, cs)
 Base.getindex(vt::VectorizedTrace, addr::Int) = vt.subrecords[addr]
+function getindex(vt::VectorizedTrace, hd::T, next::K, addrs...) where {K, T <: Address}
+    has_call(vt, hd) && return getindex(get_call(vt, hd), next, addrs...)
+    return nothing
+end
 
 # ------------ Vectorized site ------------ #
 
@@ -44,12 +48,14 @@ function get_call(vcs::VectorizedCallSite, addr)
     error("VectorizedCallSite (get_call): no call at $addr.")
 end
 get_score(vcs::VectorizedCallSite) = vcs.score
-getindex(vcs::VectorizedCallSite, addr::Int) = getindex(vcs.trace, addr)
-function getindex(vcs::VectorizedCallSite, addr::Pair)
-    getindex(vcs.trace[addr[1]], addr[2])
-end
-function haskey(vcs::VectorizedCallSite, addr::Pair)
-    addr[1] <= length(vcs.trace.subrecords) && haskey(vcs.trace[addr[1]], addr[2])
+getindex(vcs::VectorizedCallSite, addrs...) = getindex(vcs.trace, addrs...)
+function haskey(vcs::VectorizedCallSite, addr::Tuple)
+    fst = addr[1]
+    tl = addr[2:end]
+    isempty(tl) && begin
+        return haskey(vcs, fst)
+    end
+    fst <= length(vcs.trace.subrecords) && haskey(getindex(vcs, fst), tl)
 end
 unwrap(cs::VectorizedCallSite) = cs.ret
 

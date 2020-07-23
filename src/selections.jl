@@ -71,43 +71,37 @@ include("selections/anywhere.jl")
 include("selections/hierarchical.jl")
 include("selections/union.jl")
 
-# ------------ Convenience constructor ------------ #
+# ------------ Convenience constructors ------------ #
 
 selection() = ConstrainedEmptySelection()
+anywhere() = ConstrainedEmptySelection()
+union() = ConstrainedEmptySelection()
+intersection() = ConstrainedEmptySelection()
 
-function selection(a::Vector{Tuple{K, T}}; anywhere = false) where {T, K}
-    anywhere && return ConstrainedAnywhereSelection(a)
-    return ConstrainedHierarchicalSelection(a)
-end
-
-function selection(a::Vector{Tuple{Int, T}}; anywhere = false) where T
-    return ConstrainedHierarchicalSelection(a)
-end
-
-function selection(a::Vector{K}) where K <: Union{Symbol, Int, Pair}
+# By address
+function selection(a::Vector{K}) where K <: Tuple
     return UnconstrainedHierarchicalSelection(a)
 end
 
-function selection(a::Tuple{K, T}...) where {T, K <: Union{Symbol, Pair}}
-    observations = Vector{Tuple{K, T}}(collect(a))
-    return ConstrainedHierarchicalSelection(observations)
+function selection(a::Vector{Pair{K, J}}) where {K <: Tuple, J}
+    return ConstrainedHierarchicalSelection(a)
 end
 
-function selection(p::Pair{K, C}) where {K <: Address, C <: ConstrainedSelection}
-    top = ConstrainedHierarchicalSelection()
-    set_sub!(top, p[1], p[2])
-    return top
+# Anywhere
+function anywhere(a::Vector{Pair{K, J}}) where {K <: Tuple, J}
+    new = map(a) do (k, v)
+        !(k isa Tuple{Address}) && error("Anywhere construction requires that you only use addresses of type Address.")
+        (k[1], v)
+    end
+    return ConstrainedAnywhereSelection(new)
 end
 
-function selection(p::Pair{K, C}) where {K <: Address, C <: UnconstrainedSelection}
-    top = UnconstrainedHierarchicalSelection()
-    set_sub!(top, p[1], p[2])
-    return top
-end
-
-function selection(a::Address...)
-    observations = Vector{Address}(collect(a))
-    return UnconstrainedHierarchicalSelection(observations)
+function anywhere(a::Vector{T}) where T <: Tuple
+    new = map(a) do k
+        !(k isa Tuple{Address}) && error("Anywhere construction requires that you only use addresses of type Address.")
+        k[1]
+    end
+    return UnconstrainedAnywhereSelection(new)
 end
 
 # ------------ Set operations on selections ------------ #

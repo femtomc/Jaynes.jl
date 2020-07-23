@@ -26,8 +26,9 @@ end
 @testset "Constrained selections" begin
 
     @testset "Anywhere" begin
-        anywhere = selection([(:x, 5.0), (:q => 21, 10.0)]; anywhere = true)
-        ret, cl, w = generate(anywhere, AnywhereTopLevel)
+        anyw = anywhere([(:x, ) => 5.0, 
+                         (:q => 21, ) => 10.0])
+        ret, cl, w = generate(anyw, AnywhereTopLevel)
         @test cl[:x] == 5.0
         @test cl[:y, :x] == 5.0
         @test cl[:y, :y, :x] == 5.0
@@ -35,10 +36,11 @@ end
     end
     
     @testset "Filtering" begin
-        observations = selection([(:x, 5.0), (:z => :x, 5.0), (:z => :z => :y, 5.0)])
+        observations = selection([(:x, ) => 5.0, 
+                                  (:z, :x) => 5.0, 
+                                  (:z, :z, :y) => 5.0])
         filtered = filter(x -> x == :y, x -> true, observations)
         @test has_query(filtered, :z => :z => :y)
-        observations = selection([(:x, 5.0), (:z => :x, 5.0), (:z => :z => :y, 5.0)])
         filtered = filter(x -> x == :x, x -> true, observations)
         @test !has_query(filtered, :z => :z => :y)
         @test has_query(filtered, :x)

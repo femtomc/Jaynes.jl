@@ -59,13 +59,22 @@ end
 function push!(sel::ConstrainedHierarchicalSelection, addr::Pair{Symbol, Int64}, val)
     push!(sel.query, addr, val)
 end
-function push!(sel::ConstrainedHierarchicalSelection, addr::Pair, val)
-    if !(haskey(sel.tree, addr[1]))
+function push!(sel::ConstrainedHierarchicalSelection, addr::Int64, val)
+    push!(sel.query, addr, val)
+end
+function push!(sel::ConstrainedHierarchicalSelection, addr::Tuple, val)
+    fst = addr[1]
+    tl = addr[2:end]
+    isempty(tl) && begin
+        push!(sel, fst, val)
+        return
+    end
+    if !(haskey(sel.tree, fst))
         new = ConstrainedHierarchicalSelection()
-        push!(new, addr[2], val)
-        sel.tree[addr[1]] = new
+        push!(new, tl, val)
+        sel.tree[fst] = new
     else
-        push!(get_sub(sel, addr[1]), addr[2], val)
+        push!(get_sub(sel, addr[1]), tl, val)
     end
 end
 
@@ -137,7 +146,7 @@ function collect(chs::ConstrainedHierarchicalSelection)
 end
 
 # Pretty printing.
-function Base.display(chs::ConstrainedHierarchicalSelection; show_values = false)
+function Base.display(chs::ConstrainedHierarchicalSelection; show_values = true)
     println("  __________________________________\n")
     println("             Constrained\n")
     addrs, chd = collect(chs)
@@ -155,16 +164,12 @@ end
 
 # ------------ CHS from vectors ----------- #
 
-function ConstrainedHierarchicalSelection(a::Vector{Tuple{K, T}}) where {T, K}
+function ConstrainedHierarchicalSelection(a::Vector{Pair{K, J}}) where {K <: Tuple, J}
     top = ConstrainedHierarchicalSelection()
     for (addr, val) in a
         push!(top, addr, val)
     end
     return top
-end
-function ConstrainedHierarchicalSelection(a::Vector{Tuple{Int, T}}) where T
-    v_sel = ConstrainedByAddress(Dict(a))
-    ConstrainedHierarchicalSelection(v_sel)
 end
 
 # ------------ CHS from traces ------------ #
@@ -240,19 +245,26 @@ function push!(sel::UnconstrainedHierarchicalSelection, addr::Int)
     push!(sel.query, addr)
 end
 
-function push!(sel::UnconstrainedHierarchicalSelection, addr::Pair)
-    if !(haskey(sel.tree, addr[1]))
+function push!(sel::UnconstrainedHierarchicalSelection, addr::Tuple)
+    fst = addr[1]
+    tl = addr[2:end]
+    isempty(tl) && begin
+        push!(sel, fst)
+        return
+    end
+    if !(haskey(sel.tree, fst))
         new = UnconstrainedHierarchicalSelection()
-        push!(new, addr[2])
-        sel.tree[addr[1]] = new
+        push!(new, tl)
+        sel.tree[fst] = new
     else
-        push!(sel[addr[1]], addr[2])
+        sub = get_sub(sel, fst)
+        push!(sub, tl)
     end
 end
 
 # ------------ UHS from vectors ------------ #
 
-function UnconstrainedHierarchicalSelection(a::Vector{K}) where K <: Union{Symbol, Int, Pair}
+function UnconstrainedHierarchicalSelection(a::Vector{K}) where K <: Tuple
     top = UnconstrainedHierarchicalSelection()
     for addr in a
         push!(top, addr)

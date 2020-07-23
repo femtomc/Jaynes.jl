@@ -100,11 +100,11 @@ export Backpropagate, get_parameter_gradients, get_choice_gradients, train
 # Tracer language features.
 export learnable, plate, markov, cond
 
-# Diffs
+# Diffs.
 export NoChange, UndefinedChange, VectorDiff
 
 # Selections.
-export selection, get_selection, get_parameters, compare, has_query, update_parameters
+export selection, anywhere, intersection, union, get_selection, get_parameters, compare, has_query, update_parameters
 
 # Inference.
 export importance_sampling, is

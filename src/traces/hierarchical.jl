@@ -32,9 +32,14 @@ end
 function Base.haskey(tr::HierarchicalTrace, addr::Address)
     has_choice(tr, addr)
 end
-function Base.haskey(tr::HierarchicalTrace, addr::Pair)
-    if has_call(tr, addr[1])
-        return Base.haskey(get_call(tr, addr[1]), addr[2])
+function Base.haskey(tr::HierarchicalTrace, addr::Tuple)
+    fst = addr[1]
+    tl = addr[2:end]
+    isempty(tl) && begin
+        return Base.haskey(tr, fst)
+    end
+    if has_call(tr, fst)
+        return Base.haskey(get_call(tr, fst), tl)
     else
         return false
     end
