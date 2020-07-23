@@ -4,7 +4,7 @@ This benchmark is a single-shot time comparison between `Gen` and `Jaynes`. [The
 
 ```@raw html
 <div style="text-align:center">
-    <img src="../images/benchmark_hmmpf.svg" alt="" width="70%"/>
+    <img src="../images/benchmark_hmmpf_gen.svg" alt="" width="70%"/>
 </div>
 ```
 

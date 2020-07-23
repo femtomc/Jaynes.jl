@@ -108,7 +108,7 @@ export selection, get_selection, get_parameters, compare, has_query, update_para
 
 # Inference.
 export importance_sampling, is
-export initialize_filter, filter_step!, resample!
+export initialize_filter, filter_step!, resample!, get_lmle
 export metropolis_hastings, mh
 export advi
 export hamiltonian_monte_carlo, hmc

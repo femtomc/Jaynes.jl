@@ -18,8 +18,6 @@ function filter_step!(observations::K,
         _, ps.calls[i], uw, _, _ = update(observations, ps.calls[i], argdiffs, new_args...)
         ps.lws[i] += uw
     end
-    ltw = lse(ps.lws)
-    ps.lmle = ltw - log(num_particles)
 end
 
 function filter_step!(observations::K,
@@ -36,17 +34,14 @@ function filter_step!(observations::K,
         _, ps.calls[i], u_w, _, _ = update(sel, ps.calls[i], argdiffs, new_args...)
         ps.lws[i] += u_w - p_w
     end
-    ltw = lse(ps.lws)
-    ps.lmle = ltw - log(num_particles)
 end
 
-# Resample from existing set of particles, mutating the original set.
 function resample!(ps::Particles)
     num_particles = length(ps.calls)
     ltw, lnw = nw(ps.lws)
     weights = exp.(lnw)
+    ps.lmle += ltw - log(num_particles)
     selections = rand(Categorical(weights/sum(weights)), num_particles)
-    lmle = ltw - log(num_particles)
     calls = map(selections) do ind
         ps.calls[ind]
     end
@@ -59,12 +54,15 @@ function resample!(ps::Particles,
     num_particles = length(ps.calls)
     ltw, lnw = nw(ps.lws)
     weights = exp.(lnw)
-    selections = rand(Categorical(weights/sum(weights)), num_particles)
-    lmle = ltw - log(num_particles)
+    ps.lmle += ltw - log(num_particles)
+    selections = rand(Categorical(weights/sum(weights)), num)
     calls = map(selections) do ind
         ps.calls[ind]
     end
-    calls = rand(calls, num)
     ps.calls = calls
     ps.lws = zeros(length(ps.calls))
+end
+
+function get_lmle(ps::Particles)
+    return ps.lmle + lse(ps.lws) - log(length(ps))
 end
