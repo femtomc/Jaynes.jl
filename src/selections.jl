@@ -111,3 +111,44 @@ function intersection(a::ConstrainedSelection...) end
 
 # ------------ Documentation ------------ #
 
+@doc(
+"""
+```julia
+constraints = selection(a::Vector{Pair{K, J}}) where {K <: Tuple, J}
+targets = selection(a::Vector{K}) where K <: Tuple
+```
+
+The first version of the `selection` API function will produce a `ConstrainedHierarchicalSelection` with a direct address-based query called `ConstrainedByAddress`. Here's an example of use:
+
+```julia
+selection([(:x, ) => 10.0,
+           (:y, :z => 5) => 6.0])
+```
+
+In the call, the syntax is that addresses at which calls occur are separated by commas. So `(:x, )` is just an address in the top-level call and `(:y, :z => 5)` is an address in the call specified at address `:y`.
+
+The second version produces an `UnconstrainedHierarchicalSelection` with a direct address-based unconstrained query called `UnconstrainedByAddress`.
+
+```julia
+selection([(:x, ), (:y, :z)])
+```
+
+The exact same syntax considerations apply. Unconstrained addressing is used for incremental inference (i.e. methods which use `RegenerateContext` like Markov chain Monte Carlo).
+""", selection)
+
+@doc(
+"""
+```julia
+anywhere_selection = anywhere(a::Vector{Pair{K, J}}) where {K <: Tuple, J}
+```
+
+The `anywhere` selection API provides access to a special set of constrained and unconstrained selections which will apply at any level of the call stack. Usage of this API requires that you pass in a similar structure to `selection` - with the caveat that you can only use top-level addresses in the tuple:
+
+```julia
+anywhere([(:x, ) => 5.0, (:y => 10, ) => 10.0])
+```
+
+The interpretation: at any place in the call stack where the end of the address is equal to one of the addresses in the selection, the tracer will constrain the address.
+
+There is also an unconstrained version of `anywhere` which provides the same interpretation, but for unconstrained targets of `RegenerateContext` and MCMC algorithms.
+""", anywhere)
