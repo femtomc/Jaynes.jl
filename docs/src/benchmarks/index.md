@@ -11,4 +11,22 @@ This page contains a set of benchmarks comparing Jaynes to other probabilistic p
 
     Benchmarking is an inherently sensitive topic - I'd like to make these as fair and open as possible, so don't hesitate to reach out.
 
-[Particle filtering in hidden Markov models](hmmpf.md)
+## Particle filtering in hidden Markov models
+
+This benchmark is a single-shot time comparison between `Gen` and `Jaynes` on a single thread. The horizontal axis is number of particle filter steps (with resampling). The vertical axis is time in seconds.
+
+```@raw html
+<div style="text-align:center">
+    <img src="../images/benchmark_hmmpf_gen_singlethread.png" alt="" width="70%"/>
+</div>
+```
+
+This benchmark is a single-shot time comparison between `Gen` and `Jaynes` with adaptive multi-threading in `Jaynes.filter_step!` and `Jaynes.importance_sampling!`. This benchmark was executed with `JULIA_NUM_THREADS=4`.
+
+```@raw html
+<div style="text-align:center">
+    <img src="../images/benchmark_hmmpf_gen_multithread.png" alt="" width="70%"/>
+</div>
+```
+
+The bottom plots are the estimated log marginal likelihood of the data.
