@@ -94,7 +94,7 @@ function fill_array!(val::T, arr::Vector{K}, f_ind::Int) where {K, T <: Constrai
     sorted_tree_keys  = sort(collect(keys(val.tree)))
     idx = f_ind
     for k in sorted_toplevel_keys
-        v = val.utility[k]
+        v = get_query(val, k)
         n = fill_array!(v, arr, idx)
         idx += n
     end
@@ -106,14 +106,14 @@ function fill_array!(val::T, arr::Vector{K}, f_ind::Int) where {K, T <: Constrai
 end
 
 function from_array(schema::T, arr::Vector{K}, f_ind::Int) where {K, T <: ConstrainedHierarchicalSelection}
-    sel = T()
+    sel = ConstrainedHierarchicalSelection()
     sorted_toplevel_keys = sort(collect(addresses(schema.query)))
     sorted_tree_keys  = sort(collect(keys(schema.tree)))
     idx = f_ind
     for k in sorted_toplevel_keys
-        (n, v) = from_array(schema.utility[k], arr, idx)
+        (n, v) = from_array(get_query(schema, k), arr, idx)
         idx += n
-        sel.utility[k] = v
+        push!(sel, k, v)
     end
     for k in sorted_tree_keys
         (n, v) = from_array(get_sub(schema, k), arr, idx)

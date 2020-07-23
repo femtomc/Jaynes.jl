@@ -1,17 +1,19 @@
 function hamiltonian_monte_carlo(sel::K, cl::C; L=10, eps=0.1) where {K <: UnconstrainedSelection, C <: CallSite}
-    pr_score = get_score(cl)
+    local u_cl
+
+    p_mod_score = get_score(cl)
     sel_values, choice_grads = get_choice_gradients(cl, sel, 1.0)
     vals = array(sel_values, Float64)
     grads = array(choice_grads, Float64)
-    mv = MvNormal(length(values), 1.0)
-    mom = rand(MvNormal(length(values), 1.0))
-    p_mom_score = logpdf(mv, mom)
-    for step=1:L
+    d = MvNormal(length(vals), 1.0)
+    mom = rand(d)
+    p_mom_score = logpdf(d, mom)
+    for step in 1 : L
         mom += (eps / 2) * grads
         vals += eps * mom
-        sel_values = from_array(vals, values)
+        sel_values = selection(sel_values, vals)
         ret, u_cl, w, _ = update(sel_values, cl)
-        _, choice_grads = get_choice_gradients(u_cl, sel, retval_grad)
+        _, choice_grads = get_choice_gradients(u_cl, sel, 1.0)
         grads = array(choice_grads, Float64)
         mom += (eps / 2) * grads
     end

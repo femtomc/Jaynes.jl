@@ -36,7 +36,7 @@ function fill_array!(val::Vector{T}, arr::Vector{T}, f_ind::Int) where T
     length(val)
 end
 
-function selection(schema::Selection, arr::Vector)
+function selection(schema::K, arr::Vector) where K
     (n, sel) = from_array(schema, arr, 1)
     n != length(arr) && error("Dimension error: length of arr $(length(arr)) must match $n.")
     sel
