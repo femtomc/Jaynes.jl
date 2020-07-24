@@ -95,11 +95,12 @@ export NoChange, UndefinedChange, VectorDiff
 export selection, anywhere, intersection, union, get_selection, get_parameters, compare, has_query, update_parameters
 
 # Inference.
+export metropolis_hastings, mh
+export elliptical_slice, es
+export hamiltonian_monte_carlo, hmc
 export importance_sampling, is
 export initialize_filter, filter_step!, check_ess_resample!, get_lmle, particle_filter, pf
-export metropolis_hastings, mh
 export automatic_differentiation_variational_inference, advi
-export hamiltonian_monte_carlo, hmc
 
 # Foreign model interfaces.
 export @primitive, @load_soss_fmi, @load_gen_fmi, @load_turing_fmi

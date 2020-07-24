@@ -5,14 +5,16 @@ mutable struct Particles{C}
     lmle::Float64
 end
 
+include("inference/mh.jl")
+include("inference/es.jl")
+include("inference/hmc.jl")
 include("inference/is.jl")
 include("inference/pf.jl")
-include("inference/mh.jl")
 include("inference/vi.jl")
-include("inference/hmc.jl")
 
-const hmc = hamiltonian_monte_carlo
 const mh = metropolis_hastings
+const es = elliptical_slice
+const hmc = hamiltonian_monte_carlo
 const is = importance_sampling
 const pf = particle_filter
 const advi = automatic_differentiation_variational_inference
