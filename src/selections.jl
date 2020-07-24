@@ -106,7 +106,7 @@ end
 
 # ------------ Set operations on selections ------------ #
 
-union(a::ConstrainedSelection...) = ConstrainedUnionSelection([a...])
+union(a...) = ConstrainedUnionSelection(ConstrainedSelection[a...])
 function intersection(a::ConstrainedSelection...) end
 
 # ------------ Documentation ------------ #
