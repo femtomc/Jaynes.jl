@@ -65,7 +65,7 @@ end
 # ------------ includes ------------ #
 
 include("compiler/static.jl")
-include("core.jl")
+include("traces.jl")
 include("selections.jl")
 include("learnable.jl")
 include("utils/numerical.jl")
@@ -74,19 +74,7 @@ include("utils/visualization.jl")
 include("compiler/diffs.jl")
 include("contexts.jl")
 include("inference.jl")
-
-# Foreign models.
-include("foreign_model_interfaces/blackbox.jl")
-export @primitive
-
-include("foreign_model_interfaces/soss.jl")
-export @load_soss_fmi
-
-include("foreign_model_interfaces/gen.jl")
-export @load_gen_fmi
-
-include("foreign_model_interfaces/turing.jl")
-export @load_turing_fmi
+include("foreign_model_interfaces.jl")
 
 # Contexts.
 export Generate, generate
@@ -112,6 +100,9 @@ export initialize_filter, filter_step!, check_ess_resample!, get_lmle, particle_
 export metropolis_hastings, mh
 export automatic_differentiation_variational_inference, advi
 export hamiltonian_monte_carlo, hmc
+
+# Foreign model interfaces.
+export @primitive, @load_soss_fmi, @load_gen_fmi, @load_turing_fmi
 
 # Utilities.
 export display, merge, get_score

@@ -77,11 +77,10 @@ Perform a single filter step using a custom proposal function, applying the cons
 @doc(
 """
 ```julia
-resample!(ps::Particles)
-resample!(ps::Particles, num::Int)
+check_ess_resample!(ps::Particles)
 ```
-Resample from an existing instance of `Particles` by mutation in place.
-""", resample!)
+Checks the effective sample size using `ess`, then resamples from an existing instance of `Particles` by mutation in place.
+""", check_ess_resample!)
 
 # ------------ Documentation (MH) ------------ #
 

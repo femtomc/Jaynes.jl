@@ -12,7 +12,7 @@ geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 1 : 1 + rand(:geo, geo, p)
 end
 
 # Example trace.
-ret, cl = simulate(geo, 0.2)
+ret, cl = simulate(() -> rand(:geo, geo, 0.05))
 display(cl.trace)
 
 end # module
