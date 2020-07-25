@@ -20,7 +20,7 @@ kernelize = n -> markov(:k, kernel, n, 5.0)
 simulation = () -> begin
     ps = initialize_filter(selection(), 1000, kernelize, (1, ))
     for i in 2:100
-        sel = selection((:k => i => :x, 5.0))
+        sel = selection([(:k, i, :x) => 5.0])
 
         # Complexity of filter step is constant as a size of the trace.
         @time filter_step!(sel, ps, NoChange(), (i,))

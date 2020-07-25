@@ -35,14 +35,14 @@ function filter(k_fn::Function, v_fn::Function, query::ConstrainedByAddress) whe
 end
 function collect!(par, addrs, chd, query::ConstrainedByAddress)
     for (k, v) in query.query
-        push!(addrs, par => k)
-        chd[par => k] = v
+        push!(addrs, (par..., k))
+        chd[(par..., k)] = v
     end
 end
 function collect!(addrs, chd, query::ConstrainedByAddress)
     for (k, v) in query.query
-        push!(addrs, k)
-        chd[k] = v
+        push!(addrs, (k, ))
+        chd[(k, )] = v
     end
 end
 
@@ -76,13 +76,13 @@ function filter(k_fn::Function, v_fn::Function, query::UnconstrainedByAddress) w
 end
 function collect!(par, addrs, query::UnconstrainedByAddress)
     for k in query.query
-        push!(addrs, par => k)
+        push!(addrs, (par..., k))
     end
 end
 
 function collect!(addrs, query::UnconstrainedByAddress)
     for k in query.query
-        push!(addrs, k)
+        push!(addrs, (k, ))
     end
 end
 

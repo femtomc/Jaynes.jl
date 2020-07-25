@@ -43,62 +43,62 @@ function Base.display(call::C;
     println("  __________________________________\n")
 end
 
-function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace, meta) where T <: Union{Symbol, Int, Pair}
+function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace, meta) where T <: Tuple
     for (k, v) in tr.choices
-        push!(addrs, par => k)
-        chd[par => k] = v.val
+        push!(addrs, (par..., k))
+        chd[(par..., k)] = v.val
     end
     for (k, v) in tr.calls
         if v isa HierarchicalCallSite
-            collect!(par => k, addrs, chd, v.trace, meta)
+            collect!((par..., k), addrs, chd, v.trace, meta)
         elseif v isa VectorizedCallSite
             for i in 1:length(v.trace.subrecords)
-                collect!(par => k => i, addrs, chd, v.trace.subrecords[i].trace, meta)
+                collect!((par..., k, i), addrs, chd, v.trace.subrecords[i].trace, meta)
             end
         end
     end
     for (k, v) in tr.params
-        push!(meta, par => k)
-        push!(addrs, par => k)
-        chd[par => k] = v.val
+        push!(meta, (par..., k))
+        push!(addrs, (par..., k))
+        chd[(par..., k)] = v.val
     end
 end
 
-function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, meta) where T <: Union{Symbol, Int, Pair}
+function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, meta) where T <: Tuple
     for (k, v) in enumerate(tr.subrecords)
         if v isa ChoiceSite
-            push!(addrs, par => k)
-            chd[par => k] = v.val
+            push!(addrs, (par..., k))
+            chd[(par..., k)] = v.val
         elseif v isa HierarchicalCallSite
-            collect!(par => k, addrs, chd, v.trace, meta)
+            collect!((par..., k), addrs, chd, v.trace, meta)
         elseif v isa VectorizedCallSite
             for i in 1:length(v.trace.subrecords)
-                collect!(par => k => i, addrs, chd, v.trace.subrecords[i].trace, meta)
+                collect!((par..., k, i), addrs, chd, v.trace.subrecords[i].trace, meta)
             end
         end
     end
     for (k, v) in tr.params
-        push!(meta, k)
-        push!(addrs, k)
-        chd[k] = v.val
+        push!(meta, (par..., k))
+        push!(addrs, (par..., k))
+        chd[(k, )] = v.val
     end
 end
 
 function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace, meta)
     for (k, v) in tr.choices
-        push!(addrs, k)
-        chd[k] = v.val
+        push!(addrs, (k, ))
+        chd[(k, )] = v.val
     end
     for (k, v) in tr.calls
         if v isa HierarchicalCallSite
-            collect!(k, addrs, chd, v.trace, meta)
+            collect!((k, ), addrs, chd, v.trace, meta)
         elseif v isa VectorizedCallSite
-            collect!(k, addrs, chd, v.trace, meta)
+            collect!((k, ), addrs, chd, v.trace, meta)
         end
     end
     for (k, v) in tr.params
-        push!(meta, k)
-        push!(addrs, k)
+        push!(meta, (k, ))
+        push!(addrs, (k, ))
         chd[k] = v.val
     end
 end
@@ -106,17 +106,17 @@ end
 function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, meta)
     for (k, v) in enumerate(tr.subrecords)
         if v isa ChoiceSite
-            push!(addrs, k)
+            push!(addrs, (k, ))
             chd[k] = v.val
         elseif v isa HierarchicalCallSite
-            collect!(k, addrs, chd, v.trace, meta)
+            collect!((k, ), addrs, chd, v.trace, meta)
         elseif v isa VectorizedCallSite
-            collect!(k => i, addrs, chd, v.trace, meta)
+            collect!((k, i), addrs, chd, v.trace, meta)
         end
     end
     for (k, v) in tr.params
-        push!(meta, k)
-        push!(addrs, k)
+        push!(meta, (k, ))
+        push!(addrs, (k, ))
         chd[k] = v.val
     end
 end
@@ -141,23 +141,23 @@ function Base.display(tr::Trace;
             if a in meta
                 println(" (Learnable)  $(a) : $(chd[a])")
             else
-                println(" $(a) : $(chd[a])")
+                println(" $(a) = $(chd[a])")
             end
         end
     elseif show_types
         for a in addrs
             if a in meta
-                println(" (Learnable)  $(a) : $(typeof(chd[a]))")
+                println(" (Learnable)  $(a) = $(typeof(chd[a]))")
             else
-                println(" $(a) : $(typeof(chd[a]))")
+                println(" $(a) = $(typeof(chd[a]))")
             end
         end
     elseif show_types && show_values
         for a in addrs
             if a in meta
-                println(" (Learnable)  $(a) : $(chd[a]) : $(typeof(chd[a]))")
+                println(" (Learnable)  $(a) = $(chd[a]) : $(typeof(chd[a]))")
             else
-                println(" $(a) : $(chd[a]) : $(typeof(chd[a]))")
+                println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
             end
         end
     else

@@ -1,8 +1,8 @@
 # ------------ Lightweight visitor ------------ #
 
 struct Visitor <: Selection
-    addrs::Vector{Union{Symbol, Pair}}
-    Visitor() = new(Union{Symbol, Pair}[])
+    addrs::Vector{Any}
+    Visitor() = new([])
 end
 
 push!(vs::Visitor, addr::Address) = push!(vs.addrs, addr)

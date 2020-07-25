@@ -181,21 +181,21 @@ end
 
 function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::K) where {T <: Union{Symbol, Pair}, K <: UtilitySelection}
     for (k, v) in chs.utility
-        push!(addrs, par => k)
-        chd[par => k] = v
+        push!(addrs, (par..., k))
+        chd[(par..., k)] = v
     end
     for (k, v) in chs.tree
-        collect!(par => k, addrs, chd, v)
+        collect!((par..., k), addrs, chd, v)
     end
 end
 
 function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::K) where K <: UtilitySelection
     for (k, v) in chs.utility
-        push!(addrs, k)
-        chd[k] = v
+        push!(addrs, (k, ))
+        chd[(k, )] = v
     end
     for (k, v) in chs.tree
-        collect!(k, addrs, chd, v)
+        collect!((k, ), addrs, chd, v)
     end
 end
 

@@ -125,16 +125,16 @@ end
 
 # Used for pretty printing.
 function collect!(args...) end
-function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, chs::ConstrainedHierarchicalSelection) where T <: Any
+function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, chs::ConstrainedHierarchicalSelection) where T <: Tuple
     collect!(par, addrs, chd, chs.query)
     for (k, v) in chs.tree
-        collect!(par => k, addrs, chd, v)
+        collect!((par..., k), addrs, chd, v)
     end
 end
 function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, chs::ConstrainedHierarchicalSelection)
     collect!(addrs, chd, chs.query)
     for (k, v) in chs.tree
-        collect!(k, addrs, chd, v)
+        collect!((k, ), addrs, chd, v)
     end
 end
 
@@ -152,7 +152,7 @@ function Base.display(chs::ConstrainedHierarchicalSelection; show_values = true)
     addrs, chd = collect(chs)
     if show_values
         for a in addrs
-            println(" $(a) : $(chd[a])")
+            println(" $(a) = $(chd[a])")
         end
     else
         for a in addrs
@@ -286,14 +286,14 @@ end
 function collect!(par::T, addrs::Vector{Any}, chs::UnconstrainedHierarchicalSelection) where T <: Any
     collect!(par, chs.query)
     for (k, v) in chs.tree
-        collect!(par => k, addrs, v)
+        collect!((par..., k), addrs, v)
     end
 end
 
 function collect!(addrs::Vector{Any}, chs::UnconstrainedHierarchicalSelection)
     collect!(addrs, chs.query)
     for (k, v) in chs.tree
-        collect!(k, addrs, v)
+        collect!((k, ), addrs, v)
     end
 end
 

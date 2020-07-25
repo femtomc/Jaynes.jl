@@ -1,6 +1,8 @@
-import Base: getindex, haskey, rand
+import Base: getindex, haskey, rand, iterate
 
 # ------------ Core ------------ #
+
+Base.iterate(s::Symbol) = s
 
 # Special calls recognized by tracer.
 rand(addr::Address, d::Distribution{T}) where T = rand(d)
