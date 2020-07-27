@@ -18,10 +18,7 @@ using Flux.Optimise: update!
 @reexport using Flux.Optimise
 
 # Toplevel importants :)
-const Address = Union{Symbol, 
-                      Int64, 
-                      Pair{Symbol, Int64}, 
-                      Pair{Symbol, Symbol}}
+const Address = Any
 
 # ------------ Com-pirate fixes ------------ #
 
