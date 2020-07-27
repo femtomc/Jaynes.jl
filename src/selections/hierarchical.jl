@@ -40,9 +40,9 @@ function merge!(sel1::ConstrainedHierarchicalSelection, sel2::ConstrainedHierarc
     merge!(sel1.query, sel2.query)
     for k in keys(sel2.tree)
         if haskey(sel1.tree, k)
-            merge!(sel1.tree[k], sel2.query[k])
+            merge!(sel1.tree[k], sel2.tree[k])
         else
-            sel1.tree[k] = sel2.query[k]
+            sel1.tree[k] = sel2.tree[k]
         end
     end
 end
