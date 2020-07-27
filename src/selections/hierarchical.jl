@@ -6,27 +6,57 @@ struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: Constrai
     ConstrainedHierarchicalSelection() = new{ConstrainedByAddress}(Dict{Address, ConstrainedHierarchicalSelection}(), ConstrainedByAddress())
     ConstrainedHierarchicalSelection(csa::T) where T <: ConstrainedSelectQuery = new{T}(Dict{Address, ConstrainedHierarchicalSelection}(), csa)
 end
-function get_sub(chs::ConstrainedHierarchicalSelection, addr)
+
+function get_sub(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address
     haskey(chs.tree, addr) && return chs.tree[addr]
     return ConstrainedEmptySelection()
 end
-function get_sub(chs::ConstrainedHierarchicalSelection, addr::Pair)
-    haskey(chs.tree, addr[1]) && return get_sub(chs.tree[addr[1]], addr[2])
+function get_sub(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    isempty(addr) && return ConstrainedEmptySelection()
+    length(addr) == 1 && return get_sub(chs, addr[1])
+    haskey(chs.tree, addr[1]) && return get_sub(chs.tree[addr[1]], addr[2 : end])
     return ConstrainedEmptySelection()
 end
-function set_sub!(chs::ConstrainedHierarchicalSelection, addr::Address, sub::K) where K <: ConstrainedSelection
+
+function set_sub!(chs::ConstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Address, K <: ConstrainedSelection}
     chs.tree[addr] = sub
 end
-has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs.query, addr)
-has_query(chs::ConstrainedHierarchicalSelection, addr::Int) = has_query(chs.query, addr)
-function has_query(chs::ConstrainedHierarchicalSelection, addr::Pair)
-    if haskey(chs.tree, addr[1])
-        return has_query(get_sub(chs, addr[1]), addr[2])
+function set_sub!(chs::ConstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Tuple, K <: ConstrainedSelection}
+    isempty(addr) && return
+    if length(addr) == 1
+        set_sub!(chs, addr[1], sub)
+        return
     end
+    set_sub!(chs.tree[addr[1]], addr[2 : end], sub)
+end
+
+function has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    isempty(addr) && return false
+    length(addr) == 1 && return has_query(chs.query, addr[1])
+    hd = addr[1]
+    tl = addr[2 : end]
+    haskey(chs.tree, hd) && return has_query(chs.tree[hd], tl)
     return false
 end
-dump_queries(chs::ConstrainedHierarchicalSelection) = dump_queries(chs.query)
-get_query(chs::ConstrainedHierarchicalSelection, addr) = get_query(chs.query, addr)
+has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs.query, addr)
+
+function get_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address
+    return get_query(chs.query, addr)
+end
+function get_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    isempty(addr) && return nothing
+    length(addr) == 1 && return get_query(chs, addr[1])
+    return get_query(chs.tree[addr[1]], addr[2 : end])
+end
+
+function dump_queries(chs::ConstrainedHierarchicalSelection)
+    toplevel = dump_queries(chs.query)
+    for (k, v) in chs.tree
+        toplevel = union(toplevel, dump_queries(v))
+    end
+    return toplevel
+end
+
 isempty(chs::ConstrainedHierarchicalSelection) = begin
     !isempty(chs.query) && return false
     for (k, v) in chs.tree
@@ -53,13 +83,7 @@ function merge(cl::T, sel::ConstrainedHierarchicalSelection) where T <: CallSite
 end
 
 # Used to build.
-function push!(sel::ConstrainedHierarchicalSelection, addr::Symbol, val)
-    push!(sel.query, addr, val)
-end
-function push!(sel::ConstrainedHierarchicalSelection, addr::Pair{Symbol, Int64}, val)
-    push!(sel.query, addr, val)
-end
-function push!(sel::ConstrainedHierarchicalSelection, addr::Int64, val)
+function push!(sel::ConstrainedHierarchicalSelection, addr::T, val) where T <: Address
     push!(sel.query, addr, val)
 end
 function push!(sel::ConstrainedHierarchicalSelection, addr::Tuple, val)

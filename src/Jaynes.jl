@@ -21,7 +21,7 @@ using Flux.Optimise: update!
 const Address = Union{Symbol, 
                       Int64, 
                       Pair{Symbol, Int64}, 
-                      Pair{Symbol, Float64}}
+                      Pair{Symbol, Symbol}}
 
 # ------------ Com-pirate fixes ------------ #
 

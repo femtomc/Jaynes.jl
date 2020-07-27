@@ -40,7 +40,7 @@ end
                                         args::Vector)
     visit!(ctx, addr => 1)
     len = length(args)
-    ss = get_subselection(ctx, addr => 1)
+    ss = get_subselection(ctx, (addr, 1))
     ret, cl, w = generate(ss, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_cl = Vector{typeof(cl)}(undef, len)
@@ -49,7 +49,7 @@ end
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
-        ss = get_subselection(ctx, addr => i)
+        ss = get_subselection(ctx, (addr, i))
         ret, cl, w = generate(ss, call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl
