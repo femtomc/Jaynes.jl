@@ -245,19 +245,46 @@ struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: Unco
     query::T
     UnconstrainedHierarchicalSelection() = new{UnconstrainedByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedByAddress())
 end
-function get_sub(uhs::UnconstrainedHierarchicalSelection, addr)
+function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address
     haskey(uhs.tree, addr) && return uhs.tree[addr]
     return UnconstrainedEmptySelection()
 end
-function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::Pair)
-    haskey(uhs.tree, addr[1]) && return get_sub(uhs.tree[addr[1]], addr[2])
+function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::Tuple)
+    isempty(addr) && return UnconstrainedEmptySelection()
+    length(addr) == 1 && return get_sub(uhs, addr[1])
+    haskey(uhs.tree, addr[1]) && return get_sub(uhs.tree[addr[1]], addr[2 : end])
     return UnconstrainedEmptySelection()
 end
-has_query(uhs::UnconstrainedHierarchicalSelection, addr) = has_query(uhs.query, addr)
-dump_queries(uhs::UnconstrainedHierarchicalSelection) = dump_queries(uhs.query)
-isempty(uhs::UnconstrainedHierarchicalSelection) = isempty(uhs.tree) && isempty(uhs.query)
-function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::Address, sub::K) where K <: UnconstrainedSelection
+function has_query(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address
+    has_query(uhs.query, addr)
+end
+function has_query(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    isempty(addr) && return false
+    length(addr) == 1 && return has_query(uhs, addr[1])
+    haskey(uhs.tree, addr[1]) && return has_query(uhs.tree[addr[1]], addr[2 : end])
+    return false
+end
+function dump_queries(uhs::UnconstrainedHierarchicalSelection)
+    toplevel = dump_queries(uhs.query)
+    for (k, v) in uhs.tree
+        toplevel = union(toplevel, dump_queries(v))
+    end
+    return toplevel
+end
+isempty(uhs::UnconstrainedHierarchicalSelection) = begin
+    !isempty(uhs.query) && return false
+    for (k, v) in uhs.tree
+        !isempty(uhs.tree[k]) && return false
+    end
+    return true
+end
+function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Address, K <: UnconstrainedSelection}
     uhs.tree[addr] = sub
+end
+function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Tuple, K <: UnconstrainedSelection}
+    isempty(addr) && return
+    length(addr) == 1 && set_sub!(uhs, addr[1], sub)
+    haskey(uhs.tree, addr[1]) && set_sub!(uhs.tree[1], addr[2 : end], sub)
 end
 
 # Used to build.
