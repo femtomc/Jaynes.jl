@@ -22,15 +22,13 @@
     add_choice!(ctx, addr, ChoiceSite(score, ret))
     return ret
 end
+
 # ------------ Learnable ------------ #
 
-@inline function (ctx::RegenerateContext)(fn::typeof(learnable), addr::Address, p::T) where T
+@inline function (ctx::RegenerateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    ret = p
-    if has_param(ctx.params, addr)
-        ret = get_param(ctx.params, addr)
-    end
-    return ret
+    has_param(ctx.params, addr) && return get_param(ctx.params, addr)
+    error("Parameter not provided at address $addr.")
 end
 
 # ------------ Black box call sites ------------ #
@@ -48,3 +46,30 @@ end
     return ret
 end
 
+@inline function (ctx::RegenerateContext)(c::typeof(rand),
+                                          addr::T,
+                                          call::Function,
+                                          args::Tuple,
+                                          score_ret::Function) where T <: Address
+    visit!(ctx, addr)
+    ss = get_subselection(ctx, addr)
+    prev_call = get_prev(ctx, addr)
+    ret, cl, w, retdiff, d = regenerate(ss, prev_call, args...)
+    add_call!(ctx.tr, addr, cl)
+    increment!(ctx, w + score_ret(ret) - score_ret(prev_call.ret))
+    return ret
+end
+
+@inline function (ctx::RegenerateContext)(c::typeof(rand),
+                                          addr::T,
+                                          call::Function,
+                                          args::Tuple,
+                                          score_ret::Distribution{K}) where {K, T <: Address}
+    visit!(ctx, addr)
+    ss = get_subselection(ctx, addr)
+    prev_call = get_prev(ctx, addr)
+    ret, cl, w, retdiff, d = regenerate(ss, prev_call, args...)
+    add_call!(ctx.tr, addr, cl)
+    increment!(ctx, w + logpdf(score_ret, ret) - logpdf(score_ret, prev_call.ret))
+    return ret
+end

@@ -3,7 +3,7 @@
 struct ConstrainedEmptySelection <: ConstrainedSelection end
 
 has_query(cas::ConstrainedEmptySelection, addr) = false
-dump_queries(cas::ConstrainedEmptySelection) = nothing
+dump_queries(cas::ConstrainedEmptySelection) = Set()
 get_query(cas::ConstrainedEmptySelection, addr) = error("ConstrainedEmptySelection has no queries!")
 get_sub(cas::ConstrainedEmptySelection, addr) = cas
 isempty(cas::ConstrainedEmptySelection) = true
@@ -23,7 +23,8 @@ end
 
 struct UnconstrainedEmptySelection <: UnconstrainedSelection end
 
-has_query(cas::UnconstrainedEmptySelection, addr) = false
+has_query(uas::UnconstrainedEmptySelection, addr) = false
+dump_queries(uas::UnconstrainedEmptySelection) = Set()
 get_sub(cas::UnconstrainedEmptySelection, addr) = cas
 isempty(cas::UnconstrainedEmptySelection) = true
 

@@ -1,10 +1,13 @@
-import Base: getindex, haskey, rand
+import Base: getindex, haskey, rand, iterate
 
 # ------------ Core ------------ #
+
+Base.iterate(s::Symbol) = s
 
 # Special calls recognized by tracer.
 rand(addr::Address, d::Distribution{T}) where T = rand(d)
 rand(addr::Address, fn::Function, args...) = fn(args...)
+rand(addr::Address, fn::Function, args::Tuple, ret_score::Function) = fn(args...)
 learnable(addr::Address, p::T) where T = p
 plate(addr::Address, args...) = error("(plate) call with address $addr evaluated outside of the tracer.")
 markov(addr::Address, args...) = error("(markov) call with address $addr evaluated outside of the tracer.")

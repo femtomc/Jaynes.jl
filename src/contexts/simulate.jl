@@ -1,48 +1,69 @@
-mutable struct SimulateContext{T <: Trace} <: ExecutionContext
+mutable struct SimulateContext{T <: Trace, P <: Parameters} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
-    params::LearnableParameters
-    SimulateContext(params) = new{HierarchicalTrace}(Trace(), 0.0, Visitor(), params)
+    params::P
+    SimulateContext() = new{HierarchicalTrace, EmptyParameters}(Trace(), 0.0, Visitor(), Parameters())
+    SimulateContext(params::P) where P = new{HierarchicalTrace, P}(Trace(), 0.0, Visitor(), params)
 end
 
 # ------------ Convenience ------------ #
 
-function simulate(fn::Function, args...; params = LearnableParameters())
+function simulate(fn::Function, args...)
+    ctx = SimulateContext()
+    ret = ctx(fn, args...)
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret)
+end
+
+function simulate(params, fn::Function, args...)
     ctx = SimulateContext(params)
     ret = ctx(fn, args...)
     return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
-function simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableParameters()) where T
+function simulate(fn::typeof(rand), d::Distribution{T}) where T
+    ctx = SimulateContext()
+    addr = gensym()
+    ret = ctx(rand, addr, d)
+    return ret, get_choice(ctx.tr, addr)
+end
+
+function simulate(params, fn::typeof(rand), d::Distribution{T}) where T
     ctx = SimulateContext(params)
     addr = gensym()
     ret = ctx(rand, addr, d)
     return ret, get_choice(ctx.tr, addr)
 end
 
-function simulate(c::typeof(plate), fn::Function, args::Vector; params = LearnableParameters()) where T
+function simulate(c::typeof(plate), fn::Function, args::Vector)
+    ctx = SimulateContext()
+    addr = gensym()
+    ret = ctx(plate, addr, fn, args)
+    return ret, get_call(ctx.tr, addr)
+end
+
+function simulate(params, c::typeof(plate), fn::Function, args::Vector)
     ctx = SimulateContext(params)
     addr = gensym()
     ret = ctx(plate, addr, fn, args)
     return ret, get_call(ctx.tr, addr)
 end
 
-function simulate(fn::typeof(plate), d::Distribution{T}, len::Int; params = LearnableParameters()) where T
-    ctx = SimulateContext(params)
+function simulate(fn::typeof(plate), d::Distribution{T}, len::Int) where T
+    ctx = SimulateContext()
     addr = gensym()
     ret = ctx(plate, addr, d, len)
     return ret, get_call(ctx.tr, addr)
 end
 
-#function simulate(::Tuple{typeof(plate), N}, d::Distribution{T}, len::Int; params = LearnableParameters()) where T
-#    ctx = SimulateContext(params)
-#    addr = gensym()
-#    ret = ctx(plate, addr, d, len)
-#    return ret, get_call(ctx.tr, addr)
-#end
+function simulate(c::typeof(markov), fn::Function, len::Int, args...)
+    ctx = SimulateContext()
+    addr = gensym()
+    ret = ctx(markov, addr, fn, len, args...)
+    return ret, get_call(ctx.tr, addr)
+end
 
-function simulate(c::typeof(markov), fn::Function, len::Int, args...; params = LearnableParameters())
+function simulate(params, c::typeof(markov), fn::Function, len::Int, args...)
     ctx = SimulateContext(params)
     addr = gensym()
     ret = ctx(markov, addr, fn, len, args...)

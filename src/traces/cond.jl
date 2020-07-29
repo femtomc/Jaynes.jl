@@ -3,8 +3,7 @@
 struct BranchTrace{T <: RecordSite, B <: RecordSite} <: Trace
     cond::T
     branch::B
-    params::Dict{Address, LearnableSite}
-    BranchTrace(cond::T, branch::B) where {T, B} = new{T, B}(cond, branch, Dict{Address, LearnableSite}())
+    BranchTrace(cond::T, branch::B) where {T, B} = new{T, B}(cond, branch)
 end
 
 # If-else branch site

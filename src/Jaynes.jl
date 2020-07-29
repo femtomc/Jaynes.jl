@@ -18,7 +18,7 @@ using Flux.Optimise: update!
 @reexport using Flux.Optimise
 
 # Toplevel importants :)
-const Address = Union{Symbol, Int64, Pair{Symbol, Int64}}
+const Address = Any
 
 # ------------ Com-pirate fixes ------------ #
 
@@ -91,8 +91,9 @@ export learnable, plate, markov, cond
 # Diffs.
 export NoChange, UndefinedChange, VectorDiff
 
-# Selections.
+# Selections and parameters.
 export selection, anywhere, intersection, union, get_selection, get_parameters, compare, has_query, update_parameters
+export parameters
 
 # Inference.
 export metropolis_hastings, mh

@@ -18,14 +18,10 @@ end
 
 # ------------ Learnable ------------ #
 
-@inline function (ctx::GenerateContext)(fn::typeof(learnable), addr::Address, p::T) where T
+@inline function (ctx::GenerateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    ret = p
-    if has_param(ctx.params, addr)
-        ret = get_param(ctx.params, addr)
-    end
-    ctx.tr.params[addr] = ParameterSite(ret)
-    return ret
+    has_param(ctx.params, addr) && return get_param(ctx.params, addr)
+    error("Parameter not provided at address $addr.")
 end
 
 # ------------ Black box call sites ------------ #
@@ -38,6 +34,32 @@ end
     ss = get_subselection(ctx, addr)
     ret, cl, w = generate(ss, call, args...)
     add_call!(ctx, addr, cl)
+    increment!(ctx, w)
+    return ret
+end
+
+@inline function (ctx::GenerateContext)(c::typeof(rand),
+                                        addr::T,
+                                        call::Function,
+                                        args::Tuple,
+                                        ret_score::Function) where T <: Address
+    visit!(ctx, addr)
+    ss = get_subselection(ctx, addr)
+    ret, cl, w = generate(ss, call, args...)
+    add_call!(ctx, addr, cl, ret_score(ret))
+    increment!(ctx, w)
+    return ret
+end
+
+@inline function (ctx::GenerateContext)(c::typeof(rand),
+                                        addr::T,
+                                        call::Function,
+                                        args::Tuple,
+                                        ret_score::Distribution{K}) where {K, T <: Address}
+    visit!(ctx, addr)
+    ss = get_subselection(ctx, addr)
+    ret, cl, w = generate(ss, call, args...)
+    add_call!(ctx, addr, cl, logpdf(ret_score, ret))
     increment!(ctx, w)
     return ret
 end

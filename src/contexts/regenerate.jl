@@ -12,7 +12,8 @@ mutable struct RegenerateContext{C <: CallSite,
     visited::Visitor
     params::P
     argdiffs::D
-    RegenerateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: UnconstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, NoParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
+    RegenerateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: UnconstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, EmptyParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
+    RegenerateContext(cl::C, select::K, params::P, argdiffs::D) where {C <: CallSite, K <: UnconstrainedSelection, P <: Parameters, D <: Diff} = new{C, typeof(cl.trace), K, P, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), params, argdiffs)
 end
 
 # Regenerate has a special dynamo.
@@ -36,20 +37,23 @@ function regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: Unconstrained
     return regenerate(ctx, bbcs, bbcs.args...)
 end
 
+function regenerate(sel::L, params, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection
+    argdiffs = NoChange()
+    ctx = RegenerateContext(bbcs, sel, params, argdiffs)
+    return regenerate(ctx, bbcs, bbcs.args...)
+end
+
 function regenerate(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: UnconstrainedSelection, D <: Diff}
     ctx = RegenerateContext(bbcs, sel, argdiffs)
     return regenerate(ctx, bbcs, new_args...)
 end
 
-# TODO: disallowed for now.
-#function regenerate(sel::L, vcs::VectorizedCallSite{typeof(plate)}, argdiffs::D, new_args...) where {L <: UnconstrainedSelection, D <: Diff}
-#    addr = gensym()
-#    v_sel = selection(addr => sel)
-#    ctx = RegenerateContext(vcs, v_sel, argdiffs)
-#    ret = ctx(plate, addr, vcs.kernel, new_args...)
-#    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-#end
+function regenerate(sel::L, params, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: UnconstrainedSelection, D <: Diff}
+    ctx = RegenerateContext(bbcs, sel, params, argdiffs)
+    return regenerate(ctx, bbcs, new_args...)
+end
 
+# TODO: fix for dispatch with params.
 function regenerate(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: UnconstrainedSelection, D <: Diff}
     argdiffs = NoChange()
     addr = gensym()
@@ -110,10 +114,10 @@ Inner constructors:
 ```julia
 function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
     un_sel = selection(sel)
-    new{T, typeof(un_sel), NoParameters}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), Parameters())
+    new{T, typeof(un_sel), EmptyParameters}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), Parameters())
 end
 function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-    new{T, L, NoParameters}(tr, Trace(), sel, 0.0, Trace(), Visitor(), Parameters())
+    new{T, L, EmptyParameters}(tr, Trace(), sel, 0.0, Trace(), Visitor(), Parameters())
 end
 ```
 

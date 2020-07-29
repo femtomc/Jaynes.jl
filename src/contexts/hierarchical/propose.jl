@@ -7,30 +7,49 @@
     s = rand(d)
     score = logpdf(d, s)
     add_choice!(ctx, addr, ChoiceSite(score, s))
-    increment!(ctx, score)
     return s
 end
 
 # ------------ Learnable ------------ #
 
-@inline function (ctx::ProposeContext)(fn::typeof(learnable), addr::Address, p::T) where T
+@inline function (ctx::ProposeContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    ret = p
-    if has_param(ctx.params, addr)
-        ret = get_param(ctx.params, addr)
-    end
-    return ret
+    has_param(ctx.params, addr) && return get_param(ctx.params, addr)
+    error("Parameter not provided at address $addr.")
 end
 
 # ------------ Black box call sites ------------ #
 
 @inline function (ctx::ProposeContext)(c::typeof(rand),
-                                        addr::T,
-                                        call::Function,
-                                        args...) where T <: Address
+                                       addr::T,
+                                       call::Function,
+                                       args...) where T <: Address
     visit!(ctx, addr)
     ret, cl, w = propose(call, args...)
     add_call!(ctx, addr, cl)
-    increment!(ctx, w)
+    return ret
+end
+
+@inline function (ctx::ProposeContext)(c::typeof(rand),
+                                       addr::T,
+                                       call::Function,
+                                       args::Tuple,
+                                       ret_score::Function) where T <: Address
+    visit!(ctx, addr)
+    ret, cl, w = propose(call, args...)
+    rscore = ret_score(ret)
+    add_call!(ctx, addr, cl, rscore)
+    return ret
+end
+
+@inline function (ctx::ProposeContext)(c::typeof(rand),
+                                       addr::T,
+                                       call::Function,
+                                       args::Tuple,
+                                       ret_score::Distribution{K}) where {K, T <: Address}
+    visit!(ctx, addr)
+    ret, cl, w = propose(call, args...)
+    rscore = logpdf(ret_score, ret)
+    add_call!(ctx, addr, cl, rscore)
     return ret
 end

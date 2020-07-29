@@ -14,7 +14,10 @@ function add_call!(ctx::T, addr, cs::CallSite) where T <: ExecutionContext
     ctx.score += get_score(cs)
     add_call!(ctx.tr, addr, cs)
 end
-
+function add_call!(ctx::T, addr, cs::CallSite, sc::Float64) where T <: ExecutionContext
+    ctx.score += get_score(cs) + sc
+    add_call!(ctx.tr, addr, cs)
+end
 function add_call!(ctx::T, cs::CallSite) where T <: ExecutionContext
     ctx.score += get_score(cs)
     # TODO: should only work for VectorizedTraces - make error explicit here.

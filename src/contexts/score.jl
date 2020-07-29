@@ -5,7 +5,7 @@ mutable struct ScoreContext{P <: Parameters} <: ExecutionContext
     params::P
     function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
         c_sel = selection(obs)
-        new{NoParameters}(c_sel, 0.0, Parameters())
+        new{EmptyParameters}(c_sel, 0.0, Parameters())
     end
     ScoreContext(obs::K, params::P) where {K <: ConstrainedSelection, P <: Parameters} = new{P}(obs, 0.0, Visitor(), params)
 end
@@ -15,7 +15,15 @@ Score(obs::ConstrainedSelection, params) = ScoreContext(obs, params)
 
 # ------------ Convenience ------------ #
 
-function score(sel::L, fn::Function, args...; params = Parameters()) where L <: ConstrainedSelection
+function score(sel::L, fn::Function, args...) where L <: ConstrainedSelection
+    ctx = Score(sel)
+    ret = ctx(fn, args...)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end
+
+function score(sel::L, params, fn::Function, args...) where L <: ConstrainedSelection
     ctx = Score(sel, params)
     ret = ctx(fn, args...)
     b, missed = compare(sel.query, ctx.visited)
@@ -23,8 +31,8 @@ function score(sel::L, fn::Function, args...; params = Parameters()) where L <: 
     return ret, ctx.weight
 end
 
-function score(sel::L, fn::typeof(rand), d::Distribution{K}; params = Parameters()) where {L <: ConstrainedSelection, K}
-    ctx = Score(sel, params)
+function score(sel::L, fn::typeof(rand), d::Distribution{K}) where {L <: ConstrainedSelection, K}
+    ctx = Score(sel)
     addr = gensym()
     ret = ctx(fn, addr, d)
     b, missed = compare(sel.query, ctx.visited)
@@ -32,6 +40,7 @@ function score(sel::L, fn::typeof(rand), d::Distribution{K}; params = Parameters
     return ret, ctx.weight
 end
 
+# TODO: fix for dispatch on params.
 function score(sel::L, fn::typeof(markov), call::Function, len::Int, args...; params = Parameters()) where L <: ConstrainedSelection
     addr = gensym()
     v_sel = selection(addr => sel)
@@ -86,7 +95,7 @@ Inner constructors:
 ```julia
 function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
     c_sel = selection(obs)
-    new{NoParameters}(c_sel, 0.0, Parameters())
+    new{EmptyParameters}(c_sel, 0.0, Parameters())
 end
 ```
 

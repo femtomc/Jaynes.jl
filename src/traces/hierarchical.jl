@@ -3,11 +3,9 @@
 struct HierarchicalTrace <: Trace
     calls::Dict{Address, CallSite}
     choices::Dict{Address, ChoiceSite}
-    params::Dict{Address, LearnableSite}
     function HierarchicalTrace()
         new(Dict{Address, CallSite}(), 
-            Dict{Address, ChoiceSite}(),
-            Dict{Address, LearnableSite}())
+            Dict{Address, ChoiceSite}())
     end
 end
 Trace() = HierarchicalTrace()
@@ -15,7 +13,6 @@ has_choice(tr::HierarchicalTrace, addr) = haskey(tr.choices, addr)
 has_call(tr::HierarchicalTrace, addr::Address) = haskey(tr.calls, addr)
 get_call(tr::HierarchicalTrace, addr::Address) = tr.calls[addr]
 get_choice(tr::HierarchicalTrace, addr) = tr.choices[addr]
-get_param(tr::HierarchicalTrace, addr) = tr.params[addr].val
 function get_call(tr::HierarchicalTrace, addr::Pair)
     get_call(tr.calls[addr[1]], addr[2])
 end
