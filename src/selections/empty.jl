@@ -23,8 +23,8 @@ end
 
 struct UnconstrainedEmptySelection <: UnconstrainedSelection end
 
-has_query(cas::UnconstrainedEmptySelection, addr) = false
-dump_queries(cas::ConstrainedEmptySelection) = Set()
+has_query(uas::UnconstrainedEmptySelection, addr) = false
+dump_queries(uas::UnconstrainedEmptySelection) = Set()
 get_sub(cas::UnconstrainedEmptySelection, addr) = cas
 isempty(cas::UnconstrainedEmptySelection) = true
 

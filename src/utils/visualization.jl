@@ -57,11 +57,6 @@ function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Hierarchi
             end
         end
     end
-    for (k, v) in tr.params
-        push!(meta, (par..., k))
-        push!(addrs, (par..., k))
-        chd[(par..., k)] = v.val
-    end
 end
 
 function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, meta) where T <: Tuple
@@ -77,11 +72,6 @@ function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Vectorize
             end
         end
     end
-    for (k, v) in tr.params
-        push!(meta, (par..., k))
-        push!(addrs, (par..., k))
-        chd[(k, )] = v.val
-    end
 end
 
 function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace, meta)
@@ -96,11 +86,6 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace
             collect!((k, ), addrs, chd, v.trace, meta)
         end
     end
-    for (k, v) in tr.params
-        push!(meta, (k, ))
-        push!(addrs, (k, ))
-        chd[k] = v.val
-    end
 end
 
 function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, meta)
@@ -113,11 +98,6 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, 
         elseif v isa VectorizedCallSite
             collect!((k, i), addrs, chd, v.trace, meta)
         end
-    end
-    for (k, v) in tr.params
-        push!(meta, (k, ))
-        push!(addrs, (k, ))
-        chd[k] = v.val
     end
 end
 

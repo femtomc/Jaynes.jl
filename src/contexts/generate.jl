@@ -5,29 +5,43 @@ mutable struct GenerateContext{T <: Trace, K <: ConstrainedSelection, P <: Param
     score::Float64
     visited::Visitor
     params::P
-    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K, NoParameters}(tr, select, 0.0, 0.0, Visitor(), Parameters())
+    GenerateContext(tr::T, select::K) where {T <: Trace, K <: ConstrainedSelection} = new{T, K, EmptyParameters}(tr, select, 0.0, 0.0, Visitor(), Parameters())
     GenerateContext(tr::T, select::K, params::P) where {T <: Trace, K <: ConstrainedSelection, P <: Parameters} = new{T, K, P}(tr, select, 0.0, 0.0, Visitor(), params)
 end
-Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select)
+Generate(select::ConstrainedSelection) = GenerateContext(Trace(), select, Parameters())
 Generate(select::ConstrainedSelection, params) = GenerateContext(Trace(), select, params)
 Generate(tr::Trace, select::ConstrainedSelection) = GenerateContext(tr, select)
 
 # ------------ Convenience ------------ #
 
-function generate(sel::L, fn::Function, args...; params = Parameters()) where L <: ConstrainedSelection
+function generate(sel::L, fn::Function, args...) where L <: ConstrainedSelection
+    ctx = Generate(sel)
+    ret = ctx(fn, args...)
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+end
+
+function generate(sel::L, params, fn::Function, args...) where L <: ConstrainedSelection
     ctx = Generate(sel, params)
     ret = ctx(fn, args...)
     return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
-function generate(sel::L, fn::typeof(rand), d::Distribution{K}; params = Parameters()) where {L <: ConstrainedSelection, K}
-    ctx = Generate(sel, params)
+function generate(sel::L, fn::typeof(rand), d::Distribution{K}) where {L <: ConstrainedSelection, K}
+    ctx = Generate(sel)
     addr = gensym()
     ret = ctx(fn, addr, d)
     return ret, get_choice(ctx.tr, addr), ctx.weight
 end
 
-function generate(sel::L, fn::typeof(markov), call::Function, len::Int, args...; params = Parameters()) where L <: ConstrainedSelection
+function generate(sel::L, fn::typeof(markov), call::Function, len::Int, args...) where L <: ConstrainedSelection
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = Generate(v_sel)
+    ret = ctx(fn, addr, call, len, args...)
+    return ret, get_call(ctx.tr, addr), ctx.weight
+end
+
+function generate(sel::L, params, fn::typeof(markov), call::Function, len::Int, args...) where L <: ConstrainedSelection
     addr = gensym()
     v_sel = selection(addr => sel)
     ctx = Generate(v_sel, params)
@@ -35,7 +49,15 @@ function generate(sel::L, fn::typeof(markov), call::Function, len::Int, args...;
     return ret, get_call(ctx.tr, addr), ctx.weight
 end
 
-function generate(sel::L, fn::typeof(plate), call::Function, args::Vector; params = Parameters()) where L <: ConstrainedSelection
+function generate(sel::L, fn::typeof(plate), call::Function, args::Vector) where L <: ConstrainedSelection
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = Generate(v_sel)
+    ret = ctx(fn, addr, call, args)
+    return ret, get_call(ctx.tr, addr), ctx.weight
+end
+
+function generate(sel::L, params, fn::typeof(plate), call::Function, args::Vector) where L <: ConstrainedSelection
     addr = gensym()
     v_sel = selection(addr => sel)
     ctx = Generate(v_sel, params)
@@ -43,10 +65,10 @@ function generate(sel::L, fn::typeof(plate), call::Function, args::Vector; param
     return ret, get_call(ctx.tr, addr), ctx.weight
 end
 
-function generate(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params = Parameters()) where {L <: ConstrainedSelection, K}
+function generate(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int) where {L <: ConstrainedSelection, K}
     addr = gensym()
     v_sel = selection(addr => sel)
-    ctx = Generate(v_sel, params)
+    ctx = Generate(v_sel)
     ret = ctx(fn, addr, d, len)
     return ret, get_call(ctx.tr, addr), ctx.weight
 end

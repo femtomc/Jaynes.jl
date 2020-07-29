@@ -13,7 +13,6 @@
         cs = ChoiceSite(score, s)
         v_ret[i] = s
         v_cs[i] = cs
-        increment!(ctx, score)
     end
     sc = sum(map(v_cs) do cs
                  get_score(cs)
@@ -37,13 +36,11 @@ end
     v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
     v_cl[1] = cl
-    increment!(ctx, w)
     for i in 2:len
         visit!(ctx, addr => i)
         ret, cl, w = propose(call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl
-        increment!(ctx, w)
     end
     sc = sum(map(v_cl) do cl
                  get_score(cl)

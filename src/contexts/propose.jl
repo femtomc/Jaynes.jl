@@ -1,49 +1,68 @@
-mutable struct ProposeContext{T <: Trace} <: ExecutionContext
+mutable struct ProposeContext{T <: Trace, P <: Parameters} <: ExecutionContext
     tr::T
-    weight::Float64
     score::Float64
     visited::Visitor
-    params::LearnableParameters
-    ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, 0.0, Visitor(), LearnableParameters())
-    ProposeContext(tr::T, params::LearnableParameters) where T <: Trace = new{T}(tr, 0.0, 0.0, Visitor(), params)
+    params::P
+    ProposeContext(tr::T) where T <: Trace = new{T, EmptyParameters}(tr, 0.0, Visitor(), Parameters())
+    ProposeContext(tr::T, params::P) where {T <: Trace, P} = new{T, P}(tr, 0.0, Visitor(), params)
 end
 Propose() = ProposeContext(Trace())
 Propose(params) = ProposeContext(Trace(), params)
 
 # ------------ Convenience ------------ #
 
-function propose(fn::Function, args...; params = LearnableParameters())
+function propose(fn::Function, args...)
+    ctx = Propose()
+    ret = ctx(fn, args...)
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
+end
+
+function propose(params, fn::Function, args...)
     ctx = Propose(params)
     ret = ctx(fn, args...)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
 end
 
-function propose(fn::typeof(rand), d::Distribution{K}; params = LearnableParameters()) where K
-    ctx = Propose(params)
+function propose(fn::typeof(rand), d::Distribution{K}) where K
+    ctx = Propose()
     addr = gensym()
     ret = ctx(fn, addr, d)
-    return ret, get_choice(ctx.tr, addr), ctx.weight
+    return ret, get_choice(ctx.tr, addr), ctx.score
 end
 
-function propose(fn::typeof(markov), call::Function, len::Int, args...; params = LearnableParameters())
+function propose(fn::typeof(markov), call::Function, len::Int, args...)
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, call, len, args...)
+    return ret, get_call(ctx.tr, addr), ctx.score
+end
+
+function propose(params, fn::typeof(markov), call::Function, len::Int, args...)
     ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, call, len, args...)
-    return ret, get_call(ctx.tr, addr), ctx.weight
+    return ret, get_call(ctx.tr, addr), ctx.score
 end
 
-function propose(fn::typeof(plate), call::Function, args::Vector; params = LearnableParameters())
+function propose(fn::typeof(plate), call::Function, args::Vector)
     ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, call, args)
-    return ret, get_call(ctx.tr, addr), ctx.weight
+    return ret, get_call(ctx.tr, addr), ctx.score
 end
 
-function propose(fn::typeof(plate), d::Distribution{K}, len::Int; params = LearnableParameters()) where K
+function propose(params, fn::typeof(plate), call::Function, args::Vector)
     ctx = Propose(params)
     addr = gensym()
+    ret = ctx(fn, addr, call, args)
+    return ret, get_call(ctx.tr, addr), ctx.score
+end
+
+function propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
+    ctx = Propose()
+    addr = gensym()
     ret = ctx(fn, addr, d, len)
-    return ret, get_call(ctx.tr, addr), ctx.weight
+    return ret, get_call(ctx.tr, addr), ctx.score
 end
 
 # ------------ includes ------------ #
@@ -59,7 +78,6 @@ include("markov/propose.jl")
 ```julia
 mutable struct ProposeContext{T <: Trace} <: ExecutionContext
     tr::T
-    weight::Float64
     score::Float64
     visited::Visitor
     params::LearnableParameters
@@ -91,5 +109,5 @@ ret, v_cl, w = propose(fn::typeof(plate), call::Function, args::Vector)
 ret, v_cl, w = propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
 ```
 
-`propose` provides an API to the `ProposeContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score/weight `w`.
+`propose` provides an API to the `ProposeContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score `w`.
 """, propose)

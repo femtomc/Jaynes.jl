@@ -46,15 +46,34 @@ struct Gradients <: UtilitySelection
     Gradients(tree, utility) = new(tree, utility)
 end
 
-has_grad(ps::Gradients, addr) = haskey(ps.utility, addr)
+has_grad(ps::Gradients, addr::T) where T <: Address = haskey(ps.utility, addr)
+function has_grad(ps::Gradients, addr::T) where T <: Tuple
+    isempty(addr) && return false
+    length(addr) == 1 && return has_grad(ps, addr[1])
+    return has_grad(ps.tree[addr[1]], addr[2 : end])
+end
+get_grad(ps::Gradients, addr::T) where T <: Address = getindex(ps.utility, addr)
+function get_grad(ps::Gradients, addr::T) where T <: Tuple
+    isempty(addr) && error("get_grad: index error - tuple address is empty.")
+    length(addr) == 1 && return get_grad(ps, addr[1])
+    return get_grad(ps.tree[addr[1]], addr[2 : end])
+end
+has_sub(ps::Gradients, addr::T) where T <: Address = haskey(ps.tree, addr)
+function has_sub(ps::Gradients, addr::T) where T <: Tuple
+    isempty(addr) && return false
+    length(addr) == 1 && return has_sub(ps, addr[1])
+    return has_sub(ps.tree[addr[1]], addr[2 : end])
+end
+get_sub(ps::Gradients, addr::T) where T <: Address = getindex(ps.tree, addr)
+function get_sub(ps::Gradients, addr::T) where T <: Tuple
+    isempty(addr) && error("get_sub: index error - tuple address is empty.")
+    length(addr) == 1 && return get_sub(ps, addr[1])
+    return get_sub(ps.tree[addr[1]], addr[2 : end])
+end
 
-get_grad(ps::Gradients, addr) = getindex(ps.utility, addr)
+# ------------ Builders ------------ #
 
-has_sub(ps::Gradients, addr) = haskey(ps.tree, addr)
-
-get_sub(ps::Gradients, addr) = getindex(ps.tree, addr)
-
-function push!(ps::Gradients, addr, val)
+function push!(ps::Gradients, addr::T, val) where T <: Address
     has_grad(ps, addr) && begin
         ps.utility[addr] += val
         return
@@ -62,7 +81,25 @@ function push!(ps::Gradients, addr, val)
     ps.utility[addr] = val
 end
 
+function push!(ps::Gradients, addr::T, val) where T <: Tuple
+    isempty(addr) && return
+    length(addr) == 1 && push!(ps, addr[1], val)
+    hd = addr[1]
+    tl = addr[2 : end]
+    if has_sub(ps, hd)
+        push!(get_sub(ps, hd), tl, val)
+    else
+        sub = Gradients()
+        push!(sub, tl, val)
+        ps.tree[hd] = sub
+    end
+end
+
+# ------------ Adjoint ------------ #
+
 Zygote.@adjoint Gradients(tree, utility) = Gradients(tree, utility), s_grad -> (nothing, nothing)
+
+# ------------ Combining two sets of gradients ------------ #
 
 function merge(sel1::Gradients,
                sel2::Gradients)
@@ -86,13 +123,13 @@ end
 
 abstract type Parameters <: UtilitySelection end
 
-struct NoParameters <: Parameters end
+struct EmptyParameters <: Parameters end
 
-Parameters() = NoParameters()
-has_param(np::NoParameters, addr) = false
-get_param(np::NoParameters, addr) = error("(get_param) called on instance of NoParameters. No parameters!")
-has_sub(np::NoParameters, addr) = false
-get_sub(np::NoParameters, addr) = error("(get_sub) called on instance of NoParameters. No parameters!")
+Parameters() = EmptyParameters()
+has_param(np::EmptyParameters, addr) = false
+get_param(np::EmptyParameters, addr) = error("(get_param) called on instance of EmptyParameters. No parameters!")
+has_sub(np::EmptyParameters, addr) = false
+get_sub(np::EmptyParameters, addr) = error("(get_sub) called on instance of EmptyParameters. No parameters!")
 
 struct LearnableParameters <: Parameters
     tree::Dict{Address, LearnableParameters}
@@ -101,15 +138,54 @@ struct LearnableParameters <: Parameters
 end
 
 has_param(ps::LearnableParameters, addr) = haskey(ps.utility, addr)
-get_param(ps::LearnableParameters, addr) = getindex(ps.utility, addr)
+get_param(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.utility, addr)
+function get_param(ps::LearnableParameters, addr::T) where T <: Tuple
+    isempty(addr) && return nothing
+    length(addr) == 1 && return get_param(ps, addr[1])
+    return get_param(ps.tree[addr[1]], addr[2 : end])
+end
+getindex(ps::LearnableParameters, addr) = get_param(ps, addr)
 has_sub(ps::LearnableParameters, addr) = haskey(ps.tree, addr)
-get_sub(ps::LearnableParameters, addr) = getindex(ps.tree, addr)
+get_sub(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.tree, addr)
+function get_sub(ps::LearnableParameters, addr::T) where T <: Tuple
+    isempty(addr) && return Parameters()
+    length(addr) == 1 && return get_sub(ps, addr[1])
+    return get_sub(ps.tree[addr[1]], addr[2 : end])
+end
 
-function push!(ps::LearnableParameters, addr, val)
+# ------------ Builders ------------ #
+
+function push!(ps::LearnableParameters, addr::T, val) where T <: Address
     ps.utility[addr] = val
 end
 
+function push!(ps::LearnableParameters, addr::T, val) where T <: Tuple
+    isempty(addr) && return
+    length(addr) == 1 && push!(ps, addr[1], val)
+    hd = addr[1]
+    tl = addr[2 : end]
+    if has_sub(ps, hd)
+        push!(get_sub(ps, hd), tl, val)
+    else
+        sub = LearnableParameters()
+        push!(sub, tl, val)
+        ps.tree[hd] = sub
+    end
+end
+
+function parameters(arr::Array{Pair{T, K}}) where {T <: Tuple, K}
+    top = LearnableParameters()
+    map(arr) do (k, v)
+        push!(top, k, v)
+    end
+    return top
+end
+
+# ------------ Adjoint ------------ #
+
 Zygote.@adjoint LearnableParameters(tree, utility) = LearnableParameters(tree, utility), s_grad -> (nothing, nothing)
+
+# ------------ Merging two sets of parameters ------------ #
 
 function merge(sel1::LearnableParameters,
                sel2::LearnableParameters)
@@ -129,45 +205,6 @@ end
 
 +(a::LearnableParameters, b::LearnableParameters) = merge(a, b)
 
-# ------------ Trace to parameters ------------ #
-
-function site_push!(chs::LearnableParameters, addr::Address, cs::LearnableSite)
-    push!(chs, addr, cs.val)
-end
-
-function site_push!(chs::LearnableParameters, addr::Address, cs::HierarchicalCallSite)
-    subtrace = cs.trace
-    subchs = LearnableParameters()
-    for (k, v) in subtrace.calls
-        site_push!(subchs, k, v)
-    end
-    for (k, v) in subtrace.params
-        site_push!(subchs, k, v)
-    end
-    chs.tree[addr] = subchs
-end
-
-function push!(chs::LearnableParameters, tr::HierarchicalTrace)
-    for (k, v) in tr.calls
-        site_push!(chs, k, v)
-    end
-    for (k, v) in tr.params
-        site_push!(chs, k, v)
-    end
-end
-
-function get_parameters(tr::HierarchicalTrace)
-    top = LearnableParameters()
-    push!(top, tr)
-    return top
-end
-
-function get_parameters(cl::HierarchicalCallSite)
-    top = LearnableParameters()
-    push!(top, cl.trace)
-    return top
-end
-
 # ------------ update_parameters links into Flux optimiser APIs ------------ #
 
 function update_parameters(opt, a::LearnableParameters, b::Gradients)
@@ -179,7 +216,7 @@ end
 
 # ------------ Pretty printing utility selections ------------ #
 
-function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::K) where {T <: Union{Symbol, Pair}, K <: UtilitySelection}
+function collect!(par::T, addrs::Vector, chd::Dict, chs::K) where {T <: Tuple, K <: UtilitySelection}
     for (k, v) in chs.utility
         push!(addrs, (par..., k))
         chd[(par..., k)] = v
@@ -189,7 +226,7 @@ function collect!(par::T, addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Sy
     end
 end
 
-function collect!(addrs::Vector{Union{Symbol, Pair}}, chd::Dict{Union{Symbol, Pair}, Any}, chs::K) where K <: UtilitySelection
+function collect!(addrs::Vector, chd::Dict, chs::K) where K <: UtilitySelection
     for (k, v) in chs.utility
         push!(addrs, (k, ))
         chd[(k, )] = v
@@ -201,13 +238,13 @@ end
 
 import Base.collect
 function collect(chs::K) where K <: UtilitySelection
-    addrs = Union{Symbol, Pair}[]
-    chd = Dict{Union{Symbol, Pair}, Any}()
+    addrs = []
+    chd = Dict()
     collect!(addrs, chd, chs)
     return addrs, chd
 end
 
-function Base.display(chs::Gradients; show_values = false)
+function Base.display(chs::Gradients; show_values = true)
     println("  __________________________________\n")
     println("             Gradients\n")
     addrs, chd = collect(chs)
@@ -223,7 +260,7 @@ function Base.display(chs::Gradients; show_values = false)
     println("  __________________________________\n")
 end
 
-function Base.display(chs::LearnableParameters; show_values = false)
+function Base.display(chs::LearnableParameters; show_values = true)
     println("  __________________________________\n")
     println("             Parameters\n")
     addrs, chd = collect(chs)

@@ -2,9 +2,8 @@
 
 struct VectorizedTrace{C <: RecordSite} <: Trace
     subrecords::Vector{C}
-    params::Dict{Address, LearnableSite}
-    VectorizedTrace{C}() where C = new{C}(Vector{C}(), Dict{Address, LearnableSite}())
-    VectorizedTrace(arr::Vector{C}) where C <: RecordSite = new{C}(arr, Dict{Address, LearnableSite}()) 
+    VectorizedTrace{C}() where C = new{C}(Vector{C}())
+    VectorizedTrace(arr::Vector{C}) where C <: RecordSite = new{C}(arr)
 end
 has_choice(tr::VectorizedTrace{<: CallSite}, addr) = false
 function has_choice(tr::VectorizedTrace{ChoiceSite}, addr)
