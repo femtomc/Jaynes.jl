@@ -92,8 +92,9 @@ export learnable, plate, markov, cond
 export NoChange, UndefinedChange, VectorDiff
 
 # Selections and parameters.
-export selection, anywhere, intersection, union, get_selection, get_parameters, compare, has_query, update_parameters
-export parameters
+export selection, array, parameters
+export anywhere, intersection, union
+export get_selection, get_parameters, compare, has_query, update_parameters, dump_queries, merge!, merge
 
 # Inference.
 export importance_sampling, is
@@ -106,6 +107,6 @@ export hamiltonian_monte_carlo, hmc
 export @primitive, @load_soss_fmi, @load_gen_fmi, @load_turing_fmi
 
 # Utilities.
-export display, merge, get_score
+export display, getindex, haskey, get_score, get_ret
 
 end # module

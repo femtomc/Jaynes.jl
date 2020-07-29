@@ -9,9 +9,9 @@ rand(addr::Address, d::Distribution{T}) where T = rand(d)
 rand(addr::Address, fn::Function, args...) = fn(args...)
 rand(addr::Address, fn::Function, args::Tuple, ret_score::Function) = fn(args...)
 learnable(addr::Address, p::T) where T = p
-plate(addr::Address, args...) = error("(plate) call with address $addr evaluated outside of the tracer.")
-markov(addr::Address, args...) = error("(markov) call with address $addr evaluated outside of the tracer.")
-cond(addr::Address, args...) = error("(cond) call with address $addr evaluated outside of the tracer.")
+plate(addr::Address, args...) = error("(plate) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+markov(addr::Address, args...) = error("(markov) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+cond(addr::Address, args...) = error("(cond) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 
 # Generic abstract types..
 abstract type RecordSite end
@@ -27,7 +27,7 @@ end
 get_score(cs::ChoiceSite) = cs.score
 getindex(cs::ChoiceSite, addr::Address) = nothing
 haskey(cs::ChoiceSite, addr::Address) = false
-unwrap(cs::ChoiceSite) = cs.val
+get_ret(cs::ChoiceSite) = cs.val
 
 # ------------ Site with a user-declared parameter ------------ #
 
@@ -41,7 +41,88 @@ abstract type Trace end
 
 include("traces/hierarchical.jl")
 include("traces/vectorized.jl")
-include("traces/cond.jl")
+include("traces/conditional.jl")
+
+# ------------ Pretty printing ------------ #
+
+function Base.display(call::C; 
+                      fields::Array{Symbol, 1} = [:val],
+                      show_full = false) where C <: CallSite
+    println("  __________________________________\n")
+    println("               Playback\n")
+    println(" type : $C\n")
+    map(fieldnames(C)) do f
+        val = getfield(call, f)
+        typeof(val) <: Dict{Address, ChoiceSite} && begin 
+            vals = collect(val)
+            if length(vals) > 5 && !show_full
+                map(vals[1:5]) do (k, v)
+                    println(" $(k)")
+                    map(fieldnames(ChoiceSite)) do nm
+                        !(nm in fields) && return
+                        println("          $(nm)  = $(getfield(v, nm))")
+                    end
+                    println("")
+                end
+                println("                  ...\n")
+                println("  __________________________________\n")
+                return
+            else
+                map(vals) do (k, v)
+                    println(" $(k)")
+                    map(fieldnames(ChoiceSite)) do nm
+                        !(nm in fields) && return
+                        println("          $(nm)  = $(getfield(v, nm))")
+                    end
+                    println("")
+                end
+                println("  __________________________________\n")
+                return
+            end
+        end
+        typeof(val) <: Real && begin
+            println(" $(f) : $(val)\n")
+            return
+        end
+        println(" $(f) : $(typeof(val))\n")
+    end
+    println("  __________________________________\n")
+end
+
+import Base.collect
+function collect(tr::Trace)
+    addrs = Any[]
+    chd = Dict{Any, Any}()
+    meta = Any[]
+    collect!(addrs, chd, tr, meta)
+    return addrs, chd, meta
+end
+
+function Base.display(tr::Trace; 
+                      show_values = true, 
+                      show_types = false)
+    println("  __________________________________\n")
+    println("               Addresses\n")
+    addrs, chd, meta = collect(tr)
+    if show_values
+        for a in addrs
+            println(" $(a) = $(chd[a])")
+        end
+    elseif show_types
+        for a in addrs
+            println(" $(a) = $(typeof(chd[a]))")
+        end
+    elseif show_types && show_values
+        for a in addrs
+            println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
+        end
+    else
+        for a in addrs
+            println(" $(a)")
+        end
+    end
+    println("  __________________________________\n")
+end
 
 # ------------ Documentation ------------ #
 

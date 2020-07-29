@@ -48,11 +48,20 @@ function get_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tu
     length(addr) == 1 && return get_query(chs, addr[1])
     return get_query(chs.tree[addr[1]], addr[2 : end])
 end
+function getindex(chs::ConstrainedHierarchicalSelection, addr...)
+    has_query(chs, addr) && return get_query(chs, addr)
+    has_sub(chs, addr) && return get_sub(chs, addr)
+    error("(getindex): no query or subselection at $addr.")
+end
 
+push_query!(toplevel::Set, k::K, q::T) where {K, T <: Address} = push!(toplevel, (k, q))
+push_query!(toplevel::Set, k::K, q::T) where {K, T <: Tuple} = push!(toplevel, (k, q...))
 function dump_queries(chs::ConstrainedHierarchicalSelection)
     toplevel = dump_queries(chs.query)
     for (k, v) in chs.tree
-        toplevel = union(toplevel, dump_queries(v))
+        for q in dump_queries(v)
+            push_query!(toplevel, k, q)
+        end
     end
     return toplevel
 end

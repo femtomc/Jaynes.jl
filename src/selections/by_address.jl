@@ -7,7 +7,7 @@ struct ConstrainedByAddress <: ConstrainedSelectQuery
 end
 
 has_query(csa::ConstrainedByAddress, addr) = haskey(csa.query, addr)
-dump_queries(csa::ConstrainedByAddress) = keys(csa.query)
+dump_queries(csa::ConstrainedByAddress) = Set{Any}(keys(csa.query))
 get_query(csa::ConstrainedByAddress, addr) = getindex(csa.query, addr)
 isempty(csa::ConstrainedByAddress) = isempty(csa.query)
 function push!(sel::ConstrainedByAddress, addr, val)

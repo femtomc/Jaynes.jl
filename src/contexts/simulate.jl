@@ -75,7 +75,7 @@ end
 include("hierarchical/simulate.jl")
 include("plate/simulate.jl")
 include("markov/simulate.jl")
-include("cond/simulate.jl")
+include("conditional/simulate.jl")
 
 # ------------ Documentation ------------ #
 
