@@ -14,6 +14,13 @@ function has_choice(tr::VectorizedTrace{<: CallSite}, addr::T) where T <: Tuple
 end
 has_choice(tr::VectorizedTrace{ChoiceSite}, addr::Int) = addr < length(tr.subrecords)
 
+get_choice(tr::VectorizedTrace{<: ChoiceSite}, addr::Int) = return tr.subrecords[addr]
+function get_choice(tr::VectorizedTrace{<: CallSite}, addr::T) where T <: Tuple
+    isempty(addr) && error("VectorizedTrace (get_choice): vectorized trace contains call sites, no choice sites at $addr.")
+    length(addr) == 1 && return get_choice(tr, addr[1])
+    return get_choice(get_call(tr, addr[1]), addr[2 : end])
+end
+
 has_call(tr::VectorizedTrace{<: ChoiceSite}, addr) = false
 has_call(tr::VectorizedTrace{<: CallSite}, addr::Int) = addr <= length(tr.subrecords)
 function has_call(tr::VectorizedTrace{<: CallSite}, addr::T) where T <: Tuple
@@ -80,32 +87,19 @@ struct VectorizedCallSite{F, D, C <: RecordSite, J, K} <: CallSite
     end
 end
 
-function has_choice(vcs::VectorizedCallSite, addr)
-    has_choice(vcs.trace, addr)
-end
+has_choice(vcs::VectorizedCallSite, addr) = has_choice(vcs.trace, addr)
 
-function has_call(vcs::VectorizedCallSite, addr)
-    has_call(vcs.trace, addr)
-end
+get_choice(vcs::VectorizedCallSite, addr) = get_choice(vcs.trace, addr)
 
-function get_call(vcs::VectorizedCallSite, addr)
-    has_call(vcs.trace, addr) && return get_call(vcs.trace, addr)
-    error("VectorizedCallSite (get_call): no call at $addr.")
-end
+has_call(vcs::VectorizedCallSite, addr) = has_call(vcs.trace, addr)
+
+get_call(vcs::VectorizedCallSite, addr) = get_call(vcs.trace, addr)
 
 get_score(vcs::VectorizedCallSite) = vcs.score
 
 getindex(vcs::VectorizedCallSite, addrs...) = getindex(vcs.trace, addrs...)
 
-haskey(vcs::VectorizedCallSite, addr::Int) = addr <= length(vcs.trace.subrecords)
-function haskey(vcs::VectorizedCallSite, addr::T) where T <: Tuple
-    isempty(addr) && return false
-    length(addr) == 1 && return haskey(vcs, addr[1])
-    hd = addr[1]
-    tl = addr[2 : end]
-    haskey(vcs, hd) && haskey(getindex(vcs, hd), tl)
-    return false
-end
+haskey(vcs::VectorizedCallSite, addrs...) = haskey(vcs.trace, addrs...)
 
 get_ret(cs::VectorizedCallSite) = cs.ret
 
