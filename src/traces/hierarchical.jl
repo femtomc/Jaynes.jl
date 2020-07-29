@@ -15,14 +15,14 @@ has_choice(tr::HierarchicalTrace, addr::T) where T <: Address = haskey(tr.choice
 function has_choice(tr::HierarchicalTrace, addr::T) where T <: Tuple
     isempty(addr) && return false
     length(addr) == 1 && return has_choice(tr, addr[1])
-    has_call(tr, addr[1]) && return has_choice(get_call(tr, addr[1]), addr[2 : end])
+    has_call(tr, addr[1]) && has_choice(get_call(tr, addr[1]), addr[2 : end])
 end
 
 has_call(tr::HierarchicalTrace, addr::T) where T <: Address = haskey(tr.calls, addr)
 function has_call(tr::HierarchicalTrace, addr::T) where T <: Tuple
     isempty(addr) && return false
     length(addr) == 1 && return has_call(tr, addr[1])
-    has_call(tr, addr[1]) && return has_call(get_call(tr, addr[1]), addr[2 : end])
+    has_call(tr, addr[1]) && has_call(get_call(tr, addr[1]), addr[2 : end])
 end
 
 get_call(tr::HierarchicalTrace, addr::T) where T <: Address = tr.calls[addr]
@@ -39,10 +39,10 @@ function get_choice(tr::HierarchicalTrace, addr::T) where T <: Tuple
     get_choice(get_call(tr, addr[1]), addr[2 : end])
 end
 
-function getindex(tr::HierarchicalTrace, addr...)
-    has_call(tr, addr) && return get_call(tr, addr)
-    has_choice(tr, addr) && return get_choice(tr, addr)
-    error("HierarchicalTrace (getindex): no choice or call at $addr.")
+function getindex(tr::HierarchicalTrace, addrs...)
+    has_call(tr, addrs) && return get_call(tr, addrs)
+    has_choice(tr, addrs) && return get_choice(tr, addrs)
+    error("HierarchicalTrace (getindex): no choice or call at $addrs.")
 end
 
 function Base.haskey(tr::HierarchicalTrace, addr::T) where T <: Address
@@ -53,7 +53,7 @@ end
 function Base.haskey(tr::HierarchicalTrace, addr::T) where T <: Tuple
     isempty(addr) && return false
     length(addr) == 1 && return haskey(tr, addr[1])
-    has_call(tr, addr[1]) && return haskey(get_call(tr, addr[1]), addr[2 : end])
+    has_call(tr, addr[1]) && haskey(get_call(tr, addr[1]), addr[2 : end])
 end
 
 # These methods only work for addresses. You should never be adding a call or choice site, except at the current stack level.
@@ -102,9 +102,11 @@ struct HierarchicalCallSite{J, K} <: CallSite
     ret::K
 end
 
-has_choice(bbcs::HierarchicalCallSite, addr) = haskey(bbcs.trace.choices, addr)
+has_choice(bbcs::HierarchicalCallSite, addr) = has_choice(bbcs.trace, addr)
 
-has_call(bbcs::HierarchicalCallSite, addr) = haskey(bbcs.trace.calls, addr)
+get_choice(bbcs::HierarchicalCallSite, addr) = get_choice(bbcs.trace, addr)
+
+has_call(bbcs::HierarchicalCallSite, addr) = has_call(bbcs.trace, addr)
 
 get_call(bbcs::HierarchicalCallSite, addr) = get_call(bbcs.trace, addr)
 
