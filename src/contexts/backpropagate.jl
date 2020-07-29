@@ -144,24 +144,24 @@ end
 function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
-    choice_gradients(Parameters(), choice_grads, choice_selection, cl, ret_grad)
-    return choice_grads
+    _, vals, _ = choice_gradients(Parameters(), choice_grads, choice_selection, cl, ret_grad)
+    return vals, choice_grads
 end
 
 function get_choice_gradients(params, cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
-    choice_gradients(params, choice_grads, choice_selection, cl, ret_grad)
-    return choice_grads
+    _, vals, _ = choice_gradients(params, choice_grads, choice_selection, cl, ret_grad)
+    return vals, choice_grads
 end
 
-function get_choice_gradients(cl::T, sel::K, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
+function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
     choice_grads = Gradients()
     _, vals, _ = choice_gradients(Parameters(), choice_grads, sel, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_choice_gradients(params, cl::T, sel::K, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
+function get_choice_gradients(sel::K, params, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
     choice_grads = Gradients()
     _, vals, _ = choice_gradients(params, choice_grads, sel, cl, ret_grad)
     return vals, choice_grads

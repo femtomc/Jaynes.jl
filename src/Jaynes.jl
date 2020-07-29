@@ -18,7 +18,7 @@ using Flux.Optimise: update!
 @reexport using Flux.Optimise
 
 # Toplevel importants :)
-const Address = Any
+const Address = Union{Int, Symbol, Pair}
 
 # ------------ Com-pirate fixes ------------ #
 
