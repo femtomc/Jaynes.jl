@@ -29,6 +29,14 @@ function has_call(tr::VectorizedTrace{<: CallSite}, addr::T) where T <: Tuple
     has_call(tr, addr[1]) && has_call(get_call(tr, addr[1]), addr[2 : end])
 end
 
+Base.haskey(tr::VectorizedTrace{<: ChoiceSite}, addr::T) where T <: Address = has_choice(tr, addr)
+Base.haskey(tr::VectorizedTrace{<: CallSite}, addr::T) where T <: Address = has_call(tr, addr)
+function Base.haskey(tr::VectorizedTrace{<: CallSite}, addr::Tuple) where T <: Address
+    isempty(addr) && return false
+    length(addr) == 1 && return haskey(tr, addr[1])
+    has_call(tr, addr[1]) && haskey(get_call(tr, addr[1]), addr[2 : end])
+end
+
 get_call(tr::VectorizedTrace{<: CallSite}, addr::Int) = return tr.subrecords[addr]
 function get_call(tr::VectorizedTrace{<: CallSite}, addr::T) where T <: Tuple
     return tr.subrecords[addr]

@@ -44,8 +44,8 @@ end
                                  (:intercept_mu, ) => 0.0,
                                  (:intercept_log_std, ) => 0.0])
     params, _, _ = advi(sel, initial_params, var, (), model, (); iters = 2000, opt = ADAM(0.005, (0.9, 0.999)))
-    @test params[:slope_mu] ≈ -1.0 atol = 5e-2
-    @test params[:slope_log_std] ≈ 0.5 atol = 5e-2
-    @test params[:intercept_mu] ≈ 1.0 atol = 5e-2
-    @test params[:intercept_log_std] ≈ 2.0 atol = 5e-2
+    @test params[:slope_mu] ≈ -1.0 atol = 7e-2
+    @test params[:slope_log_std] ≈ 0.5 atol = 7e-2
+    @test params[:intercept_mu] ≈ 1.0 atol = 7e-2
+    @test params[:intercept_log_std] ≈ 2.0 atol = 7e-2
 end

@@ -28,7 +28,7 @@ end
         @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
         @test !isnan(ps.lmle)
         for call in ps.calls
-            @test call[:z] == z
+            @test get_ret(call[:z]) == z
         end
     end
 
@@ -39,7 +39,7 @@ end
         @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
         @test !isnan(ps.lmle)
         for call in ps.calls
-            @test call[:z] == z
+            @test get_ret(call[:z]) == z
         end
     end
 end
