@@ -46,17 +46,17 @@ struct Gradients <: UtilitySelection
     Gradients(tree, utility) = new(tree, utility)
 end
 
-has_grad(ps::Gradients, addr::T) where T <: Address = haskey(ps.utility, addr)
-function has_grad(ps::Gradients, addr::T) where T <: Tuple
+has_top(ps::Gradients, addr::T) where T <: Address = haskey(ps.utility, addr)
+function has_top(ps::Gradients, addr::T) where T <: Tuple
     isempty(addr) && return false
-    length(addr) == 1 && return has_grad(ps, addr[1])
-    return has_grad(ps.tree[addr[1]], addr[2 : end])
+    length(addr) == 1 && return has_top(ps, addr[1])
+    return has_top(ps.tree[addr[1]], addr[2 : end])
 end
-get_grad(ps::Gradients, addr::T) where T <: Address = getindex(ps.utility, addr)
-function get_grad(ps::Gradients, addr::T) where T <: Tuple
-    isempty(addr) && error("get_grad: index error - tuple address is empty.")
-    length(addr) == 1 && return get_grad(ps, addr[1])
-    return get_grad(ps.tree[addr[1]], addr[2 : end])
+get_top(ps::Gradients, addr::T) where T <: Address = getindex(ps.utility, addr)
+function get_top(ps::Gradients, addr::T) where T <: Tuple
+    isempty(addr) && error("get_top: index error - tuple address is empty.")
+    length(addr) == 1 && return get_top(ps, addr[1])
+    return get_top(ps.tree[addr[1]], addr[2 : end])
 end
 has_sub(ps::Gradients, addr::T) where T <: Address = haskey(ps.tree, addr)
 function has_sub(ps::Gradients, addr::T) where T <: Tuple
@@ -74,7 +74,7 @@ end
 # ------------ Builders ------------ #
 
 function push!(ps::Gradients, addr::T, val) where T <: Address
-    has_grad(ps, addr) && begin
+    has_top(ps, addr) && begin
         ps.utility[addr] += val
         return
     end
@@ -128,8 +128,8 @@ abstract type Parameters <: UtilitySelection end
 struct EmptyParameters <: Parameters end
 
 Parameters() = EmptyParameters()
-has_param(np::EmptyParameters, addr) = false
-get_param(np::EmptyParameters, addr) = error("(get_param) called on instance of EmptyParameters. No parameters!")
+has_top(np::EmptyParameters, addr) = false
+get_top(np::EmptyParameters, addr) = error("(get_param) called on instance of EmptyParameters. No parameters!")
 has_sub(np::EmptyParameters, addr) = false
 get_sub(np::EmptyParameters, addr) = np
 
@@ -157,24 +157,24 @@ set_sub!(ps::LearnableParameters, addr::T, sub::LearnableParameters) where T <: 
 function set_sub!(ps::LearnableParameters, addr::T, sub::LearnableParameters) where T <: Tuple
     isempty(addr) && return
     length(addr) == 1 && set_sub!(ps, addr[1], sub)
-    has_call(ps, addr[1]) && set_sub!(get_call(ps, addr[1]), addr[2 : end], sub)
+    has_sub(ps, addr[1]) && set_sub!(get_sub(ps, addr[1]), addr[2 : end], sub)
 end
 
-has_param(ps::LearnableParameters, addr::T) where T <: Address = haskey(ps.utility, addr)
-function has_param(ps::LearnableParameters, addr::T) where T <: Tuple
+has_top(ps::LearnableParameters, addr::T) where T <: Address = haskey(ps.utility, addr)
+function has_top(ps::LearnableParameters, addr::T) where T <: Tuple
     isempty(addr) && return false
-    length(addr) == 1 && return has_param(ps, addr[1])
-    has_sub(ps, addr[1]) && return has_param(get_sub(ps, addr[1]), addr[2 : end])
+    length(addr) == 1 && return has_top(ps, addr[1])
+    has_sub(ps, addr[1]) && return has_top(get_sub(ps, addr[1]), addr[2 : end])
 end
 
-get_param(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.utility, addr)
-function get_param(ps::LearnableParameters, addr::T) where T <: Tuple
-    isempty(addr) && error("LearnableParameters (get_param): invalid index at $addr.")
-    length(addr) == 1 && return get_param(ps, addr[1])
-    get_param(ps.tree[addr[1]], addr[2 : end])
+get_top(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.utility, addr)
+function get_top(ps::LearnableParameters, addr::T) where T <: Tuple
+    isempty(addr) && error("LearnableParameters (get_top): invalid index at $addr.")
+    length(addr) == 1 && return get_top(ps, addr[1])
+    get_top(ps.tree[addr[1]], addr[2 : end])
 end
 
-getindex(ps::LearnableParameters, addrs...) = get_param(ps, addrs)
+getindex(ps::LearnableParameters, addrs...) = get_top(ps, addrs)
 
 # ------------ Builders ------------ #
 

@@ -15,7 +15,7 @@ function trace_retained(vcs::VectorizedCallSite,
 
     # Start at min
     ss = get_sub(s, min)
-    prev_cl = get_call(vcs, min)
+    prev_cl = get_sub(vcs, min)
     if min == 1
         ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), args...)
     else
@@ -27,7 +27,7 @@ function trace_retained(vcs::VectorizedCallSite,
 
     for i in min + 1 : n_len
         ss = get_sub(s, i)
-        prev_cl = get_call(vcs, i)
+        prev_cl = get_sub(vcs, i)
         ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[i - 1]...)
         push!(new_ret, ret)
         push!(new, u_cl)
@@ -50,7 +50,7 @@ function trace_new(vcs::VectorizedCallSite,
     # Start at min, check if it's less than old length. Otherwise, constraints will be applied during generate.
     if min < o_len
         ss = get_sub(s, min)
-        prev_cl = get_call(vcs, min)
+        prev_cl = get_sub(vcs, min)
         if min == 1
             ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), args...)
         else
@@ -63,7 +63,7 @@ function trace_new(vcs::VectorizedCallSite,
         # From min, apply constraints and compute updates to weight.
         for i in min + 1 : o_len
             ss = get_sub(s, i)
-            prev_cl = get_call(vcs, i)
+            prev_cl = get_sub(vcs, i)
             ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[i - 1]...)
             push!(new_ret, ret)
             push!(new, u_cl)

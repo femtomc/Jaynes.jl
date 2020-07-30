@@ -25,21 +25,21 @@ function simulate(fn::typeof(rand), d::Distribution{T}) where T
     ctx = SimulateContext()
     addr = gensym()
     ret = ctx(rand, addr, d)
-    return ret, get_choice(ctx.tr, addr)
+    return ret, get_top(ctx.tr, addr)
 end
 
 function simulate(params, fn::typeof(rand), d::Distribution{T}) where T
     ctx = SimulateContext(params)
     addr = gensym()
     ret = ctx(rand, addr, d)
-    return ret, get_choice(ctx.tr, addr)
+    return ret, get_top(ctx.tr, addr)
 end
 
 function simulate(c::typeof(plate), fn::Function, args::Vector)
     ctx = SimulateContext()
     addr = gensym()
     ret = ctx(plate, addr, fn, args)
-    return ret, get_call(ctx.tr, addr)
+    return ret, get_sub(ctx.tr, addr)
 end
 
 function simulate(params, c::typeof(plate), fn::Function, args::Vector)
@@ -47,21 +47,21 @@ function simulate(params, c::typeof(plate), fn::Function, args::Vector)
     v_ps = parameters(addr => params)
     ctx = SimulateContext(v_ps)
     ret = ctx(plate, addr, fn, args)
-    return ret, get_call(ctx.tr, addr)
+    return ret, get_sub(ctx.tr, addr)
 end
 
 function simulate(fn::typeof(plate), d::Distribution{T}, len::Int) where T
     ctx = SimulateContext()
     addr = gensym()
     ret = ctx(plate, addr, d, len)
-    return ret, get_call(ctx.tr, addr)
+    return ret, get_sub(ctx.tr, addr)
 end
 
 function simulate(c::typeof(markov), fn::Function, len::Int, args...)
     ctx = SimulateContext()
     addr = gensym()
     ret = ctx(markov, addr, fn, len, args...)
-    return ret, get_call(ctx.tr, addr)
+    return ret, get_sub(ctx.tr, addr)
 end
 
 function simulate(params, c::typeof(markov), fn::Function, len::Int, args...)
@@ -69,7 +69,7 @@ function simulate(params, c::typeof(markov), fn::Function, len::Int, args...)
     v_ps = parameters(addr => params)
     ctx = SimulateContext(v_ps)
     ret = ctx(markov, addr, fn, len, args...)
-    return ret, get_call(ctx.tr, addr)
+    return ret, get_sub(ctx.tr, addr)
 end
 
 # ------------ includes ------------ #

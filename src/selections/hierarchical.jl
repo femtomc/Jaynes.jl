@@ -32,26 +32,26 @@ function set_sub!(chs::ConstrainedHierarchicalSelection, addr::T, sub::K) where 
     has_sub(chs, addr[1]) && set_sub!(chs.tree[addr[1]], addr[2 : end], sub)
 end
 
-has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs.query, addr)
-function has_query(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) where T <: Address
+has_top(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_top(chs.query, addr)
+function has_top(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) where T <: Address
     return false
 end
-function has_query(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address
-    return has_query(chs.query, addr[1])
+function has_top(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address
+    return has_top(chs.query, addr[1])
 end
-function has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
-    has_sub(chs, addr[1]) && return has_query(get_sub(chs, addr[1]), addr[2 : end])
-end
-
-get_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = get_query(chs.query, addr)
-get_query(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) = nothing
-get_query(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = get_query(chs, addr[1])
-function get_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
-    has_sub(chs, addr[1]) && return get_query(chs.tree[addr[1]], addr[2 : end])
-    error("ConstrainedHierarchicalSelection (get_query): invalid index at $addr.")
+function has_top(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    has_sub(chs, addr[1]) && return has_top(get_sub(chs, addr[1]), addr[2 : end])
 end
 
-haskey(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs, addr) || has_sub(chs, addr)
+get_top(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = get_top(chs.query, addr)
+get_top(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) = nothing
+get_top(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = get_top(chs, addr[1])
+function get_top(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    has_sub(chs, addr[1]) && return get_top(chs.tree[addr[1]], addr[2 : end])
+    error("ConstrainedHierarchicalSelection (get_top): invalid index at $addr.")
+end
+
+haskey(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_top(chs, addr) || has_sub(chs, addr)
 haskey(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) = false
 haskey(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = haskey(chs, addr[1])
 function haskey(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
@@ -59,7 +59,7 @@ function haskey(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
 end
 
 function getindex(chs::ConstrainedHierarchicalSelection, addr...)
-    has_query(chs, addr) && return get_query(chs, addr)
+    has_top(chs, addr) && return get_top(chs, addr)
     has_sub(chs, addr) && return get_sub(chs, addr)
     error("ConstrainedHierarchicalSelection (getindex): no query or subselection at $addr.")
 end
@@ -141,7 +141,7 @@ function fill_array!(val::T, arr::Vector{K}, f_ind::Int) where {K, T <: Constrai
     sorted_tree_keys  = sort(collect(keys(val.tree)))
     idx = f_ind
     for k in sorted_toplevel_keys
-        v = get_query(val, k)
+        v = get_top(val, k)
         n = fill_array!(v, arr, idx)
         idx += n
     end
@@ -158,7 +158,7 @@ function from_array(schema::T, arr::Vector{K}, f_ind::Int) where {K, T <: Constr
     sorted_tree_keys  = sort(collect(keys(schema.tree)))
     idx = f_ind
     for k in sorted_toplevel_keys
-        (n, v) = from_array(get_query(schema, k), arr, idx)
+        (n, v) = from_array(get_top(schema, k), arr, idx)
         idx += n
         push!(sel, k, v)
     end
@@ -276,11 +276,11 @@ function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tu
     return UnconstrainedEmptySelection()
 end
 
-has_query(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(uhs.query, addr)
-has_query(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{}) where T <: Address = false
-has_query(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = has_query(uhs, addr[1])
-function has_query(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tuple
-    haskey(uhs.tree, addr[1]) && has_query(uhs.tree[addr[1]], addr[2 : end])
+has_top(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = has_top(uhs.query, addr)
+has_top(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{}) where T <: Address = false
+has_top(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = has_top(uhs, addr[1])
+function has_top(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    haskey(uhs.tree, addr[1]) && has_top(uhs.tree[addr[1]], addr[2 : end])
 end
 
 has_sub(chs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = haskey(chs.tree, addr)
@@ -309,7 +309,7 @@ function dump_queries(uhs::UnconstrainedHierarchicalSelection)
     return toplevel
 end
 
-haskey(chs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs, addr) || has_sub(chs, addr)
+haskey(chs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = has_top(chs, addr) || has_sub(chs, addr)
 haskey(chs::UnconstrainedHierarchicalSelection, addr::Tuple{}) = false
 haskey(chs::UnconstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = haskey(chs, addr[1])
 function haskey(chs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tuple

@@ -6,19 +6,19 @@
     visit!(ctx, addr)
 
     # Check if in previous trace's choice map.
-    in_prev_chm = has_choice(ctx.prev.trace, addr)
+    in_prev_chm = has_top(ctx.prev.trace, addr)
     in_prev_chm && begin
-        prev = get_choice(ctx.prev.trace, addr)
+        prev = get_top(ctx.prev.trace, addr)
         prev_ret = prev.val
         prev_score = prev.score
     end
 
     # Check if in selection.
-    in_selection = has_query(ctx.select, addr)
+    in_selection = has_top(ctx.select, addr)
 
     # Ret.
     if in_selection
-        ret = get_query(ctx.select, addr)
+        ret = get_top(ctx.select, addr)
         in_prev_chm && begin
             add_choice!(ctx.discard, addr, prev)
         end
@@ -44,7 +44,7 @@ end
 
 @inline function (ctx::UpdateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    has_param(ctx.params, addr) && return get_param(ctx.params, addr)
+    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
     error("Parameter not provided at address $addr.")
 end
 
@@ -55,7 +55,7 @@ end
                                       call::Function,
                                       args...) where {T <: Address, D <: Diff}
     visit!(ctx, addr)
-    has_addr = has_choice(ctx.prev.trace, addr)
+    has_addr = has_top(ctx.prev.trace, addr)
     if has_addr
         cs = get_prev(ctx, addr)
         ss = get_subselection(ctx, addr)
@@ -79,7 +79,7 @@ end
                                       args::Tuple,
                                       score_ret::Function) where {T <: Address, D <: Diff}
     visit!(ctx, addr)
-    has_addr = has_choice(ctx.prev.trace, addr)
+    has_addr = has_top(ctx.prev.trace, addr)
     if has_addr
         cs = get_prev(ctx, addr)
         ss = get_subselection(ctx, addr)
@@ -103,7 +103,7 @@ end
                                       args::Tuple,
                                       score_ret::Distribution{K}) where {K, T <: Address, D <: Diff}
     visit!(ctx, addr)
-    has_addr = has_choice(ctx.prev.trace, addr)
+    has_addr = has_top(ctx.prev.trace, addr)
     if has_addr
         cs = get_prev(ctx, addr)
         ss = get_subselection(ctx, addr)

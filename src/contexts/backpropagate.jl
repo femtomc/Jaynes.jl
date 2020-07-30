@@ -56,7 +56,7 @@ ChoiceBackpropagate(tr::T, init, params, choice_grads, sel::K) where {T <: Trace
 # ------------ Learnable ------------ #
 
 read_parameter(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.params, addr)
-read_parameter(ctx::K, params::ParameterStore, addr::Address) where K <: BackpropagationContext = get_param(ctx.initial_params, addr)
+read_parameter(ctx::K, params::ParameterStore, addr::Address) where K <: BackpropagationContext = get_top(ctx.initial_params, addr)
 
 Zygote.@adjoint function read_parameter(ctx, params, addr)
     ret = read_parameter(ctx, params, addr)
@@ -90,9 +90,9 @@ merge(tp1::Array{Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] f
 Zygote.@adjoint function simulate_call_pullback(params, param_grads, cl::VectorizedCallSite{typeof(markov)}, args)
     ret = simulate_call_pullback(params, param_grads, cl, args)
     fn = ret_grad -> begin
-        arg_grads = accumulate_parameter_gradients!(params, param_grads, get_call(cl, cl.len), ret_grad)
+        arg_grads = accumulate_parameter_gradients!(params, param_grads, get_sub(cl, cl.len), ret_grad)
         for i in (cl.len - 1) : -1 : 1
-            arg_grads = accumulate_parameter_gradients!(params, param_grads, get_call(cl, i), arg_grads)
+            arg_grads = accumulate_parameter_gradients!(params, param_grads, get_sub(cl, i), arg_grads)
         end
         (nothing, nothing, nothing, arg_grads)
     end
@@ -102,9 +102,9 @@ end
 Zygote.@adjoint function simulate_call_pullback(params, param_grads, cl::VectorizedCallSite{typeof(plate)}, args)
     ret = simulate_call_pullback(params, param_grads, cl, args)
     fn = ret_grad -> begin
-        arg_grads = accumulate_parameter_gradients!(params, param_grads, get_call(cl, cl.len), ret_grad[1])
+        arg_grads = accumulate_parameter_gradients!(params, param_grads, get_sub(cl, cl.len), ret_grad[1])
         for i in 2 : cl.len
-            new = accumulate_parameter_gradients!(params, param_grads, get_call(cl, i), ret_grad[i])
+            new = accumulate_parameter_gradients!(params, param_grads, get_sub(cl, i), ret_grad[i])
             arg_grads = merge(arg_grads, new)
         end
         (nothing, nothing, nothing, arg_grads)
@@ -207,7 +207,7 @@ end
 function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr::NamedTuple, sel::K) where K <: UnconstrainedSelection
     values = ConstrainedHierarchicalSelection()
     for (k, v) in cl.trace.choices
-        has_query(sel, k) && begin
+        has_top(sel, k) && begin
             push!(values, k, v.val)
             push!(choice_grads, k, grad_tr.choices[k].val)
         end
@@ -230,39 +230,39 @@ end
 
 # ------------ Convenience getters ------------ #
 
-function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
+function get_top_gradients(cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
     _, vals, _ = choice_gradients(Parameters(), choice_grads, choice_selection, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_choice_gradients(params, cl::T, ret_grad) where T <: CallSite
+function get_top_gradients(params, cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
     _, vals, _ = choice_gradients(params, choice_grads, choice_selection, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
+function get_top_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
     choice_grads = Gradients()
     _, vals, _ = choice_gradients(Parameters(), choice_grads, sel, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_choice_gradients(sel::K, params, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
+function get_top_gradients(sel::K, params, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
     choice_grads = Gradients()
     _, vals, _ = choice_gradients(params, choice_grads, sel, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_parameter_gradients(params, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
+function get_topeter_gradients(params, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
     param_grads = Gradients()
     accumulate_parameter_gradients!(params, param_grads, cl, ret_grad, scaler)
     return param_grads
 end
 
-function get_parameter_gradients(params, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0)
+function get_topeter_gradients(params, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0)
     param_grads = Gradients()
     accumulate_parameter_gradients!(params, param_grads, cl, ret_grad, scaler)
     for k in keys(param_grads.tree)
@@ -275,7 +275,7 @@ end
 function train(params, fn::Function, args...; opt = ADAM(), iters = 1000)
     for i in 1 : iters
         _, cl = simulate(params, fn, args...)
-        grads = get_parameter_gradients(params, cl, 1.0)
+        grads = get_topeter_gradients(params, cl, 1.0)
         params = update_parameters(opt, params, grads)
     end
     return params
@@ -284,7 +284,7 @@ end
 function train(sel, params, fn::Function, args...; opt = ADAM(), iters = 1000)
     for i in 1 : iters
         _, cl, _ = generate(sel, params, fn, args...)
-        grads = get_parameter_gradients(params, cl, 1.0)
+        grads = get_topeter_gradients(params, cl, 1.0)
         params = update_parameters(opt, params, grads)
     end
     return params
@@ -343,18 +343,18 @@ ChoiceBackpropagate(tr::T, init_params, params, choice_grads, sel::K) where {T <
 @doc(
 """
 ```julia
-gradients = get_choice_gradients(params, cl::T, ret_grad) where T <: CallSite
-gradients = get_choice_gradients(cl::T, ret_grad) where T <: CallSite
+gradients = get_top_gradients(params, cl::T, ret_grad) where T <: CallSite
+gradients = get_top_gradients(cl::T, ret_grad) where T <: CallSite
 ```
 
 Returns a `Gradients` object which tracks the gradients with respect to the objective of random choices with differentiable `logpdf` in the program.
-""", get_choice_gradients)
+""", get_top_gradients)
 
 @doc(
 """
 ```julia
-gradients = get_parameter_gradients(params, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+gradients = get_topeter_gradients(params, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
 ```
 
 Returns a `Gradients` object which tracks the gradients of the objective with respect to parameters in the program.
-""", get_parameter_gradients)
+""", get_topeter_gradients)

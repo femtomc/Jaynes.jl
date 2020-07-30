@@ -5,7 +5,7 @@ increment!(ctx::T, w::Float64) where T <: ExecutionContext = ctx.weight += w
 get_subselection(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.select, addr)
 get_subparameters(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.params, addr)
 visit!(ctx::T, addr) where T <: ExecutionContext = visit!(ctx.visited, addr)
-get_prev(ctx::T, addr) where T <: ExecutionContext = get_call(ctx.prev, addr)
+get_prev(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.prev, addr)
 function add_choice!(ctx::T, addr, cs::ChoiceSite) where T <: ExecutionContext
     ctx.score += get_score(cs)
     add_choice!(ctx.tr, addr, cs)

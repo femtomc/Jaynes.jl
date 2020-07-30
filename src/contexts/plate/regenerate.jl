@@ -14,13 +14,13 @@ function trace_retained(vcs::VectorizedCallSite,
     for i in 1 : n_len
         if i in ks
             ss = get_sub(s, i)
-            prev_cl = get_call(vcs, i)
+            prev_cl = get_sub(vcs, i)
             ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), args[i]...)
             new_ret[i] = ret
             new[i] = u_cl
             w_adj += get_score(u_cl) - get_score(prev_cl)
         else
-            new_ret[i] = get_ret(get_call(vcs, i))
+            new_ret[i] = get_ret(get_sub(vcs, i))
         end
     end
     return w_adj, new, new_ret
@@ -44,7 +44,7 @@ function trace_new(vcs::VectorizedCallSite,
     for i in 1 : o_len
         i in ks && begin
             ss = get_sub(s, i)
-            prev_cl = get_call(vcs, i)
+            prev_cl = get_sub(vcs, i)
             ret, u_cl, u_w, rd, d = regenerate(ss, prev_cl, UndefinedChange(), args[i]...)
             new_ret[i] = ret
             new[i] = u_cl

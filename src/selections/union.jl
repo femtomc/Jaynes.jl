@@ -4,9 +4,9 @@ struct ConstrainedUnionSelection <: ConstrainedSelection
     query::Vector{ConstrainedSelection}
 end
 
-function has_query(cus::ConstrainedUnionSelection, addr)
+function has_top(cus::ConstrainedUnionSelection, addr)
     for q in cus.query
-        has_query(q, addr) && return true
+        has_top(q, addr) && return true
     end
     return false
 end
@@ -17,11 +17,11 @@ function dump_queries(cus::ConstrainedUnionSelection)
     end
     return arr
 end
-function get_query(cus::ConstrainedUnionSelection, addr)
+function get_top(cus::ConstrainedUnionSelection, addr)
     for q in cus.query
-        has_query(q, addr) && return get_query(q, addr)
+        has_top(q, addr) && return get_top(q, addr)
     end
-    error("ConstrainedUnionSelection (get_query): query not defined for $addr.")
+    error("ConstrainedUnionSelection (get_top): query not defined for $addr.")
 end
 
 function get_sub(cus::ConstrainedUnionSelection, addr)
@@ -38,9 +38,9 @@ struct UnconstrainedUnionSelection <: UnconstrainedSelection
     query::Vector{UnconstrainedSelection}
 end
 
-function has_query(uus::UnconstrainedUnionSelection, addr)
+function has_top(uus::UnconstrainedUnionSelection, addr)
     for q in uus.query
-        has_query(q, addr) && return true
+        has_top(q, addr) && return true
     end
     return false
 end

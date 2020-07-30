@@ -72,10 +72,10 @@ end
                                   (:z, :x) => 5.0, 
                                   (:z, :z, :y) => 5.0])
         filtered = filter(x -> x == :y, x -> true, observations)
-        @test has_query(filtered, (:z, :z, :y))
+        @test has_top(filtered, (:z, :z, :y))
         filtered = filter(x -> x == :x, x -> true, observations)
-        @test !has_query(filtered, (:z, :z, :y))
-        @test has_query(filtered, :x)
-        @test has_query(filtered, (:z, :x))
+        @test !has_top(filtered, (:z, :z, :y))
+        @test has_top(filtered, :x)
+        @test has_top(filtered, (:z, :x))
     end
 end

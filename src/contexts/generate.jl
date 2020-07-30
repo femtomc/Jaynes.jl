@@ -30,7 +30,7 @@ function generate(sel::L, fn::typeof(rand), d::Distribution{K}) where {L <: Cons
     ctx = Generate(sel)
     addr = gensym()
     ret = ctx(fn, addr, d)
-    return ret, get_choice(ctx.tr, addr), ctx.weight
+    return ret, get_top(ctx.tr, addr), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(markov), call::Function, len::Int, args...) where L <: ConstrainedSelection
@@ -38,7 +38,7 @@ function generate(sel::L, fn::typeof(markov), call::Function, len::Int, args...)
     v_sel = selection(addr => sel)
     ctx = Generate(v_sel)
     ret = ctx(fn, addr, call, len, args...)
-    return ret, get_call(ctx.tr, addr), ctx.weight
+    return ret, get_sub(ctx.tr, addr), ctx.weight
 end
 
 function generate(sel::L, params, fn::typeof(markov), call::Function, len::Int, args...) where L <: ConstrainedSelection
@@ -47,7 +47,7 @@ function generate(sel::L, params, fn::typeof(markov), call::Function, len::Int, 
     v_ps = parameters(addr => params)
     ctx = Generate(v_sel, v_ps)
     ret = ctx(fn, addr, call, len, args...)
-    return ret, get_call(ctx.tr, addr), ctx.weight
+    return ret, get_sub(ctx.tr, addr), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(plate), call::Function, args::Vector) where L <: ConstrainedSelection
@@ -55,7 +55,7 @@ function generate(sel::L, fn::typeof(plate), call::Function, args::Vector) where
     v_sel = selection(addr => sel)
     ctx = Generate(v_sel)
     ret = ctx(fn, addr, call, args)
-    return ret, get_call(ctx.tr, addr), ctx.weight
+    return ret, get_sub(ctx.tr, addr), ctx.weight
 end
 
 function generate(sel::L, params, fn::typeof(plate), call::Function, args::Vector) where L <: ConstrainedSelection
@@ -64,7 +64,7 @@ function generate(sel::L, params, fn::typeof(plate), call::Function, args::Vecto
     v_ps = parameters(addr => params)
     ctx = Generate(v_sel, v_ps)
     ret = ctx(fn, addr, call, args)
-    return ret, get_call(ctx.tr, addr), ctx.weight
+    return ret, get_sub(ctx.tr, addr), ctx.weight
 end
 
 function generate(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int) where {L <: ConstrainedSelection, K}
@@ -72,7 +72,7 @@ function generate(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int) where
     v_sel = selection(addr => sel)
     ctx = Generate(v_sel)
     ret = ctx(fn, addr, d, len)
-    return ret, get_call(ctx.tr, addr), ctx.weight
+    return ret, get_sub(ctx.tr, addr), ctx.weight
 end
 
 # ------------ includes ------------ #

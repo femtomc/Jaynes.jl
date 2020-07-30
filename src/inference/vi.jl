@@ -9,7 +9,7 @@ function one_shot_gradient_estimator(sel::K,
     obs = merge(cl, sel)
     _, mlw = score(obs, params, mod, args...)
     lw = mlw - get_score(cl)
-    gs = get_parameter_gradients(params, cl, nothing, lw * scale)
+    gs = get_topeter_gradients(params, cl, nothing, lw * scale)
     return gs, lw, cl
 end
 

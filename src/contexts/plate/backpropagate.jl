@@ -5,7 +5,7 @@
                                                       call::Function,
                                                       args::Vector) where T <: Address
     #visit!(ctx.visited, addr)
-    vcl = get_call(ctx.tr, addr)
+    vcl = get_sub(ctx.tr, addr)
     param_grads = Gradients()
     params = get_sub(ctx.initial_params, addr)
     ret = simulate_call_pullback(params, param_grads, vcl, args)
@@ -18,7 +18,7 @@ end
                                                    call::Function,
                                                    args::Vector) where T <: Address
     #visit!(ctx.visited, addr)
-    vcl = get_call(ctx.tr, addr)
+    vcl = get_sub(ctx.tr, addr)
     choice_grads = Gradients()
     params = get_sub(ctx.initial_params, addr)
     ret = simulate_choice_pullback(params, choice_grads, get_sub(ctx.select, addr), vcl, args)

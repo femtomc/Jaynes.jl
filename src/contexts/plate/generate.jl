@@ -9,8 +9,8 @@
     ss = get_subselection(ctx, addr)
     for i in 1:len
         visit!(ctx, addr => i)
-        if has_query(ss, i)
-            s = get_query(ss, i)
+        if has_top(ss, i)
+            s = get_top(ss, i)
             score = logpdf(d, s)
             cs = ChoiceSite(score, s)
             increment!(ctx, score)

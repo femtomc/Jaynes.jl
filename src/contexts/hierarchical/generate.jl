@@ -4,8 +4,8 @@
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    if has_query(ctx.select, addr)
-        s = get_query(ctx.select, addr)
+    if has_top(ctx.select, addr)
+        s = get_top(ctx.select, addr)
         score = logpdf(d, s)
         add_choice!(ctx, addr, ChoiceSite(score, s))
         increment!(ctx, score)
@@ -20,7 +20,7 @@ end
 
 @inline function (ctx::GenerateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    has_param(ctx.params, addr) && return get_param(ctx.params, addr)
+    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
     error("Parameter not provided at address $addr.")
 end
 

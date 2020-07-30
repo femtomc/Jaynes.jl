@@ -4,8 +4,8 @@
                                      addr::T, 
                                      d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    has_query(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
-    val = get_query(ctx.select, addr)
+    has_top(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
+    val = get_top(ctx.select, addr)
     increment!(ctx, logpdf(d, val))
     return val
 end
@@ -14,7 +14,7 @@ end
 
 @inline function (ctx::ScoreContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    has_param(ctx.params, addr) && return get_param(ctx.params, addr)
+    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
     error("Parameter not provided at address $addr.")
 end
 
