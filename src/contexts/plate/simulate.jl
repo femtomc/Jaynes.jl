@@ -26,15 +26,16 @@ end
                                         call::Function, 
                                         args::Vector)
     visit!(ctx, addr => 1)
+    ps = get_subparameters(ctx, addr)
     len = length(args)
-    ret, cl = simulate(call, args[1]...)
+    ret, cl = simulate(ps, call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
     v_cl[1] = cl
     for i in 2:len
         visit!(ctx, addr => i)
-        ret, cl = simulate(call, args[i]...)
+        ret, cl = simulate(ps, call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl
     end

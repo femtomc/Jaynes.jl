@@ -119,6 +119,8 @@ end
 
 +(a_grads::Gradients, b_grads::Gradients) = merge(a_grads, b_grads)
 
+Zygote.@adjoint merge(a_grads, b_grads) = merge(a_grads, b_grads), s_grad -> (nothing, nothing)
+
 # ------------ Parameters, empty and learnable ------------ #
 
 abstract type Parameters <: UtilitySelection end
