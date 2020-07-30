@@ -71,6 +71,14 @@ function get_sub(ps::Gradients, addr::T) where T <: Tuple
     return get_sub(ps.tree[addr[1]], addr[2 : end])
 end
 
+getindex(ps::Gradients, addr::Tuple{}) = error("Gradients (getindex): empty tuple as index.")
+getindex(ps::Gradients, addr::Tuple{T}) where T <: Address = getindex(ps, addr[1])
+function getindex(ps::Gradients, addr::T) where T <: Tuple
+    has_sub(ps, addr[1]) && return getindex(get_sub(ps, addr[1]), addr[2 : end])
+    error("Gradients (getindex): invalid index at $addr.")
+end
+getindex(ps::Gradients, addrs...) = getindex(ps, addrs)
+
 # ------------ Builders ------------ #
 
 function push!(ps::Gradients, addr::T, val) where T <: Address

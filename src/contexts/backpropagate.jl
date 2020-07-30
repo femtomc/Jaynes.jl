@@ -84,6 +84,7 @@ end
 
 # Utility.
 merge(tp1::Tuple{}, tp2::Tuple{}) = tp1
+merge(tp1::Tuple{Nothing}, tp2::Tuple{Nothing}) where T = tp1
 merge(tp1::NTuple{N, Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
 merge(tp1::Array{Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
 
@@ -230,39 +231,39 @@ end
 
 # ------------ Convenience getters ------------ #
 
-function get_top_gradients(cl::T, ret_grad) where T <: CallSite
+function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
     _, vals, _ = choice_gradients(Parameters(), choice_grads, choice_selection, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_top_gradients(params, cl::T, ret_grad) where T <: CallSite
+function get_choice_gradients(params, cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
     _, vals, _ = choice_gradients(params, choice_grads, choice_selection, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_top_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
+function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
     choice_grads = Gradients()
     _, vals, _ = choice_gradients(Parameters(), choice_grads, sel, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_top_gradients(sel::K, params, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
+function get_choice_gradients(sel::K, params, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
     choice_grads = Gradients()
     _, vals, _ = choice_gradients(params, choice_grads, sel, cl, ret_grad)
     return vals, choice_grads
 end
 
-function get_topeter_gradients(params, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
+function get_parameter_gradients(params, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
     param_grads = Gradients()
     accumulate_parameter_gradients!(params, param_grads, cl, ret_grad, scaler)
     return param_grads
 end
 
-function get_topeter_gradients(params, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0)
+function get_parameter_gradients(params, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0)
     param_grads = Gradients()
     accumulate_parameter_gradients!(params, param_grads, cl, ret_grad, scaler)
     for k in keys(param_grads.tree)
@@ -275,7 +276,7 @@ end
 function train(params, fn::Function, args...; opt = ADAM(), iters = 1000)
     for i in 1 : iters
         _, cl = simulate(params, fn, args...)
-        grads = get_topeter_gradients(params, cl, 1.0)
+        grads = get_parameter_gradients(params, cl, 1.0)
         params = update_parameters(opt, params, grads)
     end
     return params
@@ -284,7 +285,7 @@ end
 function train(sel, params, fn::Function, args...; opt = ADAM(), iters = 1000)
     for i in 1 : iters
         _, cl, _ = generate(sel, params, fn, args...)
-        grads = get_topeter_gradients(params, cl, 1.0)
+        grads = get_parameter_gradients(params, cl, 1.0)
         params = update_parameters(opt, params, grads)
     end
     return params
@@ -343,18 +344,18 @@ ChoiceBackpropagate(tr::T, init_params, params, choice_grads, sel::K) where {T <
 @doc(
 """
 ```julia
-gradients = get_top_gradients(params, cl::T, ret_grad) where T <: CallSite
-gradients = get_top_gradients(cl::T, ret_grad) where T <: CallSite
+gradients = get_choice_gradients(params, cl::T, ret_grad) where T <: CallSite
+gradients = get_choice_gradients(cl::T, ret_grad) where T <: CallSite
 ```
 
 Returns a `Gradients` object which tracks the gradients with respect to the objective of random choices with differentiable `logpdf` in the program.
-""", get_top_gradients)
+""", get_choice_gradients)
 
 @doc(
 """
 ```julia
-gradients = get_topeter_gradients(params, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+gradients = get_parameter_gradients(params, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
 ```
 
 Returns a `Gradients` object which tracks the gradients of the objective with respect to parameters in the program.
-""", get_topeter_gradients)
+""", get_parameter_gradients)
