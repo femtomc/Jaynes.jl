@@ -129,7 +129,7 @@ Parameters() = EmptyParameters()
 has_param(np::EmptyParameters, addr) = false
 get_param(np::EmptyParameters, addr) = error("(get_param) called on instance of EmptyParameters. No parameters!")
 has_sub(np::EmptyParameters, addr) = false
-get_sub(np::EmptyParameters, addr) = error("(get_sub) called on instance of EmptyParameters. No parameters!")
+get_sub(np::EmptyParameters, addr) = np
 
 struct LearnableParameters <: Parameters
     tree::Dict{Address, LearnableParameters}
@@ -137,21 +137,42 @@ struct LearnableParameters <: Parameters
     LearnableParameters() = new(Dict{Address, LearnableParameters}(), Dict{Address, Any}())
 end
 
-has_param(ps::LearnableParameters, addr) = haskey(ps.utility, addr)
-get_param(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.utility, addr)
-function get_param(ps::LearnableParameters, addr::T) where T <: Tuple
-    isempty(addr) && return nothing
-    length(addr) == 1 && return get_param(ps, addr[1])
-    return get_param(ps.tree[addr[1]], addr[2 : end])
+has_sub(ps::LearnableParameters, addr::T) where T <: Address = haskey(ps.tree, addr)
+function has_sub(ps::LearnableParameters, addr::T) where T <: Tuple
+    isempty(addr) && return false
+    length(addr) == 1 && return has_sub(ps, addr[1])
+    has_sub(ps, addr[1]) && has_sub(get_sub(ps, addr[1]), addr[2 : end])
 end
-getindex(ps::LearnableParameters, addr) = get_param(ps, addr)
-has_sub(ps::LearnableParameters, addr) = haskey(ps.tree, addr)
+
 get_sub(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.tree, addr)
 function get_sub(ps::LearnableParameters, addr::T) where T <: Tuple
     isempty(addr) && return Parameters()
     length(addr) == 1 && return get_sub(ps, addr[1])
     return get_sub(ps.tree[addr[1]], addr[2 : end])
 end
+
+set_sub!(ps::LearnableParameters, addr::T, sub::LearnableParameters) where T <: Address = ps.tree[addr] = sub
+function set_sub!(ps::LearnableParameters, addr::T, sub::LearnableParameters) where T <: Tuple
+    isempty(addr) && return
+    length(addr) == 1 && set_sub!(ps, addr[1], sub)
+    has_call(ps, addr[1]) && set_sub!(get_call(ps, addr[1]), addr[2 : end], sub)
+end
+
+has_param(ps::LearnableParameters, addr::T) where T <: Address = haskey(ps.utility, addr)
+function has_param(ps::LearnableParameters, addr::T) where T <: Tuple
+    isempty(addr) && return false
+    length(addr) == 1 && return has_param(ps, addr[1])
+    has_sub(ps, addr[1]) && return has_param(get_sub(ps, addr[1]), addr[2 : end])
+end
+
+get_param(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.utility, addr)
+function get_param(ps::LearnableParameters, addr::T) where T <: Tuple
+    isempty(addr) && error("LearnableParameters (get_param): invalid index at $addr.")
+    length(addr) == 1 && return get_param(ps, addr[1])
+    get_param(ps.tree[addr[1]], addr[2 : end])
+end
+
+getindex(ps::LearnableParameters, addrs...) = get_param(ps, addrs)
 
 # ------------ Builders ------------ #
 
@@ -178,6 +199,12 @@ function parameters(arr::Array{Pair{T, K}}) where {T <: Tuple, K}
     map(arr) do (k, v)
         push!(top, k, v)
     end
+    return top
+end
+
+function parameters(p::Pair{T, K}) where {T <: Symbol, K <: Parameters}
+    top = LearnableParameters()
+    set_sub!(top, p[1], p[2])
     return top
 end
 

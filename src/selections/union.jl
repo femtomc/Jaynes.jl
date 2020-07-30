@@ -30,7 +30,7 @@ function get_sub(cus::ConstrainedUnionSelection, addr)
                                      end)
 end
 
-isempty(cus::ConstrainedUnionSelection) = isempty(cus.query)
+isempty(cus::ConstrainedUnionSelection) = foldr(x -> isempty(x), cus.query)
 
 # ------------ Unconstrained union selection ------------ #
 

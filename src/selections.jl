@@ -1,7 +1,7 @@
 import Base: haskey, getindex, push!, merge!, union, isempty, merge
 import Base.collect
 import Base.filter
-import Base: +
+import Base: +, ==
 
 # ------------ Selection ------------ #
 
@@ -83,8 +83,20 @@ function selection(a::Vector{K}) where K <: Tuple
     return UnconstrainedHierarchicalSelection(a)
 end
 
+function selection(a::Pair{K, J}) where {K <: Symbol, J <: UnconstrainedSelection}
+    top = UnconstrainedHierarchicalSelection()
+    set_sub!(top, a[1], a[2])
+    top
+end
+
 function selection(a::Vector{Pair{K, J}}) where {K <: Tuple, J}
     return ConstrainedHierarchicalSelection(a)
+end
+
+function selection(a::Pair{K, J}) where {K <: Symbol, J <: ConstrainedSelection}
+    top = ConstrainedHierarchicalSelection()
+    set_sub!(top, a[1], a[2])
+    top
 end
 
 # Anywhere

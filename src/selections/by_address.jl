@@ -7,17 +7,19 @@ struct ConstrainedByAddress <: ConstrainedSelectQuery
 end
 
 has_query(csa::ConstrainedByAddress, addr) = haskey(csa.query, addr)
+
 dump_queries(csa::ConstrainedByAddress) = Set{Any}(keys(csa.query))
+
 get_query(csa::ConstrainedByAddress, addr) = getindex(csa.query, addr)
+
 isempty(csa::ConstrainedByAddress) = isempty(csa.query)
-function push!(sel::ConstrainedByAddress, addr, val)
-    sel.query[addr] = val
-end
-function merge!(sel1::ConstrainedByAddress,
-                sel2::ConstrainedByAddress)
-    Base.merge!(sel1.query, sel2.query)
-end
+
+push!(sel::ConstrainedByAddress, addr, val) = sel.query[addr] = val
+
+merge!(sel1::ConstrainedByAddress, sel2::ConstrainedByAddress) = Base.merge!(sel1.query, sel2.query)
+
 addresses(csa::ConstrainedByAddress) = keys(csa.query)
+
 function compare(chs::ConstrainedByAddress, v::Visitor)
     addrs = []
     for addr in addresses(chs)
@@ -26,6 +28,16 @@ function compare(chs::ConstrainedByAddress, v::Visitor)
     end
     return isempty(addrs), addrs
 end
+
+function ==(cba1::ConstrainedByAddress, cba2::ConstrainedByAddress)
+    for (k, v) in cba1.query
+        k in keys(cba2.query) || return false
+        cba2.query[k] == v || return false
+    end
+    return true
+end
+
+# Functional filter.
 function filter(k_fn::Function, v_fn::Function, query::ConstrainedByAddress) where T <: Address
     top = ConstrainedByAddress()
     for (k, v) in query.query
@@ -33,19 +45,22 @@ function filter(k_fn::Function, v_fn::Function, query::ConstrainedByAddress) whe
     end
     return top
 end
+
+# ------------ Utility for pretty printing ------------ #
+
 function collect!(par, addrs, chd, query::ConstrainedByAddress)
     for (k, v) in query.query
         push!(addrs, (par..., k))
         chd[(par..., k)] = v
     end
 end
+
 function collect!(addrs, chd, query::ConstrainedByAddress)
     for (k, v) in query.query
         push!(addrs, (k, ))
         chd[(k, )] = v
     end
 end
-
 
 # ----------- Selection to direct addresses ------------ #
 
@@ -55,18 +70,31 @@ struct UnconstrainedByAddress <: UnconstrainedSelectQuery
 end
 
 has_query(csa::UnconstrainedByAddress, addr) = addr in csa.query
-dump_queries(csa::UnconstrainedByAddress) = keys(csa.query)
+
+dump_queries(csa::UnconstrainedByAddress) = csa.query
+
 isempty(csa::UnconstrainedByAddress) = isempty(csa.query)
-function push!(sel::UnconstrainedByAddress, addr::Symbol)
-    push!(sel.query, addr)
-end
-function push!(sel::UnconstrainedByAddress, addr::Pair{Symbol, Int64})
-    push!(sel.query, addr)
-end
-function push!(sel::UnconstrainedByAddress, addr::Int64)
-    push!(sel.query, addr)
-end
+
+push!(sel::UnconstrainedByAddress, addr::T) where T <: Address = push!(sel.query, addr)
+
+merge!(sel1::UnconstrainedByAddress, sel2::UnconstrainedByAddress) = union(sel1.query, sel2.query)
+
 addresses(usa::UnconstrainedByAddress) = usa.query
+
+function compare(uba::UnconstrainedByAddress, v::Visitor)
+    addrs = []
+    for addr in addresses(uba)
+        addr in v.addrs && continue
+        push!(addrs, addr)
+    end
+    return isempty(addrs), addrs
+end
+
+function ==(cba1::UnconstrainedByAddress, cba2::UnconstrainedByAddress)
+    cba1.query == cba2.query
+end
+
+# Functional filter.
 function filter(k_fn::Function, v_fn::Function, query::UnconstrainedByAddress) where T <: Address
     top = UnconstrainedByAddress()
     for k in query.query
@@ -74,6 +102,9 @@ function filter(k_fn::Function, v_fn::Function, query::UnconstrainedByAddress) w
     end
     return top
 end
+
+# ------------ Utility for pretty printing ------------ #
+
 function collect!(par, addrs, query::UnconstrainedByAddress)
     for k in query.query
         push!(addrs, (par..., k))

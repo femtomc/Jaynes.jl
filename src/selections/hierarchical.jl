@@ -7,55 +7,66 @@ struct ConstrainedHierarchicalSelection{T <: ConstrainedSelectQuery} <: Constrai
     ConstrainedHierarchicalSelection(csa::T) where T <: ConstrainedSelectQuery = new{T}(Dict{Address, ConstrainedHierarchicalSelection}(), csa)
 end
 
+has_sub(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = haskey(chs.tree, addr)
+has_sub(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) = false
+has_sub(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = has_sub(chs, addr[1])
+function has_sub(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    has_sub(chs, addr[1]) && has_sub(get_sub(chs, addr[1]), addr[2 : end])
+end
+
 function get_sub(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address
     haskey(chs.tree, addr) && return chs.tree[addr]
     return ConstrainedEmptySelection()
 end
+get_sub(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) = ConstrainedEmptySelection()
+get_sub(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = get_sub(chs, addr[1])
 function get_sub(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
-    isempty(addr) && return ConstrainedEmptySelection()
-    length(addr) == 1 && return get_sub(chs, addr[1])
     haskey(chs.tree, addr[1]) && return get_sub(chs.tree[addr[1]], addr[2 : end])
     return ConstrainedEmptySelection()
 end
 
-function set_sub!(chs::ConstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Address, K <: ConstrainedSelection}
-    chs.tree[addr] = sub
-end
+set_sub!(chs::ConstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Address, K <: ConstrainedSelection} = chs.tree[addr] = sub
+set_sub!(chs::ConstrainedHierarchicalSelection, addr::Tuple{}, sub::K) where K <: ConstrainedSelection = nothing
+set_sub!(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}, sub::K) where {T <: Address, K <: ConstrainedSelection} = set_sub!(chs, addr[1], sub)
 function set_sub!(chs::ConstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Tuple, K <: ConstrainedSelection}
-    isempty(addr) && return
-    if length(addr) == 1
-        set_sub!(chs, addr[1], sub)
-        return
-    end
-    set_sub!(chs.tree[addr[1]], addr[2 : end], sub)
+    has_sub(chs, addr[1]) && set_sub!(chs.tree[addr[1]], addr[2 : end], sub)
 end
 
-function has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
-    isempty(addr) && return false
-    length(addr) == 1 && return has_query(chs.query, addr[1])
-    hd = addr[1]
-    tl = addr[2 : end]
-    haskey(chs.tree, hd) && return has_query(chs.tree[hd], tl)
+has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs.query, addr)
+function has_query(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) where T <: Address
     return false
 end
-has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs.query, addr)
+function has_query(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address
+    return has_query(chs.query, addr[1])
+end
+function has_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    has_sub(chs, addr[1]) && return has_query(get_sub(chs, addr[1]), addr[2 : end])
+end
 
-function get_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address
-    return get_query(chs.query, addr)
-end
+get_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = get_query(chs.query, addr)
+get_query(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) = nothing
+get_query(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = get_query(chs, addr[1])
 function get_query(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
-    isempty(addr) && return nothing
-    length(addr) == 1 && return get_query(chs, addr[1])
-    return get_query(chs.tree[addr[1]], addr[2 : end])
+    has_sub(chs, addr[1]) && return get_query(chs.tree[addr[1]], addr[2 : end])
+    error("ConstrainedHierarchicalSelection (get_query): invalid index at $addr.")
 end
+
+haskey(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs, addr) || has_sub(chs, addr)
+haskey(chs::ConstrainedHierarchicalSelection, addr::Tuple{}) = false
+haskey(chs::ConstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = haskey(chs, addr[1])
+function haskey(chs::ConstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    has_sub(chs, addr[1]) && haskey(get_sub(chs, addr[1]), addr[2 : end])
+end
+
 function getindex(chs::ConstrainedHierarchicalSelection, addr...)
     has_query(chs, addr) && return get_query(chs, addr)
     has_sub(chs, addr) && return get_sub(chs, addr)
-    error("(getindex): no query or subselection at $addr.")
+    error("ConstrainedHierarchicalSelection (getindex): no query or subselection at $addr.")
 end
 
 push_query!(toplevel::Set, k::K, q::T) where {K, T <: Address} = push!(toplevel, (k, q))
 push_query!(toplevel::Set, k::K, q::T) where {K, T <: Tuple} = push!(toplevel, (k, q...))
+
 function dump_queries(chs::ConstrainedHierarchicalSelection)
     toplevel = dump_queries(chs.query)
     for (k, v) in chs.tree
@@ -70,6 +81,15 @@ isempty(chs::ConstrainedHierarchicalSelection) = begin
     !isempty(chs.query) && return false
     for (k, v) in chs.tree
         !isempty(chs.tree[k]) && return false
+    end
+    return true
+end
+
+function ==(sel1::ConstrainedHierarchicalSelection, sel2::ConstrainedHierarchicalSelection)
+    sel1.query == sel2.query || return false
+    keys(sel1.tree) == keys(sel2.tree) || return false
+    for (k, v) in sel1.tree
+        v == get_sub(sel2, k) || return false
     end
     return true
 end
@@ -92,22 +112,16 @@ function merge(cl::T, sel::ConstrainedHierarchicalSelection) where T <: CallSite
 end
 
 # Used to build.
-function push!(sel::ConstrainedHierarchicalSelection, addr::T, val) where T <: Address
-    push!(sel.query, addr, val)
-end
-function push!(sel::ConstrainedHierarchicalSelection, addr::Tuple, val)
-    fst = addr[1]
-    tl = addr[2:end]
-    isempty(tl) && begin
-        push!(sel, fst, val)
-        return
-    end
-    if !(haskey(sel.tree, fst))
-        new = ConstrainedHierarchicalSelection()
-        push!(new, tl, val)
-        sel.tree[fst] = new
+push!(sel::ConstrainedHierarchicalSelection, addr::T, val) where T <: Address = push!(sel.query, addr, val)
+push!(sel::ConstrainedHierarchicalSelection, addr::Tuple{}, val) = nothing
+push!(sel::ConstrainedHierarchicalSelection, addr::Tuple{T}, val) where T <: Address = push!(sel, addr[1], val)
+function push!(sel::ConstrainedHierarchicalSelection, addr::T, val) where T <: Tuple
+    if has_sub(sel, addr[1])
+        push!(get_sub(sel, addr[1]), addr[2 : end], val)
     else
-        push!(get_sub(sel, addr[1]), tl, val)
+        new = ConstrainedHierarchicalSelection()
+        push!(new, addr[2 : end], val)
+        sel.tree[addr[1]] = new
     end
 end
 
@@ -207,12 +221,8 @@ end
 
 # ------------ CHS from traces ------------ #
 
-function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::ChoiceSite)
-    push!(chs, addr, cs.val)
-end
-function site_push!(chs::ConstrainedHierarchicalSelection, addr::Address, cs::CallSite)
-    chs.tree[addr] = get_selection(cs)
-end
+site_push!(chs::ConstrainedHierarchicalSelection, addr::T, cs::ChoiceSite) where T <: Address = push!(chs, addr, cs.val)
+site_push!(chs::ConstrainedHierarchicalSelection, addr::T, cs::CallSite) where T <: Address = set_sub!(chs, addr, get_selection(cs))
 function push!(chs::ConstrainedHierarchicalSelection, tr::VectorizedTrace)
     for (k, cs) in enumerate(tr.subrecords)
         site_push!(chs, k, cs)
@@ -254,25 +264,43 @@ struct UnconstrainedHierarchicalSelection{T <: UnconstrainedSelectQuery} <: Unco
     query::T
     UnconstrainedHierarchicalSelection() = new{UnconstrainedByAddress}(Dict{Address, UnconstrainedHierarchicalSelection}(), UnconstrainedByAddress())
 end
+
 function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address
     haskey(uhs.tree, addr) && return uhs.tree[addr]
     return UnconstrainedEmptySelection()
 end
-function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::Tuple)
-    isempty(addr) && return UnconstrainedEmptySelection()
-    length(addr) == 1 && return get_sub(uhs, addr[1])
+get_sub(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{}) = UnconstrainedEmptySelection()
+get_sub(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = get_sub(uhs, addr[1])
+function get_sub(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tuple
     haskey(uhs.tree, addr[1]) && return get_sub(uhs.tree[addr[1]], addr[2 : end])
     return UnconstrainedEmptySelection()
 end
-function has_query(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address
-    has_query(uhs.query, addr)
-end
+
+has_query(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(uhs.query, addr)
+has_query(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{}) where T <: Address = false
+has_query(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = has_query(uhs, addr[1])
 function has_query(uhs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tuple
-    isempty(addr) && return false
-    length(addr) == 1 && return has_query(uhs, addr[1])
-    haskey(uhs.tree, addr[1]) && return has_query(uhs.tree[addr[1]], addr[2 : end])
-    return false
+    haskey(uhs.tree, addr[1]) && has_query(uhs.tree[addr[1]], addr[2 : end])
 end
+
+has_sub(chs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = haskey(chs.tree, addr)
+has_sub(chs::UnconstrainedHierarchicalSelection, addr::Tuple{}) = false
+has_sub(chs::UnconstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = has_sub(chs, addr[1])
+function has_sub(chs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    has_sub(chs, addr[1]) && has_sub(get_sub(chs, addr[1]), addr[2 : end])
+end
+
+function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Address, K <: UnconstrainedSelection}
+    uhs.tree[addr] = sub
+end
+set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{}, sub::K) where K <: UnconstrainedSelection = nothing
+function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::Tuple{T}, sub::K) where {T <: Address, K <: UnconstrainedSelection}
+    set_sub!(uhs, addr[1], sub)
+end
+function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Tuple, K <: UnconstrainedSelection}
+    haskey(uhs.tree, addr[1]) && set_sub!(uhs.tree[1], addr[2 : end], sub)
+end
+
 function dump_queries(uhs::UnconstrainedHierarchicalSelection)
     toplevel = dump_queries(uhs.query)
     for (k, v) in uhs.tree
@@ -280,45 +308,62 @@ function dump_queries(uhs::UnconstrainedHierarchicalSelection)
     end
     return toplevel
 end
+
+haskey(chs::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = has_query(chs, addr) || has_sub(chs, addr)
+haskey(chs::UnconstrainedHierarchicalSelection, addr::Tuple{}) = false
+haskey(chs::UnconstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = haskey(chs, addr[1])
+function haskey(chs::UnconstrainedHierarchicalSelection, addr::T) where T <: Tuple
+    has_sub(chs, addr[1]) && haskey(get_sub(chs, addr[1]), addr[2 : end])
+end
+
 isempty(uhs::UnconstrainedHierarchicalSelection) = begin
-    !isempty(uhs.query) && return false
+    isempty(uhs.query) || return false
     for (k, v) in uhs.tree
-        !isempty(uhs.tree[k]) && return false
+        isempty(uhs.tree[k]) || return false
     end
     return true
 end
-function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Address, K <: UnconstrainedSelection}
-    uhs.tree[addr] = sub
+
+function ==(sel1::UnconstrainedHierarchicalSelection, sel2::UnconstrainedHierarchicalSelection)
+    sel1.query == sel2.query || return false
+    keys(sel1.tree) == keys(sel2.tree) || return false
+    for (k, v) in sel1.tree
+        v == get_sub(sel2, k) || return false
+    end
+    return true
 end
-function set_sub!(uhs::UnconstrainedHierarchicalSelection, addr::T, sub::K) where {T <: Tuple, K <: UnconstrainedSelection}
-    isempty(addr) && return
-    length(addr) == 1 && set_sub!(uhs, addr[1], sub)
-    haskey(uhs.tree, addr[1]) && set_sub!(uhs.tree[1], addr[2 : end], sub)
+
+# Used to merge observations.
+function merge!(sel1::UnconstrainedHierarchicalSelection, sel2::UnconstrainedHierarchicalSelection)
+    merge!(sel1.query, sel2.query)
+    for k in keys(sel2.tree)
+        if haskey(sel1.tree, k)
+            merge!(sel1.tree[k], sel2.tree[k])
+        else
+            sel1.tree[k] = sel2.tree[k]
+        end
+    end
+end
+function merge(cl::T, sel::UnconstrainedHierarchicalSelection) where T <: CallSite
+    cl_selection = get_selection(cl)
+    un_sel = selection(map(collect(dump_queries(cl_selection))) do k
+                           (k, )
+                       end)
+    merge!(un_sel, sel)
+    return un_sel
 end
 
 # Used to build.
-function push!(sel::UnconstrainedHierarchicalSelection, addr::T) where T <: Address
-    push!(sel.query, addr)
-end
-
-function push!(sel::UnconstrainedHierarchicalSelection, addr::Int)
-    push!(sel.query, addr)
-end
-
+push!(sel::UnconstrainedHierarchicalSelection, addr::T) where T <: Address = push!(sel.query, addr)
+push!(sel::UnconstrainedHierarchicalSelection, addr::Tuple{}) = nothing
+push!(sel::UnconstrainedHierarchicalSelection, addr::Tuple{T}) where T <: Address = push!(sel, addr[1])
 function push!(sel::UnconstrainedHierarchicalSelection, addr::Tuple)
-    fst = addr[1]
-    tl = addr[2:end]
-    isempty(tl) && begin
-        push!(sel, fst)
-        return
-    end
-    if !(haskey(sel.tree, fst))
-        new = UnconstrainedHierarchicalSelection()
-        push!(new, tl)
-        sel.tree[fst] = new
+    if haskey(sel.tree, addr[1])
+        push!(get_sub(sel, addr[1]), addr[2 : end])
     else
-        sub = get_sub(sel, fst)
-        push!(sub, tl)
+        new = UnconstrainedHierarchicalSelection()
+        push!(new, addr[2 : end])
+        sel.tree[addr[1]] = new
     end
 end
 

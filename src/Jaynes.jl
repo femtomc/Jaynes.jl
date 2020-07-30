@@ -98,7 +98,7 @@ export get_selection, get_parameters, compare, has_query, update_parameters, dum
 
 # Inference.
 export importance_sampling, is
-export initialize_filter, filter_step!, check_ess_resample!, get_lmle, particle_filter, pf
+export initialize_filter, filter_step!, check_ess_resample!, get_lmle, pf
 export metropolis_hastings, mh
 export automatic_differentiation_variational_inference, advi
 export hamiltonian_monte_carlo, hmc
