@@ -71,7 +71,7 @@ end
     else
         w_adj, new, new_ret = trace_new(vcs, s, ks, o_len, n_len, args)
     end
-    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, args, new_ret))
+    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
     increment!(ctx, w_adj)
 
     return new_ret

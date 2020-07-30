@@ -67,7 +67,6 @@ end
 include("compiler/static.jl")
 include("traces.jl")
 include("selections.jl")
-include("learnable.jl")
 include("utils/numerical.jl")
 include("utils/vectorized.jl")
 include("utils/visualization.jl")

@@ -73,7 +73,7 @@ function trace_new(vcs::VectorizedCallSite,
 
     # Now, generate new call sites with constraints.
     for i in o_len + 1 : n_len
-        ret, g_cl = simulate(vcs.kernel, new_ret[i - 1])
+        ret, g_cl = simulate(vcs.fn, new_ret[i - 1])
         push!(new_ret, ret)
         push!(new, g_cl)
     end
@@ -97,7 +97,7 @@ end
     else
         w_adj, new, new_ret = trace_new(vcs, s, ks, min, o_len, n_len, args...)
     end
-    add_call!(ctx, addr, VectorizedCallSite{typeof(markov)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, args, new_ret))
+    add_call!(ctx, addr, VectorizedCallSite{typeof(markov)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
     increment!(ctx, w_adj)
 
     return new_ret

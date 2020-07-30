@@ -87,11 +87,12 @@ end
 struct VectorizedCallSite{F, D, C <: RecordSite, J, K} <: CallSite
     trace::VectorizedTrace{C}
     score::Float64
-    kernel::D
+    fn::D
+    len::Int
     args::J
     ret::Vector{K}
-    function VectorizedCallSite{F}(sub::VectorizedTrace{C}, sc::Float64, kernel::D, args::J, ret::Vector{K}) where {F, D, C <: RecordSite, J, K}
-        new{F, D, C, J, K}(sub, sc, kernel, args, ret)
+    function VectorizedCallSite{F}(sub::VectorizedTrace{C}, sc::Float64, fn::D, len::Int, args::J, ret::Vector{K}) where {F, D, C <: RecordSite, J, K}
+        new{F, D, C, J, K}(sub, sc, fn, len, args, ret)
     end
 end
 

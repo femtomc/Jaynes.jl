@@ -25,12 +25,9 @@
     sc = sum(map(v_cs) do cs
                  get_score(cs)
              end)
-    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(v_cs), sc, d, (), v_ret))
+    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(v_cs), sc, d, len, (), v_ret))
     return v_ret
 end
-
-# ------------ Learnable ------------ #
-
 
 # ------------ Call sites ------------ #
 
@@ -58,6 +55,6 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
              end)
-    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(v_cl), sc, call, args, v_ret))
+    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(v_cl), sc, call, len, args, v_ret))
     return v_ret
 end

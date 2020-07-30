@@ -48,8 +48,8 @@ end
 #    addr = gensym()
 #    v_sel = selection(addr => sel)
 #    ctx = UpdateContext(vcs, v_sel, argdiffs)
-#    ret = ctx(plate, addr, vcs.kernel, new_args...)
-#    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+#    ret = ctx(plate, addr, vcs.fn, new_args...)
+#    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 #end
 
 function update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: ConstrainedSelection, D <: Diff}
@@ -57,8 +57,8 @@ function update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: Cons
     addr = gensym()
     v_sel = selection(addr => sel)
     ctx = UpdateContext(vcs, v_sel, argdiffs)
-    ret = ctx(plate, addr, vcs.kernel, vcs.args)
-    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    ret = ctx(plate, addr, vcs.fn, vcs.args)
+    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: ConstrainedSelection, D <: Diff}
@@ -66,16 +66,16 @@ function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: Con
     addr = gensym()
     v_sel = selection(addr => sel)
     ctx = UpdateContext(vcs, v_sel, argdiffs)
-    ret = ctx(markov, addr, vcs.kernel, vcs.args[1], vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    ret = ctx(markov, addr, vcs.fn, vcs.args[1], vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: ConstrainedSelection, D <: Diff}
     addr = gensym()
     v_sel = selection(addr => sel)
     ctx = UpdateContext(vcs, v_sel, d)
-    ret = ctx(markov, addr, vcs.kernel, len, vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.kernel, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    ret = ctx(markov, addr, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, D <: Diff}
