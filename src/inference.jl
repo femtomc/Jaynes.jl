@@ -1,3 +1,5 @@
+import Base.map
+
 # Utility structure for collections of samples.
 mutable struct Particles{C}
     calls::Vector{C}
@@ -5,18 +7,15 @@ mutable struct Particles{C}
     lmle::Float64
 end
 
-include("inference/mh.jl")
-include("inference/es.jl")
-include("inference/hmc.jl")
+map(fn::Function, ps::Particles) = map(fn, ps.calls)
+
 include("inference/is.jl")
 include("inference/pf.jl")
 include("inference/vi.jl")
 
 const mh = metropolis_hastings
-const es = elliptical_slice
-const hmc = hamiltonian_monte_carlo
+const mh! = metropolis_hastings!
 const is = importance_sampling
-const pf = particle_filter
 const advi = automatic_differentiation_variational_inference
 
 # ------------ Documentation (IS) ------------ #

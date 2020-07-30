@@ -44,7 +44,8 @@ end
 function generate(sel::L, params, fn::typeof(markov), call::Function, len::Int, args...) where L <: ConstrainedSelection
     addr = gensym()
     v_sel = selection(addr => sel)
-    ctx = Generate(v_sel, params)
+    v_ps = parameters(addr => params)
+    ctx = Generate(v_sel, v_ps)
     ret = ctx(fn, addr, call, len, args...)
     return ret, get_call(ctx.tr, addr), ctx.weight
 end
@@ -60,7 +61,8 @@ end
 function generate(sel::L, params, fn::typeof(plate), call::Function, args::Vector) where L <: ConstrainedSelection
     addr = gensym()
     v_sel = selection(addr => sel)
-    ctx = Generate(v_sel, params)
+    v_ps = parameters(addr => params)
+    ctx = Generate(v_sel, v_ps)
     ret = ctx(fn, addr, call, args)
     return ret, get_call(ctx.tr, addr), ctx.weight
 end
@@ -78,7 +80,7 @@ end
 include("hierarchical/generate.jl")
 include("plate/generate.jl")
 include("markov/generate.jl")
-include("cond/generate.jl")
+include("conditional/generate.jl")
 
 # ------------ Documentation ------------ #
 

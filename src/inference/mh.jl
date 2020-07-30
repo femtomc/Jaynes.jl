@@ -18,3 +18,27 @@ function metropolis_hastings(sel::K,
     log(rand()) < ratio && return (u_cl, true)
     return (call, false)
 end
+
+function metropolis_hastings!(sel::K,
+                              ps::Particles) where K <: UnconstrainedSelection
+    num_particles = length(ps)
+    Threads.@threads for i in 1 : num_particles
+        old_w = ps.lws[i]
+        old_score = get_score(ps.calls[i])
+        ps.calls[i], _ = metropolis_hastings(sel, ps.calls[i])
+        ps.lws[i] = old_w + get_score(ps.calls[i]) - old_score
+    end
+end
+
+function metropolis_hastings!(sel::K,
+                              ps::Particles,
+                              proposal::Function,
+                              proposal_args::Tuple) where K <: UnconstrainedSelection
+    num_particles = length(ps)
+    Threads.@threads for i in 1 : num_particles
+        old_w = ps.lws[i]
+        old_score = get_score(ps.calls[i])
+        ps.calls[i], _ = metropolis_hastings(sel, ps.calls[i], proposal, proposal_args)
+        ps.lws[i] = old_w + get_score(ps.calls[i]) - old_score
+    end
+end

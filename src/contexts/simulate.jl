@@ -43,8 +43,9 @@ function simulate(c::typeof(plate), fn::Function, args::Vector)
 end
 
 function simulate(params, c::typeof(plate), fn::Function, args::Vector)
-    ctx = SimulateContext(params)
     addr = gensym()
+    v_ps = parameters(addr => params)
+    ctx = SimulateContext(v_ps)
     ret = ctx(plate, addr, fn, args)
     return ret, get_call(ctx.tr, addr)
 end
@@ -64,8 +65,9 @@ function simulate(c::typeof(markov), fn::Function, len::Int, args...)
 end
 
 function simulate(params, c::typeof(markov), fn::Function, len::Int, args...)
-    ctx = SimulateContext(params)
     addr = gensym()
+    v_ps = parameters(addr => params)
+    ctx = SimulateContext(v_ps)
     ret = ctx(markov, addr, fn, len, args...)
     return ret, get_call(ctx.tr, addr)
 end
@@ -75,7 +77,7 @@ end
 include("hierarchical/simulate.jl")
 include("plate/simulate.jl")
 include("markov/simulate.jl")
-include("cond/simulate.jl")
+include("conditional/simulate.jl")
 
 # ------------ Documentation ------------ #
 

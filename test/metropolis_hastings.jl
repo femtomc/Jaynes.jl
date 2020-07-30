@@ -15,7 +15,7 @@ end
     sel = Jaynes.selection([(:x, )])
 
     @testset "Linear Gaussian model" begin
-        cl, discard = Jaynes.metropolis_hastings(sel, cl)
+        new, discard = Jaynes.metropolis_hastings(sel, cl)
     end
 
     @testset "Linear Gaussian proposal" begin

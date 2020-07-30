@@ -8,11 +8,18 @@ end
 
 has_query(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = has_query(cas.query, addr)
 has_query(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = has_query(cas.query, addr[end])
+
 dump_queries(cas::ConstrainedAnywhereSelection) = dump_queries(cas.query)
+
 get_query(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = get_query(cas.query, addr)
 get_query(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = get_query(cas.query, addr[end])
+
 get_sub(cas::ConstrainedAnywhereSelection, addr) = cas
+
 isempty(cas::ConstrainedAnywhereSelection) = isempty(cas.query)
+
+# ------------ Pretty printing ------------ #
+
 function Base.display(chs::ConstrainedAnywhereSelection)
     println("  __________________________________\n")
     println("              Selection\n")

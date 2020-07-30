@@ -20,7 +20,7 @@ function trace_retained(vcs::VectorizedCallSite,
             new[i] = u_cl
             w_adj += get_score(u_cl) - get_score(prev_cl)
         else
-            new_ret[i] = unwrap(get_call(vcs, i))
+            new_ret[i] = get_ret(get_call(vcs, i))
         end
     end
     return w_adj, new, new_ret
