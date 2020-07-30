@@ -282,7 +282,7 @@ function train(params, fn::Function, args...; opt = ADAM(), iters = 1000)
     return params
 end
 
-function train(sel, params, fn::Function, args...; opt = ADAM(), iters = 1000)
+function train(sel::K, params, fn::Function, args...; opt = ADAM(), iters = 1000) where K <: ConstrainedSelection
     for i in 1 : iters
         _, cl, _ = generate(sel, params, fn, args...)
         grads = get_parameter_gradients(params, cl, 1.0)
