@@ -38,8 +38,8 @@ macro load_soss_fmi()
         end
 
         get_score(gfcs::SossModelCallSite) = gfcs.score
-        haskey(cs::SossModelCallSite, addr) = has_value(get_choices(cs.trace), addr)
-        getindex(cs::SossModelCallSite, addrs...) = getindex(get_choices(cs.trace), addrs...)
+        haskey(cs::SossModelCallSite, addr) = haskey(trace, addr)
+        getindex(cs::SossModelCallSite, addrs...) = getindex(trace, addr)
         get_ret(cs::SossModelCallSite) = cs.trace
 
         # ------------ Contexts ------------ #
