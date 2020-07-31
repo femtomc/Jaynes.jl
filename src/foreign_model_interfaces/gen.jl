@@ -1,16 +1,16 @@
 macro load_gen_fmi()
-    @info "Loading foreign model interface to Gen.jl.\nThis interface currently supports Gen's full feature set."
+    @info "Loading foreign model interface to \u001b[4m\u001b[32mGen.jl\u001b[0m\n\nThis interface currently supports Gen's full feature set.\n\n\u001b[1mGen and Jaynes share exports - please qualify usage of the following context APIs:\n\u001b[0m\n \u001b[31msimulate   \u001b[0m-> \u001b[32mJaynes.simulate\n \u001b[31mgenerate   \u001b[0m-> \u001b[32mJaynes.generate\n \u001b[31mupdate     \u001b[0m-> \u001b[32mJaynes.update\n \u001b[31mregenerate \u001b[0m-> \u001b[32mJaynes.regenerate\n "
     expr = quote
         import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect!
         using Gen
 
         # ------------ Call site ------------ #
 
-        struct GenerativeFunctionCallSite{T, M <: GenerativeFunction, K} <: Jaynes.CallSite
+        struct GenerativeFunctionCallSite{T <: Gen.Trace, M <: GenerativeFunction, A, K} <: Jaynes.CallSite
             trace::T
             score::Float64
             model::M
-            args::Tuple
+            args::A
             ret::K
         end
 
