@@ -5,15 +5,15 @@ import Base: getindex, haskey, rand, iterate
 Base.iterate(s::Symbol) = s
 
 # Special calls recognized by tracer.
-rand(addr::Address, d::Distribution{T}) where T = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-rand(addr::Address, fn::Function, args...) = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-rand(addr::Address, fn::Function, args::Tuple, ret_score::Function) = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-learnable(addr::Address, p::T) where T = p
-plate(addr::Address, args...) = error("(plate) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-markov(addr::Address, args...) = error("(markov) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-cond(addr::Address, args...) = error("(cond) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-gen_fmi(addr::Address, args...) = error("(gen_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-soss_fmi(addr::Address, args...) = error("(soss_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+rand(addr::A, d::Distribution{T}) where {A <: Address, T} = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
+rand(addr::A, fn::Function, args...) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
+rand(addr::A, fn::Function, args::Tuple, ret_score::Function) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
+learnable(addr::A) where {A <: Address} = error("(learnable) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
+plate(addr::A, args...) where A <: Address = error("(plate) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+markov(addr::A, args...) where A <: Address = error("(markov) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+cond(addr::A, args...) where A <: Address = error("(cond) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+gen_fmi(addr::A, args...) where A <: Address = error("(gen_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+soss_fmi(addr::A, args...) where A <: Address = error("(soss_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 
 # Generic abstract types..
 abstract type RecordSite end
