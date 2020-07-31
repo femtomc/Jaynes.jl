@@ -27,6 +27,7 @@ macro load_soss_fmi()
 
         import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect!
         using Soss
+        import Soss: logpdf
 
         # ------------ Call site ------------ #
 

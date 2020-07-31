@@ -52,7 +52,7 @@ macro load_gen_fmi()
                                                args...) where M <: GenerativeFunction
             Jaynes.visit!(ctx, addr)
             tr = Gen.simulate(gen_fn, args)
-            Jaynes.add_gen_fn!(ctx, addr, GenerativeFunctionCallSite(tr, Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
+            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(tr, Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
             return Gen.get_retval(tr)
         end
 
@@ -62,7 +62,7 @@ macro load_gen_fmi()
                                               args...) where M <: GenerativeFunction
             Jaynes.visit!(ctx, addr)
             tr, w, ret = Gen.propose(gen_fn, args, choice_map)
-            Jaynes.add_gen_fn!(ctx, addr, GenerativeFunctionCallSite(tr, Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
+            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(tr, Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
             Jaynes.increment!(ctx, w)
             return ret
         end
@@ -74,7 +74,7 @@ macro load_gen_fmi()
             Jaynes.visit!(ctx, addr)
             choice_map = Jaynes.get_top(ctx.select, addr)
             tr, w = Gen.generate(gen_fn, args, choice_map)
-            Jaynes.add_gen_fn!(ctx, addr, GenerativeFunctionCallSite(tr, Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
+            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(tr, Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
             Jaynes.increment!(ctx, w)
             return Gen.get_retval(tr)
         end
@@ -87,7 +87,7 @@ macro load_gen_fmi()
             choice_map = Jaynes.get_top(ctx.select, addr)
             prev = Jaynes.get_prev(ctx, addr)
             new, w, rd, d = Gen.update(prev.trace, args, (), choice_map)
-            Jaynes.add_gen_fn!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
+            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
             Jaynes.increment!(ctx, w)
             return Gen.get_retval(new)
         end
@@ -100,7 +100,7 @@ macro load_gen_fmi()
             choice_map = Jaynes.get_top(ctx.select, addr)
             prev = Jaynes.get_prev(ctx, addr)
             new, w, rd, d = Gen.regenerate(prev.trace, args, (), choice_map)
-            Jaynes.add_gen_fn!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
+            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
             Jaynes.increment!(ctx, w)
             return Gen.ret_retval(new)
         end
@@ -112,7 +112,7 @@ macro load_gen_fmi()
             Jaynes.visit!(ctx, addr)
             choice_map = Jaynes.get_top(ctx.select, addr)
             w, ret = Gen.assess(gen_fn, args, choice_map)
-            Jaynes.add_gen_fn!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
+            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
             Jaynes.increment!(ctx, w)
             return ret
         end
