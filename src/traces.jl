@@ -13,6 +13,7 @@ plate(addr::Address, args...) = error("(plate) call with address $addr evaluated
 markov(addr::Address, args...) = error("(markov) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 cond(addr::Address, args...) = error("(cond) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 gen_fmi(addr::Address, args...) = error("(gen_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+soss_fmi(addr::Address, args...) = error("(soss_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 
 # Generic abstract types..
 abstract type RecordSite end
