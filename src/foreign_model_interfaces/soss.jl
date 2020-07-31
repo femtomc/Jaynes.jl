@@ -1,4 +1,4 @@
-macro load_soss()
+macro load_soss_fmi()
     expr = quote
         using Soss
 

@@ -102,7 +102,9 @@ export automatic_differentiation_variational_inference, advi
 export hamiltonian_monte_carlo, hmc
 
 # Foreign model interfaces.
-export @primitive, @load_soss_fmi, @load_gen_fmi, @load_turing_fmi
+export @primitive
+export @load_gen_fmi, gen_fmi
+export @load_soss_fmi, soss_fmi
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret

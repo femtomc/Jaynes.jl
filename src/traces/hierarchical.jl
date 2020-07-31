@@ -68,13 +68,7 @@ function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Hierarchi
         chd[(par..., k)] = v.val
     end
     for (k, v) in tr.calls
-        if v isa HierarchicalCallSite
-            collect!((par..., k), addrs, chd, v.trace, meta)
-        elseif v isa VectorizedCallSite
-            for i in 1:length(v.trace.subrecords)
-                collect!((par..., k, i), addrs, chd, v.trace.subrecords[i].trace, meta)
-            end
-        end
+        collect!((par..., k), addrs, chd, v.trace, meta)
     end
 end
 
@@ -84,11 +78,7 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace
         chd[(k, )] = v.val
     end
     for (k, v) in tr.calls
-        if v isa HierarchicalCallSite
-            collect!((k, ), addrs, chd, v.trace, meta)
-        elseif v isa VectorizedCallSite
-            collect!((k, ), addrs, chd, v.trace, meta)
-        end
+        collect!((k, ), addrs, chd, v.trace, meta)
     end
 end
 

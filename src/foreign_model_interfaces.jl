@@ -8,9 +8,9 @@ include("foreign_model_interfaces/gen.jl")
 # ------------ Documentation -------------- #
 
 function primitive end
-function load_soss end
-function load_turing end
-function load_gen end
+function load_soss_fmi end
+function load_turing_fmi end
+function load_gen_fmi end
 
 @doc(
 """

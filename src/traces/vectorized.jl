@@ -60,24 +60,19 @@ function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Vectorize
         if v isa ChoiceSite
             push!(addrs, (par..., k))
             chd[(par..., k)] = v.val
-        elseif v isa HierarchicalCallSite
+        else
             collect!((par..., k), addrs, chd, v.trace, meta)
-        elseif v isa VectorizedCallSite
-            for i in 1:length(v.trace.subrecords)
-                collect!((par..., k, i), addrs, chd, v.trace.subrecords[i].trace, meta)
-            end
         end
     end
 end
+
 function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::VectorizedTrace, meta)
     for (k, v) in enumerate(tr.subrecords)
         if v isa ChoiceSite
             push!(addrs, (k, ))
             chd[k] = v.val
-        elseif v isa HierarchicalCallSite
+        else
             collect!((k, ), addrs, chd, v.trace, meta)
-        elseif v isa VectorizedCallSite
-            collect!((k, i), addrs, chd, v.trace, meta)
         end
     end
 end
