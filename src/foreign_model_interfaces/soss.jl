@@ -21,26 +21,43 @@ macro load_soss_fmi()
                      - Rebuild PyCall to use Conda, by running in the julia REPL:
                      - `ENV[PYTHON]=""; Pkg.build("PyCall"); Pkg.build("Jaynes")`
                      - Or install the dependencies: `pip install sympy`
-                     """
-                    )
+                     """)
             end
         end
 
+        import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect!
         using Soss
 
         # ------------ Call site ------------ #
 
-        mutable struct SossModelCallSite{NT, M, F} <: Jaynes.CallSite
+        mutable struct SossModelCallSite{NT, M, A} <: Jaynes.CallSite
             trace::NT
             score::Float64
             model::M
-            args::Tuple
+            args::A
         end
 
         get_score(gfcs::SossModelCallSite) = gfcs.score
         haskey(cs::SossModelCallSite, addr) = haskey(trace, addr)
         getindex(cs::SossModelCallSite, addrs...) = getindex(trace, addr)
         get_ret(cs::SossModelCallSite) = cs.trace
+        
+        # ------------ Pretty printing ------------ #
+        
+        function collect!(par::P, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::NT, meta) where {P <: Tuple, NT <: NamedTuple}
+            for k in keys(tr)
+                push!(addrs, (par..., k))
+                chd[(par..., k)] = tr[k]
+                meta[(par..., k)] = "(Soss)"
+            end
+        end
+        
+        function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::NT, meta) where NT <: NamedTuple
+            for (k, v) in tr
+                push!(addrs, (k, ))
+                chd[(k, )] = v
+            end
+        end
 
         # ------------ Contexts ------------ #
 
@@ -49,7 +66,7 @@ macro load_soss_fmi()
                                                model::M,
                                                args...) where {T <: Jaynes.Address, M <: Soss.Model}
             choices = rand(model(args...))
-            score = Soss.logpdf(args, choices)
+            score = Soss.logpdf(m(args...), choices)
             Jaynes.add_call!(ctx, addr, SossModelCallSite(choices, score, model, args))
             return choices
         end
@@ -62,7 +79,7 @@ macro load_soss_fmi()
             kvs = Jaynes.get_sub(ctx.select, addr)
             data = namedtuple(Dict{Symbol, Any}(kvs))
             w, choices = Soss.WeightedSample(call(args...), data)
-            score = Soss.logpdf(args, choices)
+            score = Soss.logpdf(m(args...), choices)
             Jaynes.add_call!(ctx, addr, Jaynes.SossModelCallSite(choices, score, model, args))
             Jaynes.increment!(ctx, w)
             return choices
