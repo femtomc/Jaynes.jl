@@ -5,9 +5,9 @@ import Base: getindex, haskey, rand, iterate
 Base.iterate(s::Symbol) = s
 
 # Special calls recognized by tracer.
-rand(addr::A, d::Distribution{T}) where {A <: Address, T} = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-rand(addr::A, fn::Function, args...) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-rand(addr::A, fn::Function, args::Tuple, ret_score::Function) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
+rand(addr::A, d::Distribution{T}) where {A <: Address, T} = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
+rand(addr::A, fn::Function, args...) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
+rand(addr::A, fn::Function, args::Tuple, ret_score::Function) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
 learnable(addr::A) where {A <: Address} = error("(learnable) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
 plate(addr::A, args...) where A <: Address = error("(plate) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 markov(addr::A, args...) where A <: Address = error("(markov) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
