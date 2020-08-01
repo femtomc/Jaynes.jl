@@ -8,7 +8,13 @@ end
 
 has_top(csa::ConstrainedByAddress, addr) = haskey(csa.query, addr)
 
-dump_queries(csa::ConstrainedByAddress) = Set{Any}(keys(csa.query))
+function dump_queries(csa::ConstrainedByAddress)
+    v = Vector{Pair}()
+    for (k, l) in csa.query
+        push!(v, (k, ) => l)
+    end
+    return v
+end
 
 get_top(csa::ConstrainedByAddress, addr) = getindex(csa.query, addr)
 

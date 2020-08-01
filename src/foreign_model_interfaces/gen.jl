@@ -19,6 +19,16 @@ macro load_gen_fmi()
         getindex(cs::GenerativeFunctionCallSite, addrs...) = getindex(get_choices(cs.trace), addrs...)
         get_ret(cs::GenerativeFunctionCallSite) = get_retval(cs.trace)
 
+        # ------------ Choice map integration ------------ #
+
+        function create_pairs(v::Vector{Pair})
+            out = []
+            for (t, l) in v
+                push!(out, (foldr(=>, t), l))
+            end
+            out
+        end
+
         # ------------ Pretty printing ------------ #
 
         function collect!(par::P, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::T, meta) where {P <: Tuple, T <: Gen.Trace}
@@ -72,11 +82,14 @@ macro load_gen_fmi()
                                                gen_fn::M,
                                                args...) where M <: GenerativeFunction
             Jaynes.visit!(ctx, addr)
-            choice_map = Jaynes.get_top(ctx.select, addr)
+            constraints = Jaynes.dump_queries(Jaynes.get_sub(ctx.select, addr))
+            pairs = create_pairs(constraints)
+            choice_map = Gen.choicemap(pairs...)
             tr, w = Gen.generate(gen_fn, args, choice_map)
-            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(tr, Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
+            ret = Gen.get_retval(tr)
+            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(tr, Gen.get_score(tr), gen_fn, args, ret))
             Jaynes.increment!(ctx, w)
-            return Gen.get_retval(tr)
+            return ret
         end
 
         function (ctx::Jaynes.UpdateContext)(c::typeof(gen_fmi),
@@ -84,7 +97,9 @@ macro load_gen_fmi()
                                              gen_fn::M,
                                              args...) where M <: GenerativeFunction
             Jaynes.visit!(ctx, addr)
-            choice_map = Jaynes.get_top(ctx.select, addr)
+            constraints = Jaynes.dump_queries(Jaynes.get_sub(ctx.select, addr))
+            pairs = create_pairs(constraints)
+            choice_map = Gen.choicemap(pairs...)
             prev = Jaynes.get_prev(ctx, addr)
             new, w, rd, d = Gen.update(prev.trace, args, (), choice_map)
             Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
@@ -97,12 +112,14 @@ macro load_gen_fmi()
                                                  gen_fn::M,
                                                  args...) where M <: GenerativeFunction
             Jaynes.visit!(ctx, addr)
-            choice_map = Jaynes.get_top(ctx.select, addr)
+            constraints = Jaynes.dump_queries(Jaynes.get_sub(ctx.select, addr))
+            select = Gen.select(constraints...)
             prev = Jaynes.get_prev(ctx, addr)
-            new, w, rd, d = Gen.regenerate(prev.trace, args, (), choice_map)
-            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
-            Jaynes.increment!(ctx, w)
-            return Gen.ret_retval(new)
+            new, w, rd = Gen.regenerate(prev.trace, args, (), select)
+            ret = Gen.get_retval(new)
+            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, ret))
+            Jaynes.increment!(ctx, Gen.get_score(new) - Jaynes.get_score(prev))
+            return ret
         end
 
         function (ctx::Jaynes.ScoreContext)(c::typeof(gen_fmi),

@@ -70,8 +70,9 @@ push_query!(toplevel::Set, k::K, q::T) where {K, T <: Tuple} = push!(toplevel, (
 function dump_queries(chs::ConstrainedHierarchicalSelection)
     toplevel = dump_queries(chs.query)
     for (k, v) in chs.tree
-        for q in dump_queries(v)
-            push_query!(toplevel, k, q)
+        q = dump_queries(v)
+        for (t, l) in q
+            push!(toplevel, (k, q...) => l)
         end
     end
     return toplevel
