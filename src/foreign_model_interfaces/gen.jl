@@ -127,9 +127,10 @@ macro load_gen_fmi()
                                             gen_fn::M,
                                             args...) where M <: GenerativeFunction
             Jaynes.visit!(ctx, addr)
-            choice_map = Jaynes.get_top(ctx.select, addr)
+            constraints = Jaynes.dump_queries(Jaynes.get_sub(ctx.select, addr))
+            pairs = create_pairs(constraints)
+            choice_map = Gen.choicemap(pairs...)
             w, ret = Gen.assess(gen_fn, args, choice_map)
-            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(new, Gen.get_score(new), gen_fn, args, Gen.get_retval(new)))
             Jaynes.increment!(ctx, w)
             return ret
         end
