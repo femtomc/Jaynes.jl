@@ -42,9 +42,9 @@ macro load_soss_fmi()
         haskey(cs::SossModelCallSite, addr) = haskey(trace, addr)
         getindex(cs::SossModelCallSite, addrs...) = getindex(trace, addr)
         get_ret(cs::SossModelCallSite) = cs.trace
-        
+
         # ------------ Pretty printing ------------ #
-        
+
         function collect!(par::P, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::NT, meta) where {P <: Tuple, NT <: NamedTuple}
             for k in keys(tr)
                 push!(addrs, (par..., k))
@@ -52,7 +52,7 @@ macro load_soss_fmi()
                 meta[(par..., k)] = "(Soss)"
             end
         end
-        
+
         function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::NT, meta) where NT <: NamedTuple
             for (k, v) in tr
                 push!(addrs, (k, ))
@@ -73,36 +73,32 @@ macro load_soss_fmi()
         end
 
         function (ctx::Jaynes.GenerateContext)(c::typeof(soss_fmi),
-                                               fn::typeof(rand),
                                                addr::T,
                                                model::M,
                                                args...) where {T <: Jaynes.Address, M <: Soss.Model}
-            kvs = Jaynes.get_sub(ctx.select, addr)
-            data = namedtuple(Dict{Symbol, Any}(kvs))
-            w, choices = Soss.WeightedSample(call(args...), data)
+            data = Jaynes.get_top(ctx.select, addr)
+            w, choices = Soss.weightedSample(model(args...), data)
             score = Soss.logpdf(m(args...), choices)
-            Jaynes.add_call!(ctx, addr, Jaynes.SossModelCallSite(choices, score, model, args))
+            Jaynes.add_call!(ctx, addr, SossModelCallSite(choices, score, model, args))
             Jaynes.increment!(ctx, w)
             return choices
         end
-        
+
         function (ctx::Jaynes.UpdateContext)(c::typeof(soss_fmi),
-                                             fn::typeof(rand),
                                              addr::T,
                                              model::M,
                                              args...) where {T <: Jaynes.Address, M <: Soss.Model}
             prev = Jaynes.get_prev(ctx, addr)
             kvs = Jaynes.get_sub(ctx.select, addr)
             data = namedtuple(Dict{Symbol, Any}(kvs))
-            w, choices = Soss.WeightedSample(call(args...), data)
+            w, choices = Soss.weightedSample(model(args...), data)
             score = Soss.logpdf(m(args...), choices)
-            Jaynes.add_call!(ctx, addr, Jaynes.SossModelCallSite(choices, score, model, args))
+            Jaynes.add_call!(ctx, addr, SossModelCallSite(choices, score, model, args))
             Jaynes.increment!(ctx, w - get_score(prev))
             return choices
         end
-        
+
         function (ctx::Jaynes.ScoreContext)(c::typeof(soss_fmi),
-                                            fn::typeof(rand),
                                             addr::T,
                                             model::M,
                                             args...) where {T <: Jaynes.Address, M <: Soss.Model}
