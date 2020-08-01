@@ -19,7 +19,7 @@ obs = selection(map(1 : 100) do i
                 end)
 
 n_samples = 5000
-@time ps, ret = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
+@time ps, lnw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
 
 mean_σ = sum(map(ps.calls) do cl
                  get_ret(cl[:σ])
