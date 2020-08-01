@@ -15,6 +15,26 @@ function CategoricalMarkovChain(time_period::Int)
     return observations
 end
 
+# ------------ CHMM ------------ #
+
+# Observation model.
+obs = z -> begin
+    if z == 1
+        rand(:x, Categorical([0.5, 0.5]))
+    else
+        rand(:x, Categorical([0.2, 0.8]))
+    end
+end
+
+# Transition model.
+trans = prev_z -> begin
+    if prev_z == 1
+        rand(:z, Categorical([0.5, 0.5]))
+    else
+        rand(:z, Categorical([0.2, 0.8]))
+    end
+end
+
 function CategoricalHiddenMarkovModel(time_period::Int)
     # Initial.
     init_z = rand(:z => 1, Categorical([0.5, 0.5]))
@@ -22,30 +42,12 @@ function CategoricalHiddenMarkovModel(time_period::Int)
     latents[1] = init_z
     observations = Vector{Int}(undef, time_period)
 
-    # Observation model.
-    obs = (z, i) -> begin
-        if z == 1
-            rand(:x => i, Categorical([0.5, 0.5]))
-        else
-            rand(:x => i, Categorical([0.2, 0.8]))
-        end
-    end
-
-    # Transition model.
-    trans = (prev_z, i) -> begin
-        if prev_z == 1
-            rand(:z => i, Categorical([0.5, 0.5]))
-        else
-            rand(:z => i, Categorical([0.2, 0.8]))
-        end
-    end
-
-    observations[1] = obs(init_z, 1)
+    observations[1] = rand(:obs => 1, obs, init_z)
     z = init_z
 
     for i in 2:time_period
-        z = trans(z, i)
-        observation = obs(z, i)
+        z = rand(:trans => i, trans, z)
+        observation = rand(:obs => i, obs, z)
         latents[i] = z
         observations[i] = observation
     end
@@ -62,11 +64,11 @@ end
         lmles = []
 
         # Testing.
-        init_obs = Jaynes.selection([(:x => 1, ) => xs[1]])
+        init_obs = Jaynes.selection([(:obs => 1, :x) => xs[1]])
         ps = Jaynes.initialize_filter(init_obs, 50000, CategoricalHiddenMarkovModel, (1, ))
         push!(lmles, get_lmle(ps))
         for t=2:5
-            obs = Jaynes.selection([(:x => t, ) =>  xs[t]])
+            obs = Jaynes.selection([(:obs => t, :x) =>  xs[t]])
             Jaynes.filter_step!(obs, ps, NoChange(), (t,))
             push!(lmles, get_lmle(ps))
         end

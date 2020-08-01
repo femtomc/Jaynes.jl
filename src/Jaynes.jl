@@ -32,6 +32,7 @@ whitelist = [:rand,
              :markov, 
              :plate, 
              :cond, 
+             :_apply_iterate,
              # Foreign model interfaces
              :soss_fmi, :gen_fmi, :turing_fmi]
 
@@ -40,9 +41,7 @@ function recur!(ir, to = self)
     for (x, st) in ir
         isexpr(st.expr, :call) && begin
             ref = unwrap(st.expr.args[1])
-            ref in whitelist || 
-            !(unwrap(st.expr.args[1]) in names(Base)) ||
-            continue
+            ref in whitelist || continue
             ir[x] = Expr(:call, to, st.expr.args...)
         end
     end
