@@ -85,6 +85,34 @@ macro load_soss_fmi()
             Jaynes.increment!(ctx, w)
             return choices
         end
+        
+        function (ctx::Jaynes.UpdateContext)(c::typeof(soss_fmi),
+                                             fn::typeof(rand),
+                                             addr::T,
+                                             model::M,
+                                             args...) where {T <: Jaynes.Address, M <: Soss.Model}
+            prev = Jaynes.get_prev(ctx, addr)
+            kvs = Jaynes.get_sub(ctx.select, addr)
+            data = namedtuple(Dict{Symbol, Any}(kvs))
+            w, choices = Soss.WeightedSample(call(args...), data)
+            score = Soss.logpdf(m(args...), choices)
+            Jaynes.add_call!(ctx, addr, Jaynes.SossModelCallSite(choices, score, model, args))
+            Jaynes.increment!(ctx, w - get_score(prev))
+            return choices
+        end
+        
+        function (ctx::Jaynes.ScoreContext)(c::typeof(soss_fmi),
+                                            fn::typeof(rand),
+                                            addr::T,
+                                            model::M,
+                                            args...) where {T <: Jaynes.Address, M <: Soss.Model}
+            prev = Jaynes.get_prev(ctx, addr)
+            kvs = Jaynes.get_sub(ctx.select, addr)
+            choices = namedtuple(Dict{Symbol, Any}(kvs))
+            score = Soss.logpdf(m(args...), choices)
+            Jaynes.increment!(ctx, score)
+            return choices
+        end
     end
 
     expr = MacroTools.prewalk(unblock ∘ rmlines, expr)
