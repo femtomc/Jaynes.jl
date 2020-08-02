@@ -6,6 +6,7 @@ mutable struct SimulateContext{T <: Trace, P <: Parameters} <: ExecutionContext
     SimulateContext() = new{HierarchicalTrace, EmptyParameters}(Trace(), 0.0, Visitor(), Parameters())
     SimulateContext(params::P) where P = new{HierarchicalTrace, P}(Trace(), 0.0, Visitor(), params)
 end
+Simulate() = SimulateContext()
 
 # ------------ Convenience ------------ #
 
