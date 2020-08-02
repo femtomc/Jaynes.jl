@@ -71,6 +71,9 @@ include("selections/anywhere.jl")
 include("selections/hierarchical.jl")
 include("selections/union.jl")
 
+# Learnable parameters and gradients.
+include("selections/learnable.jl")
+
 # ------------ Convenience constructors ------------ #
 
 selection() = ConstrainedEmptySelection()

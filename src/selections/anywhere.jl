@@ -6,13 +6,13 @@ struct ConstrainedAnywhereSelection{T <: ConstrainedSelectQuery} <: ConstrainedS
     ConstrainedAnywhereSelection(obs::Tuple{T, K}...) where {T <: Any, K} = new{ConstrainedByAddress}(ConstrainedByAddress(Dict{Address, Any}(collect(obs))))
 end
 
-has_query(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = has_query(cas.query, addr)
-has_query(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = has_query(cas.query, addr[end])
+has_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = has_top(cas.query, addr)
+has_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = has_top(cas.query, addr[end])
 
 dump_queries(cas::ConstrainedAnywhereSelection) = dump_queries(cas.query)
 
-get_query(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = get_query(cas.query, addr)
-get_query(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = get_query(cas.query, addr[end])
+get_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = get_top(cas.query, addr)
+get_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = get_top(cas.query, addr[end])
 
 get_sub(cas::ConstrainedAnywhereSelection, addr) = cas
 
@@ -40,8 +40,8 @@ struct UnconstrainedAnywhereSelection{T <: UnconstrainedSelectQuery} <: Unconstr
     UnconstrainedAnywhereSelection(obs::Tuple{T, K}...) where {T <: Any, K} = new{UnconstrainedByAddress}(UnconstrainedByAddress(Dict{Address, Any}(collect(obs))))
 end
 
-has_query(cas::UnconstrainedAnywhereSelection, addr::T) where T <: Address = has_query(cas.query, addr)
-has_query(cas::UnconstrainedAnywhereSelection, addr::T) where T <: Tuple = has_query(cas.query, addr[end])
+has_top(cas::UnconstrainedAnywhereSelection, addr::T) where T <: Address = has_top(cas.query, addr)
+has_top(cas::UnconstrainedAnywhereSelection, addr::T) where T <: Tuple = has_top(cas.query, addr[end])
 dump_queries(cas::UnconstrainedAnywhereSelection) = dump_queries(cas.query)
 get_sub(cas::UnconstrainedAnywhereSelection, addr) = cas
 isempty(cas::UnconstrainedAnywhereSelection) = isempty(cas.query)
@@ -50,6 +50,6 @@ isempty(cas::UnconstrainedAnywhereSelection) = isempty(cas.query)
 
 struct UnconstrainedAllSelection <: UnconstrainedSelection end
 
-has_query(uas::UnconstrainedAllSelection, addr) = true
+has_top(uas::UnconstrainedAllSelection, addr) = true
 get_sub(uas::UnconstrainedAllSelection, addr) = uas
 isempty(uas::UnconstrainedAllSelection) = false

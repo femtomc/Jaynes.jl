@@ -56,7 +56,7 @@ ChoiceBackpropagate(tr::T, init, params, choice_grads, sel::K) where {T <: Trace
 # ------------ Learnable ------------ #
 
 read_parameter(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.params, addr)
-read_parameter(ctx::K, params::ParameterStore, addr::Address) where K <: BackpropagationContext = get_param(ctx.initial_params, addr)
+read_parameter(ctx::K, params::ParameterStore, addr::Address) where K <: BackpropagationContext = get_top(ctx.initial_params, addr)
 
 Zygote.@adjoint function read_parameter(ctx, params, addr)
     ret = read_parameter(ctx, params, addr)
@@ -73,10 +73,41 @@ end
 # Grads for learnable parameters.
 simulate_call_pullback(params, param_grads, cl::T, args) where T <: CallSite = cl.ret
 
-Zygote.@adjoint function simulate_call_pullback(params, param_grads, cl, args)
+Zygote.@adjoint function simulate_call_pullback(params, param_grads, cl::HierarchicalCallSite, args)
     ret = simulate_call_pullback(params, param_grads, cl, args)
     fn = ret_grad -> begin
         arg_grads = accumulate_parameter_gradients!(params, param_grads, cl, ret_grad)
+        (nothing, nothing, nothing, arg_grads)
+    end
+    return ret, fn
+end
+
+# Utility.
+merge(tp1::Tuple{}, tp2::Tuple{}) = tp1
+merge(tp1::Tuple{Nothing}, tp2::Tuple{Nothing}) where T = tp1
+merge(tp1::NTuple{N, Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
+merge(tp1::Array{Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
+
+Zygote.@adjoint function simulate_call_pullback(params, param_grads, cl::VectorizedCallSite{typeof(markov)}, args)
+    ret = simulate_call_pullback(params, param_grads, cl, args)
+    fn = ret_grad -> begin
+        arg_grads = accumulate_parameter_gradients!(params, param_grads, get_sub(cl, cl.len), ret_grad)
+        for i in (cl.len - 1) : -1 : 1
+            arg_grads = accumulate_parameter_gradients!(params, param_grads, get_sub(cl, i), arg_grads)
+        end
+        (nothing, nothing, nothing, arg_grads)
+    end
+    return ret, fn
+end
+
+Zygote.@adjoint function simulate_call_pullback(params, param_grads, cl::VectorizedCallSite{typeof(plate)}, args)
+    ret = simulate_call_pullback(params, param_grads, cl, args)
+    fn = ret_grad -> begin
+        arg_grads = accumulate_parameter_gradients!(params, param_grads, get_sub(cl, cl.len), ret_grad[1])
+        for i in 2 : cl.len
+            new = accumulate_parameter_gradients!(params, param_grads, get_sub(cl, i), ret_grad[i])
+            arg_grads = merge(arg_grads, new)
+        end
         (nothing, nothing, nothing, arg_grads)
     end
     return ret, fn
@@ -96,10 +127,69 @@ end
 
 # ------------ Accumulate gradients ------------ #
 
-function accumulate_parameter_gradients!(initial_params, param_grads, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+function accumulate_parameter_gradients!(initial_params, param_grads, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl.trace, initial_params, params, param_grads)
         ret = ctx(cl.fn, args...)
+        (ctx.weight, ret)
+    end
+    blank = ParameterStore()
+    _, back = Zygote.pullback(fn, cl.args, blank)
+    arg_grads, ps_grad = back((1.0, ret_grad))
+    if !(ps_grad isa Nothing)
+        for (addr, grad) in ps_grad.params
+            push!(param_grads, addr, scaler .* grad)
+        end
+    end
+    return arg_grads
+end
+
+function accumulate_parameter_gradients!(initial_params, param_grads, cl::HierarchicalCallSite, ret_grad::Tuple, scaler::Float64 = 1.0)
+    fn = (args, params) -> begin
+        ctx = ParameterBackpropagate(cl.trace, initial_params, params, param_grads)
+        ret = ctx(cl.fn, args...)
+        (ctx.weight, ret)
+    end
+    blank = ParameterStore()
+    _, back = Zygote.pullback(fn, cl.args, blank)
+    arg_grads, ps_grad = back((1.0, ret_grad...))
+    if !(ps_grad isa Nothing)
+        for (addr, grad) in ps_grad.params
+            push!(param_grads, addr, scaler .* grad)
+        end
+    end
+    return arg_grads
+end
+
+function accumulate_parameter_gradients!(initial_params, param_grads, cl::VectorizedCallSite{typeof(markov)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+    addr = gensym()
+    v_params = parameters(addr => initial_params)
+    tr = Trace()
+    add_call!(tr, addr, cl)
+    fn = (args, params) -> begin
+        ctx = ParameterBackpropagate(tr, v_params, params, param_grads)
+        ret = ctx(markov, addr, cl.fn, cl.len, args...)
+        (ctx.weight, ret)
+    end
+    blank = ParameterStore()
+    _, back = Zygote.pullback(fn, cl.args, blank)
+    arg_grads, ps_grad = back((1.0, ret_grad))
+    if !(ps_grad isa Nothing)
+        for (addr, grad) in ps_grad.params
+            push!(param_grads, addr, scaler .* grad)
+        end
+    end
+    return arg_grads
+end
+
+function accumulate_parameter_gradients!(initial_params, param_grads, cl::VectorizedCallSite{typeof(plate)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+    addr = gensym()
+    v_params = parameters(addr => initial_params)
+    tr = Trace()
+    add_call!(tr, addr, cl)
+    fn = (args, params) -> begin
+        ctx = ParameterBackpropagate(tr, v_params, params, param_grads)
+        ret = ctx(plate, addr, cl.fn, args)
         (ctx.weight, ret)
     end
     blank = ParameterStore()
@@ -118,7 +208,7 @@ end
 function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr::NamedTuple, sel::K) where K <: UnconstrainedSelection
     values = ConstrainedHierarchicalSelection()
     for (k, v) in cl.trace.choices
-        has_query(sel, k) && begin
+        has_top(sel, k) && begin
             push!(values, k, v.val)
             push!(choice_grads, k, grad_tr.choices[k].val)
         end
@@ -167,10 +257,18 @@ function get_choice_gradients(sel::K, params, cl::T, ret_grad) where {T <: CallS
     return vals, choice_grads
 end
 
-function get_parameter_gradients(params, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+function get_parameter_gradients(params, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
     param_grads = Gradients()
     accumulate_parameter_gradients!(params, param_grads, cl, ret_grad, scaler)
     return param_grads
+end
+
+function get_parameter_gradients(params, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0)
+    param_grads = Gradients()
+    accumulate_parameter_gradients!(params, param_grads, cl, ret_grad, scaler)
+    for k in keys(param_grads.tree)
+        return param_grads.tree[k]
+    end
 end
 
 # ------------ train ------------ #
@@ -184,7 +282,7 @@ function train(params, fn::Function, args...; opt = ADAM(), iters = 1000)
     return params
 end
 
-function train(sel, params, fn::Function, args...; opt = ADAM(), iters = 1000)
+function train(sel::K, params, fn::Function, args...; opt = ADAM(), iters = 1000) where K <: ConstrainedSelection
     for i in 1 : iters
         _, cl, _ = generate(sel, params, fn, args...)
         grads = get_parameter_gradients(params, cl, 1.0)

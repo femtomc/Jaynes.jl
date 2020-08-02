@@ -13,8 +13,8 @@ macro primitive(ex)
 
         function (ctx::Jaynes.GenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             Jaynes.visit!(ctx.visited, addr)
-            if Jaynes.has_query(ctx.select, addr)
-                s = Jaynes.get_query(ctx.select, addr)
+            if Jaynes.has_top(ctx.select, addr)
+                s = Jaynes.get_top(ctx.select, addr)
                 score = logpdf($argname, args..., s)
                 Jaynes.add_choice!(tr, addr, Jaynes.ChoiceSite(score, s))
                 increment!(ctx, score)
@@ -36,10 +36,10 @@ macro primitive(ex)
 
         @inline function (ctx::Jaynes.RegenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             visit!(ctx.visited, addr)
-            in_prev_chm = has_choice(ctx.prev, addr)
-            in_sel = has_query(ctx.select, addr)
+            in_prev_chm = has_top(ctx.prev, addr)
+            in_sel = has_top(ctx.select, addr)
             if in_prev_chm
-                prev = get_choice(ctx.prev, addr)
+                prev = get_top(ctx.prev, addr)
                 if in_sel
                     ret = $argname(args...)
                     add_choice!(ctx.discard, addr, prev)
@@ -59,15 +59,15 @@ macro primitive(ex)
                                                      addr::T, 
                                                      $argname::$name,
                                                      args...) where {T <: Jaynes.Address, K}
-            in_prev_chm = Jaynes.has_choice(ctx.prev, addr)
+            in_prev_chm = Jaynes.has_top(ctx.prev, addr)
             in_prev_chm && begin
-                prev = Jaynes.get_choice(ctx.prev, addr)
+                prev = Jaynes.get_top(ctx.prev, addr)
                 prev_ret = prev.val
                 prev_score = prev.score
             end
-            in_selection = Jaynes.has_query(ctx.select, addr)
+            in_selection = Jaynes.has_top(ctx.select, addr)
             if in_selection
-                ret = Jaynes.get_query(ctx.select, addr)
+                ret = Jaynes.get_top(ctx.select, addr)
                 in_prev_chm && begin
                     Jaynes.add_choice!(ctx.discard, addr, prev)
                 end
@@ -89,8 +89,8 @@ macro primitive(ex)
 
 
         @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
-            Jaynes.has_query(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
-            val = Jaynes.get_query(ctx.select, addr)
+            Jaynes.has_top(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
+            val = Jaynes.get_top(ctx.select, addr)
             increment!(ctx, logpdf(d, val))
             return val
 
@@ -118,8 +118,8 @@ macro primitive(inject, ex)
 
         function (ctx::Jaynes.GenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             Jaynes.visit!(ctx.visited, addr)
-            if Jaynes.has_query(ctx.select, addr)
-                s = Jaynes.get_query(ctx.select, addr)
+            if Jaynes.has_top(ctx.select, addr)
+                s = Jaynes.get_top(ctx.select, addr)
                 s = $inject_name(s)
                 score = logpdf($argname, args..., s)
                 Jaynes.add_choice!(tr, addr, Jaynes.ChoiceSite(score, s))
@@ -144,10 +144,10 @@ macro primitive(inject, ex)
 
         @inline function (ctx::Jaynes.RegenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             visit!(ctx.visited, addr)
-            in_prev_chm = has_choice(ctx.prev, addr)
-            in_sel = has_query(ctx.select, addr)
+            in_prev_chm = has_top(ctx.prev, addr)
+            in_sel = has_top(ctx.select, addr)
             if in_prev_chm
-                prev = get_choice(ctx.prev, addr)
+                prev = get_top(ctx.prev, addr)
                 if in_sel
                     ret = $argname(args...)
                     ret = $inject_name(ret)
@@ -168,15 +168,15 @@ macro primitive(inject, ex)
                                                      addr::T, 
                                                      $argname::$name,
                                                      args...) where {T <: Jaynes.Address, K}
-            in_prev_chm = Jaynes.has_choice(ctx.prev, addr)
+            in_prev_chm = Jaynes.has_top(ctx.prev, addr)
             in_prev_chm && begin
-                prev = Jaynes.get_choice(ctx.prev, addr)
+                prev = Jaynes.get_top(ctx.prev, addr)
                 prev_ret = prev.val
                 prev_score = prev.score
             end
-            in_selection = Jaynes.has_query(ctx.select, addr)
+            in_selection = Jaynes.has_top(ctx.select, addr)
             if in_selection
-                ret = Jaynes.get_query(ctx.select, addr)
+                ret = Jaynes.get_top(ctx.select, addr)
                 in_prev_chm && begin
                     Jaynes.add_choice!(ctx.discard, addr, prev)
                 end
@@ -199,8 +199,8 @@ macro primitive(inject, ex)
 
 
         @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
-            Jaynes.has_query(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
-            val = Jaynes.get_query(ctx.select, addr)
+            Jaynes.has_top(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
+            val = Jaynes.get_top(ctx.select, addr)
             increment!(ctx, logpdf(d, val))
             return val
 

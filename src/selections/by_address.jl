@@ -6,11 +6,17 @@ struct ConstrainedByAddress <: ConstrainedSelectQuery
     ConstrainedByAddress(d::Dict) = new(d)
 end
 
-has_query(csa::ConstrainedByAddress, addr) = haskey(csa.query, addr)
+has_top(csa::ConstrainedByAddress, addr) = haskey(csa.query, addr)
 
-dump_queries(csa::ConstrainedByAddress) = Set{Any}(keys(csa.query))
+function dump_queries(csa::ConstrainedByAddress)
+    v = Vector{Pair}()
+    for (k, l) in csa.query
+        push!(v, (k, ) => l)
+    end
+    return v
+end
 
-get_query(csa::ConstrainedByAddress, addr) = getindex(csa.query, addr)
+get_top(csa::ConstrainedByAddress, addr) = getindex(csa.query, addr)
 
 isempty(csa::ConstrainedByAddress) = isempty(csa.query)
 
@@ -69,7 +75,7 @@ struct UnconstrainedByAddress <: UnconstrainedSelectQuery
     UnconstrainedByAddress() = new(Any[])
 end
 
-has_query(csa::UnconstrainedByAddress, addr) = addr in csa.query
+has_top(csa::UnconstrainedByAddress, addr) = addr in csa.query
 
 dump_queries(csa::UnconstrainedByAddress) = csa.query
 
@@ -116,4 +122,3 @@ function collect!(addrs, query::UnconstrainedByAddress)
         push!(addrs, (k, ))
     end
 end
-

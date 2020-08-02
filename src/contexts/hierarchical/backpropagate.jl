@@ -4,7 +4,7 @@
                                                       addr::T, 
                                                       d::Distribution{K}) where {T <: Address, K}
     #visit!(ctx.visited, addr)
-    s = get_choice(ctx.tr, addr).val
+    s = get_top(ctx.tr, addr).val
     ctx.weight += logpdf(d, s)
     return s
 end
@@ -13,7 +13,7 @@ end
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
     #visit!(ctx.visited, addr)
-    s = get_choice(ctx.tr, addr).val
+    s = get_top(ctx.tr, addr).val
     ctx.weight += logpdf(d, s)
     return s
 end
@@ -35,7 +35,7 @@ end
                                                       call::Function,
                                                       args...) where T <: Address
     #visit!(ctx.visited, addr)
-    cl = get_call(ctx.tr, addr)
+    cl = get_sub(ctx.tr, addr)
     param_grads = Gradients()
     params = get_sub(ctx.params, addr)
     ret = simulate_call_pullback(params, param_grads, cl, args)
@@ -48,7 +48,7 @@ end
                                                    call::Function,
                                                    args...) where T <: Address
     #visit!(ctx.visited, addr)
-    cl = get_call(ctx.tr, addr)
+    cl = get_sub(ctx.tr, addr)
     choice_grads = Gradients()
     params = get_sub(ctx.params, addr)
     ret = simulate_choice_pullback(params, choice_grads, get_sub(ctx.select, addr), cl, args)

@@ -11,49 +11,49 @@ end
 
 Trace() = HierarchicalTrace()
 
-has_choice(tr::HierarchicalTrace, addr::T) where T <: Address = haskey(tr.choices, addr)
-function has_choice(tr::HierarchicalTrace, addr::T) where T <: Tuple
+has_top(tr::HierarchicalTrace, addr::T) where T <: Address = haskey(tr.choices, addr)
+function has_top(tr::HierarchicalTrace, addr::T) where T <: Tuple
     isempty(addr) && return false
-    length(addr) == 1 && return has_choice(tr, addr[1])
-    has_call(tr, addr[1]) && has_choice(get_call(tr, addr[1]), addr[2 : end])
+    length(addr) == 1 && return has_top(tr, addr[1])
+    has_sub(tr, addr[1]) && has_top(get_sub(tr, addr[1]), addr[2 : end])
 end
 
-has_call(tr::HierarchicalTrace, addr::T) where T <: Address = haskey(tr.calls, addr)
-function has_call(tr::HierarchicalTrace, addr::T) where T <: Tuple
+has_sub(tr::HierarchicalTrace, addr::T) where T <: Address = haskey(tr.calls, addr)
+function has_sub(tr::HierarchicalTrace, addr::T) where T <: Tuple
     isempty(addr) && return false
-    length(addr) == 1 && return has_call(tr, addr[1])
-    has_call(tr, addr[1]) && has_call(get_call(tr, addr[1]), addr[2 : end])
+    length(addr) == 1 && return has_sub(tr, addr[1])
+    has_sub(tr, addr[1]) && has_sub(get_sub(tr, addr[1]), addr[2 : end])
 end
 
-get_call(tr::HierarchicalTrace, addr::T) where T <: Address = tr.calls[addr]
-function get_call(tr::HierarchicalTrace, addr::T) where T <: Tuple
-    isempty(addr) && error("HierarchicalTrace (get_call): no call in trace at $addr.")
-    length(addr) == 1 && return get_call(tr, addr[1])
-    get_call(get_call(tr, addr[1]), addr[2 : end])
+get_sub(tr::HierarchicalTrace, addr::T) where T <: Address = tr.calls[addr]
+function get_sub(tr::HierarchicalTrace, addr::T) where T <: Tuple
+    isempty(addr) && error("HierarchicalTrace (get_sub): no call in trace at $addr.")
+    length(addr) == 1 && return get_sub(tr, addr[1])
+    get_sub(get_sub(tr, addr[1]), addr[2 : end])
 end
 
-get_choice(tr::HierarchicalTrace, addr::T) where T <: Address = tr.choices[addr]
-function get_choice(tr::HierarchicalTrace, addr::T) where T <: Tuple
-    isempty(addr) && error("HierarchicalTrace (get_choice): no choice in trace at $addr.")
-    length(addr) == 1 && return get_choice(tr, addr[1])
-    get_choice(get_call(tr, addr[1]), addr[2 : end])
+get_top(tr::HierarchicalTrace, addr::T) where T <: Address = tr.choices[addr]
+function get_top(tr::HierarchicalTrace, addr::T) where T <: Tuple
+    isempty(addr) && error("HierarchicalTrace (get_top): no choice in trace at $addr.")
+    length(addr) == 1 && return get_top(tr, addr[1])
+    get_top(get_sub(tr, addr[1]), addr[2 : end])
 end
 
 function getindex(tr::HierarchicalTrace, addrs...)
-    has_call(tr, addrs) && return get_call(tr, addrs)
-    has_choice(tr, addrs) && return get_choice(tr, addrs)
+    has_sub(tr, addrs) && return get_sub(tr, addrs)
+    has_top(tr, addrs) && return get_top(tr, addrs)
     error("HierarchicalTrace (getindex): no choice or call at $addrs.")
 end
 
 function Base.haskey(tr::HierarchicalTrace, addr::T) where T <: Address
-    has_choice(tr, addr) && return true
-    has_call(tr, addr) && return true
+    has_top(tr, addr) && return true
+    has_sub(tr, addr) && return true
     return false
 end
 function Base.haskey(tr::HierarchicalTrace, addr::T) where T <: Tuple
     isempty(addr) && return false
     length(addr) == 1 && return haskey(tr, addr[1])
-    has_call(tr, addr[1]) && haskey(get_call(tr, addr[1]), addr[2 : end])
+    has_sub(tr, addr[1]) && haskey(get_sub(tr, addr[1]), addr[2 : end])
 end
 
 # These methods only work for addresses. You should never be adding a call or choice site, except at the current stack level.
@@ -68,13 +68,7 @@ function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::Hierarchi
         chd[(par..., k)] = v.val
     end
     for (k, v) in tr.calls
-        if v isa HierarchicalCallSite
-            collect!((par..., k), addrs, chd, v.trace, meta)
-        elseif v isa VectorizedCallSite
-            for i in 1:length(v.trace.subrecords)
-                collect!((par..., k, i), addrs, chd, v.trace.subrecords[i].trace, meta)
-            end
-        end
+        collect!((par..., k), addrs, chd, v.trace, meta)
     end
 end
 
@@ -84,11 +78,7 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::HierarchicalTrace
         chd[(k, )] = v.val
     end
     for (k, v) in tr.calls
-        if v isa HierarchicalCallSite
-            collect!((k, ), addrs, chd, v.trace, meta)
-        elseif v isa VectorizedCallSite
-            collect!((k, ), addrs, chd, v.trace, meta)
-        end
+        collect!((k, ), addrs, chd, v.trace, meta)
     end
 end
 
@@ -102,13 +92,13 @@ struct HierarchicalCallSite{J, K} <: CallSite
     ret::K
 end
 
-has_choice(bbcs::HierarchicalCallSite, addr) = has_choice(bbcs.trace, addr)
+has_top(bbcs::HierarchicalCallSite, addr) = has_top(bbcs.trace, addr)
 
-get_choice(bbcs::HierarchicalCallSite, addr) = get_choice(bbcs.trace, addr)
+get_top(bbcs::HierarchicalCallSite, addr) = get_top(bbcs.trace, addr)
 
-has_call(bbcs::HierarchicalCallSite, addr) = has_call(bbcs.trace, addr)
+has_sub(bbcs::HierarchicalCallSite, addr) = has_sub(bbcs.trace, addr)
 
-get_call(bbcs::HierarchicalCallSite, addr) = get_call(bbcs.trace, addr)
+get_sub(bbcs::HierarchicalCallSite, addr) = get_sub(bbcs.trace, addr)
 
 get_score(bbcs::HierarchicalCallSite) = bbcs.score
 

@@ -32,6 +32,7 @@ whitelist = [:rand,
              :markov, 
              :plate, 
              :cond, 
+             :_apply_iterate,
              # Foreign model interfaces
              :soss_fmi, :gen_fmi, :turing_fmi]
 
@@ -40,9 +41,7 @@ function recur!(ir, to = self)
     for (x, st) in ir
         isexpr(st.expr, :call) && begin
             ref = unwrap(st.expr.args[1])
-            ref in whitelist || 
-            !(unwrap(st.expr.args[1]) in names(Base)) ||
-            continue
+            ref in whitelist || continue
             ir[x] = Expr(:call, to, st.expr.args...)
         end
     end
@@ -67,10 +66,8 @@ end
 include("compiler/static.jl")
 include("traces.jl")
 include("selections.jl")
-include("learnable.jl")
 include("utils/numerical.jl")
 include("utils/vectorized.jl")
-include("utils/visualization.jl")
 include("compiler/diffs.jl")
 include("contexts.jl")
 include("inference.jl")
@@ -94,7 +91,7 @@ export NoChange, UndefinedChange, VectorDiff
 # Selections and parameters.
 export selection, array, parameters
 export anywhere, intersection, union
-export get_selection, get_parameters, compare, has_query, update_parameters, dump_queries, merge!, merge
+export get_selection, compare, has_top, update_parameters, dump_queries, merge!, merge
 
 # Inference.
 export metropolis_hastings, mh
@@ -106,7 +103,9 @@ export metropolis_hastings, mh
 export automatic_differentiation_variational_inference, advi
 
 # Foreign model interfaces.
-export @primitive, @load_soss_fmi, @load_gen_fmi, @load_turing_fmi
+export @primitive
+export @load_gen_fmi, gen_fmi
+export @load_soss_fmi, soss_fmi
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret

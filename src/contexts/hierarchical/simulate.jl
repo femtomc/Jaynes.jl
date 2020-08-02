@@ -11,9 +11,9 @@ end
 
 # ------------ Learnable ------------ #
 
-@inline function (ctx::SimulateContext)(fn::typeof(learnable), addr::Address)
+@inline function (ctx::SimulateContext)(fn::typeof(learnable), addr::T) where T <: Address
     visit!(ctx, addr)
-    has_param(ctx.params, addr) && return get_param(ctx.params, addr)
+    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
     error("Parameter not provided at address $addr.")
 end
 

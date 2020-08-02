@@ -27,42 +27,42 @@ function propose(fn::typeof(rand), d::Distribution{K}) where K
     ctx = Propose()
     addr = gensym()
     ret = ctx(fn, addr, d)
-    return ret, get_choice(ctx.tr, addr), ctx.score
+    return ret, get_top(ctx.tr, addr), ctx.score
 end
 
 function propose(fn::typeof(markov), call::Function, len::Int, args...)
     ctx = Propose()
     addr = gensym()
     ret = ctx(fn, addr, call, len, args...)
-    return ret, get_call(ctx.tr, addr), ctx.score
+    return ret, get_sub(ctx.tr, addr), ctx.score
 end
 
 function propose(params, fn::typeof(markov), call::Function, len::Int, args...)
     ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, call, len, args...)
-    return ret, get_call(ctx.tr, addr), ctx.score
+    return ret, get_sub(ctx.tr, addr), ctx.score
 end
 
 function propose(fn::typeof(plate), call::Function, args::Vector)
     ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, call, args)
-    return ret, get_call(ctx.tr, addr), ctx.score
+    return ret, get_sub(ctx.tr, addr), ctx.score
 end
 
 function propose(params, fn::typeof(plate), call::Function, args::Vector)
     ctx = Propose(params)
     addr = gensym()
     ret = ctx(fn, addr, call, args)
-    return ret, get_call(ctx.tr, addr), ctx.score
+    return ret, get_sub(ctx.tr, addr), ctx.score
 end
 
 function propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
     ctx = Propose()
     addr = gensym()
     ret = ctx(fn, addr, d, len)
-    return ret, get_call(ctx.tr, addr), ctx.score
+    return ret, get_sub(ctx.tr, addr), ctx.score
 end
 
 # ------------ includes ------------ #

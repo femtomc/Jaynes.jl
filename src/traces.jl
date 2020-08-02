@@ -5,13 +5,15 @@ import Base: getindex, haskey, rand, iterate
 Base.iterate(s::Symbol) = s
 
 # Special calls recognized by tracer.
-rand(addr::Address, d::Distribution{T}) where T = rand(d)
-rand(addr::Address, fn::Function, args...) = fn(args...)
-rand(addr::Address, fn::Function, args::Tuple, ret_score::Function) = fn(args...)
-learnable(addr::Address, p::T) where T = p
-plate(addr::Address, args...) = error("(plate) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-markov(addr::Address, args...) = error("(markov) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-cond(addr::Address, args...) = error("(cond) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+rand(addr::A, d::Distribution{T}) where {A <: Address, T} = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
+rand(addr::A, fn::Function, args...) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
+rand(addr::A, fn::Function, args::Tuple, ret_score::Function) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
+learnable(addr::A) where {A <: Address} = error("(learnable) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
+plate(addr::A, args...) where A <: Address = error("(plate) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+markov(addr::A, args...) where A <: Address = error("(markov) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+cond(addr::A, args...) where A <: Address = error("(cond) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+gen_fmi(addr::A, args...) where A <: Address = error("(gen_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+soss_fmi(addr::A, args...) where A <: Address = error("(soss_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 
 # Generic abstract types..
 abstract type RecordSite end
@@ -93,7 +95,7 @@ import Base.collect
 function collect(tr::Trace)
     addrs = Any[]
     chd = Dict{Any, Any}()
-    meta = Any[]
+    meta = Dict()
     collect!(addrs, chd, tr, meta)
     return addrs, chd, meta
 end
@@ -106,7 +108,11 @@ function Base.display(tr::Trace;
     addrs, chd, meta = collect(tr)
     if show_values
         for a in addrs
-            println(" $(a) = $(chd[a])")
+            if haskey(meta, a)
+                println("$(meta[a]) $(a) = $(chd[a])")
+            else
+                println("$(a) = $(chd[a])")
+            end
         end
     elseif show_types
         for a in addrs

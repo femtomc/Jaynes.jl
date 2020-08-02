@@ -4,10 +4,10 @@
                                           addr::T, 
                                           d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    in_prev_chm = has_choice(ctx.prev, addr)
-    in_sel = has_query(ctx.select, addr)
+    in_prev_chm = has_top(ctx.prev, addr)
+    in_sel = has_top(ctx.select, addr)
     if in_prev_chm
-        prev = get_choice(ctx.prev.trace, addr)
+        prev = get_top(ctx.prev.trace, addr)
         if in_sel
             ret = rand(d)
             add_choice!(ctx.discard, addr, prev)
@@ -27,7 +27,7 @@ end
 
 @inline function (ctx::RegenerateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    has_param(ctx.params, addr) && return get_param(ctx.params, addr)
+    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
     error("Parameter not provided at address $addr.")
 end
 
