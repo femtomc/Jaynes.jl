@@ -1,6 +1,6 @@
 macro load_soss_fmi()
     expr = quote
-        @info "Loading foreign model interface to \u001b[3m\u001b[34;1mSoss.jl\u001b[0m\n\n          \u001b[34;1mhttps://github.com/cscherrer/Soss.jl\n\n "
+        @info "Loading foreign model interface to \u001b[3m\u001b[34;1mSoss.jl\u001b[0m\n\n          \u001b[34;1mhttps://github.com/cscherrer/Soss.jl\n\nThis interface is a work in progress! Please post issues to:\n\n          \u001b[34;1mhttps://github.com/femtomc/Jaynes.jl/issues\n\n"
 
         using PyCall
         using Conda
