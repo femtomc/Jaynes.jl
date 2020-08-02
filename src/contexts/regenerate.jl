@@ -15,6 +15,7 @@ mutable struct RegenerateContext{C <: CallSite,
     RegenerateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: UnconstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, EmptyParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
     RegenerateContext(cl::C, select::K, params::P, argdiffs::D) where {C <: CallSite, K <: UnconstrainedSelection, P <: Parameters, D <: Diff} = new{C, typeof(cl.trace), K, P, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), params, argdiffs)
 end
+Regenerate(cl, select, argdiffs) = RegenerateContext(cl, select, argdiffs)
 
 # Regenerate has a special dynamo.
 @dynamo function (mx::RegenerateContext)(a...)

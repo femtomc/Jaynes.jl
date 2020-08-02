@@ -25,17 +25,19 @@ macro load_soss_fmi()
             end
         end
 
-        import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect!
+        import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect!, add_call!, haskey
         import Jaynes: simulate, propose, generate, update, regenerate, score
         using Soss
         import Soss: logpdf
 
         # ------------ Trace ------------ #
 
-        struct SossTrace{NT <: NamedTuple} <: Jaynes.Trace
+        mutable struct SossTrace{NT <: NamedTuple} <: Jaynes.Trace
             choices::NT
             SossTrace(nt::NT) where NT = new{NT}(nt)
+            SossTrace{NT}() where NT = new{NT}()
         end
+        add_call!(st::SossTrace, addr, choices) = st.choices = choices
 
         # ------------ Call site ------------ #
 
@@ -120,11 +122,12 @@ macro load_soss_fmi()
         end
 
         # Convenience.
-        function generate(sel::L, model::M, args...) where {L <: Jaynes.ConstrainedSelection, M <: Soss.Model}
-            ctx = Generate(sel)
+        function generate(sel::L, model::M, args...) where {L <: NamedTuple, M <: Soss.Model}
             addr = gensym()
+            v_sel = selection([(addr, ) => sel])
+            ctx = Generate(v_sel)
             ret = ctx(soss_fmi, addr, model, args...)
-            return ret, get_top(ctx.tr, addr), ctx.weight
+            return ret, get_sub(ctx.tr, addr), ctx.weight
         end
 
         function (ctx::Jaynes.UpdateContext)(c::typeof(soss_fmi),
@@ -132,12 +135,41 @@ macro load_soss_fmi()
                                              model::M,
                                              args...) where {T <: Jaynes.Address, M <: Soss.Model}
             prev = Jaynes.get_prev(ctx, addr)
-            kvs = Jaynes.get_sub(ctx.select, addr)
+            kvs = Jaynes.get_top(ctx.select, addr)
             data = namedtuple(Dict{Symbol, Any}(kvs))
             w, choices = Soss.weightedSample(model(args...), data)
             score = Soss.logpdf(m(args...), choices)
             Jaynes.add_call!(ctx, addr, SossModelCallSite(SossTrace(choices), score, model, args))
             Jaynes.increment!(ctx, w - get_score(prev))
+            return choices
+        end
+        
+        # Convenience.
+        function update(sel::L, soss_cl::C) where {L <: NamedTuple, C <: SossModelCallSite}
+            addr = gensym()
+            v_sel = selection([(addr, ) => sel])
+            ctx = Update(v_sel)
+            ret = ctx(soss_fmi, addr, model, args...)
+            return ret, get_sub(ctx.tr, addr), ctx.weight, Jaynes.UndefinedChange(), nothing
+        end
+
+        function (ctx::Jaynes.RegenerateContext{C, T})(c::typeof(soss_fmi),
+                                                       addr::A,
+                                                       model::M,
+                                                       args...) where {A <: Jaynes.Address, M <: Soss.Model, C <: SossModelCallSite, T <: SossTrace}
+            targeted = dump_queries(Jaynes.get_sub(ctx.select, addr))
+            prev = ctx.prev
+            kvs = Dict{Symbol, Any}()
+            for (k, v) in pairs(prev.trace.choices)
+                haskey(ctx.select, (addr, k)) && continue
+                kvs[k] = v
+            end
+            data = Soss.namedtuple(kvs)
+            w, choices = Soss.weightedSample(model(args...), data)
+            score = Soss.logpdf(m(args...), choices)
+            ctx.tr.choices = choices
+            ctx.score += score
+            Jaynes.increment!(ctx, score - get_score(prev))
             return choices
         end
 
@@ -158,6 +190,15 @@ macro load_soss_fmi()
             Jaynes.add_call!(ctx, addr, SossModelCallSite(SossTrace(choices), score, model, args))
             Jaynes.increment!(ctx, score - get_score(prev))
             return choices
+        end
+
+        # Convenience.
+        function regenerate(sel::L, soss_cl::C) where {L <: Jaynes.UnconstrainedSelection, C <: SossModelCallSite}
+            addr = gensym()
+            v_sel = selection(addr => sel)
+            ctx = Jaynes.Regenerate(soss_cl, v_sel, NoChange())
+            ret = ctx(soss_fmi, addr, soss_cl.model, soss_cl.args...)
+            return ret, SossModelCallSite(ctx.tr, ctx.score, soss_cl.model, soss_cl.args), ctx.weight, Jaynes.UndefinedChange(), nothing
         end
 
         function (ctx::Jaynes.ScoreContext)(c::typeof(soss_fmi),
