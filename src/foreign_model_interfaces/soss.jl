@@ -72,6 +72,17 @@ macro load_soss_fmi()
             return choices
         end
 
+        function (ctx::Jaynes.ProposeContext)(c::typeof(soss_fmi),
+                                              addr::T,
+                                              model::M,
+                                              args...) where {T <: Jaynes.Address, M <: Soss.Model}
+            choices = rand(model(args...))
+            score = Soss.logpdf(m(args...), choices)
+            Jaynes.add_call!(ctx, addr, SossModelCallSite(choices, score, model, args))
+            increment!(ctx, score)
+            return choices
+        end
+
         function (ctx::Jaynes.GenerateContext)(c::typeof(soss_fmi),
                                                addr::T,
                                                model::M,
@@ -95,6 +106,26 @@ macro load_soss_fmi()
             score = Soss.logpdf(m(args...), choices)
             Jaynes.add_call!(ctx, addr, SossModelCallSite(choices, score, model, args))
             Jaynes.increment!(ctx, w - get_score(prev))
+            return choices
+        end
+
+        function (ctx::Jaynes.RegenerateContext)(c::typeof(soss_fmi),
+                                                 addr::T,
+                                                 model::M,
+                                                 args...) where {T <: Jaynes.Address, M <: Soss.Model}
+            targeted = dump_queries(Jaynes.get_sub(ctx.select, addr))
+            prev = Jaynes.get_prev(ctx, addr)
+            prev_ret = get_ret(prev)
+            kvs = Dict{Symbol, Any}()
+            for (k, v) in pairs(prev_ret)
+                k in targeted && continue
+                kvs[k] = v
+            end
+            data = Soss.namedtuple(kvs)
+            w, choices = Soss.weightedSample(model(args...), data)
+            score = Soss.logpdf(m(args...), choices)
+            Jaynes.add_call!(ctx, addr, SossModelCallSite(choices, score, model, args))
+            Jaynes.increment!(ctx, score - get_score(prev))
             return choices
         end
 

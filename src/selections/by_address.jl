@@ -122,4 +122,3 @@ function collect!(addrs, query::UnconstrainedByAddress)
         push!(addrs, (k, ))
     end
 end
-

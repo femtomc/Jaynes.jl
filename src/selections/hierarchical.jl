@@ -390,7 +390,7 @@ end
 
 # Used in pretty printing.
 function collect!(par::T, addrs::Vector{Any}, chs::UnconstrainedHierarchicalSelection) where T <: Any
-    collect!(par, chs.query)
+    collect!(par, addrs, chs.query)
     for (k, v) in chs.tree
         collect!((par..., k), addrs, v)
     end
