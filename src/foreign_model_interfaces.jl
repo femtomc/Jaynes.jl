@@ -4,6 +4,7 @@ include("foreign_model_interfaces/blackbox.jl")
 include("foreign_model_interfaces/soss.jl")
 include("foreign_model_interfaces/turing.jl")
 include("foreign_model_interfaces/gen.jl")
+include("foreign_model_interfaces/flux.jl")
 
 # ------------ Documentation -------------- #
 
@@ -11,6 +12,7 @@ function primitive end
 function load_soss_fmi end
 function load_turing_fmi end
 function load_gen_fmi end
+function load_flux_fmi end
 
 @doc(
 """

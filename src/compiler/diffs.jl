@@ -28,17 +28,17 @@ struct Diffed{V, DV}
 end
 
 # Register diff propagation with Mjolnir
-struct DiffPrimitives end
-
-@abstract DiffPrimitives function *(d1::Partial{<:Diffed{V, NoChange}}, d2::Partial{<:Diffed{V, NoChange}}) where V
-    Diffed(d1.value.val * d2.value.val, NoChange())
-end
-@abstract DiffPrimitives function +(d1::Partial{<:Diffed{V, NoChange}}, d2::Partial{<:Diffed{V, NoChange}}) where V
-    Diffed(d1.value.val + d2.value.val, NoChange())
-end
-@abstract DiffPrimitives function -(d1::Partial{<:Diffed{V, NoChange}}, d2::Partial{<:Diffed{V, NoChange}}) where V
-    Diffed(d1.value.val - d2.value.val, NoChange())
-end
-@abstract DiffPrimitives function /(d1::Partial{<:Diffed{V, NoChange}}, d2::Partial{<:Diffed{V, NoChange}}) where V
-    Diffed(d1.value.val / d2.value.val, NoChange())
-end
+#struct DiffPrimitives end
+#
+#@abstract DiffPrimitives function *(d1::Partial{<:Diffed{V, NoChange}}, d2::Partial{<:Diffed{V, NoChange}}) where V
+#    Diffed(d1.value.val * d2.value.val, NoChange())
+#end
+#@abstract DiffPrimitives function +(d1::Partial{<:Diffed{V, NoChange}}, d2::Partial{<:Diffed{V, NoChange}}) where V
+#    Diffed(d1.value.val + d2.value.val, NoChange())
+#end
+#@abstract DiffPrimitives function -(d1::Partial{<:Diffed{V, NoChange}}, d2::Partial{<:Diffed{V, NoChange}}) where V
+#    Diffed(d1.value.val - d2.value.val, NoChange())
+#end
+#@abstract DiffPrimitives function /(d1::Partial{<:Diffed{V, NoChange}}, d2::Partial{<:Diffed{V, NoChange}}) where V
+#    Diffed(d1.value.val / d2.value.val, NoChange())
+#end

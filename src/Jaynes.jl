@@ -3,9 +3,9 @@ module Jaynes
 # Yarrrr I'm a com-pirate!
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
-using Mjolnir
-using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
-using Mjolnir: Defaults
+#using Mjolnir
+#using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
+#using Mjolnir: Defaults
 using MacroTools
 
 using Reexport
@@ -104,6 +104,7 @@ export hamiltonian_monte_carlo, hmc
 export @primitive
 export @load_gen_fmi, gen_fmi
 export @load_soss_fmi, soss_fmi
+export @load_flux_fmi
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret
