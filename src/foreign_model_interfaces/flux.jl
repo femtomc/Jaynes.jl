@@ -3,7 +3,10 @@ macro load_flux_fmi()
     expr = quote
         using Zygote
         using Flux
-        using Flux: Chain, Dense
+        using Flux: Chain, Dense, update!
+
+        macro track(expr)
+        end
     end
 
     expr = MacroTools.prewalk(unblock ∘ rmlines, expr)
