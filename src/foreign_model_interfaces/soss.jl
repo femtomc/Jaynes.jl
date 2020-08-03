@@ -205,12 +205,20 @@ macro load_soss_fmi()
                                             addr::T,
                                             model::M,
                                             args...) where {T <: Jaynes.Address, M <: Soss.Model}
-            prev = Jaynes.get_prev(ctx, addr)
             kvs = Jaynes.get_sub(ctx.select, addr)
             choices = namedtuple(Dict{Symbol, Any}(kvs))
             score = Soss.logpdf(m(args...), choices)
             Jaynes.increment!(ctx, score)
             return choices
+        end
+
+        # Convenience.
+        function score(sel::L, model::M, args...) where {L <: Jaynes.UnconstrainedSelection, M <: SossModelCallSite}
+            addr = gensym()
+            v_sel = selection(addr => sel)
+            ctx = Jaynes.Score(v_sel)
+            ret = ctx(foreign, addr, soss_cl.model, soss_cl.args...)
+            return ret, SossModelCallSite(ctx.tr, ctx.score, soss_cl.model, soss_cl.args), ctx.weight, Jaynes.UndefinedChange(), nothing
         end
     end
 

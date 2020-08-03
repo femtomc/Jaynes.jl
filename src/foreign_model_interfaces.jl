@@ -57,6 +57,16 @@ The above program would summarize the trace into a single choice site for `:geo`
 @doc(
 """
 ```julia
+foreign(addr::A, m, args...) where A <: Address
+```
+
+Activate a foreign model interface. The tracer will treat this is a specialized call site, depending on the type of `m`. Currently supports `typeof(m) <: Soss.Model` and `typeof(m) <: Gen.GenerativeFunction`.
+
+""", foreign)
+
+@doc(
+"""
+```julia
 Jaynes.@load_soss_fmi
 ```
 
