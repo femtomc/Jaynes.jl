@@ -1,5 +1,5 @@
 macro load_gen_fmi()
-    @info "Loading foreign model interface to \u001b[3m\u001b[34;1mGen.jl\u001b[0m\n\n          \u001b[34;1mhttps://www.gen.dev/\n\nThis interface currently supports Gen's full feature set.\n\n\u001b[1mGen and Jaynes share exports - please qualify usage of the following context APIs:\n\u001b[0m\n \u001b[31msimulate   \u001b[0m-> \u001b[32mJaynes.simulate\n \u001b[31mgenerate   \u001b[0m-> \u001b[32mJaynes.generate\n \u001b[31mupdate     \u001b[0m-> \u001b[32mJaynes.update\n \u001b[31mregenerate \u001b[0m-> \u001b[32mJaynes.regenerate\n "
+    @info "Loading foreign model interface to \u001b[3m\u001b[34;1mGen.jl\u001b[0m\n\n          \u001b[34;1mhttps://www.gen.dev/\n\nThis interface currently supports Gen's full feature set.\n\n\u001b[1mGen and Jaynes share exports - please qualify usage of the following context APIs:\n\u001b[0m\n \u001b[31msimulate   \u001b[0m-> \u001b[32mJaynes.simulate\n \u001b[31mgenerate   \u001b[0m-> \u001b[32mJaynes.generate\n \u001b[31mupdate     \u001b[0m-> \u001b[32mJaynes.update\n \u001b[31mregenerate \u001b[0m-> \u001b[32mJaynes.regenerate\n \u001b[31mpropose    \u001b[0m-> \u001b[32mJaynes.propose\n "
     expr = quote
         import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect!, selection
         using Gen
@@ -67,7 +67,7 @@ macro load_gen_fmi()
 
         # ------------ Contexts ------------ #
 
-        function (ctx::Jaynes.SimulateContext)(c::typeof(gen_fmi),
+        function (ctx::Jaynes.SimulateContext)(c::typeof(foreign),
                                                addr::Jaynes.Address,
                                                gen_fn::M,
                                                args...) where M <: GenerativeFunction
@@ -77,7 +77,7 @@ macro load_gen_fmi()
             return Gen.get_retval(tr)
         end
 
-        function (ctx::Jaynes.ProposeContext)(c::typeof(gen_fmi),
+        function (ctx::Jaynes.ProposeContext)(c::typeof(foreign),
                                               addr::Jaynes.Address,
                                               gen_fn::M,
                                               args...) where M <: GenerativeFunction
@@ -88,7 +88,7 @@ macro load_gen_fmi()
             return ret
         end
 
-        function (ctx::Jaynes.GenerateContext)(c::typeof(gen_fmi),
+        function (ctx::Jaynes.GenerateContext)(c::typeof(foreign),
                                                addr::Jaynes.Address,
                                                gen_fn::M,
                                                args...) where M <: GenerativeFunction
@@ -103,7 +103,7 @@ macro load_gen_fmi()
             return ret
         end
 
-        function (ctx::Jaynes.UpdateContext)(c::typeof(gen_fmi),
+        function (ctx::Jaynes.UpdateContext)(c::typeof(foreign),
                                              addr::Jaynes.Address,
                                              gen_fn::M,
                                              args...) where M <: GenerativeFunction
@@ -118,7 +118,7 @@ macro load_gen_fmi()
             return Gen.get_retval(new)
         end
 
-        function (ctx::Jaynes.RegenerateContext)(c::typeof(gen_fmi),
+        function (ctx::Jaynes.RegenerateContext)(c::typeof(foreign),
                                                  addr::Jaynes.Address,
                                                  gen_fn::M,
                                                  args...) where M <: GenerativeFunction
@@ -133,7 +133,7 @@ macro load_gen_fmi()
             return ret
         end
 
-        function (ctx::Jaynes.ScoreContext)(c::typeof(gen_fmi),
+        function (ctx::Jaynes.ScoreContext)(c::typeof(foreign),
                                             addr::Jaynes.Address,
                                             gen_fn::M,
                                             args...) where M <: GenerativeFunction

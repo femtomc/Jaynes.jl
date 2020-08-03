@@ -34,7 +34,7 @@ whitelist = [:rand,
              :cond, 
              :_apply_iterate,
              # Foreign model interfaces
-             :soss_fmi, :gen_fmi, :turing_fmi]
+             :foreign]
 
 # Fix for specialized tracing.
 function recur!(ir, to = self)
@@ -102,9 +102,10 @@ export hamiltonian_monte_carlo, hmc
 
 # Foreign model interfaces.
 export @primitive
-export @load_gen_fmi, gen_fmi
-export @load_soss_fmi, soss_fmi
+export @load_gen_fmi
+export @load_soss_fmi
 export @load_flux_fmi
+export foreign
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret

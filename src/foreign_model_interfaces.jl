@@ -10,10 +10,9 @@ function primitive end
 function load_soss_fmi end
 function load_turing_fmi end
 function load_flux_fmi end
-
 function load_gen_fmi end
-gen_fmi(addr::A, args...) where A <: Address = error("(gen_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-soss_fmi(addr::A, args...) where A <: Address = error("(soss_fmi) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+
+foreign(addr::A, args...) where A <: Address = error("(foreign) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 
 # ------------ Documentation -------------- #
 
@@ -76,23 +75,13 @@ end
 
 bar = () -> begin
     x = rand(:x, Normal(5.0, 1.0))
-    soss_ret = soss_fmi(:foo, m, (σ = x,))
+    soss_ret = foreign(:foo, m, (σ = x,))
     return soss_ret
 end
 ```
 
 This interface currently supports all the inference interfaces (e.g. `simulate`, `generate`, `score`, `regenerate`, `update`, `propose`) which means that you can use any of the inference algorithms in the standard inference library.
 """, load_soss_fmi)
-
-@doc(
-"""
-```julia
-soss_fmi(addr::Address, model::M, args...) where {A <: Address, M <: Soss.Model}
-```
-
-Indicate to the tracer that this call site is a `Soss.Model` call site, and it should treat it as such.
-
-""", soss_fmi)
 
 @doc(
 """
@@ -117,7 +106,7 @@ Gen.load_generated_functions()
 
 bar = () -> begin
     x = rand(:x, Normal(0.0, 1.0))
-    return gen_fmi(:foo, foo, x)
+    return foreign(:foo, foo, x)
 end
 
 ret, cl = Jaynes.simulate(bar)
@@ -125,13 +114,3 @@ ret, cl = Jaynes.simulate(bar)
 
 This interface currently supports all the inference interfaces (e.g. `simulate`, `generate`, `score`, `regenerate`, `update`, `propose`) which means that you can use any of the inference algorithms in the standard inference library.
 """, load_gen_fmi)
-
-@doc(
-"""
-```julia
-gen_fmi(addr::A, model::M, args...) where {A <: Address, M <: Gen.GenerativeFunction}
-```
-
-Indicate to the tracer that this call site is a `Gen.GenerativeFunction` call site, and it should treat it as such.
-
-""", gen_fmi)

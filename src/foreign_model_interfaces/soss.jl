@@ -72,7 +72,7 @@ macro load_soss_fmi()
 
         # ------------ Contexts ------------ #
 
-        function (ctx::Jaynes.SimulateContext)(c::typeof(soss_fmi),
+        function (ctx::Jaynes.SimulateContext)(c::typeof(foreign),
                                                addr::T,
                                                model::M,
                                                args...) where {T <: Jaynes.Address, M <: Soss.Model}
@@ -86,11 +86,11 @@ macro load_soss_fmi()
         function simulate(model::M, args...) where M <: Soss.Model
             ctx = Jaynes.Simulate()
             addr = gensym()
-            ret = ctx(soss_fmi, addr, model, args...)
+            ret = ctx(foreign, addr, model, args...)
             return ret, get_sub(ctx.tr, addr)
         end
 
-        function (ctx::Jaynes.ProposeContext)(c::typeof(soss_fmi),
+        function (ctx::Jaynes.ProposeContext)(c::typeof(foreign),
                                               addr::T,
                                               model::M,
                                               args...) where {T <: Jaynes.Address, M <: Soss.Model}
@@ -105,11 +105,11 @@ macro load_soss_fmi()
         function propose(model::M, args...) where M <: Soss.Model
             ctx = Propose()
             addr = gensym()
-            ret = ctx(soss_fmi, addr, model, args...)
+            ret = ctx(foreign, addr, model, args...)
             return ret, get_top(ctx.tr, addr), ctx.score
         end
 
-        function (ctx::Jaynes.GenerateContext)(c::typeof(soss_fmi),
+        function (ctx::Jaynes.GenerateContext)(c::typeof(foreign),
                                                addr::T,
                                                model::M,
                                                args...) where {T <: Jaynes.Address, M <: Soss.Model}
@@ -126,11 +126,11 @@ macro load_soss_fmi()
             addr = gensym()
             v_sel = selection([(addr, ) => sel])
             ctx = Generate(v_sel)
-            ret = ctx(soss_fmi, addr, model, args...)
+            ret = ctx(foreign, addr, model, args...)
             return ret, get_sub(ctx.tr, addr), ctx.weight
         end
 
-        function (ctx::Jaynes.UpdateContext)(c::typeof(soss_fmi),
+        function (ctx::Jaynes.UpdateContext)(c::typeof(foreign),
                                              addr::T,
                                              model::M,
                                              args...) where {T <: Jaynes.Address, M <: Soss.Model}
@@ -149,11 +149,11 @@ macro load_soss_fmi()
             addr = gensym()
             v_sel = selection([(addr, ) => sel])
             ctx = Update(v_sel)
-            ret = ctx(soss_fmi, addr, model, args...)
+            ret = ctx(foreign, addr, model, args...)
             return ret, get_sub(ctx.tr, addr), ctx.weight, Jaynes.UndefinedChange(), nothing
         end
 
-        function (ctx::Jaynes.RegenerateContext{C, T})(c::typeof(soss_fmi),
+        function (ctx::Jaynes.RegenerateContext{C, T})(c::typeof(foreign),
                                                        addr::A,
                                                        model::M,
                                                        args...) where {A <: Jaynes.Address, M <: Soss.Model, C <: SossModelCallSite, T <: SossTrace}
@@ -173,7 +173,7 @@ macro load_soss_fmi()
             return choices
         end
 
-        function (ctx::Jaynes.RegenerateContext)(c::typeof(soss_fmi),
+        function (ctx::Jaynes.RegenerateContext)(c::typeof(foreign),
                                                  addr::T,
                                                  model::M,
                                                  args...) where {T <: Jaynes.Address, M <: Soss.Model}
@@ -197,11 +197,11 @@ macro load_soss_fmi()
             addr = gensym()
             v_sel = selection(addr => sel)
             ctx = Jaynes.Regenerate(soss_cl, v_sel, NoChange())
-            ret = ctx(soss_fmi, addr, soss_cl.model, soss_cl.args...)
+            ret = ctx(foreign, addr, soss_cl.model, soss_cl.args...)
             return ret, SossModelCallSite(ctx.tr, ctx.score, soss_cl.model, soss_cl.args), ctx.weight, Jaynes.UndefinedChange(), nothing
         end
 
-        function (ctx::Jaynes.ScoreContext)(c::typeof(soss_fmi),
+        function (ctx::Jaynes.ScoreContext)(c::typeof(foreign),
                                             addr::T,
                                             model::M,
                                             args...) where {T <: Jaynes.Address, M <: Soss.Model}
