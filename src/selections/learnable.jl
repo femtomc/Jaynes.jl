@@ -52,18 +52,21 @@ function has_top(ps::Gradients, addr::T) where T <: Tuple
     length(addr) == 1 && return has_top(ps, addr[1])
     return has_top(ps.tree[addr[1]], addr[2 : end])
 end
+
 get_top(ps::Gradients, addr::T) where T <: Address = getindex(ps.utility, addr)
 function get_top(ps::Gradients, addr::T) where T <: Tuple
     isempty(addr) && error("get_top: index error - tuple address is empty.")
     length(addr) == 1 && return get_top(ps, addr[1])
     return get_top(ps.tree[addr[1]], addr[2 : end])
 end
+
 has_sub(ps::Gradients, addr::T) where T <: Address = haskey(ps.tree, addr)
 function has_sub(ps::Gradients, addr::T) where T <: Tuple
     isempty(addr) && return false
     length(addr) == 1 && return has_sub(ps, addr[1])
     return has_sub(ps.tree[addr[1]], addr[2 : end])
 end
+
 get_sub(ps::Gradients, addr::T) where T <: Address = getindex(ps.tree, addr)
 function get_sub(ps::Gradients, addr::T) where T <: Tuple
     isempty(addr) && error("get_sub: index error - tuple address is empty.")
@@ -71,13 +74,18 @@ function get_sub(ps::Gradients, addr::T) where T <: Tuple
     return get_sub(ps.tree[addr[1]], addr[2 : end])
 end
 
+getindex(ps::Gradients, addr::T) where T <: Address = getindex(ps.utility, addr)
 getindex(ps::Gradients, addr::Tuple{}) = error("Gradients (getindex): empty tuple as index.")
 getindex(ps::Gradients, addr::Tuple{T}) where T <: Address = getindex(ps, addr[1])
 function getindex(ps::Gradients, addr::T) where T <: Tuple
     has_sub(ps, addr[1]) && return getindex(get_sub(ps, addr[1]), addr[2 : end])
     error("Gradients (getindex): invalid index at $addr.")
 end
-getindex(ps::Gradients, addrs...) = getindex(ps, addrs)
+function getindex(ps::Gradients, addrs...)
+    has_top(ps, addrs) && return get_top(ps, addrs)
+    has_sub(ps, addrs) && return get_sub(ps, addrs)
+    error("Gradients (getindex): invalid index at $addr.")
+end
 
 # ------------ Builders ------------ #
 
