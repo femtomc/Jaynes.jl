@@ -7,11 +7,13 @@ macro load_gen_fmi()
 
         # ------------ Trace ------------ #
 
-        mutable struct GenTrace{T <: Gen.Trace} <: Trace
+        mutable struct GenTrace{T <: Gen.Trace} <: Jaynes.Trace
             tr::T
             GenTrace(tr::T) where T = new{T}(tr)
             GenTrace{T}() where T = new{T}()
         end
+        add_call!(st::GenTrace, addr, tr) = st.tr = tr
+        get_choices(tr::GenTrace) = Gen.get_choices(tr.tr)
         
         # ------------ Call site ------------ #
 
@@ -27,6 +29,7 @@ macro load_gen_fmi()
         haskey(cs::GenerativeFunctionCallSite, addr) = has_value(get_choices(cs.trace), addr)
         getindex(cs::GenerativeFunctionCallSite, addrs...) = getindex(get_choices(cs.trace), addrs...)
         get_ret(cs::GenerativeFunctionCallSite) = get_retval(cs.trace)
+        get_choices(cs::GenerativeFunctionCallSite) = get_choices(cs.trace)
 
         # ------------ Choice map integration ------------ #
 
@@ -43,7 +46,7 @@ macro load_gen_fmi()
             for (k, v) in Gen.get_values_shallow(chm)
                 push!(s, k, v)
             end
-            for (k, v) in Gen.get_submaps_shallow(v)
+            for (k, v) in Gen.get_submaps_shallow(chm)
                 sub = selection(v)
                 s.tree[k] = sub
             end
@@ -145,7 +148,7 @@ macro load_gen_fmi()
             constraints = Jaynes.dump_queries(Jaynes.get_sub(ctx.select, addr))
             select = Gen.select(constraints...)
             prev = Jaynes.get_prev(ctx, addr)
-            new, w, rd = Gen.regenerate(prev.trace, args, (), select)
+            new, w, rd = Gen.regenerate(prev.trace.tr, args, (), select)
             ret = Gen.get_retval(new)
             Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(GenTrace(new), Gen.get_score(new), gen_fn, args, ret))
             Jaynes.increment!(ctx, Gen.get_score(new) - Jaynes.get_score(prev))
@@ -158,11 +161,14 @@ macro load_gen_fmi()
                                                     args...) where {A <: Jaynes.Address, M <: GenerativeFunction, C <: GenerativeFunctionCallSite}
             Jaynes.visit!(ctx, addr)
             constraints = Jaynes.dump_queries(Jaynes.get_sub(ctx.select, addr))
+            println(constraints)
             select = Gen.select(constraints...)
+            println(select)
             prev = ctx.prev
-            new, w, rd = Gen.regenerate(prev.trace, args, (), select)
+            new, w, rd = Gen.regenerate(prev.trace.tr, args, (), select)
             ret = Gen.get_retval(new)
-            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(GenTrace(new), Gen.get_score(new), gen_fn, args, ret))
+            ctx.tr.tr = new
+            ctx.score += Gen.get_score(new)
             Jaynes.increment!(ctx, Gen.get_score(new) - Jaynes.get_score(prev))
             return ret
         end
@@ -173,7 +179,7 @@ macro load_gen_fmi()
             v_sel = selection(addr => sel)
             ctx = Jaynes.Regenerate(gen_cl, v_sel, Jaynes.NoChange())
             ret = ctx(foreign, addr, gen_cl.model, gen_cl.args...)
-            return ret, GenerativeFunctionCallSite(ctx.tr, ctx.score, gen_cl.model, gen_cl.args), ctx.weight, Jaynes.UndefinedChange(), nothing
+            return ret, GenerativeFunctionCallSite(ctx.tr, ctx.score, gen_cl.model, gen_cl.args, ret), ctx.weight, Jaynes.UndefinedChange(), nothing
         end
 
         function (ctx::Jaynes.ScoreContext)(c::typeof(foreign),
