@@ -81,7 +81,7 @@ macro load_soss_fmi()
             Jaynes.add_call!(ctx, addr, SossModelCallSite(SossTrace(choices), score, model, args))
             return choices
         end
-        
+
         # Convenience.
         function simulate(model::M, args...) where M <: Soss.Model
             ctx = Jaynes.Simulate()
@@ -100,7 +100,7 @@ macro load_soss_fmi()
             increment!(ctx, score)
             return choices
         end
-       
+
         # Convenience.
         function propose(model::M, args...) where M <: Soss.Model
             ctx = Propose()
@@ -143,12 +143,12 @@ macro load_soss_fmi()
             Jaynes.increment!(ctx, w - get_score(prev))
             return choices
         end
-        
+
         # Convenience.
         function update(sel::L, soss_cl::C) where {L <: NamedTuple, C <: SossModelCallSite}
             addr = gensym()
             v_sel = selection([(addr, ) => sel])
-            ctx = Update(v_sel)
+            ctx = Jaynes.UpdateContext(cl, v_sel, NoChange())
             ret = ctx(foreign, addr, model, args...)
             return ret, get_sub(ctx.tr, addr), ctx.weight, Jaynes.UndefinedChange(), nothing
         end
@@ -217,8 +217,8 @@ macro load_soss_fmi()
             addr = gensym()
             v_sel = selection(addr => sel)
             ctx = Jaynes.Score(v_sel)
-            ret = ctx(foreign, addr, soss_cl.model, soss_cl.args...)
-            return ret, SossModelCallSite(ctx.tr, ctx.score, soss_cl.model, soss_cl.args), ctx.weight, Jaynes.UndefinedChange(), nothing
+            ret = ctx(foreign, addr, model, args...)
+            return ret, ctx.weight
         end
     end
 

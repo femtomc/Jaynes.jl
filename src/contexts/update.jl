@@ -13,9 +13,11 @@ mutable struct UpdateContext{C <: CallSite,
     visited::Visitor
     params::P
     argdiffs::D
+    
     # Re-write with dispatch for specialized vs. black box.
     UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, EmptyParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
 end
+Update(cl, select, argdiffs) = UpdateContext(cl, select, argdiffs)
 
 # Update has a special dynamo.
 @dynamo function (mx::UpdateContext)(a...)
