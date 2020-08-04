@@ -5,12 +5,15 @@ macro load_gen_fmi()
         import Jaynes: simulate, propose, generate, regenerate, update, score
         using Gen
 
-        # ------------ Call site ------------ #
+        # ------------ Trace ------------ #
 
-        struct GenTrace{T <: Gen.Trace} <: Trace
+        mutable struct GenTrace{T <: Gen.Trace} <: Trace
             tr::T
             GenTrace(tr::T) where T = new{T}(tr)
+            GenTrace{T}() where T = new{T}()
         end
+        
+        # ------------ Call site ------------ #
 
         struct GenerativeFunctionCallSite{M <: GenerativeFunction, A, K} <: Jaynes.CallSite
             trace::GenTrace
