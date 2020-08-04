@@ -81,7 +81,7 @@ Gen.load_generated_functions()
 
 bar = () -> begin
     x = rand(:x, Normal(0.0, 1.0))
-    return gen_fmi(:foo, foo, x)
+    return foreign(:foo, foo, x)
 end
 
 ret, cl = Jaynes.simulate(bar)
@@ -109,8 +109,8 @@ Gen.load_generated_functions()
 # Some generic function - this is where Jaynes shines!
 bar = () -> begin
     x = rand(:x, Normal(5.0, 1.0))
-    gen_ret = gen_fmi(:gen, foo, x)
-    soss_ret = soss_fmi(:foo, m, (σ = x,))
+    gen_ret = foreign(:gen, foo, x)
+    soss_ret = foreign(:foo, m, (σ = x,))
     return soss_ret
 end
 
