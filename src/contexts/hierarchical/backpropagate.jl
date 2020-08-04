@@ -3,7 +3,6 @@
 @inline function (ctx::ParameterBackpropagateContext)(call::typeof(rand), 
                                                       addr::T, 
                                                       d::Distribution{K}) where {T <: Address, K}
-    #visit!(ctx.visited, addr)
     s = get_top(ctx.tr, addr).val
     ctx.weight += logpdf(d, s)
     return s
@@ -12,7 +11,6 @@ end
 @inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
-    #visit!(ctx.visited, addr)
     s = get_top(ctx.tr, addr).val
     ctx.weight += logpdf(d, s)
     return s
@@ -34,7 +32,6 @@ end
                                                       addr::T,
                                                       call::Function,
                                                       args...) where T <: Address
-    #visit!(ctx.visited, addr)
     cl = get_sub(ctx.tr, addr)
     param_grads = Gradients()
     ps = get_sub(ctx.initial_params, addr)
@@ -47,7 +44,6 @@ end
                                                    addr::T,
                                                    call::Function,
                                                    args...) where T <: Address
-    #visit!(ctx.visited, addr)
     cl = get_sub(ctx.tr, addr)
     choice_grads = Gradients()
     ps = get_sub(ctx.initial_params, addr)
