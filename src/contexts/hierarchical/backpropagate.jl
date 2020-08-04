@@ -37,8 +37,8 @@ end
     #visit!(ctx.visited, addr)
     cl = get_sub(ctx.tr, addr)
     param_grads = Gradients()
-    params = get_sub(ctx.params, addr)
-    ret = simulate_call_pullback(params, param_grads, cl, args)
+    ps = get_sub(ctx.initial_params, addr)
+    ret = simulate_call_pullback(ps, param_grads, cl, args)
     ctx.param_grads.tree[addr] = param_grads
     return ret
 end
@@ -50,8 +50,8 @@ end
     #visit!(ctx.visited, addr)
     cl = get_sub(ctx.tr, addr)
     choice_grads = Gradients()
-    params = get_sub(ctx.params, addr)
-    ret = simulate_choice_pullback(params, choice_grads, get_sub(ctx.select, addr), cl, args)
+    ps = get_sub(ctx.initial_params, addr)
+    ret = simulate_choice_pullback(ps, choice_grads, get_sub(ctx.select, addr), cl, args)
     ctx.choice_grads.tree[addr] = choice_grads
     return ret
 end

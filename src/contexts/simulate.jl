@@ -79,6 +79,7 @@ include("hierarchical/simulate.jl")
 include("plate/simulate.jl")
 include("markov/simulate.jl")
 include("conditional/simulate.jl")
+include("factor/simulate.jl")
 
 # ------------ Documentation ------------ #
 

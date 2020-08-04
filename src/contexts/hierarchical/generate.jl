@@ -31,35 +31,10 @@ end
                                         call::Function,
                                         args...) where T <: Address
     visit!(ctx, addr)
+    ps = get_subparameters(ctx, addr)
     ss = get_subselection(ctx, addr)
-    ret, cl, w = generate(ss, call, args...)
+    ret, cl, w = generate(ss, ps, call, args...)
     add_call!(ctx, addr, cl)
-    increment!(ctx, w)
-    return ret
-end
-
-@inline function (ctx::GenerateContext)(c::typeof(rand),
-                                        addr::T,
-                                        call::Function,
-                                        args::Tuple,
-                                        ret_score::Function) where T <: Address
-    visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
-    ret, cl, w = generate(ss, call, args...)
-    add_call!(ctx, addr, cl, ret_score(ret))
-    increment!(ctx, w)
-    return ret
-end
-
-@inline function (ctx::GenerateContext)(c::typeof(rand),
-                                        addr::T,
-                                        call::Function,
-                                        args::Tuple,
-                                        ret_score::Distribution{K}) where {K, T <: Address}
-    visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
-    ret, cl, w = generate(ss, call, args...)
-    add_call!(ctx, addr, cl, logpdf(ret_score, ret))
     increment!(ctx, w)
     return ret
 end

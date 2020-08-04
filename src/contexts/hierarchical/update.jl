@@ -58,65 +58,19 @@ end
     has_addr = has_top(ctx.prev.trace, addr)
     if has_addr
         cs = get_prev(ctx, addr)
+        ps = get_subparameters(ctx, addr)
         ss = get_subselection(ctx, addr)
 
         # TODO: Mjolnir.
-        ret, new_site, lw, retdiff, discard = update(ss, cs, args...)
+        ret, new_site, lw, retdiff, discard = update(ss, ps, cs, args...)
 
         add_call!(ctx.discard, addr, CallSite(discard, cs.score, cs.fn, cs.args, cs.ret))
     else
+        ps = get_subparameters(ctx, addr)
         ss = get_subselection(ctx, addr)
-        ret, new_site, lw = generate(ss, call, args...)
+        ret, new_site, lw = generate(ss, ps, call, args...)
     end
     add_call!(ctx, addr, new_site)
-    increment!(ctx, lw)
-    return ret
-end
-
-@inline function (ctx::UpdateContext)(c::typeof(rand),
-                                      addr::T,
-                                      call::Function,
-                                      args::Tuple,
-                                      score_ret::Function) where {T <: Address, D <: Diff}
-    visit!(ctx, addr)
-    has_addr = has_top(ctx.prev.trace, addr)
-    if has_addr
-        cs = get_prev(ctx, addr)
-        ss = get_subselection(ctx, addr)
-
-        # TODO: Mjolnir.
-        ret, new_site, lw, retdiff, discard = update(ss, cs, args...)
-
-        add_call!(ctx.discard, addr, CallSite(discard, cs.score, cs.fn, cs.args, cs.ret))
-    else
-        ss = get_subselection(ctx, addr)
-        ret, new_site, lw = generate(ss, call, args...)
-    end
-    add_call!(ctx, addr, new_site, score_ret(ret))
-    increment!(ctx, lw)
-    return ret
-end
-
-@inline function (ctx::UpdateContext)(c::typeof(rand),
-                                      addr::T,
-                                      call::Function,
-                                      args::Tuple,
-                                      score_ret::Distribution{K}) where {K, T <: Address, D <: Diff}
-    visit!(ctx, addr)
-    has_addr = has_top(ctx.prev.trace, addr)
-    if has_addr
-        cs = get_prev(ctx, addr)
-        ss = get_subselection(ctx, addr)
-
-        # TODO: Mjolnir.
-        ret, new_site, lw, retdiff, discard = update(ss, cs, args...)
-
-        add_call!(ctx.discard, addr, CallSite(discard, cs.score, cs.fn, cs.args, cs.ret))
-    else
-        ss = get_subselection(ctx, addr)
-        ret, new_site, lw = generate(ss, call, args...)
-    end
-    add_call!(ctx, addr, new_site, logpdf(score_ret, ret))
     increment!(ctx, lw)
     return ret
 end

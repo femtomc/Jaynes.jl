@@ -70,6 +70,7 @@ end
 include("hierarchical/propose.jl")
 include("plate/propose.jl")
 include("markov/propose.jl")
+include("factor/propose.jl")
 
 # ------------ Documentation ------------ #
 

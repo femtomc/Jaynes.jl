@@ -25,32 +25,9 @@ end
                                      call::Function,
                                      args...) where T <: Address
     visit!(ctx, addr)
+    ps = get_subparameters(ctx, addr)
     ss = get_subselection(ctx, addr)
-    ret, w = score(ss, call, args...) 
+    ret, w = score(ss, ps, call, args...) 
     increment!(ctx, w)
-    return ret
-end
-
-@inline function (ctx::ScoreContext)(c::typeof(rand),
-                                     addr::T,
-                                     call::Function,
-                                     args::Tuple,
-                                     score_ret::Function) where T <: Address
-    visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
-    ret, w = score(ss, call, args...) 
-    increment!(ctx, w + score_ret(ret))
-    return ret
-end
-
-@inline function (ctx::ScoreContext)(c::typeof(rand),
-                                     addr::T,
-                                     call::Function,
-                                     args::Tuple,
-                                     score_ret::Distribution{K}) where {K, T <: Address}
-    visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
-    ret, w = score(ss, call, args...) 
-    increment!(ctx, w + logpdf(score_ret, ret))
     return ret
 end

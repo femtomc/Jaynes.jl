@@ -273,7 +273,7 @@ end
 
 # ------------ train ------------ #
 
-function train(params, fn::Function, args...; opt = ADAM(), iters = 1000)
+function train(params, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000)
     for i in 1 : iters
         _, cl = simulate(params, fn, args...)
         grads = get_parameter_gradients(params, cl, 1.0)
@@ -282,7 +282,7 @@ function train(params, fn::Function, args...; opt = ADAM(), iters = 1000)
     return params
 end
 
-function train(sel::K, params, fn::Function, args...; opt = ADAM(), iters = 1000) where K <: ConstrainedSelection
+function train(sel::K, params, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where K <: ConstrainedSelection
     for i in 1 : iters
         _, cl, _ = generate(sel, params, fn, args...)
         grads = get_parameter_gradients(params, cl, 1.0)
@@ -296,6 +296,7 @@ end
 include("hierarchical/backpropagate.jl")
 include("plate/backpropagate.jl")
 include("markov/backpropagate.jl")
+include("factor/backpropagate.jl")
 
 # ------------ Documentation ------------ #
 

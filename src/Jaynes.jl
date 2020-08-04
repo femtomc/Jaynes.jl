@@ -27,14 +27,16 @@ unwrap(gr::GlobalRef) = gr.name
 unwrap(gr) = gr
 
 # Whitelist includes vectorized calls.
-whitelist = [:rand, 
-             :learnable, 
-             :markov, 
-             :plate, 
-             :cond, 
-             :_apply_iterate,
+whitelist = [
+             # Base
+             :rand, :_apply_iterate,
+             
+             # Specialized call sites
+             :learnable, :markov, :plate, :cond, :factor,
+
              # Foreign model interfaces
-             :foreign]
+             :foreign
+            ]
 
 # Fix for specialized tracing.
 function recur!(ir, to = self)
@@ -83,7 +85,7 @@ export Score, score
 export Backpropagate, get_parameter_gradients, get_choice_gradients, train
 
 # Tracer language features.
-export learnable, plate, markov, cond
+export learnable, plate, markov, cond, factor
 
 # Diffs.
 export NoChange, UndefinedChange, VectorDiff

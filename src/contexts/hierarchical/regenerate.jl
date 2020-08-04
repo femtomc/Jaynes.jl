@@ -38,38 +38,11 @@ end
                                           call::Function,
                                           args...) where T <: Address
     visit!(ctx, addr)
+    ps = get_subparameters(ctx, addr)
     ss = get_subselection(ctx, addr)
     prev_call = get_prev(ctx, addr)
-    ret, cl, w, retdiff, d = regenerate(ss, prev_call, args...)
+    ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, args...)
     set_call!(ctx.tr, addr, cl)
     increment!(ctx, w)
-    return ret
-end
-
-@inline function (ctx::RegenerateContext)(c::typeof(rand),
-                                          addr::T,
-                                          call::Function,
-                                          args::Tuple,
-                                          score_ret::Function) where T <: Address
-    visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
-    prev_call = get_prev(ctx, addr)
-    ret, cl, w, retdiff, d = regenerate(ss, prev_call, args...)
-    add_call!(ctx.tr, addr, cl)
-    increment!(ctx, w + score_ret(ret) - score_ret(prev_call.ret))
-    return ret
-end
-
-@inline function (ctx::RegenerateContext)(c::typeof(rand),
-                                          addr::T,
-                                          call::Function,
-                                          args::Tuple,
-                                          score_ret::Distribution{K}) where {K, T <: Address}
-    visit!(ctx, addr)
-    ss = get_subselection(ctx, addr)
-    prev_call = get_prev(ctx, addr)
-    ret, cl, w, retdiff, d = regenerate(ss, prev_call, args...)
-    add_call!(ctx.tr, addr, cl)
-    increment!(ctx, w + logpdf(score_ret, ret) - logpdf(score_ret, prev_call.ret))
     return ret
 end

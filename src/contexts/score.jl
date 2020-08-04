@@ -75,6 +75,7 @@ end
 include("hierarchical/score.jl")
 include("plate/score.jl")
 include("markov/score.jl")
+include("factor/score.jl")
 
 # ------------ Documentation ------------ #
 

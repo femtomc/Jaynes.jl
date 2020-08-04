@@ -25,31 +25,8 @@ end
                                        call::Function,
                                        args...) where T <: Address
     visit!(ctx, addr)
-    ret, cl, w = propose(call, args...)
+    ps = get_subparameters(ctx, addr)
+    ret, cl, w = propose(ps, call, args...)
     add_call!(ctx, addr, cl)
-    return ret
-end
-
-@inline function (ctx::ProposeContext)(c::typeof(rand),
-                                       addr::T,
-                                       call::Function,
-                                       args::Tuple,
-                                       ret_score::Function) where T <: Address
-    visit!(ctx, addr)
-    ret, cl, w = propose(call, args...)
-    rscore = ret_score(ret)
-    add_call!(ctx, addr, cl, rscore)
-    return ret
-end
-
-@inline function (ctx::ProposeContext)(c::typeof(rand),
-                                       addr::T,
-                                       call::Function,
-                                       args::Tuple,
-                                       ret_score::Distribution{K}) where {K, T <: Address}
-    visit!(ctx, addr)
-    ret, cl, w = propose(call, args...)
-    rscore = logpdf(ret_score, ret)
-    add_call!(ctx, addr, cl, rscore)
     return ret
 end
