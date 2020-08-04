@@ -106,7 +106,7 @@ end
 end
 Gen.load_generated_functions()
 
-# Some generic function - this is where Jaynes shines!
+# A funky model :)
 bar = () -> begin
     x = rand(:x, Normal(5.0, 1.0))
     gen_ret = foreign(:gen, foo, x)
