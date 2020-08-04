@@ -6,7 +6,6 @@ This page keeps a set of small examples expressed in Jaynes.
 module Geometric
 
 using Jaynes
-using Distributions
 
 geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 1 : 1 + rand(:geo, geo, p)
 
@@ -24,34 +23,33 @@ This example uses the `plate` special language feature (equivalent to plate nota
 module BayesianLinearRegression
 
 using Jaynes
-using Distributions
 
-function bayesian_linear_regression(N::Int)
+function bayesian_linear_regression(x::Vector{Float64})
     σ = rand(:σ, InverseGamma(2, 3))
     β = rand(:β, Normal(0.0, 1.0))
-    y = plate(:y, x -> rand(:draw, Normal(β*x, σ)), [Float64(i) for i in 1 : N])
+    y = Vector{Float64}(undef, length(x))
+    for i in 1 : length(x)
+        push!(y, rand(:y => i, Normal(β * x[i], σ)))
+    end
+    return y
 end
 
-# Example trace.
-ret, cl = simulate(bayesian_linear_regression, 10)
-display(cl.trace)
-
-sel = selection(map(1 : 100) do i
-                    (:y => i => :draw, Float64(i) + rand())
+x = [Float64(i) for i in 1 : 100]
+obs = selection(map(1 : 100) do i
+                    (:y => i, ) => 3.0 * x[i] + rand()
                 end)
 
-@time ps, ret = importance_sampling(sel, 5000, bayesian_linear_regression, (100, ))
+n_samples = 5000
+@time ps, lnw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
 
-num_res = 1000
-resample!(ps, num_res)
 mean_σ = sum(map(ps.calls) do cl
-                 cl[:σ]
-             end) / num_res
+                 get_ret(cl[:σ])
+             end) / n_samples
 println("Mean σ: $mean_σ")
 
 mean_β = sum(map(ps.calls) do cl
-                 cl[:β]
-             end) / num_res
+                 get_ret(cl[:β])
+             end) / n_samples
 println("Mean β: $mean_β")
 
 end # module
@@ -63,17 +61,16 @@ end # module
 module Learnable
 
 using Jaynes
-using Distributions
 
 function foo(q::Float64)
-    p = learnable(:l, 10.0)
+    p = learnable(:l)
     z = rand(:z, Normal(p, q))
     return z
 end
 
 function bar(x::Float64, y::Float64)
-    l = learnable(:l, 5.0)
-    m = learnable(:m, 10.0)
+    l = learnable(:l)
+    m = learnable(:m)
     q = rand(:q, Normal(l, y + m))
     f = rand(:f, foo, 5.0)
     return f
@@ -81,13 +78,14 @@ end
 
 cl = trace(bar, 5.0, 1.0)
 
-params = get_parameters(cl)
-println("Parameters:\n$(params)")
+ps = parameters([(:l, ) => 5.0,
+                 (:m, ) => 5.0,
+                 (:f, :l) => 5.0])
 
-grads = get_parameter_gradients(cl, 1.0)
+grads = get_parameter_gradients(ps, cl, 1.0)
 println("\nParameter gradients:\n$(grads)")
 
-grads = get_choice_gradients(cl, 1.0)
+grads = get_choice_gradients(ps, cl, 1.0)
 println("\nChoice gradients:\n$(grads)")
 
 end # module
@@ -101,7 +99,6 @@ This example illustrates how specialized call sites (accessed through the tracer
 module HiddenMarkovModel
 
 using Jaynes
-using Distributions
 
 function kernel(prev_latent::Float64)
     z = rand(:z, Normal(prev_latent, 1.0))
