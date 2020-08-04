@@ -51,6 +51,8 @@ See [Examples](https://femtomc.github.io/Jaynes.jl/dev/examples/) for some more 
 
 ---
 
+## Inference
+
 Jaynes currently supports the following inference algorithms:
 
 1. Importance sampling (with and without custom proposals)
@@ -63,6 +65,8 @@ Jaynes currently supports the following inference algorithms:
 These algorithms automatically support adaptive multi-threading, which is enabled by setting your `JULIA_NUM_THREADS` environment variable. See [Multi-Threading](https://docs.julialang.org/en/v1/base/multi-threading/) for more details.
 
 ---
+
+## Foreign model interfaces
 
 [Jaynes supports interoperability with models and inference algorithms expressed in Gen.jl and Soss.jl](https://femtomc.github.io/Jaynes.jl/dev/library_api/fmi/)
 
