@@ -103,12 +103,16 @@ function selection(a::Pair{K, J}) where {K <: Symbol, J <: ConstrainedSelection}
 end
 
 # Anywhere
-function anywhere(a::Vector{Pair{K, J}}) where {K <: Tuple, J}
+function anywhere(a::Vector{Pair{K, J}}; params = false) where {K <: Tuple, J}
     new = map(a) do (k, v)
         !(k isa Tuple{Address}) && error("Anywhere construction requires that you only use addresses of type Address.")
         (k[1], v)
     end
-    return ConstrainedAnywhereSelection(new)
+    if params
+        return LearnableAnywhere(new)
+    else
+        return ConstrainedAnywhereSelection(new)
+    end
 end
 
 function anywhere(a::Vector{T}) where T <: Tuple

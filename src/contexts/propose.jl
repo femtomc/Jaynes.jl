@@ -77,20 +77,20 @@ include("factor/propose.jl")
 @doc(
 """
 ```julia
-mutable struct ProposeContext{T <: Trace} <: ExecutionContext
+mutable struct ProposeContext{T <: Trace, P <: Parameters} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
-    params::LearnableParameters
+    params::P
 end
 ```
 
-`ProposeContext` is used to propose traces for inference algorithms which use custom proposals. `ProposeContext` instances can be passed sets of `LearnableParameters` to configure the propose with parameters which have been learned by differentiable programming.
+`ProposeContext` is used to propose traces for inference algorithms which use custom proposals. `ProposeContext` instances can be passed sets of `Parameters` to configure the propose with parameters which have been learned by differentiable programming.
 
 Inner constructors:
 
 ```julia
-ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, LearnableParameters())
+ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, Parameters())
 ```
 
 Outer constructors:
