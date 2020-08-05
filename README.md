@@ -50,8 +50,6 @@ println("Estimated β: $est_β")
 
 See [Examples](https://femtomc.github.io/Jaynes.jl/dev/examples/) for some more code snippets - including arbitrary control flow!
 
-Jaynes also includes a set of power tools for giving your programs differentiable hooks, and re-configurable parameter sites. Additionally, Jaynes provides a set of static IR transformations which can automatically transform a program to be learnable, or re-configurable.
-
 ## Inference
 
 Jaynes currently supports the following inference algorithms:
@@ -119,3 +117,7 @@ end
 
 ret, cl = Jaynes.simulate(bar)
 ```
+
+## Hack your program!
+
+Jaynes also includes a set of power tools for giving your programs differentiable hooks, and re-configurable parameter sites. Additionally, Jaynes provides a set of static IR transformations which can automatically transform a program to be learnable, or re-configurable.
