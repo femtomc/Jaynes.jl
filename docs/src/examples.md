@@ -41,16 +41,17 @@ obs = selection(map(1 : 100) do i
 
 n_samples = 5000
 @time ps, lnw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
+zipped = zip(ps.calls, lnw)
 
-mean_σ = sum(map(ps.calls) do cl
-                 get_ret(cl[:σ])
-             end) / n_samples
-println("Mean σ: $mean_σ")
+est_σ = sum(map(zipped) do (cl, w)
+                 get_ret(cl[:σ]) * exp(w)
+             end)
+println("Estimated σ: $est_σ")
 
-mean_β = sum(map(ps.calls) do cl
-                 get_ret(cl[:β])
-             end) / n_samples
-println("Mean β: $mean_β")
+est_β = sum(map(zipped) do (cl, w)
+                 get_ret(cl[:β]) * exp(w)
+             end)
+println("Estimated β: $est_β")
 
 end # module
 ```

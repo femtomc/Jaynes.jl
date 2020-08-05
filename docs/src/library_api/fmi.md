@@ -10,6 +10,11 @@ Jaynes sees all the code after macro expansion is completed, which allows Jaynes
 
 ```@docs
 primitive
+```
+
+## Foreign models
+
+```@docs
 foreign
 load_soss_fmi
 load_gen_fmi
