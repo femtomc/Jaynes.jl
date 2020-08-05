@@ -1,4 +1,5 @@
-function boomerang(sel::K, cl::C) where {K <: UnconstrainedSelection, C <: CallSite}
+function boomerang(sel::K, 
+                   cl::C) where {K <: UnconstrainedSelection, C <: CallSite}
 
     p_mod_score = get_score(cl)
     sel_values, choice_grads = get_choice_gradients(sel, cl, 1.0)
@@ -31,5 +32,5 @@ function boomerang(sel::K, cl::C) where {K <: UnconstrainedSelection, C <: CallS
         t, x, θ, (acc, num), c, a, b, t′, τref = ZigZagBoomerang.pdmp_inner!(Ξ, ∇ϕ!, ∇ϕx, t, x, θ, c, a, b, t′, τref, (acc, num), Flow, sel, cl_ref, sel_values_ref; adapt=false)
     end
 
-    cl_ref[]
+    (cl_ref[], true)
 end

@@ -1,4 +1,7 @@
-function elliptical_slice(addr::K, μ::Vector{Float64}, Σ, cl::C) where {K <: Tuple, C <: CallSite}
+function elliptical_slice(addr::K, 
+                          μ::Vector{Float64}, 
+                          Σ, 
+                          cl::C) where {K <: Tuple, C <: CallSite}
     ν = rand(MvNormal(zeros(length(μ)), Σ))
     u = rand(Uniform(0.0, 1.0))
     θ = rand(Uniform(0.0, 2*π))
@@ -16,5 +19,5 @@ function elliptical_slice(addr::K, μ::Vector{Float64}, Σ, cl::C) where {K <: T
         new = old * cos(θ) + ν * sin(θ)
         _, cl, w, _, _ = update(selection([addr => new .+ μ]), cl)
     end
-    return cl
+    return (cl, true)
 end
