@@ -29,7 +29,7 @@ end
 # ------------ Fillable ------------ #
 
 @inline function (ctx::ParameterBackpropagateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    has_top(ctx.fixed, addr) && return get_top(ctx.fixed, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -45,9 +45,10 @@ end
                                                       call::Function,
                                                       args...) where T <: Address
     cl = get_sub(ctx.tr, addr)
+    ss = get_sub(ctx.fixed, addr)
     param_grads = Gradients()
     ps = get_sub(ctx.initial_params, addr)
-    ret = simulate_call_pullback(ps, param_grads, cl, args)
+    ret = simulate_call_pullback(ss, ps, param_grads, cl, args)
     ctx.param_grads.tree[addr] = param_grads
     return ret
 end

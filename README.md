@@ -122,7 +122,7 @@ ret, cl = Jaynes.simulate(bar)
 
 ## Hack your program!
 
-Jaynes also includes a set of power tools for giving your programs differentiable hooks, and re-configurable parameter sites. `learnable` sites are configurable by `Parameters` instances which can be passed in to execution contexts and trained with backpropagation.
+Jaynes also includes a set of power tools for giving your programs differentiable hooks, and re-configurable parameter sites. `learnable` sites are configurable by `Parameters` instances which can be passed in to execution contexts and trained with backpropagation. Here, Jaynes will learn a parameter value for `:q` with a loss function equivalent to the ["soft evidence"](https://agentmodels.org/chapters/3-agents-as-programs.html) expressed by the special [factor call site](https://femtomc.github.io/Jaynes.jl/dev/library_api/sites/).
 
 ```julia
 foo = y -> begin
@@ -133,8 +133,22 @@ foo = y -> begin
 end
 
 params = parameters([(:q, ) => 1.0])
-ret, cl = simulate(params, foo, 5.0)
-ps = train(params, foo, 5.0; iters = 5000)
+ps = train(params, foo, 5.0)
+display(ps)
 ```
 
-`fillable` sites are similar to `learnable` sites - but they can't be trained, and won't interfere with gradient-based training of learnable sites.
+`fillable` sites are similar to `learnable` sites - but they can't be trained, and won't interfere with gradient-based training of learnable sites. [These sites are accessed using the selection interface.](https://femtomc.github.io/Jaynes.jl/dev/library_api/selection_interface/)
+
+```julia
+foo = y -> begin
+    q = fillable(:q)
+    z = learnable(:z)
+    x = (q + z) * y
+    factor(-x ^ 2)
+end
+
+params = parameters([(:z, ) => 1.0])
+sel = selection([(:q, ) => 1.0])
+ps = train(sel, params, foo, 5.0)
+display(ps)
+```
