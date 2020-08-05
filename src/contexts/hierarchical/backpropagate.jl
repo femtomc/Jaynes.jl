@@ -28,7 +28,12 @@ end
 
 # ------------ Fillable ------------ #
 
-@inline function (ctx::GenerateContext)(fn::typeof(fillable), addr::Address)
+@inline function (ctx::ParameterBackpropagateContext)(fn::typeof(fillable), addr::Address)
+    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    error("(fillable): parameter not provided at address $addr.")
+end
+
+@inline function (ctx::ChoiceBackpropagateContext)(fn::typeof(fillable), addr::Address)
     has_top(ctx.select, addr) && return get_top(ctx.select, addr)
     error("(fillable): parameter not provided at address $addr.")
 end

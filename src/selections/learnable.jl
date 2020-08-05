@@ -321,8 +321,6 @@ function Base.display(chs::LearnableByAddress; show_values = true)
         end
     end
     println("  __________________________________\n")
-    choice = rand(adj)
-    move = rand(:movement_decision, delta, choice)
 end
 
 # ------------ Learnable anywhere ------------ #

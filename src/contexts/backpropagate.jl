@@ -29,20 +29,23 @@ end
 abstract type BackpropagationContext <: ExecutionContext end
 
 # Learnable parameters
-mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationContext
+mutable struct ParameterBackpropagateContext{T <: Trace, S <: ConstrainedSelection} <: BackpropagationContext
     tr::T
     weight::Float64
+    select::S
     initial_params::Parameters
     params::ParameterStore
     param_grads::Gradients
 end
-ParameterBackpropagate(tr::T, init, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, init, params, Gradients())
-ParameterBackpropagate(tr::T, init, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, init, params, param_grads)
+ParameterBackpropagate(tr::T, init, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, selection(), init, params, Gradients())
+ParameterBackpropagate(tr::T, sel::S, init, params) where {T <: Trace, S <: ConstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, sel, init, params, Gradients())
+ParameterBackpropagate(tr::T, init, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, selection(), init, params, param_grads)
 
 # Choice sites
-mutable struct ChoiceBackpropagateContext{T <: Trace, K <: UnconstrainedSelection} <: BackpropagationContext
+mutable struct ChoiceBackpropagateContext{T <: Trace, S <: ConstrainedSelection, K <: UnconstrainedSelection} <: BackpropagationContext
     tr::T
     weight::Float64
+    fixed::S
     initial_params::Parameters
     params::ParameterStore
     choice_grads::Gradients
