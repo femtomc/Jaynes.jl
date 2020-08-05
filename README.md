@@ -69,7 +69,7 @@ These algorithms automatically support adaptive multi-threading, which is enable
 
 [Jaynes supports interoperability with models and inference algorithms expressed in Gen.jl and Soss.jl](https://femtomc.github.io/Jaynes.jl/dev/library_api/fmi/)
 
-In particular, after loading the model interface (using `@load_gen_fmi` or `@load_soss_fmi`), you can write models in `Gen.jl` or `Soss.jl` and have the tracer construct specialized call site representations for the interface.
+In particular, after loading the model interface (using `@load_gen_fmi` or `@load_soss_fmi`), you can write models in `Gen.jl` or `Soss.jl` and have the dynamo tracers construct and reason about specialized call site representations for the interface.
 
 ```julia
 Jaynes.@load_gen_fmi()
