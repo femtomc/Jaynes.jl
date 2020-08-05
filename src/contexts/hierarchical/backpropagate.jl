@@ -26,6 +26,13 @@ end
     return read_parameter(ctx, addr)
 end
 
+# ------------ Fillable ------------ #
+
+@inline function (ctx::GenerateContext)(fn::typeof(fillable), addr::Address)
+    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    error("(fillable): parameter not provided at address $addr.")
+end
+
 # ------------ Call sites ------------ #
 
 @inline function (ctx::ParameterBackpropagateContext)(c::typeof(rand),

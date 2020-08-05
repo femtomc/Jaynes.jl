@@ -125,7 +125,7 @@ end
 
 # ------------ Set operations on selections ------------ #
 
-union(a...) = ConstrainedUnionSelection(ConstrainedSelection[a...])
+union(a::Vector{T}) where T <: ConstrainedSelection = ConstrainedUnionSelection(ConstrainedSelection[a...])
 function intersection(a::ConstrainedSelection...) end
 
 # ------------ Documentation ------------ #

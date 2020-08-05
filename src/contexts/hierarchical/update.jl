@@ -48,6 +48,13 @@ end
     error("Parameter not provided at address $addr.")
 end
 
+# ------------ Fillable ------------ #
+
+@inline function (ctx::UpdateContext)(fn::typeof(fillable), addr::Address)
+    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    error("(fillable): parameter not provided at address $addr.")
+end
+
 # ------------ Black box call sites ------------ #
 
 @inline function (ctx::UpdateContext)(c::typeof(rand),

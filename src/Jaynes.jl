@@ -28,13 +28,16 @@ unwrap(gr) = gr
 
 # Whitelist includes vectorized calls.
 whitelist = [
-             # Base
+             # Base.
              :rand, :_apply_iterate,
              
-             # Specialized call sites
-             :learnable, :markov, :plate, :cond, :factor,
+             # Specialized call sites.
+             :markov, :plate, :cond, 
+             
+             # Interactions with the context.
+             :learnable, :fillable, :factor,
 
-             # Foreign model interfaces
+             # Foreign model interfaces.
              :foreign
             ]
 
@@ -85,7 +88,8 @@ export Score, score
 export Backpropagate, get_parameter_gradients, get_choice_gradients, train
 
 # Tracer language features.
-export learnable, plate, markov, cond, factor
+export plate, markov, cond
+export learnable, fillable, factor
 
 # Diffs.
 export NoChange, UndefinedChange, VectorDiff

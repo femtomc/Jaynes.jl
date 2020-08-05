@@ -21,7 +21,14 @@ end
 @inline function (ctx::GenerateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
     has_top(ctx.params, addr) && return get_top(ctx.params, addr)
-    error("Parameter not provided at address $addr.")
+    error("(learnable): parameter not provided at address $addr.")
+end
+
+# ------------ Fillable ------------ #
+
+@inline function (ctx::GenerateContext)(fn::typeof(fillable), addr::Address)
+    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    error("(fillable): parameter not provided at address $addr.")
 end
 
 # ------------ Black box call sites ------------ #
