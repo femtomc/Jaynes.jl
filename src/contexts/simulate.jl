@@ -45,7 +45,7 @@ end
 
 function simulate(params::P, c::typeof(plate), fn::Function, args::Vector) where P <: Parameters
     addr = gensym()
-    v_ps = parameters(addr => params)
+    v_ps = learnables(addr => params)
     ctx = SimulateContext(v_ps)
     ret = ctx(plate, addr, fn, args)
     return ret, get_sub(ctx.tr, addr)
@@ -67,7 +67,7 @@ end
 
 function simulate(params::P, c::typeof(markov), fn::Function, len::Int, args...) where P <: Parameters
     addr = gensym()
-    v_ps = parameters(addr => params)
+    v_ps = learnables(addr => params)
     ctx = SimulateContext(v_ps)
     ret = ctx(markov, addr, fn, len, args...)
     return ret, get_sub(ctx.tr, addr)

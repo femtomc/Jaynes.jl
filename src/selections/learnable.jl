@@ -214,7 +214,7 @@ function push!(ps::LearnableByAddress, addr::T, val) where T <: Tuple
     end
 end
 
-function parameters(arr::Array{Pair{T, K}}) where {T <: Tuple, K}
+function learnables(arr::Array{Pair{T, K}}) where {T <: Tuple, K}
     top = LearnableByAddress()
     map(arr) do (k, v)
         push!(top, k, v)
@@ -222,7 +222,7 @@ function parameters(arr::Array{Pair{T, K}}) where {T <: Tuple, K}
     return top
 end
 
-function parameters(p::Pair{T, K}) where {T <: Symbol, K <: Parameters}
+function learnables(p::Pair{T, K}) where {T <: Symbol, K <: Parameters}
     top = LearnableByAddress()
     set_sub!(top, p[1], p[2])
     return top
@@ -252,9 +252,9 @@ end
 
 +(a::LearnableByAddress, b::LearnableByAddress) = merge(a, b)
 
-# ------------ update_parameters links into Flux optimiser APIs ------------ #
+# ------------ update_learnables links into Flux optimiser APIs ------------ #
 
-function update_parameters(opt, a::LearnableByAddress, b::Gradients)
+function update_learnables(opt, a::LearnableByAddress, b::Gradients)
     p_arr = array(a, Float64)
     gs_arr = array(b, Float64)
     update!(opt, p_arr, -gs_arr)

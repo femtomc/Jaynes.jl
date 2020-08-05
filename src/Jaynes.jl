@@ -85,7 +85,7 @@ export Update, update
 export Propose, propose
 export Regenerate, regenerate
 export Score, score
-export Backpropagate, get_parameter_gradients, get_choice_gradients, train
+export Backpropagate, get_learnable_gradients, get_choice_gradients, train
 
 # Tracer language features.
 export plate, markov, cond
@@ -95,9 +95,9 @@ export learnable, fillable, factor
 export NoChange, UndefinedChange, VectorDiff
 
 # Selections and parameters.
-export selection, array, parameters
+export selection, array, learnables
 export anywhere, intersection, union
-export get_selection, compare, has_top, update_parameters, dump_queries, merge!, merge
+export get_selection, compare, has_top, update_learnables, dump_queries, merge!, merge
 
 # Inference.
 export importance_sampling, is

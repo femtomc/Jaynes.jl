@@ -92,7 +92,7 @@ function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(plate)}) where {L 
     argdiffs = NoChange()
     addr = gensym()
     v_sel = selection(addr => sel)
-    v_params = parameters(addr => ps)
+    v_params = learnables(addr => ps)
     ctx = UpdateContext(vcs, v_sel, v_params, argdiffs)
     ret = ctx(plate, addr, vcs.fn, vcs.args)
     return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
@@ -111,7 +111,7 @@ function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}) where {L
     argdiffs = NoChange()
     addr = gensym()
     v_sel = selection(addr => sel)
-    v_params = parameters(addr => ps)
+    v_params = learnables(addr => ps)
     ctx = UpdateContext(vcs, v_sel, v_params, argdiffs)
     ret = ctx(markov, addr, vcs.fn, vcs.args[1], vcs.args[2]...)
     return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
@@ -128,7 +128,7 @@ end
 function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: ConstrainedSelection, P <: Parameters, D <: Diff}
     addr = gensym()
     v_sel = selection(addr => sel)
-    v_params = parameters(addr => ps)
+    v_params = learnables(addr => ps)
     ctx = UpdateContext(vcs, v_sel, v_params, d)
     ret = ctx(markov, addr, vcs.fn, len, vcs.args[2]...)
     return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard

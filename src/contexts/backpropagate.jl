@@ -165,7 +165,7 @@ end
 
 function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(markov)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
     addr = gensym()
-    v_params = parameters(addr => initial_params)
+    v_params = learnables(addr => initial_params)
     tr = Trace()
     add_call!(tr, addr, cl)
     fn = (args, params) -> begin
@@ -186,7 +186,7 @@ end
 
 function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(plate)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
     addr = gensym()
-    v_params = parameters(addr => initial_params)
+    v_params = learnables(addr => initial_params)
     tr = Trace()
     add_call!(tr, addr, cl)
     fn = (args, params) -> begin
@@ -259,21 +259,21 @@ function get_choice_gradients(sel::K, params::P, cl::T, ret_grad) where {T <: Ca
     return vals, choice_grads
 end
 
-# ------------ get_parameter_gradients ------------ #
+# ------------ get_learnable_gradients ------------ #
 
-function get_parameter_gradients(params::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
+function get_learnable_gradients(params::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
     param_grads = Gradients()
     accumulate_parameter_gradients!(selection(), params, param_grads, cl, ret_grad, scaler)
     return param_grads
 end
 
-function get_parameter_gradients(sel::K, params::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
+function get_learnable_gradients(sel::K, params::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     param_grads = Gradients()
     accumulate_parameter_gradients!(sel, params, param_grads, cl, ret_grad, scaler)
     return param_grads
 end
 
-function get_parameter_gradients(params::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
+function get_learnable_gradients(params::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
     param_grads = Gradients()
     accumulate_parameter_gradients!(selection(), params, param_grads, cl, ret_grad, scaler)
     for k in keys(param_grads.tree)
@@ -281,7 +281,7 @@ function get_parameter_gradients(params::P, cl::VectorizedCallSite, ret_grad, sc
     end
 end
 
-function get_parameter_gradients(sel::K, params::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
+function get_learnable_gradients(sel::K, params::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     param_grads = Gradients()
     accumulate_parameter_gradients!(sel, params, param_grads, cl, ret_grad, scaler)
     for k in keys(param_grads.tree)
@@ -294,8 +294,8 @@ end
 function train(params, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000)
     for i in 1 : iters
         _, cl = simulate(params, fn, args...)
-        grads = get_parameter_gradients(params, cl, 1.0)
-        params = update_parameters(opt, params, grads)
+        grads = get_learnable_gradients(params, cl, 1.0)
+        params = update_learnables(opt, params, grads)
     end
     return params
 end
@@ -303,8 +303,8 @@ end
 function train(sel::K, params, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where K <: ConstrainedSelection
     for i in 1 : iters
         _, cl, _ = generate(sel, params, fn, args...)
-        grads = get_parameter_gradients(sel, params, cl, 1.0)
-        params = update_parameters(opt, params, grads)
+        grads = get_learnable_gradients(sel, params, cl, 1.0)
+        params = update_learnables(opt, params, grads)
     end
     return params
 end
@@ -371,8 +371,8 @@ Returns a `Gradients` object which tracks the gradients with respect to the obje
 @doc(
 """
 ```julia
-gradients = get_parameter_gradients(params, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+gradients = get_learnable_gradients(params, cl::T, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
 ```
 
 Returns a `Gradients` object which tracks the gradients of the objective with respect to parameters in the program.
-""", get_parameter_gradients)
+""", get_learnable_gradients)

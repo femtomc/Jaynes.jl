@@ -8,10 +8,10 @@ Jaynes supports Zygote-based reverse mode gradient computation of learnable para
 ParameterBackpropagateContext
 ```
 
-For one-shot gradient computations, this context is easily accessed through the `get_parameter_gradients` method.
+For one-shot gradient computations, this context is easily accessed through the `get_learnable_gradients` method.
 
 ```@docs
-get_parameter_gradients
+get_learnable_gradients
 ```
 
 For choices, the context is `ChoiceBackpropagateContext`.
@@ -42,10 +42,10 @@ ret, cl, w = generate(selection((:q, -0.5)), learnable_hypers)
 params = get_parameters(cl)
 ```
 
-which produces an instance of `LearnableParameters` by unpacking the `params` field in any trace kept in the call site. `LearnableParameters` and `Gradients` are explicitly kept separate from the internal call site representation, to encourage portability, as well as non-standard optimization schemes. Jaynes links up with the API provided by `Flux.Optimisers` through `update!` - this allows you to use any of the optimisers provided by `Flux` to update your parameters. Given a `Gradients` instance, to update your parameters, just call `update_parameters` with your favorite optimiser
+which produces an instance of `LearnableParameters` by unpacking the `params` field in any trace kept in the call site. `LearnableParameters` and `Gradients` are explicitly kept separate from the internal call site representation, to encourage portability, as well as non-standard optimization schemes. Jaynes links up with the API provided by `Flux.Optimisers` through `update!` - this allows you to use any of the optimisers provided by `Flux` to update your parameters. Given a `Gradients` instance, to update your parameters, just call `update_learnables` with your favorite optimiser
 
 ```julia
-trained_params = update_parameters(opt, params, gradients)
+trained_params = update_learnables(opt, params, gradients)
 ```
 
 which produces a new instance of `LearnableParameters` after apply the gradient descent step. You can then pass these in as an argument to the normal context interfaces (e.g. `generate`, `simulate`, etc) to use your updated parameters.

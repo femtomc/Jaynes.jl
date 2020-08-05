@@ -44,7 +44,7 @@ end
 function generate(sel::L, params, fn::typeof(markov), call::Function, len::Int, args...) where L <: ConstrainedSelection
     addr = gensym()
     v_sel = selection(addr => sel)
-    v_ps = parameters(addr => params)
+    v_ps = learnables(addr => params)
     ctx = Generate(v_sel, v_ps)
     ret = ctx(fn, addr, call, len, args...)
     return ret, get_sub(ctx.tr, addr), ctx.weight
@@ -61,7 +61,7 @@ end
 function generate(sel::L, params, fn::typeof(plate), call::Function, args::Vector) where L <: ConstrainedSelection
     addr = gensym()
     v_sel = selection(addr => sel)
-    v_ps = parameters(addr => params)
+    v_ps = learnables(addr => params)
     ctx = Generate(v_sel, v_ps)
     ret = ctx(fn, addr, call, args)
     return ret, get_sub(ctx.tr, addr), ctx.weight

@@ -9,7 +9,7 @@ function one_shot_gradient_estimator(sel::K,
     obs = merge(cl, sel)
     _, mlw = score(obs, params, mod, args...)
     lw = mlw - get_score(cl)
-    gs = get_parameter_gradients(params, cl, nothing, lw * scale)
+    gs = get_learnable_gradients(params, cl, nothing, lw * scale)
     return gs, lw, cl
 end
 
@@ -62,7 +62,7 @@ function automatic_differentiation_variational_inference(sel::K,
             cls[s] = cl
         end
         elbows[i] = elbo_est
-        params = update_parameters(opt, params, gs_est)
+        params = update_learnables(opt, params, gs_est)
     end
     params, elbows, cls
 end
