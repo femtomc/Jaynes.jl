@@ -36,7 +36,7 @@ end
 
 x = [Float64(i) for i in 1 : 100]
 obs = selection(map(1 : 100) do i
-                    (:y => i, ) => 3.0 * x[i] + rand()
+                    (:y => i, ) => 3.0 * x[i] + randn()
                 end)
 
 n_samples = 5000
