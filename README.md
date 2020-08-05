@@ -15,7 +15,7 @@
 ] add Jaynes
 ```
 
-`Jaynes.jl` is a (research-oriented) universal probabilistic programming framework which uses source-to-source IR transformations and contextual dispatch to implement the core routines for modeling and inference. Succinctly, the core implementation of Jaynes provides the [_generative function interface_](https://www.gen.dev/stable/ref/gfi/#Generative-function-interface-1) of [Gen.jl](https://www.gen.dev/) as a set of configurable [dynamo](https://fluxml.ai/IRTools.jl/latest/dynamo/) execution contexts. These contexts can be used to overload your code with new probabilistic programming/differentiable programming behaviors.
+`Jaynes.jl` is a (research-oriented) universal probabilistic programming framework which uses source-to-source IR transformations and contextual dispatch to implement the core routines for modeling and inference. Succinctly, the core implementation of Jaynes provides the [_generative function interface_](https://www.gen.dev/stable/ref/gfi/#Generative-function-interface-1) of [Gen.jl](https://www.gen.dev/) as a set of configurable [dynamo](https://fluxml.ai/IRTools.jl/latest/dynamo/) execution contexts. These contexts can be used to overload your code with new probabilistic programming/differentiable programming interfaces.
 
 This allows the usage of pure Julia as the primary modeling language:
 
