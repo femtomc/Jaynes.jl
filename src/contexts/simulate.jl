@@ -6,6 +6,7 @@ mutable struct SimulateContext{T <: Trace, P <: Parameters} <: ExecutionContext
     SimulateContext() = new{HierarchicalTrace, EmptyParameters}(Trace(), 0.0, Visitor(), Parameters())
     SimulateContext(params::P) where P = new{HierarchicalTrace, P}(Trace(), 0.0, Visitor(), params)
 end
+Simulate() = SimulateContext()
 
 # ------------ Convenience ------------ #
 
@@ -15,7 +16,7 @@ function simulate(fn::Function, args...)
     return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
-function simulate(params, fn::Function, args...)
+function simulate(params::P, fn::Function, args...) where P <: Parameters
     ctx = SimulateContext(params)
     ret = ctx(fn, args...)
     return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret)
@@ -28,7 +29,7 @@ function simulate(fn::typeof(rand), d::Distribution{T}) where T
     return ret, get_top(ctx.tr, addr)
 end
 
-function simulate(params, fn::typeof(rand), d::Distribution{T}) where T
+function simulate(params::P, fn::typeof(rand), d::Distribution{T}) where {P <: Parameters, T}
     ctx = SimulateContext(params)
     addr = gensym()
     ret = ctx(rand, addr, d)
@@ -42,7 +43,7 @@ function simulate(c::typeof(plate), fn::Function, args::Vector)
     return ret, get_sub(ctx.tr, addr)
 end
 
-function simulate(params, c::typeof(plate), fn::Function, args::Vector)
+function simulate(params::P, c::typeof(plate), fn::Function, args::Vector) where P <: Parameters
     addr = gensym()
     v_ps = parameters(addr => params)
     ctx = SimulateContext(v_ps)
@@ -64,7 +65,7 @@ function simulate(c::typeof(markov), fn::Function, len::Int, args...)
     return ret, get_sub(ctx.tr, addr)
 end
 
-function simulate(params, c::typeof(markov), fn::Function, len::Int, args...)
+function simulate(params::P, c::typeof(markov), fn::Function, len::Int, args...) where P <: Parameters
     addr = gensym()
     v_ps = parameters(addr => params)
     ctx = SimulateContext(v_ps)
@@ -78,21 +79,22 @@ include("hierarchical/simulate.jl")
 include("plate/simulate.jl")
 include("markov/simulate.jl")
 include("conditional/simulate.jl")
+include("factor/simulate.jl")
 
 # ------------ Documentation ------------ #
 
 @doc(
 """
 ```julia
-mutable struct SimulateContext{T <: Trace} <: ExecutionContext
+mutable struct SimulateContext{T <: Trace, P <: Parameters} <: ExecutionContext
     tr::T
     visited::Visitor
-    params::LearnableParameters
+    params::P
     SimulateContext(params) where T <: Trace = new{T}(Trace(), Visitor(), params)
 end
 ```
 
-`SimulateContext` is used to simulate traces without recording likelihood weights. `SimulateContext` can be instantiated with custom `LearnableParameters` instances, which is useful when used for gradient-based learning.
+`SimulateContext` is used to simulate traces without recording likelihood weights. `SimulateContext` can be instantiated with custom `Parameters` instances, which is useful when used for gradient-based learning.
 
 Inner constructors:
 ```julia
@@ -103,11 +105,11 @@ SimulateContext(params) = new{HierarchicalTrace}(Trace(), Visitor(), params)
 @doc(
 """
 ```julia
-ret, cl = simulate(fn::Function, args...; params = LearnableParameters())
-ret, cl = simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableParameters()) where T
-ret, v_cl = simulate(c::typeof(plate), fn::Function, args::Vector; params = LearnableParameters()) where T
-ret, v_cl = simulate(fn::typeof(plate), d::Distribution{T}, len::Int; params = LearnableParameters()) where T
-ret, v_cl = simulate(c::typeof(markov), fn::Function, len::Int, args...; params = LearnableParameters())
+ret, cl = simulate(fn::Function, args...; params = LearnableByAddress())
+ret, cl = simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableByAddress()) where T
+ret, v_cl = simulate(c::typeof(plate), fn::Function, args::Vector; params = LearnableByAddress()) where T
+ret, v_cl = simulate(fn::typeof(plate), d::Distribution{T}, len::Int; params = LearnableByAddress()) where T
+ret, v_cl = simulate(c::typeof(markov), fn::Function, len::Int, args...; params = LearnableByAddress())
 ```
 
 `simulate` function provides an API to the `SimulateContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and a `RecordSite` instance specialized to the call. `simulate` is used to express unconstrained generation of a probabilistic program trace, without likelihood weight recording.

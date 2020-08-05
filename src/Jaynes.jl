@@ -3,9 +3,9 @@ module Jaynes
 # Yarrrr I'm a com-pirate!
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
-using Mjolnir
-using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
-using Mjolnir: Defaults
+#using Mjolnir
+#using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
+#using Mjolnir: Defaults
 using MacroTools
 
 using Reexport
@@ -27,14 +27,16 @@ unwrap(gr::GlobalRef) = gr.name
 unwrap(gr) = gr
 
 # Whitelist includes vectorized calls.
-whitelist = [:rand, 
-             :learnable, 
-             :markov, 
-             :plate, 
-             :cond, 
-             :_apply_iterate,
+whitelist = [
+             # Base
+             :rand, :_apply_iterate,
+             
+             # Specialized call sites
+             :learnable, :markov, :plate, :cond, :factor,
+
              # Foreign model interfaces
-             :soss_fmi, :gen_fmi, :turing_fmi]
+             :foreign
+            ]
 
 # Fix for specialized tracing.
 function recur!(ir, to = self)
@@ -83,7 +85,7 @@ export Score, score
 export Backpropagate, get_parameter_gradients, get_choice_gradients, train
 
 # Tracer language features.
-export learnable, plate, markov, cond
+export learnable, plate, markov, cond, factor
 
 # Diffs.
 export NoChange, UndefinedChange, VectorDiff
@@ -104,8 +106,10 @@ export automatic_differentiation_variational_inference, advi
 
 # Foreign model interfaces.
 export @primitive
-export @load_gen_fmi, gen_fmi
-export @load_soss_fmi, soss_fmi
+export @load_gen_fmi
+export @load_soss_fmi
+export @load_flux_fmi
+export foreign
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret

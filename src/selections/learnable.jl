@@ -52,18 +52,21 @@ function has_top(ps::Gradients, addr::T) where T <: Tuple
     length(addr) == 1 && return has_top(ps, addr[1])
     return has_top(ps.tree[addr[1]], addr[2 : end])
 end
+
 get_top(ps::Gradients, addr::T) where T <: Address = getindex(ps.utility, addr)
 function get_top(ps::Gradients, addr::T) where T <: Tuple
     isempty(addr) && error("get_top: index error - tuple address is empty.")
     length(addr) == 1 && return get_top(ps, addr[1])
     return get_top(ps.tree[addr[1]], addr[2 : end])
 end
+
 has_sub(ps::Gradients, addr::T) where T <: Address = haskey(ps.tree, addr)
 function has_sub(ps::Gradients, addr::T) where T <: Tuple
     isempty(addr) && return false
     length(addr) == 1 && return has_sub(ps, addr[1])
     return has_sub(ps.tree[addr[1]], addr[2 : end])
 end
+
 get_sub(ps::Gradients, addr::T) where T <: Address = getindex(ps.tree, addr)
 function get_sub(ps::Gradients, addr::T) where T <: Tuple
     isempty(addr) && error("get_sub: index error - tuple address is empty.")
@@ -71,13 +74,18 @@ function get_sub(ps::Gradients, addr::T) where T <: Tuple
     return get_sub(ps.tree[addr[1]], addr[2 : end])
 end
 
+getindex(ps::Gradients, addr::T) where T <: Address = getindex(ps.utility, addr)
 getindex(ps::Gradients, addr::Tuple{}) = error("Gradients (getindex): empty tuple as index.")
 getindex(ps::Gradients, addr::Tuple{T}) where T <: Address = getindex(ps, addr[1])
 function getindex(ps::Gradients, addr::T) where T <: Tuple
     has_sub(ps, addr[1]) && return getindex(get_sub(ps, addr[1]), addr[2 : end])
     error("Gradients (getindex): invalid index at $addr.")
 end
-getindex(ps::Gradients, addrs...) = getindex(ps, addrs)
+function getindex(ps::Gradients, addrs...)
+    has_top(ps, addrs) && return get_top(ps, addrs)
+    has_sub(ps, addrs) && return get_sub(ps, addrs)
+    error("Gradients (getindex): invalid index at $addr.")
+end
 
 # ------------ Builders ------------ #
 
@@ -141,56 +149,58 @@ get_top(np::EmptyParameters, addr) = error("(get_param) called on instance of Em
 has_sub(np::EmptyParameters, addr) = false
 get_sub(np::EmptyParameters, addr) = np
 
-struct LearnableParameters <: Parameters
-    tree::Dict{Address, LearnableParameters}
+# ------------ Learnable by address ------------ #
+
+struct LearnableByAddress <: Parameters
+    tree::Dict{Address, LearnableByAddress}
     utility::Dict{Address, Any}
-    LearnableParameters() = new(Dict{Address, LearnableParameters}(), Dict{Address, Any}())
+    LearnableByAddress() = new(Dict{Address, LearnableByAddress}(), Dict{Address, Any}())
 end
 
-has_sub(ps::LearnableParameters, addr::T) where T <: Address = haskey(ps.tree, addr)
-function has_sub(ps::LearnableParameters, addr::T) where T <: Tuple
+has_sub(ps::LearnableByAddress, addr::T) where T <: Address = haskey(ps.tree, addr)
+function has_sub(ps::LearnableByAddress, addr::T) where T <: Tuple
     isempty(addr) && return false
     length(addr) == 1 && return has_sub(ps, addr[1])
     has_sub(ps, addr[1]) && has_sub(get_sub(ps, addr[1]), addr[2 : end])
 end
 
-get_sub(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.tree, addr)
-function get_sub(ps::LearnableParameters, addr::T) where T <: Tuple
+get_sub(ps::LearnableByAddress, addr::T) where T <: Address = getindex(ps.tree, addr)
+function get_sub(ps::LearnableByAddress, addr::T) where T <: Tuple
     isempty(addr) && return Parameters()
     length(addr) == 1 && return get_sub(ps, addr[1])
     return get_sub(ps.tree[addr[1]], addr[2 : end])
 end
 
-set_sub!(ps::LearnableParameters, addr::T, sub::LearnableParameters) where T <: Address = ps.tree[addr] = sub
-function set_sub!(ps::LearnableParameters, addr::T, sub::LearnableParameters) where T <: Tuple
+set_sub!(ps::LearnableByAddress, addr::T, sub::LearnableByAddress) where T <: Address = ps.tree[addr] = sub
+function set_sub!(ps::LearnableByAddress, addr::T, sub::LearnableByAddress) where T <: Tuple
     isempty(addr) && return
     length(addr) == 1 && set_sub!(ps, addr[1], sub)
     has_sub(ps, addr[1]) && set_sub!(get_sub(ps, addr[1]), addr[2 : end], sub)
 end
 
-has_top(ps::LearnableParameters, addr::T) where T <: Address = haskey(ps.utility, addr)
-function has_top(ps::LearnableParameters, addr::T) where T <: Tuple
+has_top(ps::LearnableByAddress, addr::T) where T <: Address = haskey(ps.utility, addr)
+function has_top(ps::LearnableByAddress, addr::T) where T <: Tuple
     isempty(addr) && return false
     length(addr) == 1 && return has_top(ps, addr[1])
     has_sub(ps, addr[1]) && return has_top(get_sub(ps, addr[1]), addr[2 : end])
 end
 
-get_top(ps::LearnableParameters, addr::T) where T <: Address = getindex(ps.utility, addr)
-function get_top(ps::LearnableParameters, addr::T) where T <: Tuple
-    isempty(addr) && error("LearnableParameters (get_top): invalid index at $addr.")
+get_top(ps::LearnableByAddress, addr::T) where T <: Address = getindex(ps.utility, addr)
+function get_top(ps::LearnableByAddress, addr::T) where T <: Tuple
+    isempty(addr) && error("LearnableByAddress (get_top): invalid index at $addr.")
     length(addr) == 1 && return get_top(ps, addr[1])
     get_top(ps.tree[addr[1]], addr[2 : end])
 end
 
-getindex(ps::LearnableParameters, addrs...) = get_top(ps, addrs)
+getindex(ps::LearnableByAddress, addrs...) = get_top(ps, addrs)
 
 # ------------ Builders ------------ #
 
-function push!(ps::LearnableParameters, addr::T, val) where T <: Address
+function push!(ps::LearnableByAddress, addr::T, val) where T <: Address
     ps.utility[addr] = val
 end
 
-function push!(ps::LearnableParameters, addr::T, val) where T <: Tuple
+function push!(ps::LearnableByAddress, addr::T, val) where T <: Tuple
     isempty(addr) && return
     length(addr) == 1 && push!(ps, addr[1], val)
     hd = addr[1]
@@ -198,14 +208,14 @@ function push!(ps::LearnableParameters, addr::T, val) where T <: Tuple
     if has_sub(ps, hd)
         push!(get_sub(ps, hd), tl, val)
     else
-        sub = LearnableParameters()
+        sub = LearnableByAddress()
         push!(sub, tl, val)
         ps.tree[hd] = sub
     end
 end
 
 function parameters(arr::Array{Pair{T, K}}) where {T <: Tuple, K}
-    top = LearnableParameters()
+    top = LearnableByAddress()
     map(arr) do (k, v)
         push!(top, k, v)
     end
@@ -213,19 +223,19 @@ function parameters(arr::Array{Pair{T, K}}) where {T <: Tuple, K}
 end
 
 function parameters(p::Pair{T, K}) where {T <: Symbol, K <: Parameters}
-    top = LearnableParameters()
+    top = LearnableByAddress()
     set_sub!(top, p[1], p[2])
     return top
 end
 
 # ------------ Adjoint ------------ #
 
-Zygote.@adjoint LearnableParameters(tree, utility) = LearnableParameters(tree, utility), s_grad -> (nothing, nothing)
+Zygote.@adjoint LearnableByAddress(tree, utility) = LearnableByAddress(tree, utility), s_grad -> (nothing, nothing)
 
 # ------------ Merging two sets of parameters ------------ #
 
-function merge(sel1::LearnableParameters,
-               sel2::LearnableParameters)
+function merge(sel1::LearnableByAddress,
+               sel2::LearnableByAddress)
     utility = merge(sel1.utility, sel2.utility)
     tree = Dict{Address, Gradients}()
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
@@ -237,14 +247,14 @@ function merge(sel1::LearnableParameters,
     for k in intersect(keys(sel1.tree), keys(sel2.tree))
         tree[k] = merge(sel1.tree[k], sel2.tree[k])
     end
-    return LearnableParameters(tree, utility)
+    return LearnableByAddress(tree, utility)
 end
 
-+(a::LearnableParameters, b::LearnableParameters) = merge(a, b)
++(a::LearnableByAddress, b::LearnableByAddress) = merge(a, b)
 
 # ------------ update_parameters links into Flux optimiser APIs ------------ #
 
-function update_parameters(opt, a::LearnableParameters, b::Gradients)
+function update_parameters(opt, a::LearnableByAddress, b::Gradients)
     p_arr = array(a, Float64)
     gs_arr = array(b, Float64)
     update!(opt, p_arr, -gs_arr)
@@ -297,7 +307,7 @@ function Base.display(chs::Gradients; show_values = true)
     println("  __________________________________\n")
 end
 
-function Base.display(chs::LearnableParameters; show_values = true)
+function Base.display(chs::LearnableByAddress; show_values = true)
     println("  __________________________________\n")
     println("             Parameters\n")
     addrs, chd = collect(chs)
@@ -311,4 +321,30 @@ function Base.display(chs::LearnableParameters; show_values = true)
         end
     end
     println("  __________________________________\n")
+    choice = rand(adj)
+    move = rand(:movement_decision, delta, choice)
 end
+
+# ------------ Learnable anywhere ------------ #
+
+struct LearnableAnywhere <: Parameters
+    utility::Dict{Address, Any}
+    LearnableAnywhere(obs::Vector{Tuple{T, K}}) where {T <: Any, K} = new(Dict{Address, Any}(obs))
+    LearnableAnywhere(obs::Tuple{T, K}...) where {T <: Any, K} = new(Dict{Address, Any}(collect(obs)))
+end
+
+has_sub(ps::LearnableAnywhere, addr) = true
+get_sub(ps::LearnableAnywhere, addr) = ps
+
+has_top(ps::LearnableAnywhere, addr::T) where T <: Address = haskey(ps.utility, addr)
+has_top(ps::LearnableAnywhere, addr::Tuple{}) = false
+has_top(ps::LearnableAnywhere, addr::Tuple{T}) where T <: Address = has_top(ps, addr[1])
+function has_top(ps::LearnableAnywhere, addr::T) where T <: Tuple
+    has_sub(ps, addr[1]) && return has_top(get_sub(ps, addr[1]), addr[2 : end])
+end
+
+get_top(ps::LearnableAnywhere, addr::T) where T <: Address = getindex(ps.utility, addr)
+get_top(ps::LearnableAnywhere, addr::Tuple{}) = Parameters()
+get_top(ps::LearnableAnywhere, addr::Tuple{T}) where T <: Address = get_top(ps, addr[1])
+get_top(ps::LearnableAnywhere, addr::T) where T <: Tuple = get_top(ps, addr[end])
+getindex(ps::LearnableAnywhere, addrs...) = get_top(ps, addrs)

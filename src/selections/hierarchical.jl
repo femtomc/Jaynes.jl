@@ -72,7 +72,7 @@ function dump_queries(chs::ConstrainedHierarchicalSelection)
     for (k, v) in chs.tree
         q = dump_queries(v)
         for (t, l) in q
-            push!(toplevel, (k, q...) => l)
+            push!(toplevel, (k, t...) => l)
         end
     end
     return toplevel

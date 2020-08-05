@@ -5,7 +5,6 @@
                                                       call::Function,
                                                       len::Int,
                                                       args...) where T <: Address
-    #visit!(ctx.visited, addr)
     vcl = get_sub(ctx.tr, addr)
     param_grads = Gradients()
     params = get_sub(ctx.initial_params, addr)
@@ -19,7 +18,6 @@ end
                                                    call::Function,
                                                    len::Int,
                                                    args...) where T <: Address
-    #visit!(ctx.visited, addr)
     vcl = get_sub(ctx.tr, addr)
     choice_grads = Gradients()
     params = get_sub(ctx.initial_params, addr)

@@ -32,26 +32,24 @@ abstract type BackpropagationContext <: ExecutionContext end
 mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationContext
     tr::T
     weight::Float64
-    visited::Visitor
     initial_params::Parameters
     params::ParameterStore
     param_grads::Gradients
 end
-ParameterBackpropagate(tr::T, init, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, Visitor(), init, params, Gradients())
-ParameterBackpropagate(tr::T, init, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, Visitor(), init, params, param_grads)
+ParameterBackpropagate(tr::T, init, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, init, params, Gradients())
+ParameterBackpropagate(tr::T, init, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, init, params, param_grads)
 
 # Choice sites
 mutable struct ChoiceBackpropagateContext{T <: Trace, K <: UnconstrainedSelection} <: BackpropagationContext
     tr::T
     weight::Float64
-    visited::Visitor
     initial_params::Parameters
     params::ParameterStore
     choice_grads::Gradients
     select::K
 end
-ChoiceBackpropagate(tr::T, init, params, choice_grads) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), init, params, choice_grads, UnconstrainedAllSelection())
-ChoiceBackpropagate(tr::T, init, params, choice_grads, sel::K) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), init, params, choice_grads, sel)
+ChoiceBackpropagate(tr::T, init, params, choice_grads) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, init, params, choice_grads, UnconstrainedAllSelection())
+ChoiceBackpropagate(tr::T, init, params, choice_grads, sel::K) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, init, params, choice_grads, sel)
 
 # ------------ Learnable ------------ #
 
@@ -273,7 +271,7 @@ end
 
 # ------------ train ------------ #
 
-function train(params, fn::Function, args...; opt = ADAM(), iters = 1000)
+function train(params, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000)
     for i in 1 : iters
         _, cl = simulate(params, fn, args...)
         grads = get_parameter_gradients(params, cl, 1.0)
@@ -282,7 +280,7 @@ function train(params, fn::Function, args...; opt = ADAM(), iters = 1000)
     return params
 end
 
-function train(sel::K, params, fn::Function, args...; opt = ADAM(), iters = 1000) where K <: ConstrainedSelection
+function train(sel::K, params, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where K <: ConstrainedSelection
     for i in 1 : iters
         _, cl, _ = generate(sel, params, fn, args...)
         grads = get_parameter_gradients(params, cl, 1.0)
@@ -296,6 +294,7 @@ end
 include("hierarchical/backpropagate.jl")
 include("plate/backpropagate.jl")
 include("markov/backpropagate.jl")
+include("factor/backpropagate.jl")
 
 # ------------ Documentation ------------ #
 
@@ -305,7 +304,6 @@ include("markov/backpropagate.jl")
 mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationContext
     tr::T
     weight::Float64
-    visited::Visitor
     initial_params::Parameters
     params::ParameterStore
     param_grads::Gradients
@@ -315,8 +313,8 @@ end
 
 Outer constructors:
 ```julia
-ParameterBackpropagate(tr::T, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, Gradients())
-ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, Visitor(), params, param_grads)
+ParameterBackpropagate(tr::T, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, params, Gradients())
+ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, params, param_grads)
 ```
 """, ParameterBackpropagateContext)
 
@@ -326,7 +324,6 @@ ParameterBackpropagate(tr::T, params, param_grads::Gradients) where {T <: Trace,
 mutable struct ChoiceBackpropagateContext{T <: Trace} <: BackpropagationContext
     tr::T
     weight::Float64
-    visited::Visitor
     initial_params::Parameters
     params::ParameterStore
     param_grads::Gradients
@@ -336,8 +333,8 @@ end
 
 Outer constructors:
 ```julia
-ChoiceBackpropagate(tr::T, init_params, params, choice_grads) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, choice_grads, UnconstrainedAllSelection())
-ChoiceBackpropagate(tr::T, init_params, params, choice_grads, sel::K) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, Visitor(), params, choice_grads, sel)
+ChoiceBackpropagate(tr::T, init_params, params, choice_grads) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, params, choice_grads, UnconstrainedAllSelection())
+ChoiceBackpropagate(tr::T, init_params, params, choice_grads, sel::K) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, params, choice_grads, sel)
 ```
 """, ChoiceBackpropagateContext)
 

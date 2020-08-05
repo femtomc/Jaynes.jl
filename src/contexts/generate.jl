@@ -81,6 +81,7 @@ include("hierarchical/generate.jl")
 include("plate/generate.jl")
 include("markov/generate.jl")
 include("conditional/generate.jl")
+include("factor/generate.jl")
 
 # ------------ Documentation ------------ #
 
