@@ -7,7 +7,7 @@
 [![Build Status](https://travis-ci.org/femtomc/Jaynes.jl.svg?branch=master)](https://travis-ci.org/femtomc/Jaynes.jl)
 [![codecov](https://codecov.io/gh/femtomc/Jaynes.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/femtomc/Jaynes.jl)
 
-> This is alpha software!
+> Give your program some backbone!
 
 ---
 
@@ -49,6 +49,8 @@ println("Estimated β: $est_β")
 ```
 
 See [Examples](https://femtomc.github.io/Jaynes.jl/dev/examples/) for some more code snippets - including arbitrary control flow!
+
+Jaynes also includes a set of power tools for giving your programs differentiable hooks, and re-configurable parameter sites. Additionally, Jaynes provides a set of static IR transformations which can automatically transform a program to be learnable, or re-configurable.
 
 ## Inference
 
