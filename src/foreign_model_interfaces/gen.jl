@@ -161,9 +161,7 @@ macro load_gen_fmi()
                                                     args...) where {A <: Jaynes.Address, M <: GenerativeFunction, C <: GenerativeFunctionCallSite}
             Jaynes.visit!(ctx, addr)
             constraints = Jaynes.dump_queries(Jaynes.get_sub(ctx.select, addr))
-            println(constraints)
             select = Gen.select(constraints...)
-            println(select)
             prev = ctx.prev
             new, w, rd = Gen.regenerate(prev.trace.tr, args, (), select)
             ret = Gen.get_retval(new)
