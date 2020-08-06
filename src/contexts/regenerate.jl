@@ -30,8 +30,8 @@ end
 function regenerate(ctx::RegenerateContext, bbcs::HierarchicalCallSite, new_args...)
     ret = ctx(bbcs.fn, new_args...)
     visited = ctx.visited
-    adjusted = ctx.score - adjust_to_intersection(get_trace(bbcs), visited)
-    return ret, HierarchicalCallSite(ctx.tr, adjusted, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    adj_w = adjust_to_intersection(get_trace(bbcs), visited)
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score - adj_w, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection

@@ -116,6 +116,7 @@ end
                                       call::Function, 
                                       len::Int,
                                       args...)
+    visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = len, length(vcs.ret)
     ps = get_subparameters(ctx, addr)
@@ -137,6 +138,7 @@ end
                                             call::Function, 
                                             len::Int,
                                             args...) where {C <: VectorizedCallSite, T <: VectorizedTrace}
+    visit!(ctx, addr)
     vcs = ctx.prev
     n_len, o_len = len, length(vcs.ret)
     ps = get_subparameters(ctx, addr)

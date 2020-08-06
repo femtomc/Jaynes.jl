@@ -88,6 +88,7 @@ end
                                                 call::Function, 
                                                 len::Int,
                                                 args...) where {C <: HierarchicalCallSite, T <: HierarchicalTrace}
+    visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = len, length(vcs.ret)
     s = get_subselection(ctx, addr)
@@ -108,6 +109,7 @@ end
                                                 call::Function, 
                                                 len::Int,
                                                 args...) where {C <: VectorizedCallSite, T <: VectorizedTrace}
+    visit!(ctx, addr)
     vcs = ctx.prev
     n_len, o_len = len, length(vcs.ret)
     s = get_subselection(ctx, addr)

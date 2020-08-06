@@ -33,7 +33,9 @@ end
 
 function update(ctx::UpdateContext, bbcs::HierarchicalCallSite, args...) where D <: Diff
     ret = ctx(bbcs.fn, args...)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    visited = ctx.visited
+    adj_w = adjust_to_intersection(get_trace(bbcs), visited)
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score - adj_w, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, bbcs::HierarchicalCallSite) where L <: ConstrainedSelection

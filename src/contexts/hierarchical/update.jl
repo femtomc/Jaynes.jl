@@ -45,7 +45,7 @@ end
 @inline function (ctx::UpdateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
     has_top(ctx.params, addr) && return get_top(ctx.params, addr)
-    error("Parameter not provided at address $addr.")
+    error("(learnable): parameter not provided at address $addr.")
 end
 
 # ------------ Fillable ------------ #
@@ -66,8 +66,7 @@ end
     ss = get_subselection(ctx, addr)
     if has_sub(ctx.prev, addr)
         prev = get_prev(ctx, addr)
-        ret, cl, w, rd, d = update(ss, ps, prev, args...)
-        add_call!(ctx.discard, addr, HierarchicalCallSite(d, prev.score, call, prev.args, prev.ret))
+        ret, cl, w, rd, d = update(ss, ps, prev, UndefinedChange(), args...)
     else
         ret, cl, w = generate(ss, ps, call, args...)
     end
