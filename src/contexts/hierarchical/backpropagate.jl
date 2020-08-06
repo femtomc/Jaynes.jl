@@ -3,7 +3,11 @@
 @inline function (ctx::ParameterBackpropagateContext)(call::typeof(rand), 
                                                       addr::T, 
                                                       d::Distribution{K}) where {T <: Address, K}
-    s = get_top(ctx.call, addr).val
+    if has_top(ctx.fixed, addr)
+        s = get_top(ctx.fixed, addr)
+    else
+        s = get_top(ctx.call, addr).val
+    end
     ctx.weight += logpdf(d, s)
     return s
 end
@@ -11,7 +15,11 @@ end
 @inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
-    s = get_top(ctx.call, addr).val
+    if has_top(ctx.fixed, addr)
+        s = get_top(ctx.fixed, addr)
+    else
+        s = get_top(ctx.call, addr).val
+    end
     ctx.weight += logpdf(d, s)
     return s
 end
