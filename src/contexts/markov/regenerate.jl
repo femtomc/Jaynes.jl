@@ -31,7 +31,7 @@ function trace_retained(vcs::VectorizedCallSite,
         ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[i - 1]...)
         push!(new_ret, ret)
         push!(new, u_cl)
-        w_adj += get_score(u_cl) - get_score(prev_cl)
+        w_adj += get_score(u_cl)
     end
     return w_adj, new, new_ret
 end

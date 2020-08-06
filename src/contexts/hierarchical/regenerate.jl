@@ -28,7 +28,7 @@ end
 @inline function (ctx::RegenerateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
     has_top(ctx.params, addr) && return get_top(ctx.params, addr)
-    error("Parameter not provided at address $addr.")
+    error("(learnable): parameter not provided at address $addr.")
 end
 
 # ------------ Fillable ------------ #
@@ -47,9 +47,13 @@ end
     visit!(ctx, addr)
     ps = get_subparameters(ctx, addr)
     ss = get_subselection(ctx, addr)
-    prev_call = get_prev(ctx, addr)
-    ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, args...)
-    set_call!(ctx.tr, addr, cl)
+    if has_sub(ctx.prev, addr)
+        prev_call = get_prev(ctx, addr)
+        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, args...)
+    else
+        ret, cl, w = generate(ss, ps, call, args...)
+    end
+    add_call!(ctx.tr, addr, cl)
     increment!(ctx, w)
     return ret
 end

@@ -41,6 +41,24 @@ include("contexts/generate.jl")
 include("contexts/simulate.jl")
 include("contexts/propose.jl")
 include("contexts/score.jl")
+
+function adjust_to_intersection(tr::T, visited::V) where {T <: Trace, V <: Visitor}
+    adj_w = 0.0
+    for (k, v) in dump_top(tr)
+        has_top(visited, k) || begin
+            adj_w += get_score(v)
+        end
+    end
+    for (k, v) in dump_sub(tr)
+        has_sub(visited, k) || begin
+            adj_w += get_score(v)
+        end
+    end
+    adj_w
+end
+
 include("contexts/update.jl")
 include("contexts/regenerate.jl")
+
+# Gradients.
 include("contexts/backpropagate.jl")

@@ -42,6 +42,11 @@ function get_sub(tr::VectorizedTrace{<: CallSite}, addr::T) where T <: Tuple
     return tr.subrecords[addr]
 end
 
+dump_sub(tr::VectorizedTrace{<: CallSite}) = enumerate(tr.subrecords)
+dump_sub(tr::VectorizedTrace{<: ChoiceSite}) = []
+dump_top(tr::VectorizedTrace{<: CallSite}) = []
+dump_top(tr::VectorizedTrace{<: ChoiceSite}) = enumerate(tr.subrecords)
+
 add_call!(tr::VectorizedTrace{<: CallSite}, cs::CallSite) = push!(tr.subrecords, cs)
 
 add_choice!(tr::VectorizedTrace{<: ChoiceSite}, cs::ChoiceSite) = push!(tr.subrecords, cs)
@@ -91,20 +96,14 @@ struct VectorizedCallSite{F, D, C <: RecordSite, J, K} <: CallSite
     end
 end
 
+get_trace(vcs::VectorizedCallSite) = vcs.trace
 has_top(vcs::VectorizedCallSite, addr) = has_top(vcs.trace, addr)
-
 get_top(vcs::VectorizedCallSite, addr) = get_top(vcs.trace, addr)
-
 has_sub(vcs::VectorizedCallSite, addr) = has_sub(vcs.trace, addr)
-
 get_sub(vcs::VectorizedCallSite, addr) = get_sub(vcs.trace, addr)
-
 get_score(vcs::VectorizedCallSite) = vcs.score
-
 getindex(vcs::VectorizedCallSite, addrs...) = getindex(vcs.trace, addrs...)
-
 haskey(vcs::VectorizedCallSite, addrs...) = haskey(vcs.trace, addrs...)
-
 get_ret(cs::VectorizedCallSite) = cs.ret
 
 # ------------ Vectorized discard trace ------------ #
@@ -115,7 +114,5 @@ struct VectorizedDiscard <: Trace
 end
 
 get_sub(tr::VectorizedDiscard, addr) = return tr.subrecords[addr]
-
 add_call!(tr::VectorizedDiscard, addr::Int, cs::CallSite) = tr.subrecords[addr] = cs
-
 Base.getindex(vt::VectorizedDiscard, addr::Int) = vt.subrecords[addr]

@@ -6,6 +6,8 @@ struct Visitor <: Selection
 end
 
 push!(vs::Visitor, addr::Address) = push!(vs.addrs, addr)
+has_top(vs::Visitor, addr::Address) = addr in vs.addrs
+has_sub(vs::Visitor, addr::Address) = addr in vs.addrs
 
 function visit!(vs::Visitor, addr)
     addr in vs.addrs && error("VisitorError (visit!): already visited address $(addr).")

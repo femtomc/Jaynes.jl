@@ -62,22 +62,16 @@ end
                                       call::Function,
                                       args...) where {T <: Address, D <: Diff}
     visit!(ctx, addr)
-    has_addr = has_top(ctx.prev.trace, addr)
-    if has_addr
-        cs = get_prev(ctx, addr)
-        ps = get_subparameters(ctx, addr)
-        ss = get_subselection(ctx, addr)
-
-        # TODO: Mjolnir.
-        ret, new_site, lw, retdiff, discard = update(ss, ps, cs, args...)
-
-        add_call!(ctx.discard, addr, CallSite(discard, cs.score, cs.fn, cs.args, cs.ret))
+    ps = get_subparameters(ctx, addr)
+    ss = get_subselection(ctx, addr)
+    if has_sub(ctx.prev, addr)
+        prev = get_prev(ctx, addr)
+        ret, cl, w, rd, d = update(ss, ps, prev, args...)
+        add_call!(ctx.discard, addr, HierarchicalCallSite(d, prev.score, call, prev.args, prev.ret))
     else
-        ps = get_subparameters(ctx, addr)
-        ss = get_subselection(ctx, addr)
-        ret, new_site, lw = generate(ss, ps, call, args...)
+        ret, cl, w = generate(ss, ps, call, args...)
     end
-    add_call!(ctx, addr, new_site)
-    increment!(ctx, lw)
+    add_call!(ctx, addr, cl)
+    increment!(ctx, w)
     return ret
 end

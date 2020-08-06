@@ -56,7 +56,10 @@ function Base.haskey(tr::HierarchicalTrace, addr::T) where T <: Tuple
     has_sub(tr, addr[1]) && haskey(get_sub(tr, addr[1]), addr[2 : end])
 end
 
-# These methods only work for addresses. You should never be adding a call or choice site, except at the current stack level.
+dump_sub(tr::HierarchicalTrace) = tr.calls
+dump_top(tr::HierarchicalTrace) = tr.choices
+
+# These methods only work for addresses. You should never be adding a call or choice site by tuple address, should only be adding at the current stack level.
 add_call!(tr::HierarchicalTrace, addr::T, cs::K) where {T <: Address, K <: CallSite} = tr.calls[addr] = cs
 add_choice!(tr::HierarchicalTrace, addr::T, cs::ChoiceSite) where T <: Address = tr.choices[addr] = cs
 
@@ -92,18 +95,12 @@ struct HierarchicalCallSite{J, K} <: CallSite
     ret::K
 end
 
+get_trace(bbcs::HierarchicalCallSite) = bbcs.trace
 has_top(bbcs::HierarchicalCallSite, addr) = has_top(bbcs.trace, addr)
-
 get_top(bbcs::HierarchicalCallSite, addr) = get_top(bbcs.trace, addr)
-
 has_sub(bbcs::HierarchicalCallSite, addr) = has_sub(bbcs.trace, addr)
-
 get_sub(bbcs::HierarchicalCallSite, addr) = get_sub(bbcs.trace, addr)
-
 get_score(bbcs::HierarchicalCallSite) = bbcs.score
-
 getindex(cs::HierarchicalCallSite, addrs...) = getindex(cs.trace, addrs...)
-
 haskey(cs::HierarchicalCallSite, addr) = haskey(cs.trace, addr)
-
 get_ret(cs::HierarchicalCallSite) = cs.ret
