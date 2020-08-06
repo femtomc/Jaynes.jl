@@ -164,11 +164,17 @@ function has_sub(ps::LearnableByAddress, addr::T) where T <: Tuple
     has_sub(ps, addr[1]) && has_sub(get_sub(ps, addr[1]), addr[2 : end])
 end
 
-get_sub(ps::LearnableByAddress, addr::T) where T <: Address = getindex(ps.tree, addr)
+function get_sub(ps::LearnableByAddress, addr::Tuple{})
+    Parameters()
+end
+function get_sub(ps::LearnableByAddress, addr::T) where T <: Address
+    has_sub(ps, addr) || return Parameters()
+    getindex(ps.tree, addr)
+end
+get_sub(ps::LearnableByAddress, addr::Tuple{T}) where T <: Address = get_sub(ps, addr[1])
 function get_sub(ps::LearnableByAddress, addr::T) where T <: Tuple
-    isempty(addr) && return Parameters()
-    length(addr) == 1 && return get_sub(ps, addr[1])
-    return get_sub(ps.tree[addr[1]], addr[2 : end])
+    has_sub(ps, addr[1]) || return Parameters()
+    get_sub(ps.tree[addr[1]], addr[2 : end])
 end
 
 set_sub!(ps::LearnableByAddress, addr::T, sub::LearnableByAddress) where T <: Address = ps.tree[addr] = sub

@@ -18,7 +18,6 @@ factor(args...) = args
 # Generic abstract types..
 abstract type RecordSite end
 abstract type CallSite <: RecordSite end
-abstract type LearnableSite <: RecordSite end
 
 # ------------ Choice sites - rand calls with distributions. ------------ #
 
@@ -30,12 +29,6 @@ get_score(cs::ChoiceSite) = cs.score
 getindex(cs::ChoiceSite, addr::Address) = nothing
 haskey(cs::ChoiceSite, addr::Address) = false
 get_ret(cs::ChoiceSite) = cs.val
-
-# ------------ Site with a user-declared parameter ------------ #
-
-struct ParameterSite{T} <: LearnableSite
-    val::T
-end
 
 # ------------ includes - traces + call sites ------------ #
 

@@ -196,7 +196,7 @@ end
 # Pretty printing.
 function Base.display(chs::ConstrainedHierarchicalSelection; show_values = true)
     println("  __________________________________\n")
-    println("             Constrained\n")
+    println("             Selection\n")
     addrs, chd = collect(chs)
     if show_values
         for a in addrs

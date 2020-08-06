@@ -8,7 +8,7 @@
     else
         s = get_top(ctx.call, addr).val
     end
-    ctx.weight += logpdf(d, s)
+    increment!(ctx, logpdf(d, s))
     return s
 end
 
@@ -20,7 +20,7 @@ end
     else
         s = get_top(ctx.call, addr).val
     end
-    ctx.weight += logpdf(d, s)
+    increment!(ctx, logpdf(d, s))
     return s
 end
 

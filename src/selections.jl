@@ -57,8 +57,8 @@ include("selections/visitor.jl")
 
 # ------------ Constrained and unconstrained selections ------------ #
 
-abstract type ConstrainedSelection end
-abstract type UnconstrainedSelection end
+abstract type ConstrainedSelection <: Selection end
+abstract type UnconstrainedSelection <: Selection end
 abstract type SelectQuery <: Selection end
 abstract type ConstrainedSelectQuery <: SelectQuery end
 abstract type UnconstrainedSelectQuery <: SelectQuery end

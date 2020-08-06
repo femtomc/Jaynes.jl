@@ -75,10 +75,10 @@ end
 # ------------ Call sites ------------ #
 
 # Grads for learnable parameters.
-simulate_call_pullback(sel, params, param_grads, cl::T, args) where T <: CallSite = cl.ret
+simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: CallSite = cl.ret
 
-Zygote.@adjoint function simulate_call_pullback(sel, params, param_grads, cl::HierarchicalCallSite, args)
-    ret = simulate_call_pullback(sel, params, param_grads, cl, args)
+Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::HierarchicalCallSite, args)
+    ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
         arg_grads = accumulate_parameter_gradients!(sel, params, param_grads, cl, ret_grad)
         (nothing, nothing, nothing, nothing, arg_grads)
@@ -92,8 +92,8 @@ merge(tp1::Tuple{Nothing}, tp2::Tuple{Nothing}) where T = tp1
 merge(tp1::NTuple{N, Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
 merge(tp1::Array{Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
 
-Zygote.@adjoint function simulate_call_pullback(sel, params, param_grads, cl::VectorizedCallSite{typeof(markov)}, args)
-    ret = simulate_call_pullback(sel, params, param_grads, cl, args)
+Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::VectorizedCallSite{typeof(markov)}, args)
+    ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
         arg_grads = accumulate_parameter_gradients!(sel, params, param_grads, get_sub(cl, cl.len), ret_grad)
         for i in (cl.len - 1) : -1 : 1
@@ -104,8 +104,8 @@ Zygote.@adjoint function simulate_call_pullback(sel, params, param_grads, cl::Ve
     return ret, fn
 end
 
-Zygote.@adjoint function simulate_call_pullback(sel, params, param_grads, cl::VectorizedCallSite{typeof(plate)}, args)
-    ret = simulate_call_pullback(sel, params, param_grads, cl, args)
+Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::VectorizedCallSite{typeof(plate)}, args)
+    ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
         arg_grads = accumulate_parameter_gradients!(sel, params, param_grads, get_sub(cl, cl.len), ret_grad[1])
         for i in 2 : cl.len
@@ -118,7 +118,7 @@ Zygote.@adjoint function simulate_call_pullback(sel, params, param_grads, cl::Ve
 end
 
 # Grads for choices with differentiable logpdfs.
-simulate_choice_pullback(params, choice_grads, choice_selection, cl::T, args) where T <: CallSite = cl.ret
+simulate_choice_pullback(params, choice_grads, choice_selection, cl::T, args) where T <: CallSite = get_ret(cl)
 
 Zygote.@adjoint function simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
     ret = simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
@@ -203,10 +203,20 @@ end
 
 function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr::NamedTuple, sel::K) where K <: UnconstrainedSelection
     values = ConstrainedHierarchicalSelection()
-    for (k, v) in cl.trace.choices
+    for (k, v) in dump_top(cl.trace)
         has_top(sel, k) && begin
             push!(values, k, v.val)
-            push!(choice_grads, k, grad_tr.choices[k].val)
+            push!(choice_grads, k, grad_tr.trace.choices[k].val)
+        end
+    end
+    return values
+end
+
+function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr, sel::K) where K <: UnconstrainedSelection
+    values = ConstrainedHierarchicalSelection()
+    for (k, v) in dump_top(cl.trace)
+        has_top(sel, k) && begin
+            push!(values, k, v.val)
         end
     end
     return values
