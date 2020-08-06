@@ -120,9 +120,9 @@ end
 ret, cl = Jaynes.simulate(bar)
 ```
 
-## Hack your program!
+## Poke holes in your programs!
 
-Jaynes also includes a set of power tools for giving your programs differentiable hooks, and re-configurable parameter sites. `learnable` sites are configurable by `Parameters` instances which can be passed in to execution contexts and trained with backpropagation. Here, Jaynes will learn a parameter value for `:q` with a loss function equivalent to the ["soft evidence"](https://agentmodels.org/chapters/3-agents-as-programs.html) expressed by the special [factor call site](https://femtomc.github.io/Jaynes.jl/dev/library_api/sites/).
+Jaynes also includes a set of power tools for giving your programs differentiable hooks, and re-configurable parameter sites. `learnable` sites are configurable by `Parameters` instances which can be passed in to execution contexts and trained with backpropagation. Here, Jaynes will learn a parameter value for `:q` with a loss function equivalent to ["soft evidence"](https://agentmodels.org/chapters/3-agents-as-programs.html) expressed by the special [factor call site](https://femtomc.github.io/Jaynes.jl/dev/library_api/sites/).
 
 ```julia
 foo = y -> begin
