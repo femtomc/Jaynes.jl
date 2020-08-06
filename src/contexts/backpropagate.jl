@@ -52,8 +52,10 @@ mutable struct ChoiceBackpropagateContext{T <: CallSite, S <: ConstrainedSelecti
     choice_grads::Gradients
     select::K
 end
-ChoiceBackpropagate(call::T, init, params, choice_grads) where {T <: CallSite, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(call, 0.0, init, params, choice_grads, UnconstrainedAllSelection())
-ChoiceBackpropagate(call::T, init, params, choice_grads, sel::K) where {T <: CallSite, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(call, 0.0, init, params, choice_grads, sel)
+ChoiceBackpropagate(call::T, init, params, choice_grads) where {T <: CallSite, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(call, 0.0, selection(), init, params, choice_grads, UnconstrainedAllSelection())
+ChoiceBackpropagate(call::T, fixed::S, init, params, choice_grads) where {T <: CallSite, S <: ConstrainedSelection, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(call, 0.0, fixed, init, params, choice_grads, UnconstrainedAllSelection())
+ChoiceBackpropagate(call::T, init, params, choice_grads, sel::K) where {T <: CallSite, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(call, 0.0, selection(), init, params, choice_grads, sel)
+ChoiceBackpropagate(call::T, fixed::S, init, params, choice_grads, sel::K) where {T <: CallSite, S <: ConstrainedSelection, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(call, 0.0, fixed, init, params, choice_grads, sel)
 
 # ------------ Learnable ------------ #
 
@@ -210,11 +212,22 @@ function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr::NamedTuple, se
     return values
 end
 
-function choice_gradients(initial_params, choice_grads, choice_selection, cl, ret_grad)
-    call = cl.fn
+function choice_gradients(initial_params::P, choice_grads, choice_selection::K, cl, ret_grad) where {P <: Parameters, K <: UnconstrainedSelection}
     fn = (args, call) -> begin
         ctx = ChoiceBackpropagate(call, initial_params, ParameterStore(), choice_grads, choice_selection)
-        ret = ctx(call, args...)
+        ret = ctx(call.fn, args...)
+        (ctx.weight, ret)
+    end
+    _, back = Zygote.pullback(fn, cl.args, cl)
+    arg_grads, grad_ref = back((1.0, ret_grad))
+    choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
+    return arg_grads, choice_vals, choice_grads
+end
+
+function choice_gradients(fixed::S, initial_params::P, choice_grads, choice_selection::K, cl, ret_grad) where {S <: ConstrainedSelection, P <: Parameters, K <: UnconstrainedSelection}
+    fn = (args, call) -> begin
+        ctx = ChoiceBackpropagate(call, fixed, initial_params, ParameterStore(), choice_grads, choice_selection)
+        ret = ctx(call.fn, args...)
         (ctx.weight, ret)
     end
     _, back = Zygote.pullback(fn, cl.args, cl)
@@ -232,10 +245,24 @@ function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     return vals, choice_grads
 end
 
-function get_choice_gradients(params, cl::T, ret_grad) where T <: CallSite
+function get_choice_gradients(fixed::S, cl::T, ret_grad) where {S <: ConstrainedSelection, T <: CallSite}
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
-    _, vals, _ = choice_gradients(params, choice_grads, choice_selection, cl, ret_grad)
+    _, vals, _ = choice_gradients(fixed, Parameters(), choice_grads, choice_selection, cl, ret_grad)
+    return vals, choice_grads
+end
+
+function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: Parameters, T <: CallSite}
+    choice_grads = Gradients()
+    choice_selection = UnconstrainedAllSelection()
+    _, vals, _ = choice_gradients(ps, choice_grads, choice_selection, cl, ret_grad)
+    return vals, choice_grads
+end
+
+function get_choice_gradients(fixed::S, ps::P, cl::T, ret_grad) where {S <: ConstrainedSelection, P <: Parameters, T <: CallSite}
+    choice_grads = Gradients()
+    choice_selection = UnconstrainedAllSelection()
+    _, vals, _ = choice_gradients(fixed, ps, choice_grads, choice_selection, cl, ret_grad)
     return vals, choice_grads
 end
 
@@ -245,37 +272,49 @@ function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <
     return vals, choice_grads
 end
 
-function get_choice_gradients(sel::K, params::P, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection, P <: Parameters}
+function get_choice_gradients(sel::K, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection, P <: Parameters}
     choice_grads = Gradients()
-    _, vals, _ = choice_gradients(params, choice_grads, sel, cl, ret_grad)
+    _, vals, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
+    return vals, choice_grads
+end
+
+function get_choice_gradients(sel::K, fixed::S, cl::T, ret_grad) where {K <: UnconstrainedSelection, S <: ConstrainedSelection, T <: CallSite}
+    choice_grads = Gradients()
+    _, vals, _ = choice_gradients(Parameters(), choice_grads, sel, cl, ret_grad)
+    return vals, choice_grads
+end
+
+function get_choice_gradients(sel::K, fixed::S, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection, S <: ConstrainedSelection, P <: Parameters}
+    choice_grads = Gradients()
+    _, vals, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
     return vals, choice_grads
 end
 
 # ------------ get_learnable_gradients ------------ #
 
-function get_learnable_gradients(params::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
+function get_learnable_gradients(ps::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
     param_grads = Gradients()
-    accumulate_parameter_gradients!(selection(), params, param_grads, cl, ret_grad, scaler)
+    accumulate_parameter_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
     return param_grads
 end
 
-function get_learnable_gradients(sel::K, params::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
+function get_learnable_gradients(sel::K, ps::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     param_grads = Gradients()
-    accumulate_parameter_gradients!(sel, params, param_grads, cl, ret_grad, scaler)
+    accumulate_parameter_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
     return param_grads
 end
 
-function get_learnable_gradients(params::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
+function get_learnable_gradients(ps::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
     param_grads = Gradients()
-    accumulate_parameter_gradients!(selection(), params, param_grads, cl, ret_grad, scaler)
+    accumulate_parameter_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
     for k in keys(param_grads.tree)
         return param_grads.tree[k]
     end
 end
 
-function get_learnable_gradients(sel::K, params::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
+function get_learnable_gradients(sel::K, ps::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     param_grads = Gradients()
-    accumulate_parameter_gradients!(sel, params, param_grads, cl, ret_grad, scaler)
+    accumulate_parameter_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
     for k in keys(param_grads.tree)
         return param_grads.tree[k]
     end
@@ -283,22 +322,22 @@ end
 
 # ------------ train ------------ #
 
-function train(params, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000)
+function train(ps::P, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where P <: Parameters
     for i in 1 : iters
-        _, cl = simulate(params, fn, args...)
-        grads = get_learnable_gradients(params, cl, 1.0)
-        params = update_learnables(opt, params, grads)
+        _, cl = simulate(ps, fn, args...)
+        grads = get_learnable_gradients(ps, cl, 1.0)
+        ps = update_learnables(opt, ps, grads)
     end
-    return params
+    return ps
 end
 
-function train(sel::K, params, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where K <: ConstrainedSelection
+function train(sel::K, ps::P, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where {K <: ConstrainedSelection, P <: Parameters}
     for i in 1 : iters
-        _, cl, _ = generate(sel, params, fn, args...)
-        grads = get_learnable_gradients(sel, params, cl, 1.0)
-        params = update_learnables(opt, params, grads)
+        _, cl, _ = generate(sel, ps, fn, args...)
+        grads = get_learnable_gradients(sel, ps, cl, 1.0)
+        ps = update_learnables(opt, ps, grads)
     end
-    return params
+    return ps
 end
 
 # ------------ includes ------------ #
