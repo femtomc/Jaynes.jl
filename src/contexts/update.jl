@@ -83,65 +83,42 @@ end
 
 function update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where L <: ConstrainedSelection
     argdiffs = NoChange()
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    ctx = UpdateContext(vcs, v_sel, argdiffs)
-    ret = ctx(plate, addr, vcs.fn, vcs.args)
+    ctx = UpdateContext(vcs, sel, argdiffs)
+    ret = ctx(plate, vcs.fn, vcs.args)
     return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(plate)}) where {L <: ConstrainedSelection, P <: Parameters}
     argdiffs = NoChange()
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    v_params = learnables(addr => ps)
-    ctx = UpdateContext(vcs, v_sel, v_params, argdiffs)
-    ret = ctx(plate, addr, vcs.fn, vcs.args)
+    ctx = UpdateContext(vcs, sel, ps, argdiffs)
+    ret = ctx(plate, vcs.fn, vcs.args)
     return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where L <: ConstrainedSelection
     argdiffs = NoChange()
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    ctx = UpdateContext(vcs, v_sel, argdiffs)
-    ret = ctx(markov, addr, vcs.fn, vcs.args[1], vcs.args[2]...)
+    ctx = UpdateContext(vcs, sel, argdiffs)
+    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
     return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}) where {L <: ConstrainedSelection, P <: Parameters}
     argdiffs = NoChange()
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    v_params = learnables(addr => ps)
-    ctx = UpdateContext(vcs, v_sel, v_params, argdiffs)
-    ret = ctx(markov, addr, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: ConstrainedSelection, D <: Diff}
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    ctx = UpdateContext(vcs, v_sel, d)
-    ret = ctx(markov, addr, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: ConstrainedSelection, P <: Parameters, D <: Diff}
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    v_params = learnables(addr => ps)
-    ctx = UpdateContext(vcs, v_sel, v_params, d)
-    ret = ctx(markov, addr, vcs.fn, len, vcs.args[2]...)
+    ctx = UpdateContext(vcs, sel, ps, argdiffs)
+    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
     return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, D <: Diff}
-    return update(sel, vcs, NoChange(), len)
+    ctx = UpdateContext(vcs, sel, NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, P <: Parameters, D <: Diff}
-    return update(sel, ps, vcs, NoChange(), len)
+    ctx = UpdateContext(vcs, sel, ps, NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 # ------------ includes ------------ #

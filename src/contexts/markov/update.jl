@@ -134,15 +134,13 @@ end
 end
 
 @inline function (ctx::UpdateContext{C, T})(c::typeof(markov), 
-                                            addr::Address, 
                                             call::Function, 
                                             len::Int,
                                             args...) where {C <: VectorizedCallSite, T <: VectorizedTrace}
-    visit!(ctx, addr)
     vcs = ctx.prev
     n_len, o_len = len, length(vcs.ret)
-    ps = get_subparameters(ctx, addr)
-    s = get_subselection(ctx, addr)
+    ps = ctx.fixed
+    s = ctx.select
     min, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ps, ks, min, o_len, n_len, args...)

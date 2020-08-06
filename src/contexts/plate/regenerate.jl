@@ -57,10 +57,10 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::RegenerateContext{C, T})(c::typeof(plate), 
-                                                addr::Address, 
-                                                call::Function, 
-                                                args::Vector) where {C <: HierarchicalCallSite, T <: HierarchicalTrace}
+@inline function (ctx::RegenerateContext)(c::typeof(plate), 
+                                          addr::A, 
+                                          call::Function, 
+                                          args::Vector) where A <: Address
     visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = length(args), length(vcs.args)
@@ -78,13 +78,11 @@ end
 end
 
 @inline function (ctx::RegenerateContext{C, T})(c::typeof(plate), 
-                                                addr::Address, 
                                                 call::Function, 
                                                 args::Vector) where {C <: VectorizedCallSite, T <: VectorizedTrace}
-    visit!(ctx, addr)
     vcs = ctx.prev
     n_len, o_len = length(args), length(vcs.args)
-    s = get_subselection(ctx, addr)
+    s = ctx.select
     _, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)

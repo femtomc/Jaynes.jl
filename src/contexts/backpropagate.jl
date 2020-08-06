@@ -29,22 +29,22 @@ end
 abstract type BackpropagationContext <: ExecutionContext end
 
 # Learnable parameters
-mutable struct ParameterBackpropagateContext{T <: Trace, S <: ConstrainedSelection} <: BackpropagationContext
-    tr::T
+mutable struct ParameterBackpropagateContext{T <: CallSite, S <: ConstrainedSelection} <: BackpropagationContext
+    call::T
     weight::Float64
     fixed::S
     initial_params::Parameters
     params::ParameterStore
     param_grads::Gradients
 end
-ParameterBackpropagate(tr::T, init, params) where T <: Trace = ParameterBackpropagateContext(tr, 0.0, selection(), init, params, Gradients())
-ParameterBackpropagate(tr::T, sel::S, init, params) where {T <: Trace, S <: ConstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, sel, init, params, Gradients())
-ParameterBackpropagate(tr::T, init, params, param_grads::Gradients) where {T <: Trace, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, selection(), init, params, param_grads)
-ParameterBackpropagate(tr::T, sel::S, init, params, param_grads::Gradients) where {T <: Trace, S <: ConstrainedSelection, K <: UnconstrainedSelection} = ParameterBackpropagateContext(tr, 0.0, sel, init, params, param_grads)
+ParameterBackpropagate(call::T, init, params) where T <: CallSite = ParameterBackpropagateContext(call, 0.0, selection(), init, params, Gradients())
+ParameterBackpropagate(call::T, sel::S, init, params) where {T <: CallSite, S <: ConstrainedSelection} = ParameterBackpropagateContext(call, 0.0, sel, init, params, Gradients())
+ParameterBackpropagate(call::T, init, params, param_grads::Gradients) where {T <: CallSite, K <: UnconstrainedSelection} = ParameterBackpropagateContext(call, 0.0, selection(), init, params, param_grads)
+ParameterBackpropagate(call::T, sel::S, init, params, param_grads::Gradients) where {T <: CallSite, S <: ConstrainedSelection, K <: UnconstrainedSelection} = ParameterBackpropagateContext(call, 0.0, sel, init, params, param_grads)
 
 # Choice sites
-mutable struct ChoiceBackpropagateContext{T <: Trace, S <: ConstrainedSelection, K <: UnconstrainedSelection} <: BackpropagationContext
-    tr::T
+mutable struct ChoiceBackpropagateContext{T <: CallSite, S <: ConstrainedSelection, K <: UnconstrainedSelection} <: BackpropagationContext
+    call::T
     weight::Float64
     fixed::S
     initial_params::Parameters
@@ -52,8 +52,8 @@ mutable struct ChoiceBackpropagateContext{T <: Trace, S <: ConstrainedSelection,
     choice_grads::Gradients
     select::K
 end
-ChoiceBackpropagate(tr::T, init, params, choice_grads) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, init, params, choice_grads, UnconstrainedAllSelection())
-ChoiceBackpropagate(tr::T, init, params, choice_grads, sel::K) where {T <: Trace, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(tr, 0.0, init, params, choice_grads, sel)
+ChoiceBackpropagate(call::T, init, params, choice_grads) where {T <: CallSite, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(call, 0.0, init, params, choice_grads, UnconstrainedAllSelection())
+ChoiceBackpropagate(call::T, init, params, choice_grads, sel::K) where {T <: CallSite, K <: UnconstrainedSelection} = ChoiceBackpropagateContext(call, 0.0, init, params, choice_grads, sel)
 
 # ------------ Learnable ------------ #
 
@@ -131,7 +131,7 @@ end
 
 function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
     fn = (args, params) -> begin
-        ctx = ParameterBackpropagate(cl.trace, sel, initial_params, params, param_grads)
+        ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(cl.fn, args...)
         (ctx.weight, ret)
     end
@@ -148,7 +148,7 @@ end
 
 function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::HierarchicalCallSite, ret_grad::Tuple, scaler::Float64 = 1.0)
     fn = (args, params) -> begin
-        ctx = ParameterBackpropagate(cl.trace, sel, initial_params, params, param_grads)
+        ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(cl.fn, args...)
         (ctx.weight, ret)
     end
@@ -164,13 +164,9 @@ function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::H
 end
 
 function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(markov)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
-    addr = gensym()
-    v_params = learnables(addr => initial_params)
-    tr = Trace()
-    add_call!(tr, addr, cl)
     fn = (args, params) -> begin
-        ctx = ParameterBackpropagate(tr, sel, v_params, params, param_grads)
-        ret = ctx(markov, addr, cl.fn, cl.len, args...)
+        ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
+        ret = ctx(markov, cl.fn, cl.len, args...)
         (ctx.weight, ret)
     end
     blank = ParameterStore()
@@ -185,13 +181,9 @@ function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::V
 end
 
 function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(plate)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
-    addr = gensym()
-    v_params = learnables(addr => initial_params)
-    tr = Trace()
-    add_call!(tr, addr, cl)
     fn = (args, params) -> begin
-        ctx = ParameterBackpropagate(tr, sel, v_params, params, param_grads)
-        ret = ctx(plate, addr, cl.fn, args)
+        ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
+        ret = ctx(plate, cl.fn, args)
         (ctx.weight, ret)
     end
     blank = ParameterStore()
@@ -220,12 +212,12 @@ end
 
 function choice_gradients(initial_params, choice_grads, choice_selection, cl, ret_grad)
     call = cl.fn
-    fn = (args, trace) -> begin
-        ctx = ChoiceBackpropagate(trace, initial_params, ParameterStore(), choice_grads, choice_selection)
+    fn = (args, call) -> begin
+        ctx = ChoiceBackpropagate(call, initial_params, ParameterStore(), choice_grads, choice_selection)
         ret = ctx(call, args...)
         (ctx.weight, ret)
     end
-    _, back = Zygote.pullback(fn, cl.args, cl.trace)
+    _, back = Zygote.pullback(fn, cl.args, cl)
     arg_grads, grad_ref = back((1.0, ret_grad))
     choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
     return arg_grads, choice_vals, choice_grads

@@ -105,19 +105,18 @@ end
 end
 
 @inline function (ctx::RegenerateContext{C, T})(c::typeof(markov), 
-                                                addr::Address, 
                                                 call::Function, 
                                                 len::Int,
                                                 args...) where {C <: VectorizedCallSite, T <: VectorizedTrace}
-    visit!(ctx, addr)
     vcs = ctx.prev
     n_len, o_len = len, length(vcs.ret)
-    s = get_subselection(ctx, addr)
+    s = ctx.select
+    ps = ctx.fixed
     min, ks = keyset(s, n_len)
     if n_len <= o_len
-        w_adj, new, new_ret = trace_retained(vcs, s, ks, min, o_len, n_len, args...)
+        w_adj, new, new_ret = trace_retained(vcs, s, ps, ks, min, o_len, n_len, args...)
     else
-        w_adj, new, new_ret = trace_new(vcs, s, ks, min, o_len, n_len, args...)
+        w_adj, new, new_ret = trace_new(vcs, s, ps, ks, min, o_len, n_len, args...)
     end
 
     # TODO: fix - allocate full vector.

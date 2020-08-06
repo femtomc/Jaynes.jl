@@ -3,7 +3,7 @@
 @inline function (ctx::ParameterBackpropagateContext)(call::typeof(rand), 
                                                       addr::T, 
                                                       d::Distribution{K}) where {T <: Address, K}
-    s = get_top(ctx.tr, addr).val
+    s = get_top(ctx.call, addr).val
     ctx.weight += logpdf(d, s)
     return s
 end
@@ -11,7 +11,7 @@ end
 @inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
-    s = get_top(ctx.tr, addr).val
+    s = get_top(ctx.call, addr).val
     ctx.weight += logpdf(d, s)
     return s
 end
@@ -44,10 +44,10 @@ end
                                                       addr::T,
                                                       call::Function,
                                                       args...) where T <: Address
-    cl = get_sub(ctx.tr, addr)
+    cl = get_sub(ctx.call, addr)
     ss = get_sub(ctx.fixed, addr)
-    param_grads = Gradients()
     ps = get_sub(ctx.initial_params, addr)
+    param_grads = Gradients()
     ret = simulate_call_pullback(ss, ps, param_grads, cl, args)
     ctx.param_grads.tree[addr] = param_grads
     return ret
@@ -57,9 +57,9 @@ end
                                                    addr::T,
                                                    call::Function,
                                                    args...) where T <: Address
-    cl = get_sub(ctx.tr, addr)
-    choice_grads = Gradients()
+    cl = get_sub(ctx.call, addr)
     ps = get_sub(ctx.initial_params, addr)
+    choice_grads = Gradients()
     ret = simulate_choice_pullback(ps, choice_grads, get_sub(ctx.select, addr), cl, args)
     ctx.choice_grads.tree[addr] = choice_grads
     return ret

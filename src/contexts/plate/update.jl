@@ -79,18 +79,17 @@ end
 end
 
 @inline function (ctx::UpdateContext{C, T})(c::typeof(plate), 
-                                            addr::Address, 
                                             call::Function, 
                                             args::Vector) where {C <: VectorizedCallSite, T <: VectorizedTrace}
-    visit!(ctx, addr)
     vcs = ctx.prev
     n_len, o_len = length(args), length(vcs.args)
-    s = get_subselection(ctx, addr)
+    s = ctx.select
+    ps = ctx.fixed
     _, ks = keyset(s, n_len)
     if n_len <= o_len
-        w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)
+        w_adj, new, new_ret = trace_retained(vcs, s, ps, ks, o_len, n_len, args)
     else
-        w_adj, new, new_ret = trace_new(vcs, s, ks, o_len, n_len, args)
+        w_adj, new, new_ret = trace_new(vcs, s, ps, ks, o_len, n_len, args)
     end
 
     for n in new
