@@ -1,5 +1,9 @@
 module Jaynes
 
+# Chainz
+using ZigZagBoomerang
+using AbstractMCMC
+
 # Yarrrr I'm a com-pirate!
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
@@ -103,6 +107,7 @@ export get_selection, compare, has_top, update_learnables, dump_queries, merge!,
 export metropolis_hastings, mh
 export elliptical_slice, es
 export hamiltonian_monte_carlo, hmc
+export boomerang, boomer
 export importance_sampling, is
 export initialize_filter, filter_step!, check_ess_resample!, get_lmle, pf
 export metropolis_hastings, mh

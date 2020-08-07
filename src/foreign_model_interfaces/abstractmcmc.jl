@@ -3,9 +3,6 @@ macro load_abstract_mcmc(expr)
     expr = quote
         @info "Constructing kernel interface to \u001b[3m\u001b[34;1mAbstractMCMC.jl\u001b[0m\n\n          \u001b[34;1mhttps://github.com/TuringLang/AbstractMCMC.jl\n\n "
 
-        using AbstractMCMC
-        import AbstractMCMC: step
-
         struct KernelState{K <: Jaynes.UnconstrainedSelection, 
                            P <: Jaynes.Parameters, 
                            F, 

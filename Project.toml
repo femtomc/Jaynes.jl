@@ -4,6 +4,7 @@ authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
 version = "0.1.8"
 
 [deps]
+AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DistributionsAD = "ced4e74d-a319-5a8a-b0ac-84af2272839c"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
@@ -19,8 +20,8 @@ DistributionsAD = "0.6"
 Flux = "0.8, 0.11"
 IRTools = "0.3, 0.4"
 MacroTools = "0.5"
-Zygote = "0.4.20"
 Reexport = "0.2"
+Zygote = "0.4.20"
 julia = "1"
 
 [extras]
