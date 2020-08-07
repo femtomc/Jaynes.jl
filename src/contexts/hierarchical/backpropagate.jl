@@ -15,6 +15,7 @@ end
 @inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
+    has_top(ctx.select, addr) || return get_top(ctx.call, addr).val
     if has_top(ctx.fixed, addr)
         s = get_top(ctx.fixed, addr)
     else

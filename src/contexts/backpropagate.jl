@@ -206,7 +206,7 @@ function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr::NamedTuple, se
     for (k, v) in dump_top(cl.trace)
         has_top(sel, k) && begin
             push!(values, k, v.val)
-            push!(choice_grads, k, grad_tr.trace.choices[k].val)
+            haskey(grad_tr.trace.choices, k) && push!(choice_grads, k, grad_tr.trace.choices[k].val)
         end
     end
     return values
@@ -223,24 +223,24 @@ function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr, sel::K) where 
 end
 
 function choice_gradients(initial_params::P, choice_grads, choice_selection::K, cl, ret_grad) where {P <: Parameters, K <: UnconstrainedSelection}
-    fn = (args, call) -> begin
-        ctx = ChoiceBackpropagate(call, initial_params, ParameterStore(), choice_grads, choice_selection)
+    fn = (args, call, sel) -> begin
+        ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_selection)
         ret = ctx(call.fn, args...)
         (ctx.weight, ret)
     end
-    _, back = Zygote.pullback(fn, cl.args, cl)
+    (w, r), back = Zygote.pullback(fn, cl.args, cl, selection())
     arg_grads, grad_ref = back((1.0, ret_grad))
     choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
     return arg_grads, choice_vals, choice_grads
 end
 
 function choice_gradients(fixed::S, initial_params::P, choice_grads, choice_selection::K, cl, ret_grad) where {S <: ConstrainedSelection, P <: Parameters, K <: UnconstrainedSelection}
-    fn = (args, call) -> begin
-        ctx = ChoiceBackpropagate(call, fixed, initial_params, ParameterStore(), choice_grads, choice_selection)
+    fn = (args, call, sel) -> begin
+        ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_selection)
         ret = ctx(call.fn, args...)
         (ctx.weight, ret)
     end
-    _, back = Zygote.pullback(fn, cl.args, cl)
+    _, back = Zygote.pullback(fn, cl.args, cl, fixed)
     arg_grads, grad_ref = back((1.0, ret_grad))
     choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
     return arg_grads, choice_vals, choice_grads

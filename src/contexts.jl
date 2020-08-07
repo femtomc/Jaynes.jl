@@ -31,17 +31,17 @@ end
     return ir
 end
 
-function (mx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(rand), args...)
-    return mx(c, flatten(args)...)
-end
+(mx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(rand), args...) = mx(c, flatten(args)...)
 
 # ------------ includes ------------ #
 
+# Generating traces and scoring them according to models.
 include("contexts/generate.jl")
 include("contexts/simulate.jl")
 include("contexts/propose.jl")
 include("contexts/score.jl")
 
+# Used to adjust the score when branches need to be pruned.
 function adjust_to_intersection(tr::T, visited::V) where {T <: Trace, V <: Visitor}
     adj_w = 0.0
     for (k, v) in dump_top(tr)
