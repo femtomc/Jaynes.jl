@@ -96,9 +96,21 @@ function selection(a::Vector{Pair{K, J}}) where {K <: Tuple, J}
     return ConstrainedHierarchicalSelection(a)
 end
 
-function selection(a::Pair{K, J}) where {K <: Symbol, J <: ConstrainedSelection}
+function selection(a::Pair{K, J}) where {K <: Address, J <: ConstrainedSelection}
     top = ConstrainedHierarchicalSelection()
     set_sub!(top, a[1], a[2])
+    top
+end
+
+function selection(a::Pair{Tuple{}, J}) where J <: ConstrainedSelection
+    addr, sel = a
+    sel
+end
+
+function selection(a::Pair{K, J}) where {K <: Tuple, J <: ConstrainedSelection}
+    top = ConstrainedHierarchicalSelection()
+    addr, sel = a
+    set_sub!(top, addr[1], selection(addr[2 : end] => sel))
     top
 end
 
