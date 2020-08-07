@@ -19,6 +19,8 @@ factor(args...) = args
 abstract type RecordSite end
 abstract type CallSite <: RecordSite end
 
+get_ret(x) = x
+
 # ------------ Choice sites - rand calls with distributions. ------------ #
 
 struct ChoiceSite{T} <: RecordSite
