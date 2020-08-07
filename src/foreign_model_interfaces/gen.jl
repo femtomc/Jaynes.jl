@@ -1,9 +1,11 @@
 macro load_gen_fmi()
     @info "Loading foreign model interface to \u001b[3m\u001b[34;1mGen.jl\u001b[0m\n\n          \u001b[34;1mhttps://www.gen.dev/\n\nThis interface currently supports Gen's full feature set.\n\n\u001b[1mGen and Jaynes share exports - please qualify usage of the following context APIs:\n\u001b[0m\n \u001b[31msimulate   \u001b[0m-> \u001b[32mJaynes.simulate\n \u001b[31mgenerate   \u001b[0m-> \u001b[32mJaynes.generate\n \u001b[31mupdate     \u001b[0m-> \u001b[32mJaynes.update\n \u001b[31mregenerate \u001b[0m-> \u001b[32mJaynes.regenerate\n \u001b[31mpropose    \u001b[0m-> \u001b[32mJaynes.propose\n "
     expr = quote
-        import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect, collect!, selection
+        import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect, collect!, selection, get_selection
         import Jaynes: simulate, propose, generate, regenerate, update, score
+        import Jaynes: apply_kernel
         using Gen
+        import Gen: get_choices
 
         # ------------ Trace ------------ #
 
@@ -30,6 +32,7 @@ macro load_gen_fmi()
         getindex(cs::GenerativeFunctionCallSite, addrs...) = getindex(get_choices(cs.trace), addrs...)
         get_ret(cs::GenerativeFunctionCallSite) = get_retval(cs.trace)
         get_choices(cs::GenerativeFunctionCallSite) = get_choices(cs.trace)
+        get_gen_trace(cs::GenerativeFunctionCallSite) = cs.trace.tr
 
         # ------------ Choice map integration ------------ #
 
@@ -52,6 +55,8 @@ macro load_gen_fmi()
             end
             s
         end
+
+        get_selection(tr::T) where T <: Gen.Trace = selection(Gen.get_choices(tr))
 
         # ------------ Contexts ------------ #
 
@@ -130,14 +135,26 @@ macro load_gen_fmi()
             Jaynes.increment!(ctx, w)
             return Gen.get_retval(new)
         end
+        
+        function (ctx::Jaynes.UpdateContext{C})(c::typeof(foreign),
+                                             gen_fn::M,
+                                             args...) where {A <: Jaynes.Address, M <: GenerativeFunction, C <: GenerativeFunctionCallSite}
+            constraints = Jaynes.dump_queries(ctx.select)
+            pairs = create_pairs(constraints)
+            choice_map = Gen.choicemap(pairs...)
+            prev = ctx.prev
+            new, w, rd, d = Gen.update(get_gen_trace(prev), args, (), choice_map)
+            ctx.tr.tr = new
+            ctx.score += Gen.get_score(new)
+            Jaynes.increment!(ctx, w)
+            return Gen.get_retval(new)
+        end
 
         # Convenience.
         function update(sel::L, gen_cl::C) where {L <: Jaynes.ConstrainedSelection, C <: GenerativeFunctionCallSite}
-            addr = gensym()
-            v_sel = selection(addr => sel)
-            ctx = Jaynes.UpdateContext(v_sel, gen_cl, Jaynes.NoChange())
-            ret = ctx(foreign, addr, gen_cl.model, gen_cl.args...)
-            return ret, get_sub(ctx.tr, addr), ctx.weight, Jaynes.UndefinedChange(), nothing
+            ctx = Jaynes.UpdateContext(gen_cl, sel, Jaynes.NoChange())
+            ret = ctx(foreign, gen_cl.model, gen_cl.args...)
+            return ret, GenerativeFunctionCallSite(ctx.tr, ctx.score, gen_cl.model, gen_cl.args, ret), ctx.weight, Jaynes.UndefinedChange(), nothing
         end
 
         function (ctx::Jaynes.RegenerateContext)(c::typeof(foreign),
@@ -156,14 +173,12 @@ macro load_gen_fmi()
         end
 
         function (ctx::Jaynes.RegenerateContext{C})(c::typeof(foreign),
-                                                    addr::A,
                                                     gen_fn::M,
                                                     args...) where {A <: Jaynes.Address, M <: GenerativeFunction, C <: GenerativeFunctionCallSite}
-            Jaynes.visit!(ctx, addr)
-            constraints = Jaynes.dump_queries(Jaynes.get_sub(ctx.select, addr))
+            constraints = Jaynes.dump_queries(ctx.select)
             select = Gen.select(constraints...)
             prev = ctx.prev
-            new, w, rd = Gen.regenerate(prev.trace.tr, args, (), select)
+            new, w, rd = Gen.regenerate(get_gen_trace(prev), args, (), select)
             ret = Gen.get_retval(new)
             ctx.tr.tr = new
             ctx.score += Gen.get_score(new)
@@ -173,10 +188,8 @@ macro load_gen_fmi()
 
         # Convenience.
         function regenerate(sel::L, gen_cl::C) where {L <: Jaynes.UnconstrainedSelection, C <: GenerativeFunctionCallSite}
-            addr = gensym()
-            v_sel = selection(addr => sel)
-            ctx = Jaynes.Regenerate(gen_cl, v_sel, Jaynes.NoChange())
-            ret = ctx(foreign, addr, gen_cl.model, gen_cl.args...)
+            ctx = Jaynes.Regenerate(gen_cl, sel, Jaynes.NoChange())
+            ret = ctx(foreign, gen_cl.model, gen_cl.args...)
             return ret, GenerativeFunctionCallSite(ctx.tr, ctx.score, gen_cl.model, gen_cl.args, ret), ctx.weight, Jaynes.UndefinedChange(), nothing
         end
 
@@ -247,6 +260,11 @@ macro load_gen_fmi()
                 collect!((k, ), addrs, chd, v, meta)
             end
         end
+
+        # ------------ Exchange kernel ------------ #
+        
+        apply_kernel(ker, cl::GenerativeFunctionCallSite) = ker(get_gen_trace(cl))
+
     end
 
     expr = MacroTools.prewalk(unblock ∘ rmlines, expr)

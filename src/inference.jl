@@ -19,7 +19,6 @@ include("inference/pf.jl")
 include("inference/vi.jl")
 
 const mh = metropolis_hastings
-const mh! = metropolis_hastings!
 const hmc = hamiltonian_monte_carlo
 const es = elliptical_slice
 const bo = boomerang

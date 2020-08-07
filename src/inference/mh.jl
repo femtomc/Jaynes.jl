@@ -13,10 +13,9 @@ function metropolis_hastings(sel::K,
     return (call, false)
 end
 
-function metropolis_hastings(sel::K,
-                             call::C,
+function metropolis_hastings(call::C,
                              proposal::Function,
-                             proposal_args::Tuple) where {K <: UnconstrainedSelection, C <: CallSite}
+                             proposal_args::Tuple) where C <: CallSite
     p_ret, p_cl, p_w = propose(proposal, call, proposal_args...)
     s = selection(p_cl)
     u_ret, u_cl, u_w, retdiff, d = update(s, call.fn, NoChange(), call.args...)
@@ -27,11 +26,10 @@ function metropolis_hastings(sel::K,
     return (call, false)
 end
 
-function metropolis_hastings(sel::K,
-                             ps::P,
+function metropolis_hastings(ps::P,
                              call::C,
                              proposal::Function,
-                             proposal_args::Tuple) where {K <: UnconstrainedSelection, P <: Parameters, C <: CallSite}
+                             proposal_args::Tuple) where {P <: Parameters, C <: CallSite}
     p_ret, p_cl, p_w = propose(proposal, call, proposal_args...)
     s = selection(p_cl)
     u_ret, u_cl, u_w, retdiff, d = update(s, ps, call.fn, NoChange(), call.args...)
@@ -42,11 +40,10 @@ function metropolis_hastings(sel::K,
     return (call, false)
 end
 
-function metropolis_hastings(sel::K,
-                             call::C,
+function metropolis_hastings(call::C,
                              pps::Ps,
                              proposal::Function,
-                             proposal_args::Tuple) where {K <: UnconstrainedSelection, Ps <: Parameters, C <: CallSite}
+                             proposal_args::Tuple) where {Ps <: Parameters, C <: CallSite}
     p_ret, p_cl, p_w = propose(pps, proposal, call, proposal_args...)
     s = selection(p_cl)
     u_ret, u_cl, u_w, retdiff, d = update(s, call.fn, NoChange(), call.args...)
@@ -57,12 +54,11 @@ function metropolis_hastings(sel::K,
     return (call, false)
 end
 
-function metropolis_hastings(sel::K,
-                             ps::P,
+function metropolis_hastings(ps::P,
                              call::C,
                              pps::Ps,
                              proposal::Function,
-                             proposal_args::Tuple) where {K <: UnconstrainedSelection, P <: Parameters, Ps <: Parameters, C <: CallSite}
+                             proposal_args::Tuple) where {P <: Parameters, Ps <: Parameters, C <: CallSite}
     p_ret, p_cl, p_w = propose(pps, proposal, call, proposal_args...)
     s = selection(p_cl)
     u_ret, u_cl, u_w, retdiff, d = update(s, ps, call.fn, NoChange(), call.args...)
@@ -71,28 +67,4 @@ function metropolis_hastings(sel::K,
     ratio = u_w - p_w + s_w
     log(rand()) < ratio && return (u_cl, true)
     return (call, false)
-end
-
-function metropolis_hastings!(sel::K,
-                              ps::Particles) where K <: UnconstrainedSelection
-    num_particles = length(ps)
-    Threads.@threads for i in 1 : num_particles
-        old_w = ps.lws[i]
-        old_score = get_score(ps.calls[i])
-        ps.calls[i], _ = metropolis_hastings(sel, ps.calls[i])
-        ps.lws[i] = old_w + get_score(ps.calls[i]) - old_score
-    end
-end
-
-function metropolis_hastings!(sel::K,
-                              ps::Particles,
-                              proposal::Function,
-                              proposal_args::Tuple) where K <: UnconstrainedSelection
-    num_particles = length(ps)
-    Threads.@threads for i in 1 : num_particles
-        old_w = ps.lws[i]
-        old_score = get_score(ps.calls[i])
-        ps.calls[i], _ = metropolis_hastings(sel, ps.calls[i], proposal, proposal_args)
-        ps.lws[i] = old_w + get_score(ps.calls[i]) - old_score
-    end
 end
