@@ -9,7 +9,7 @@ get_sub(cas::ConstrainedEmptySelection, addr) = cas
 isempty(cas::ConstrainedEmptySelection) = true
 function merge(cl::T, sel::ConstrainedEmptySelection) where T <: CallSite
     cl_selection = get_selection(cl)
-    return cl_selection
+    return cl_selection, false
 end
 
 # Pretty printing.
