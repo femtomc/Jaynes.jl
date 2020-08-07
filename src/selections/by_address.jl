@@ -22,7 +22,14 @@ isempty(csa::ConstrainedByAddress) = isempty(csa.query)
 
 push!(sel::ConstrainedByAddress, addr, val) = sel.query[addr] = val
 
-merge!(sel1::ConstrainedByAddress, sel2::ConstrainedByAddress) = Base.merge!(sel1.query, sel2.query)
+function merge!(sel1::ConstrainedByAddress, sel2::ConstrainedByAddress)
+    overlapped = false
+    for (k, v) in sel2.query
+        overlapped = overlapped || haskey(sel1.query, k)
+        sel1.query[k] = v
+    end
+    overlapped
+end
 
 addresses(csa::ConstrainedByAddress) = keys(csa.query)
 

@@ -6,7 +6,7 @@ function elliptical_slice(addr::K,
     u = rand(Uniform(0.0, 1.0))
     θ = rand(Uniform(0.0, 2*π))
     θ_min, θ_max = θ - 2 * π, θ
-    old = cl[addr] .- μ
+    old = get_ret(cl[addr]) .- μ
     new = old * cos(θ) + ν * sin(θ)
     _, cl, w, _, _ = update(selection([addr => new .+ μ]), cl)
     while w <= log(u)

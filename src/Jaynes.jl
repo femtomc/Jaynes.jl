@@ -1,9 +1,5 @@
 module Jaynes
 
-# Chainz
-using ZigZagBoomerang
-using AbstractMCMC
-
 # Yarrrr I'm a com-pirate!
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
@@ -14,6 +10,13 @@ using MacroTools
 
 using Reexport
 @reexport using Distributions
+
+# Chainz
+using LinearAlgebra
+using ZigZagBoomerang
+using ZigZagBoomerang: sparse
+using AbstractMCMC
+
 
 # Differentiable.
 using Zygote

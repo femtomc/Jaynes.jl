@@ -37,7 +37,8 @@ function importance_sampling(observations::K,
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
         ret, pcall, pw = propose(proposal, proposal_args...)
-        select = merge(pcall, observations)
+        select, overlapped = merge(pcall, observations)
+        overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
         _, calls[i], lws[i] = generate(select, model, args...)
     end
     ltw = lse(lws)
@@ -56,7 +57,8 @@ function importance_sampling(observations::K,
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
         ret, pcall, pw = propose(proposal, proposal_args...)
-        select = merge(pcall, observations)
+        select, overlapped = merge(pcall, observations)
+        overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
         _, calls[i], lws[i] = generate(select, ps, model, args...)
     end
     ltw = lse(lws)
@@ -75,7 +77,8 @@ function importance_sampling(observations::K,
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
         ret, pcall, pw = propose(pps, proposal, proposal_args...)
-        select = merge(pcall, observations)
+        select, overlapped = merge(pcall, observations)
+        overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
         _, calls[i], lws[i] = generate(select, model, args...)
     end
     ltw = lse(lws)
@@ -95,7 +98,8 @@ function importance_sampling(observations::K,
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
         ret, pcall, pw = propose(pps, proposal, proposal_args...)
-        select = merge(pcall, observations)
+        select, overlapped = merge(pcall, observations)
+        overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
         _, calls[i], lws[i] = generate(select, ps, model, args...)
     end
     ltw = lse(lws)

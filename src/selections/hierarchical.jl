@@ -97,19 +97,20 @@ end
 
 # Used to merge observations.
 function merge!(sel1::ConstrainedHierarchicalSelection, sel2::ConstrainedHierarchicalSelection)
-    merge!(sel1.query, sel2.query)
+    overlapped = merge!(sel1.query, sel2.query)
     for k in keys(sel2.tree)
         if haskey(sel1.tree, k)
-            merge!(sel1.tree[k], sel2.tree[k])
+            overlapped = overlapped || merge!(sel1.tree[k], sel2.tree[k])
         else
             sel1.tree[k] = sel2.tree[k]
         end
     end
+    overlapped
 end
 function merge(cl::T, sel::ConstrainedHierarchicalSelection) where T <: CallSite
     cl_selection = get_selection(cl)
-    merge!(cl_selection, sel)
-    return cl_selection
+    overlapped = merge!(cl_selection, sel)
+    return cl_selection, overlapped
 end
 
 # Used to build.

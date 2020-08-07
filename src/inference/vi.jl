@@ -1,20 +1,20 @@
 function one_shot_gradient_estimator(sel::K,
-                                     params::P,
+                                     ps::P,
                                      v_mod::Function,
                                      v_args::Tuple,
                                      mod::Function,
                                      args::Tuple;
                                      scale = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
-    _, cl = simulate(params, v_mod, v_args...)
+    _, cl = simulate(ps, v_mod, v_args...)
     obs = merge(cl, sel)
-    _, mlw = score(obs, params, mod, args...)
+    _, mlw = score(obs, ps, mod, args...)
     lw = mlw - get_score(cl)
-    gs = get_learnable_gradients(params, cl, nothing, lw * scale)
+    gs = get_learnable_gradients(ps, cl, nothing, lw * scale)
     return gs, lw, cl
 end
 
 function multi_shot_gradient_estimator(sel::K,
-                                       params::P,
+                                       ps::P,
                                        v_mod::Function,
                                        v_args::Tuple,
                                        mod::Function,
@@ -23,18 +23,18 @@ function multi_shot_gradient_estimator(sel::K,
     cs = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
-        _, cs[i] = simulate(params, v_mod, v_args...)
+        _, cs[i] = simulate(ps, v_mod, v_args...)
         obs = merge(cs[i], sel)
-        ret, mlw = score(obs, params, mod, args...)
+        ret, mlw = score(obs, ps, mod, args...)
         lws[i] = mlw - get_score(cs[i])
     end
     ltw = lse(lws)
     L = ltw - log(num_samples)
     nw = exp.(lws .- ltw)
     gs = Gradients()
-    Threads.@threads for i in 1:num_samples
+    for i in 1:num_samples
         ls = L - nw[i]
-        accumulate_parameter_gradients!(params, gs, cs[i], nothing, ls)
+        accumulate_parameter_gradients!(ps, gs, cs[i], nothing, ls)
     end
     return gs, L, cs, nw
 end
@@ -42,7 +42,7 @@ end
 # ------------ Automatic differentiation variational inference ------------ #
 
 function automatic_differentiation_variational_inference(sel::K,
-                                                         params::P,
+                                                         ps::P,
                                                          v_mod::Function,
                                                          v_args::Tuple,
                                                          mod::Function,
@@ -56,13 +56,13 @@ function automatic_differentiation_variational_inference(sel::K,
         elbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples
-            gs, lw, cl = one_shot_gradient_estimator(sel, params, v_mod, v_args, mod, args; scale = 1 / gs_samples)
+            gs, lw, cl = one_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; scale = 1 / gs_samples)
             elbo_est += lw / gs_samples
             gs_est += gs
             cls[s] = cl
         end
         elbows[i] = elbo_est
-        params = update_learnables(opt, params, gs_est)
+        ps = update_learnables(opt, ps, gs_est)
     end
-    params, elbows, cls
+    ps, elbows, cls
 end
