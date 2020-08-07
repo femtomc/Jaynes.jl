@@ -20,6 +20,7 @@
 This allows the usage of pure Julia as the primary modeling language:
 
 ```julia
+# Model.
 function bayesian_linear_regression(x::Vector{Float64})
     σ = rand(:σ, InverseGamma(2, 3))
     β = rand(:β, Normal(0.0, 1.0))
@@ -30,11 +31,13 @@ function bayesian_linear_regression(x::Vector{Float64})
     return y
 end
 
+# Data.
 x = [Float64(i) for i in 1 : 100]
 obs = selection(map(1 : 100) do i
                     (:y => i, ) => 3.0 * x[i] + randn()
                 end)
 
+# Inference.
 n_samples = 5000
 @time ps, lnw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
 zipped = zip(ps.calls, lnw)

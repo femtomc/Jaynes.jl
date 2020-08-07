@@ -100,11 +100,13 @@ export anywhere, intersection, union
 export get_selection, compare, has_top, update_learnables, dump_queries, merge!, merge
 
 # Inference.
+export metropolis_hastings, mh
+export elliptical_slice, es
+export hamiltonian_monte_carlo, hmc
 export importance_sampling, is
 export initialize_filter, filter_step!, check_ess_resample!, get_lmle, pf
 export metropolis_hastings, mh
 export automatic_differentiation_variational_inference, advi
-export hamiltonian_monte_carlo, hmc
 
 # Foreign model interfaces.
 export @primitive
