@@ -98,7 +98,7 @@ export learnable, fillable, factor
 
 # Compiler.
 export NoChange, UndefinedChange, VectorDiff
-export compile_function
+export construct_graph, compile_function
 
 # Selections and parameters.
 export selection, array, learnables

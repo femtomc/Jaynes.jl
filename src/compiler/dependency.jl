@@ -18,6 +18,15 @@ mutable struct CallGraph <: Analysis
     CallGraph() = new(Dict{Address, Set{Address}}())
 end
 
+function Base.display(cg::CallGraph)
+    println("  __________________________________\n")
+    println("             Dependencies\n")
+    for x in cg.addresses
+        haskey(cg.dependencies, x) ? println(" $x => $(cg.dependencies[x])") : println(" $x")
+    end
+    println("  __________________________________\n")
+end
+
 # Reaching analysis.
 function reaching!(reach::Vector{Variable}, p, var, ir)
     for (v, st) in ir
@@ -94,9 +103,7 @@ function construct_graph!(parent, addr, call, type)
     parent[addr] = graph
 end
 
-# Toplevel analysis driver. 
-function construct_graph(call, type)
-    ir = lower_to_ir(call, type)
+function construct_graph(ir::IRTools.IR)
     if !control_flow_check(ir)
         graph = CallGraph()
     else
@@ -107,13 +114,13 @@ function construct_graph(call, type)
     return graph
 end
 
-function construct_graph(ir)
-    if !control_flow_check(ir)
-        graph = CallGraph()
-    else
-        analysis = flow_analysis(ir)
-        dependencies = dependency(analysis)
-        graph = dependencies
-    end
-    return graph
+# Toplevel analysis driver. 
+function construct_graph(call::Function, type...)
+    ir = lower_to_ir(call, type...)
+    construct_graph(ir)
+end
+
+function construct_graph(call::Function)
+    ir = lower_to_ir(call)
+    construct_graph(ir)
 end
