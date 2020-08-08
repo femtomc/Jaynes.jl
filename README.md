@@ -19,7 +19,7 @@
 
 Succinctly, the core implementation of Jaynes provides the [_generative function interface_](https://www.gen.dev/stable/ref/gfi/#Generative-function-interface-1) of [Gen.jl](https://www.gen.dev/) as a set of configurable [dynamo](https://fluxml.ai/IRTools.jl/latest/dynamo/) execution contexts. These contexts can be used to overload your code with new probabilistic programming/differentiable programming interfaces.
 
-> Jaynes closely follows Gen - the core implementation of Jaynes would not have been possible without the work of the [MIT Probabilistic Computing Project](http://probcomp.csail.mit.edu/) and the [Gen team](https://www.gen.dev/#the-gen-team). In addition, I would like to acknowledge [Mike Innes and the maintainers of IRTools.jl](https://github.com/FluxML/IRTools.jl), as well as [Jarrett Revels and the maintainers of Cassette.jl](https://github.com/jrevels/Cassette.jl), without whom this package would not exist.
+> Jaynes utilizes a number of key conceptual ideas from Gen - thus, the core implementation of Jaynes would not have been possible without the work of the [MIT Probabilistic Computing Project](http://probcomp.csail.mit.edu/) and the [Gen team](https://www.gen.dev/#the-gen-team). In addition, I would like to acknowledge [Mike Innes and the maintainers of IRTools.jl](https://github.com/FluxML/IRTools.jl), as well as [Jarrett Revels and the maintainers of Cassette.jl](https://github.com/jrevels/Cassette.jl), without whom this package would not exist.
 
 ---
 
