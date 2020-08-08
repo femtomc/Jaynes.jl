@@ -141,7 +141,7 @@ foo = y -> begin
     y
 end
 
-params = parameters([(:q, ) => 1.0])
+params = learnables([(:q, ) => 1.0])
 ps = train(params, foo, 5.0)
 display(ps)
 ```
@@ -156,7 +156,7 @@ foo = y -> begin
     factor(-x ^ 2)
 end
 
-params = parameters([(:z, ) => 1.0])
+params = learnables([(:z, ) => 1.0])
 sel = selection([(:q, ) => 1.0])
 ps = train(sel, params, foo, 5.0)
 display(ps)
