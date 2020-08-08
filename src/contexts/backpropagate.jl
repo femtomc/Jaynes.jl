@@ -80,7 +80,7 @@ simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: Ca
 Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::HierarchicalCallSite, args)
     ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
-        arg_grads = accumulate_parameter_gradients!(sel, params, param_grads, cl, ret_grad)
+        arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, cl, ret_grad)
         (nothing, nothing, nothing, nothing, arg_grads)
     end
     return ret, fn
@@ -95,9 +95,9 @@ merge(tp1::Array{Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] f
 Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::VectorizedCallSite{typeof(markov)}, args)
     ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
-        arg_grads = accumulate_parameter_gradients!(sel, params, param_grads, get_sub(cl, cl.len), ret_grad)
+        arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, get_sub(cl, cl.len), ret_grad)
         for i in (cl.len - 1) : -1 : 1
-            arg_grads = accumulate_parameter_gradients!(sel, params, param_grads, get_sub(cl, i), arg_grads)
+            arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, get_sub(cl, i), arg_grads)
         end
         (nothing, nothing, nothing, nothing, arg_grads)
     end
@@ -107,9 +107,9 @@ end
 Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::VectorizedCallSite{typeof(plate)}, args)
     ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
-        arg_grads = accumulate_parameter_gradients!(sel, params, param_grads, get_sub(cl, cl.len), ret_grad[1])
+        arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, get_sub(cl, 1), ret_grad[1])
         for i in 2 : cl.len
-            new = accumulate_parameter_gradients!(sel, params, param_grads, get_sub(cl, i), ret_grad[i])
+            new = accumulate_learnable_gradients!(sel, params, param_grads, get_sub(cl, i), ret_grad[i])
             arg_grads = merge(arg_grads, new)
         end
         (nothing, nothing, nothing, nothing, arg_grads)
@@ -120,7 +120,7 @@ end
 # Grads for choices with differentiable logpdfs.
 simulate_choice_pullback(params, choice_grads, choice_selection, cl::T, args) where T <: CallSite = get_ret(cl)
 
-Zygote.@adjoint function simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
+Zygote.@adjoint function simulate_choice_pullback(params, choice_grads, choice_selection, cl::HierarchicalCallSite, args)
     ret = simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
     fn = ret_grad -> begin
         arg_grads, choice_vals, choice_grads = choice_gradients(params, choice_grads, choice_selection, cl, ret_grad)
@@ -129,9 +129,23 @@ Zygote.@adjoint function simulate_choice_pullback(params, choice_grads, choice_s
     return ret, fn
 end
 
+Zygote.@adjoint function simulate_choice_pullback(params, choice_grads, choice_selection, cl::VectorizedCallSite{typeof(plate)}, args)
+    ret = simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
+    fn = ret_grad -> begin
+        arg_grads = Vector(undef, length(args))
+        choice_grads = Dict()
+        choice_vals = Dict()
+        for i in 1 : cl.len
+            arg_grads[i], choice_vals[i], choice_grads[i] = choice_gradients(params, choice_grads, choice_selection, get_sub(cl, 1), ret_grad[1])
+        end
+        (nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads)
+    end
+    return ret, fn
+end
+
 # ------------ Accumulate gradients ------------ #
 
-function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
+function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0)
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(cl.fn, args...)
@@ -148,7 +162,7 @@ function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::H
     return arg_grads
 end
 
-function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::HierarchicalCallSite, ret_grad::Tuple, scaler::Float64 = 1.0)
+function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::HierarchicalCallSite, ret_grad::Tuple, scaler::Float64 = 1.0)
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(cl.fn, args...)
@@ -165,7 +179,7 @@ function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::H
     return arg_grads
 end
 
-function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(markov)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(markov)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(markov, cl.fn, cl.len, args...)
@@ -182,7 +196,7 @@ function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::V
     return arg_grads
 end
 
-function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(plate)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(plate)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(plate, cl.fn, args)
@@ -199,7 +213,7 @@ function accumulate_parameter_gradients!(sel, initial_params, param_grads, cl::V
     return arg_grads
 end
 
-# ------------ Compute choice gradients ------------ #
+# ------------ filter! choice gradients given selection ------------ #
 
 function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr::NamedTuple, sel::K) where K <: UnconstrainedSelection
     values = ConstrainedHierarchicalSelection()
@@ -222,10 +236,27 @@ function filter!(choice_grads, cl::HierarchicalCallSite, grad_tr, sel::K) where 
     return values
 end
 
-function choice_gradients(initial_params::P, choice_grads, choice_selection::K, cl, ret_grad) where {P <: Parameters, K <: UnconstrainedSelection}
+# ------------ choice gradients ------------ #
+
+function choice_gradients(initial_params::P, choice_grads, choice_selection::K, cl::HierarchicalCallSite, ret_grad) where {P <: Parameters, K <: UnconstrainedSelection}
     fn = (args, call, sel) -> begin
         ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_selection)
         ret = ctx(call.fn, args...)
+        (ctx.weight, ret)
+    end
+    (w, r), back = Zygote.pullback(fn, cl.args, cl, selection())
+    arg_grads, grad_ref = back((1.0, ret_grad))
+    choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
+    return arg_grads, choice_vals, choice_grads
+end
+
+function choice_gradients(initial_params::P, choice_grads, choice_selection::K, cl::VectorizedCallSite{typeof(plate)}, ret_grad) where {P <: Parameters, K <: UnconstrainedSelection}
+    fn = (args, call, sel) -> begin
+        addr = gensym()
+        v_sel = selection(addr => sel)
+        v_ps = learnables(addr => initial_params)
+        ctx = ChoiceBackpropagate(call, v_sel, v_ps, ParameterStore(), choice_grads, choice_selection)
+        ret = ctx(plate, gensym(), call.fn, args)
         (ctx.weight, ret)
     end
     (w, r), back = Zygote.pullback(fn, cl.args, cl, selection())
@@ -304,19 +335,19 @@ end
 
 function get_learnable_gradients(ps::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
     param_grads = Gradients()
-    accumulate_parameter_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
+    accumulate_learnable_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
     return param_grads
 end
 
 function get_learnable_gradients(sel::K, ps::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     param_grads = Gradients()
-    accumulate_parameter_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
+    accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
     return param_grads
 end
 
 function get_learnable_gradients(ps::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
     param_grads = Gradients()
-    accumulate_parameter_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
+    accumulate_learnable_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
     for k in keys(param_grads.tree)
         return param_grads.tree[k]
     end
@@ -324,7 +355,7 @@ end
 
 function get_learnable_gradients(sel::K, ps::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     param_grads = Gradients()
-    accumulate_parameter_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
+    accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
     for k in keys(param_grads.tree)
         return param_grads.tree[k]
     end

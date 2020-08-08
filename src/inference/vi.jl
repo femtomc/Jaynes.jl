@@ -6,7 +6,7 @@ function one_shot_gradient_estimator(sel::K,
                                      args::Tuple;
                                      scale = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     _, cl = simulate(ps, v_mod, v_args...)
-    obs = merge(cl, sel)
+    obs, _ = merge(cl, sel)
     _, mlw = score(obs, ps, mod, args...)
     lw = mlw - get_score(cl)
     gs = get_learnable_gradients(ps, cl, nothing, lw * scale)
@@ -24,7 +24,7 @@ function multi_shot_gradient_estimator(sel::K,
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
         _, cs[i] = simulate(ps, v_mod, v_args...)
-        obs = merge(cs[i], sel)
+        obs, _ = merge(cs[i], sel)
         ret, mlw = score(obs, ps, mod, args...)
         lws[i] = mlw - get_score(cs[i])
     end
@@ -34,7 +34,7 @@ function multi_shot_gradient_estimator(sel::K,
     gs = Gradients()
     for i in 1:num_samples
         ls = L - nw[i]
-        accumulate_parameter_gradients!(ps, gs, cs[i], nothing, ls)
+        accumulate_learnable_gradients!(ps, gs, cs[i], nothing, ls)
     end
     return gs, L, cs, nw
 end

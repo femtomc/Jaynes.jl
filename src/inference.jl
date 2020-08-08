@@ -12,7 +12,7 @@ map(fn::Function, ps::Particles) = map(fn, ps.calls)
 include("inference/is.jl")
 include("inference/mh.jl")
 include("inference/es.jl")
-include("inference/bo.jl")
+include("inference/boo.jl")
 include("inference/ex.jl")
 include("inference/hmc.jl")
 include("inference/pf.jl")
@@ -21,7 +21,7 @@ include("inference/vi.jl")
 const mh = metropolis_hastings
 const hmc = hamiltonian_monte_carlo
 const es = elliptical_slice
-const bo = boomerang
+const boo = boomerang
 const ex = exchange
 const is = importance_sampling
 const advi = automatic_differentiation_variational_inference

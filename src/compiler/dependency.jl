@@ -12,23 +12,10 @@ struct FallbackAnalysis <: CallAnalysis
 end
 
 mutable struct CallGraph <: Analysis
+    addresses::Set{Address}
     dependencies::Dict{Address, Set{Address}}
-    CallGraph(map) = new(map)
+    CallGraph(addrs, map) = new(addrs, map)
     CallGraph() = new(Dict{Address, Set{Address}}())
-end
-
-# ---- Analysis ---- #
-
-function lower_to_ir(call, type...)
-    sig = Tuple{typeof(call), type...}
-    m = meta(sig)
-    ir = IR(m)
-    return ir
-end
-
-function control_flow_check(ir)
-    length(ir.blocks) > 1 && return false
-    return true
 end
 
 # Reaching analysis.
@@ -88,7 +75,8 @@ function dependency(a::Analysis)
         end
         map[a.map[k].value] = Set(depends)
     end
-    return CallGraph(map)
+    addrs = [i.value for i in a.addrs]
+    return CallGraph(Set(addrs), map)
 end
 
 # ---- Driver ---- #

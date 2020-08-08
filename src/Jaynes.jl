@@ -2,7 +2,7 @@ module Jaynes
 
 # Yarrrr I'm a com-pirate!
 using IRTools
-using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable
+using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta
 #using Mjolnir
 #using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
 #using Mjolnir: Defaults
@@ -16,7 +16,6 @@ using LinearAlgebra
 using ZigZagBoomerang
 using ZigZagBoomerang: sparse
 using AbstractMCMC
-
 
 # Differentiable.
 using Zygote
@@ -75,12 +74,11 @@ end
 
 # ------------ includes ------------ #
 
-include("compiler/static.jl")
 include("traces.jl")
 include("selections.jl")
 include("utils/numerical.jl")
 include("utils/vectorized.jl")
-include("compiler/diffs.jl")
+include("compiler.jl")
 include("contexts.jl")
 include("inference.jl")
 include("foreign_model_interfaces.jl")
@@ -98,8 +96,9 @@ export Backpropagate, get_learnable_gradients, get_choice_gradients, train
 export plate, markov, cond
 export learnable, fillable, factor
 
-# Diffs.
+# Compiler.
 export NoChange, UndefinedChange, VectorDiff
+export compile_function
 
 # Selections and parameters.
 export selection, array, learnables
@@ -110,7 +109,7 @@ export get_selection, compare, has_top, update_learnables, dump_queries, merge!,
 export metropolis_hastings, mh
 export elliptical_slice, es
 export hamiltonian_monte_carlo, hmc
-export boomerang, bo
+export boomerang, boo
 export exchange, ex
 export importance_sampling, is
 export initialize_filter, filter_step!, check_ess_resample!, get_lmle, pf

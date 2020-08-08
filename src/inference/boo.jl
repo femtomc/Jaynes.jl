@@ -31,6 +31,7 @@ function boomerang(sel::K,
     while t < T
         t, x, θ, (acc, num), c, a, b, t′, τref = ZigZagBoomerang.pdmp_inner!(Ξ, ∇ϕ!, ∇ϕx, t, x, θ, c, a, b, t′, τref, (acc, num), Flow, sel, cl_ref, sel_values_ref; adapt=false)
     end
-
-    (cl_ref[], true)
+    sel_values = selection(sel_values_ref[], x)
+    ret, cl, w = update(sel_values, cl_ref[])
+    (cl, true)
 end
