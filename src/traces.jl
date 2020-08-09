@@ -130,6 +130,16 @@ end
 @doc(
 """
 ```julia
+rand(addr::A, d::Distribution{T}) where {A <: Address, T}
+rand(addr::A, fn::Function, args...) where A <: Address
+```
+
+A `rand` call with a first argument which is a subtype of `Address` informs the context tracers that this call should be intercepted and recorded. If the call includes a distribution as final argument, the tracer will create a `ChoiceSite` representation and reason about the call accordingly. If the call includes a function and a set of arguments, the tracer will create a `HierarchicalCallSite` representation and recurse into the call.
+""", rand)
+
+@doc(
+"""
+```julia
 struct ChoiceSite{T} <: RecordSite
     score::Float64
     val::T
