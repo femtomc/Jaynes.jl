@@ -1,18 +1,17 @@
 # ------------ Constrain anywhere ------------ #
 
-struct ConstrainedAnywhereSelection{T <: ConstrainedSelectQuery} <: ConstrainedSelection
-    query::T
-    ConstrainedAnywhereSelection(obs::Vector{Tuple{T, K}}) where {T <: Any, K} = new{ConstrainedByAddress}(ConstrainedByAddress(Dict{Address, Any}(obs)))
-    ConstrainedAnywhereSelection(obs::Tuple{T, K}...) where {T <: Any, K} = new{ConstrainedByAddress}(ConstrainedByAddress(Dict{Address, Any}(collect(obs))))
+struct ConstrainedAnywhereSelection <: ConstrainedSelection
+    query::Dict{Address, Any}
+    ConstrainedAnywhereSelection(obs::Vector{Tuple{T, K}}) where {T <: Any, K} = new(Dict{Address, Any}(obs))
 end
 
-has_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = has_top(cas.query, addr)
-has_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = has_top(cas.query, addr[end])
+has_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = haskey(cas.query, addr)
+has_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = haskey(cas.query, addr[end])
 
-dump_queries(cas::ConstrainedAnywhereSelection) = dump_queries(cas.query)
+dump_queries(cas::ConstrainedAnywhereSelection) = collect(cas.query)
 
-get_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = get_top(cas.query, addr)
-get_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = get_top(cas.query, addr[end])
+get_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Address = getindex(cas.query, addr)
+get_top(cas::ConstrainedAnywhereSelection, addr::T) where T <: Tuple = getindex(cas.query, addr[end])
 
 get_sub(cas::ConstrainedAnywhereSelection, addr) = cas
 
@@ -23,11 +22,8 @@ isempty(cas::ConstrainedAnywhereSelection) = isempty(cas.query)
 function Base.display(chs::ConstrainedAnywhereSelection)
     println("  __________________________________\n")
     println("              Selection\n")
-    addrs = Union{Symbol, Pair}[]
-    chd = Dict{Address, Any}()
-    collect!(addrs, chd, chs.query)
-    for a in addrs
-        println(" (Anywhere)   $(a) : $(chd[a])")
+    for a in keys(chs.query)
+        println(" (Anywhere)   $(a) : $(chs.query[a])")
     end
     println("  __________________________________\n")
 end
