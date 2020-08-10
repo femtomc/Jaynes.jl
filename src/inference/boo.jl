@@ -20,7 +20,7 @@ function boomerang(sel::K,
         sel_values_ref[] = selection(sel_values_ref[], x)
         ret, cl_ref[], _ = update(sel_values_ref[], cl_ref[])[2]
         sel_values_ref[], choice_grads = get_choice_gradients(sel, cl_ref[], 1.0)
-        y .= array(choice_grads, Float64)
+        y .= .- array(choice_grads, Float64)
     end
 
     Ξ = ZigZagBoomerang.Trace(t, x, θ, Flow) # should persist between calls
