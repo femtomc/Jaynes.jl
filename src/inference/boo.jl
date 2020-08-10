@@ -27,7 +27,7 @@ function boomerang(sel::K,
     τref = T = ZigZagBoomerang.waiting_time_ref(Flow)
     c = 100.
     a, b = ZigZagBoomerang.ab(x, θ, c, Flow)
-    t′ = t + poisson_time(a, b)
+    t′ = t + poisson_time(a, b, rand())
     while t < T
         t, x, θ, (acc, num), c, a, b, t′, τref = ZigZagBoomerang.pdmp_inner!(Ξ, ∇ϕ!, ∇ϕx, t, x, θ, c, a, b, t′, τref, (acc, num), Flow, sel, cl_ref, sel_values_ref; adapt=false)
     end
