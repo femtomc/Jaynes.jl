@@ -2,26 +2,20 @@ abstract type ExecutionContext end
 
 # These are "soft" interfaces, not all of these methods apply to every subtype of ExecutionContext.
 increment!(ctx::T, w::Float64) where T <: ExecutionContext = ctx.weight += w
-get_subselection(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.select, addr)
-get_subparameters(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.params, addr)
+get_subselection(ctx::T, addr) where T <: ExecutionContext = getindex(ctx.select, addr)
+get_subparameters(ctx::T, addr) where T <: ExecutionContext = getindex(ctx.params, addr)
 visit!(ctx::T, addr) where T <: ExecutionContext = visit!(ctx.visited, addr)
 get_prev(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.prev, addr)
-function add_choice!(ctx::T, addr, cs::ChoiceSite) where T <: ExecutionContext
-    ctx.score += get_score(cs)
-    add_choice!(ctx.tr, addr, cs)
+function add_choice!(ctx::T, addr, logpdf, cs) where T <: ExecutionContext
+    ctx.score += logpdf
+    setindex!(ctx.tr, Value(cs), addr)
 end
-function add_call!(ctx::T, addr, cs::CallSite) where T <: ExecutionContext
-    ctx.score += get_score(cs)
-    add_call!(ctx.tr, addr, cs)
+function add_choice!(ctx::T, addr, cs) where T <: ExecutionContext
+    setindex!(ctx.tr, Value(cs), addr)
 end
-function add_call!(ctx::T, addr, cs::CallSite, sc::Float64) where T <: ExecutionContext
-    ctx.score += get_score(cs) + sc
-    add_call!(ctx.tr, addr, cs)
-end
-function add_call!(ctx::T, cs::CallSite) where T <: ExecutionContext
+function add_call!(ctx::T, addr, cs::C) where {T <: ExecutionContext, C <: CallSite}
     ctx.score += get_score(cs)
-    # TODO: should only work for VectorizedTraces - make error explicit here.
-    add_call!(ctx.tr, cs)
+    setindex!(ctx.tr, cs, addr)
 end
 
 @dynamo function (mx::ExecutionContext)(a...)
@@ -42,23 +36,18 @@ include("contexts/propose.jl")
 include("contexts/score.jl")
 
 # Used to adjust the score when branches need to be pruned.
-function adjust_to_intersection(tr::T, visited::V) where {T <: Trace, V <: Visitor}
+function adjust_to_intersection(am::T, visited::V) where {T <: AddressMap, V <: Visitor}
     adj_w = 0.0
-    for (k, v) in dump_top(tr)
-        has_top(visited, k) || begin
-            adj_w += get_score(v)
-        end
-    end
-    for (k, v) in dump_sub(tr)
-        has_sub(visited, k) || begin
+    for (k, v) in get_iter(am)
+        haskey(visited, k) || begin
             adj_w += get_score(v)
         end
     end
     adj_w
 end
 
-include("contexts/update.jl")
-include("contexts/regenerate.jl")
+#include("contexts/update.jl")
+#include("contexts/regenerate.jl")
 
 # Gradients.
-include("contexts/backpropagate.jl")
+#include("contexts/backpropagate.jl")

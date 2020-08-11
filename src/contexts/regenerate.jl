@@ -98,7 +98,7 @@ end
 
 # ------------ includes ------------ #
 
-include("hierarchical/regenerate.jl")
+include("dynamic/regenerate.jl")
 include("plate/regenerate.jl")
 include("markov/regenerate.jl")
 include("factor/regenerate.jl")

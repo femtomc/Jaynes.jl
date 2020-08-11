@@ -1,5 +1,3 @@
-import Base: getindex, haskey, rand, iterate
-
 # ------------ Core ------------ #
 
 Base.iterate(s::Symbol) = s
@@ -15,29 +13,12 @@ markov(addr::A, args...) where A <: Address = error("(markov) call with address 
 cond(addr::A, args...) where A <: Address = error("(cond) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 factor(args...) = args
 
-# Generic abstract types..
-abstract type RecordSite end
-abstract type CallSite <: RecordSite end
-
-get_ret(x) = x
-
-# ------------ Choice sites - rand calls with distributions. ------------ #
-
-struct ChoiceSite{T} <: RecordSite
-    score::Float64
-    val::T
-end
-get_score(cs::ChoiceSite) = cs.score
-getindex(cs::ChoiceSite, addr::Address) = nothing
-haskey(cs::ChoiceSite, addr::Address) = false
-get_ret(cs::ChoiceSite) = cs.val
-
 # ------------ includes - traces + call sites ------------ #
 
-abstract type Trace end
+abstract type CallSite <: AddressMap{Value} end
 
-include("traces/hierarchical.jl")
-include("traces/vectorized.jl")
+include("traces/dynamic.jl")
+include("traces/vector.jl")
 include("traces/conditional.jl")
 
 # ------------ Pretty printing ------------ #
@@ -86,44 +67,6 @@ function Base.display(call::C;
     println("  __________________________________\n")
 end
 
-import Base.collect
-function collect(tr::Trace)
-    addrs = Any[]
-    chd = Dict{Any, Any}()
-    meta = Dict()
-    collect!(addrs, chd, tr, meta)
-    return addrs, chd, meta
-end
-
-function Base.display(tr::Trace; 
-                      show_values = true, 
-                      show_types = false)
-    println("  __________________________________\n")
-    println("               Addresses\n")
-    addrs, chd, meta = collect(tr)
-    if show_values
-        for a in addrs
-            if haskey(meta, a)
-                println("$(meta[a]) $(a) = $(chd[a])")
-            else
-                println("$(a) = $(chd[a])")
-            end
-        end
-    elseif show_types
-        for a in addrs
-            println(" $(a) = $(typeof(chd[a]))")
-        end
-    elseif show_types && show_values
-        for a in addrs
-            println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
-        end
-    else
-        for a in addrs
-            println(" $(a)")
-        end
-    end
-    println("  __________________________________\n")
-end
 
 # ------------ Documentation ------------ #
 

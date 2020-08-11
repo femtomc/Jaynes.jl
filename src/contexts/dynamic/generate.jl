@@ -4,14 +4,14 @@
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    if has_top(ctx.select, addr)
-        s = get_top(ctx.select, addr)
+    if has_value(ctx.constraints, addr)
+        s = getindex(ctx.constraints, addr)
         score = logpdf(d, s)
-        add_choice!(ctx, addr, ChoiceSite(score, s))
+        add_choice!(ctx, addr, score, s)
         increment!(ctx, score)
     else
         s = rand(d)
-        add_choice!(ctx, addr, ChoiceSite(logpdf(d, s), s))
+        add_choice!(ctx, addr, s)
     end
     return s
 end
@@ -27,7 +27,7 @@ end
 # ------------ Fillable ------------ #
 
 @inline function (ctx::GenerateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    has_top(ctx.constraints, addr) && return get_top(ctx.constraints, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -39,7 +39,7 @@ end
                                         args...) where T <: Address
     visit!(ctx, addr)
     ps = get_subparameters(ctx, addr)
-    ss = get_subselection(ctx, addr)
+    ss = get_subconstraintsion(ctx, addr)
     ret, cl, w = generate(ss, ps, call, args...)
     add_call!(ctx, addr, cl)
     increment!(ctx, w)

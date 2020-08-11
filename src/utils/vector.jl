@@ -1,6 +1,6 @@
 # ------------ Vectorized utilities ------------ #
 
-function keyset(sel::L, n_len::Int) where L <: ConstrainedSelection
+function keyset(sel::L, n_len::Int) where L
     keyset = Set{Int}()
     min = n_len
     for (k, v) in sel.tree

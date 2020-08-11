@@ -74,14 +74,13 @@ end
 
 # ------------ includes ------------ #
 
-include("traces.jl")
-include("selections.jl")
+include("structures.jl")
 include("utils/numerical.jl")
-include("utils/vectorized.jl")
+#include("utils/vector.jl")
 include("compiler.jl")
 include("contexts.jl")
-include("inference.jl")
-include("foreign_model_interfaces.jl")
+#include("inference.jl")
+#include("foreign_model_interfaces.jl")
 
 # Contexts.
 export Generate, generate
@@ -99,6 +98,9 @@ export learnable, fillable, factor
 # Compiler.
 export NoChange, UndefinedChange, VectorDiff
 export construct_graph, compile_function
+
+# Vectors to dynamic value address map.
+export dynamic
 
 # Selections and parameters.
 export selection, array, learnables

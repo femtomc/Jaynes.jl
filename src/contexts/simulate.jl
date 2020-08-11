@@ -1,10 +1,10 @@
-mutable struct SimulateContext{T <: Trace, P <: Parameters} <: ExecutionContext
+mutable struct SimulateContext{T <: AddressMap, P <: AddressMap} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
     params::P
-    SimulateContext() = new{HierarchicalTrace, EmptyParameters}(Trace(), 0.0, Visitor(), Parameters())
-    SimulateContext(params::P) where P = new{HierarchicalTrace, P}(Trace(), 0.0, Visitor(), params)
+    SimulateContext() = new{DynamicMap, Empty}(Trace(), 0.0, Visitor(), Empty())
+    SimulateContext(params::P) where P = new{DynamicMap, P}(AddressMap(), 0.0, Visitor(), params)
 end
 Simulate() = SimulateContext()
 
@@ -13,13 +13,13 @@ Simulate() = SimulateContext()
 function simulate(fn::Function, args...)
     ctx = SimulateContext()
     ret = ctx(fn, args...)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
-function simulate(params::P, fn::Function, args...) where P <: Parameters
+function simulate(params::P, fn::Function, args...) where P <: AddressMap
     ctx = SimulateContext(params)
     ret = ctx(fn, args...)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
 function simulate(fn::typeof(rand), d::Distribution{T}) where T
@@ -29,7 +29,7 @@ function simulate(fn::typeof(rand), d::Distribution{T}) where T
     return ret, get_top(ctx.tr, addr)
 end
 
-function simulate(params::P, fn::typeof(rand), d::Distribution{T}) where {P <: Parameters, T}
+function simulate(params::P, fn::typeof(rand), d::Distribution{T}) where {P <: AddressMap, T}
     ctx = SimulateContext(params)
     addr = gensym()
     ret = ctx(rand, addr, d)
@@ -43,7 +43,7 @@ function simulate(c::typeof(plate), fn::Function, args::Vector)
     return ret, get_sub(ctx.tr, addr)
 end
 
-function simulate(params::P, c::typeof(plate), fn::Function, args::Vector) where P <: Parameters
+function simulate(params::P, c::typeof(plate), fn::Function, args::Vector) where P <: AddressMap
     addr = gensym()
     v_ps = learnables(addr => params)
     ctx = SimulateContext(v_ps)
@@ -65,7 +65,7 @@ function simulate(c::typeof(markov), fn::Function, len::Int, args...)
     return ret, get_sub(ctx.tr, addr)
 end
 
-function simulate(params::P, c::typeof(markov), fn::Function, len::Int, args...) where P <: Parameters
+function simulate(params::P, c::typeof(markov), fn::Function, len::Int, args...) where P <: AddressMap
     addr = gensym()
     v_ps = learnables(addr => params)
     ctx = SimulateContext(v_ps)
@@ -75,7 +75,7 @@ end
 
 # ------------ includes ------------ #
 
-include("hierarchical/simulate.jl")
+include("dynamic/simulate.jl")
 include("plate/simulate.jl")
 include("markov/simulate.jl")
 include("conditional/simulate.jl")
@@ -86,19 +86,19 @@ include("factor/simulate.jl")
 @doc(
 """
 ```julia
-mutable struct SimulateContext{T <: Trace, P <: Parameters} <: ExecutionContext
+mutable struct SimulateContext{T <: AddressMap, P <: AddressMap} <: ExecutionContext
     tr::T
     visited::Visitor
     params::P
-    SimulateContext(params) where T <: Trace = new{T}(Trace(), Visitor(), params)
+    SimulateContext(params) where T <: AddressMap = new{T}(AddressMap(), Visitor(), params)
 end
 ```
 
-`SimulateContext` is used to simulate traces without recording likelihood weights. `SimulateContext` can be instantiated with custom `Parameters` instances, which is useful when used for gradient-based learning.
+`SimulateContext` is used to simulate traces without recording likelihood weights. `SimulateContext` can be instantiated with custom `AddressMap` instances, which is useful when used for gradient-based learning.
 
 Inner constructors:
 ```julia
-SimulateContext(params) = new{HierarchicalTrace}(Trace(), Visitor(), params)
+SimulateContext(params) = new{DynamicAddressMap}(AddressMap(), Visitor(), params)
 ```
 """, SimulateContext)
 

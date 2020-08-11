@@ -1,13 +1,13 @@
-mutable struct ProposeContext{T <: Trace, P <: Parameters} <: ExecutionContext
+mutable struct ProposeContext{T <: AddressMap, P <: AddressMap} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
     params::P
-    ProposeContext(tr::T) where T <: Trace = new{T, EmptyParameters}(tr, 0.0, Visitor(), Parameters())
-    ProposeContext(tr::T, params::P) where {T <: Trace, P} = new{T, P}(tr, 0.0, Visitor(), params)
+    ProposeContext(tr::T) where T <: AddressMap = new{T, EmptyAddressMap}(tr, 0.0, Visitor(), AddressMap())
+    ProposeContext(tr::T, params::P) where {T <: AddressMap, P} = new{T, P}(tr, 0.0, Visitor(), params)
 end
-Propose() = ProposeContext(Trace())
-Propose(params) = ProposeContext(Trace(), params)
+Propose() = ProposeContext(AddressMap())
+Propose(params) = ProposeContext(AddressMap(), params)
 
 # ------------ Convenience ------------ #
 
@@ -67,7 +67,7 @@ end
 
 # ------------ includes ------------ #
 
-include("hierarchical/propose.jl")
+include("dynamic/propose.jl")
 include("plate/propose.jl")
 include("markov/propose.jl")
 include("factor/propose.jl")
@@ -77,7 +77,7 @@ include("factor/propose.jl")
 @doc(
 """
 ```julia
-mutable struct ProposeContext{T <: Trace, P <: Parameters} <: ExecutionContext
+mutable struct ProposeContext{T <: AddressMap, P <: AddressMap} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
@@ -85,18 +85,18 @@ mutable struct ProposeContext{T <: Trace, P <: Parameters} <: ExecutionContext
 end
 ```
 
-`ProposeContext` is used to propose traces for inference algorithms which use custom proposals. `ProposeContext` instances can be passed sets of `Parameters` to configure the propose with parameters which have been learned by differentiable programming.
+`ProposeContext` is used to propose traces for inference algorithms which use custom proposals. `ProposeContext` instances can be passed sets of `AddressMap` to configure the propose with parameters which have been learned by differentiable programming.
 
 Inner constructors:
 
 ```julia
-ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, Parameters())
+ProposeContext(tr::T) where T <: AddressMap = new{T}(tr, 0.0, AddressMap())
 ```
 
 Outer constructors:
 
 ```julia
-Propose() = ProposeContext(Trace())
+Propose() = ProposeContext(AddressMap())
 ```
 """, ProposeContext)
 

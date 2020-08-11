@@ -5,7 +5,7 @@
                                         d::Distribution{K}) where {T <: Address, K}
     visit!(ctx.visited, addr)
     s = rand(d)
-    add_choice!(ctx, addr, ChoiceSite(logpdf(d, s), s))
+    add_choice!(ctx, addr, logpdf(d, s), s)
     return s
 end
 

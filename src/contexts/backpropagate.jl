@@ -383,7 +383,7 @@ end
 
 # ------------ includes ------------ #
 
-include("hierarchical/backpropagate.jl")
+include("dynamic/backpropagate.jl")
 include("plate/backpropagate.jl")
 include("markov/backpropagate.jl")
 include("factor/backpropagate.jl")

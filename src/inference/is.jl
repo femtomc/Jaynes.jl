@@ -1,7 +1,7 @@
 function importance_sampling(observations::K,
                              num_samples::Int,
                              model::Function, 
-                             args::Tuple) where K <: ConstrainedSelection
+                             args::Tuple) where K <: AddressMap
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
@@ -16,7 +16,7 @@ function importance_sampling(observations::K,
                              ps::P,
                              num_samples::Int,
                              model::Function, 
-                             args::Tuple) where {K <: ConstrainedSelection, P <: Parameters}
+                             args::Tuple) where {K <: AddressMap, P <: AddressMap}
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
@@ -32,7 +32,7 @@ function importance_sampling(observations::K,
                              model::Function, 
                              args::Tuple,
                              proposal::Function,
-                             proposal_args::Tuple) where K <: ConstrainedSelection
+                             proposal_args::Tuple) where K <: AddressMap
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     for i in 1 : num_samples
@@ -52,7 +52,7 @@ function importance_sampling(observations::K,
                              model::Function, 
                              args::Tuple,
                              proposal::Function,
-                             proposal_args::Tuple) where {K <: ConstrainedSelection, P <: Parameters}
+                             proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap}
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
@@ -72,7 +72,7 @@ function importance_sampling(observations::K,
                              args::Tuple,
                              pps::Ps,
                              proposal::Function,
-                             proposal_args::Tuple) where {K <: ConstrainedSelection, Ps <: Parameters}
+                             proposal_args::Tuple) where {K <: AddressMap, Ps <: AddressMap}
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
@@ -93,7 +93,7 @@ function importance_sampling(observations::K,
                              args::Tuple,
                              pps::Ps,
                              proposal::Function,
-                             proposal_args::Tuple) where {K <: ConstrainedSelection, P <: Parameters, Ps <: Parameters}
+                             proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap, Ps <: AddressMap}
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
