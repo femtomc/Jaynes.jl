@@ -2,25 +2,41 @@
 mutable struct UpdateContext{C <: CallSite, 
                              T <: AddressMap,
                              K <: AddressMap, 
-                             P <: AddressMap, 
                              D <: AddressMap,
+                             P <: AddressMap, 
                              Ag <: Diff} <: ExecutionContext
     prev::C
     tr::T
-    select::K
+    schema::K
     weight::Float64
     score::Float64
     discard::D
     visited::Visitor
     params::P
     argdiffs::Ag
-    
-    # Re-write with dispatch for specialized vs. black box.
-    UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: AddressMap, D <: Diff} = new{C, typeof(cl.trace), K, EmptyAddressMap, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, AddressMap(), Visitor(), AddressMap(), argdiffs)
-    UpdateContext(cl::C, select::K, ps::P, argdiffs::D) where {C <: CallSite, K <: AddressMap, P <: AddressMap, D <: Diff} = new{C, typeof(cl.trace), K, P, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, AddressMap(), Visitor(), ps, argdiffs)
 end
-Update(cl, select, argdiffs) = UpdateContext(cl, select, argdiffs)
-Update(cl, select, ps, argdiffs) = UpdateContext(cl, select, ps, argdiffs)
+function Update(select::K, cl::C) where {K <: AddressMap, C <: CallSite}
+    UpdateContext(cl, 
+                  typeof(cl.trace)(), 
+                  select, 
+                  0.0, 
+                  0.0, 
+                  DynamicDiscard(), 
+                  Visitor(), 
+                  Empty(), 
+                  NoChange())
+end
+function Update(select::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: CallSite, Ag <: Diff}
+    UpdateContext(cl, 
+                  typeof(cl.trace)(), 
+                  select, 
+                  0.0, 
+                  0.0, 
+                  DynamicDiscard(), 
+                  Visitor(), 
+                  Empty(), 
+                  argdiffs)
+end
 
 # Update has a special dynamo.
 @dynamo function (mx::UpdateContext)(a...)
@@ -32,43 +48,44 @@ end
 
 # ------------ Convenience ------------ #
 
-function update(ctx::UpdateContext, bbcs::HierarchicalCallSite, args...) where D <: Diff
+function update(ctx::UpdateContext, bbcs::DynamicCallSite, args...) where D <: Diff
     ret = ctx(bbcs.fn, args...)
     visited = ctx.visited
-    adj_w = adjust_to_intersection(get_trace(bbcs), visited)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score - adj_w, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    #adj_w = adjust_to_intersection(get_trace(bbcs), visited)
+    adj_w = 0.0
+    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function update(sel::L, bbcs::HierarchicalCallSite) where L <: AddressMap
+function update(sel::L, bbcs::DynamicCallSite) where L <: AddressMap
     argdiffs = NoChange()
-    ctx = UpdateContext(bbcs, sel, argdiffs)
+    ctx = Update(sel, bbcs, argdiffs)
     return update(ctx, bbcs, bbcs.args...)
 end
 
-function update(sel::L, ps::P, bbcs::HierarchicalCallSite) where {L <: AddressMap, P <: AddressMap}
+function update(sel::L, ps::P, bbcs::DynamicCallSite) where {L <: AddressMap, P <: AddressMap}
     argdiffs = NoChange()
     ctx = UpdateContext(bbcs, sel, ps, argdiffs)
     return update(ctx, bbcs, bbcs.args...)
 end
 
-function update(bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where D <: Diff
+function update(bbcs::DynamicCallSite, argdiffs::D, new_args...) where D <: Diff
     sel = selection()
     ctx = UpdateContext(bbcs, sel, argdiffs)
     return update(ctx, bbcs, new_args...)
 end
 
-function update(ps::P, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {P <: AddressMap, D <: Diff}
+function update(ps::P, bbcs::DynamicCallSite, argdiffs::D, new_args...) where {P <: AddressMap, D <: Diff}
     sel = selection()
     ctx = UpdateContext(bbcs, sel, ps, argdiffs)
     return update(ctx, bbcs, new_args...)
 end
 
-function update(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
+function update(sel::L, bbcs::DynamicCallSite, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
     ctx = UpdateContext(bbcs, sel, argdiffs)
     return update(ctx, bbcs, new_args...)
 end
 
-function update(sel::L, ps::P, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: AddressMap, P <: AddressMap, D <: Diff}
+function update(sel::L, ps::P, bbcs::DynamicCallSite, argdiffs::D, new_args...) where {L <: AddressMap, P <: AddressMap, D <: Diff}
     ctx = UpdateContext(bbcs, sel, ps, argdiffs)
     return update(ctx, bbcs, new_args...)
 end
@@ -125,9 +142,9 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/update.jl")
-include("plate/update.jl")
-include("markov/update.jl")
-include("factor/update.jl")
+#include("plate/update.jl")
+#include("markov/update.jl")
+#include("factor/update.jl")
 
 # ------------ Documentation ------------ #
 
@@ -144,7 +161,7 @@ mutable struct UpdateContext{C <: CallSite,
     select::K
     weight::Float64
     score::Float64
-    discard::HierarchicalAddressMap
+    discard::DynamicAddressMap
     visited::Visitor
     params::P
     argdiffs::D
@@ -164,9 +181,9 @@ UpdateContext(cl::C, select::K, ps::P, argdiffs::D) where {C <: CallSite, K <: A
 @doc(
 """
 ```julia
-ret, cl, w, retdiff, d = update(ctx::UpdateContext, bbcs::HierarchicalCallSite, args...) where D <: Diff
-ret, cl, w, retdiff, d = update(sel::L, bbcs::HierarchicalCallSite) where L <: AddressMap
-ret, cl, w, retdiff, d = update(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
+ret, cl, w, retdiff, d = update(ctx::UpdateContext, bbcs::DynamicCallSite, args...) where D <: Diff
+ret, cl, w, retdiff, d = update(sel::L, bbcs::DynamicCallSite) where L <: AddressMap
+ret, cl, w, retdiff, d = update(sel::L, bbcs::DynamicCallSite, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
 ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: AddressMap, D <: Diff}
 ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: AddressMap, D <: Diff}
 ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: AddressMap, D <: Diff}

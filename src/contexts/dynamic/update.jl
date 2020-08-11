@@ -6,21 +6,21 @@
     visit!(ctx, addr)
 
     # Check if in previous trace's choice map.
-    in_prev_chm = has_top(ctx.prev.trace, addr)
+    in_prev_chm = has_value(ctx.prev, addr)
     in_prev_chm && begin
-        prev = get_top(ctx.prev.trace, addr)
-        prev_ret = prev.val
-        prev_score = prev.score
+        prev = get_leaf(ctx.prev, addr)
+        prev_ret = get_ret(prev)
+        prev_score = get_score(prev)
     end
 
-    # Check if in selection.
-    in_selection = has_top(ctx.select, addr)
+    # Check if in schema.
+    in_schema = has_value(ctx.schema, addr)
 
     # Ret.
-    if in_selection
-        ret = get_top(ctx.select, addr)
+    if in_schema
+        ret = getindex(ctx.schema, addr)
         in_prev_chm && begin
-            add_choice!(ctx.discard, addr, prev)
+            set_submap!(ctx.discard, addr, prev)
         end
     elseif in_prev_chm
         ret = prev_ret
@@ -32,10 +32,10 @@
     score = logpdf(d, ret)
     if in_prev_chm
         increment!(ctx, score - prev_score)
-    elseif in_selection
+    elseif in_schema
         increment!(ctx, score)
     end
-    add_choice!(ctx, addr, ChoiceSite(score, ret))
+    add_choice!(ctx, addr, score, ret)
 
     return ret
 end
@@ -51,7 +51,7 @@ end
 # ------------ Fillable ------------ #
 
 @inline function (ctx::UpdateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    has_top(ctx.schema, addr) && return get_top(ctx.schema, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -63,7 +63,7 @@ end
                                       args...) where {T <: Address, D <: Diff}
     visit!(ctx, addr)
     ps = get_subparameters(ctx, addr)
-    ss = get_subselection(ctx, addr)
+    ss = get_subschema(ctx, addr)
     if has_sub(ctx.prev, addr)
         prev = get_prev(ctx, addr)
         ret, cl, w, rd, d = update(ss, ps, prev, UndefinedChange(), args...)

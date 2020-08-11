@@ -18,16 +18,20 @@ struct Value{K} <: Leaf{Value}
     val::K
 end
 
-isempty(::Value) = false
-has_value(::Value) = true
-get_ret(v::Value) = v.val
+struct ChoiceRecord{K} <: Leaf{Value}
+    score::Float64
+    val::K
+end
+get_score(cs::ChoiceRecord) = cs.score
 
-function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, v::V, meta) where {T <: Tuple, V <: Value}
+isempty(::K) where K <: Leaf{Value} = false
+has_value(::K) where K <: Leaf{Value} = true
+get_ret(v::K) where K <: Leaf{Value} = v.val
+
+function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, v::V, meta) where {T <: Tuple, V <: Leaf{Value}}
     push!(addrs, par)
     chd[par] = get_ret(v)
 end
-
-struct Anywhere <: Leaf{Anywhere} end
 
 # Address map interfaces
 function fill_array!(val::T, arr::Vector{T}, f_ind::Int) where T

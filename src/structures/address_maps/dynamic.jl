@@ -38,13 +38,27 @@ function getindex(dm::DynamicMap, addr)
     isempty(val) ? Empty() : get_ret(val)
 end
 
+function get_leaf(dm::DynamicMap, addr)
+    return dm.tree[addr]
+end
+
 function setindex!(dm::DynamicMap{K}, val::AddressMap{<:K}, addr) where K
     dm.tree[addr] = val
+end
+
+function set_submap!(dm::DynamicMap{K}, addr, val::AddressMap{<: K}) where K
+    setindex!(dm, val, addr)
 end
 
 function get(dm::DynamicMap{K}, addr, val) where K
     haskey(dm, addr) && return getindex(dm, addr)
     return val
+end
+
+function get_iter(dm::DynamicMap)
+    return (
+            (k, v) for (k, v) in dm.tree
+           )
 end
 
 function merge(sel1::DynamicMap{K},

@@ -17,11 +17,13 @@ factor(args...) = args
 
 abstract type CallSite <: AddressMap{Value} end
 
-include("traces/dynamic.jl")
-include("traces/vector.jl")
-include("traces/conditional.jl")
-
-# ------------ Pretty printing ------------ #
+has_value(cs::CallSite, addr) = has_value(cs.trace, addr)
+get_value(cs::CallSite, addr) = getindex(cs.trace, addr)
+get_leaf(cs::CallSite, addr) = get_leaf(cs.trace, addr)
+get_score(cs::CallSite) = cs.score
+get_ret(cs::CallSite) = cs.ret
+get_args(cs::CallSite) = cs.args
+get_trace(cs::CallSite) = cs.trace
 
 function Base.display(call::C; 
                       fields::Array{Symbol, 1} = [:val],
@@ -31,33 +33,6 @@ function Base.display(call::C;
     println(" type : $C\n")
     map(fieldnames(C)) do f
         val = getfield(call, f)
-        typeof(val) <: Dict{Address, ChoiceSite} && begin 
-            vals = collect(val)
-            if length(vals) > 5 && !show_full
-                map(vals[1:5]) do (k, v)
-                    println(" $(k)")
-                    map(fieldnames(ChoiceSite)) do nm
-                        !(nm in fields) && return
-                        println("          $(nm)  = $(getfield(v, nm))")
-                    end
-                    println("")
-                end
-                println("                  ...\n")
-                println("  __________________________________\n")
-                return
-            else
-                map(vals) do (k, v)
-                    println(" $(k)")
-                    map(fieldnames(ChoiceSite)) do nm
-                        !(nm in fields) && return
-                        println("          $(nm)  = $(getfield(v, nm))")
-                    end
-                    println("")
-                end
-                println("  __________________________________\n")
-                return
-            end
-        end
         typeof(val) <: Real && begin
             println(" $(f) : $(val)\n")
             return
@@ -66,6 +41,10 @@ function Base.display(call::C;
     end
     println("  __________________________________\n")
 end
+
+include("traces/dynamic.jl")
+include("traces/vector.jl")
+include("traces/conditional.jl")
 
 
 # ------------ Documentation ------------ #

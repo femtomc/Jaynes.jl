@@ -6,16 +6,13 @@ get_subselection(ctx::T, addr) where T <: ExecutionContext = getindex(ctx.select
 get_subparameters(ctx::T, addr) where T <: ExecutionContext = getindex(ctx.params, addr)
 visit!(ctx::T, addr) where T <: ExecutionContext = visit!(ctx.visited, addr)
 get_prev(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.prev, addr)
-function add_choice!(ctx::T, addr, logpdf, cs) where T <: ExecutionContext
-    ctx.score += logpdf
-    setindex!(ctx.tr, Value(cs), addr)
-end
-function add_choice!(ctx::T, addr, cs) where T <: ExecutionContext
-    setindex!(ctx.tr, Value(cs), addr)
+function add_choice!(ctx::T, addr, score, v) where T <: ExecutionContext
+    ctx.score += score
+    set_submap!(ctx.tr, addr, ChoiceRecord(score, v))
 end
 function add_call!(ctx::T, addr, cs::C) where {T <: ExecutionContext, C <: CallSite}
     ctx.score += get_score(cs)
-    setindex!(ctx.tr, cs, addr)
+    set_submap!(ctx.tr, addr, cs)
 end
 
 @dynamo function (mx::ExecutionContext)(a...)
@@ -46,7 +43,7 @@ function adjust_to_intersection(am::T, visited::V) where {T <: AddressMap, V <: 
     adj_w
 end
 
-#include("contexts/update.jl")
+include("contexts/update.jl")
 #include("contexts/regenerate.jl")
 
 # Gradients.
