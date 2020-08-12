@@ -18,7 +18,7 @@ function boomerang(sel::K,
     acc = num = 0
     function ∇ϕ!(y, x, sel, cl_ref, sel_values_ref)
         sel_values_ref[] = selection(sel_values_ref[], x)
-        ret, cl_ref[], _ = update(sel_values_ref[], cl_ref[])[2]
+        ret, cl_ref[], _ = update(sel_values_ref[], cl_ref[])
         sel_values_ref[], choice_grads = get_choice_gradients(sel, cl_ref[], 1.0)
         y .= .- array(choice_grads, Float64)
     end
