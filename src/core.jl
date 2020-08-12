@@ -3,17 +3,17 @@ import Base: collect, getindex, setindex!, push!
 import Base: +
 
 # Maps.
-include("structures/address_map.jl")
+include("core/address_map.jl")
 
 # Traces.
-include("structures/traces.jl")
+include("core/traces.jl")
 Trace() = DynamicTrace()
 
 # Selections.
-include("structures/selections.jl")
+include("core/selections.jl")
 
 # Visitor.
-include("structures/visitor.jl")
+include("core/visitor.jl")
 
 # Learnables and gradients.
-include("structures/learnables.jl")
+include("core/learnables.jl")

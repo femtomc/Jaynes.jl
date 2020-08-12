@@ -74,7 +74,7 @@ end
 
 # ------------ includes ------------ #
 
-include("structures.jl")
+include("core.jl")
 include("utils/numerical.jl")
 #include("utils/vector.jl")
 include("compiler.jl")
