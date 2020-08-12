@@ -39,12 +39,12 @@ end
 # HMC kernel.
 hmc_test = () -> begin
     println("\nHamiltonian Monte Carlo:")
-    n_iters = 1000
+    n_iters = 500
     ret, cl = generate(obs, bayesian_linear_regression, x)
     calls = []
     for i in 1 : n_iters
         cl, _ = hmc(selection([(:σ, ), (:β, )]), cl)
-        i % 30 == 0 && begin
+        i % 10 == 0 && begin
             println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
             push!(calls, cl)
         end
@@ -65,12 +65,15 @@ end
 # Boomerang kernel.
 boomerang_test = () -> begin
     println("\nBoomerang sampler:")
-    n_iters = 5000
+    n_iters = 500
     ret, cl = generate(obs, bayesian_linear_regression, x)
     calls = []
     for i in 1 : n_iters
-        @time cl, _ = boo(selection([(:σ, ), (:β, )]), cl)
-        i % 100 == 0 && push!(call, cl)
+        cl, _ = boo(selection([(:σ, ), (:β, )]), cl)
+        i % 10 == 0 && begin
+            println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+            push!(calls, cl)
+        end
     end
 
     est_σ = sum(map(calls) do cl
