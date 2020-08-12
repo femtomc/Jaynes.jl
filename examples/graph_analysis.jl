@@ -14,4 +14,6 @@ end
 g = construct_graph(model)
 display(g)
 
+g2 = Jaynes.markov_blanket(model)
+display(g2)
 end # module

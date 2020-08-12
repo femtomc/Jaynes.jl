@@ -20,14 +20,14 @@ function boomerang(sel::K,
         sel_values_ref[] = selection(sel_values_ref[], x)
         ret, cl_ref[], _ = update(sel_values_ref[], cl_ref[])[2]
         sel_values_ref[], choice_grads = get_choice_gradients(sel, cl_ref[], 1.0)
-        y .= array(choice_grads, Float64)
+        y .= .- array(choice_grads, Float64)
     end
 
     Ξ = ZigZagBoomerang.Trace(t, x, θ, Flow) # should persist between calls
     τref = T = ZigZagBoomerang.waiting_time_ref(Flow)
     c = 100.
     a, b = ZigZagBoomerang.ab(x, θ, c, Flow)
-    t′ = t + poisson_time(a, b)
+    t′ = t + poisson_time(a, b, rand())
     while t < T
         t, x, θ, (acc, num), c, a, b, t′, τref = ZigZagBoomerang.pdmp_inner!(Ξ, ∇ϕ!, ∇ϕx, t, x, θ, c, a, b, t′, τref, (acc, num), Flow, sel, cl_ref, sel_values_ref; adapt=false)
     end

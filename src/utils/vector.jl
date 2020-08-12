@@ -14,6 +14,12 @@ function keyset(sel::L, n_len::Int) where L
     return min, keyset
 end
 
+function keyset(sel::ConstrainedAnywhereSelection, n_len::Int)
+    keyset = Set{Int}()
+    min = n_len
+    return min, keyset
+end
+
 function keyset(sel::ConstrainedEmptySelection, n_len::Int)
     keyset = Set{Int}()
     return n_len, keyset

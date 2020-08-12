@@ -13,7 +13,7 @@ end
 # ------------ includes ------------ #
 
 include("compiler/dependency.jl")
-#include("compiler/blanket.jl")
+include("compiler/blanket.jl")
 include("compiler/diffs.jl")
 include("compiler/generate_trace.jl")
 
