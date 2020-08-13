@@ -56,7 +56,7 @@ function automatic_differentiation_variational_inference(sel::K,
         elbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples
-            gs, lw, cl = one_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; scale = 1 / gs_samples)
+            gs, lw, cl = one_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; scale = 1.0 / gs_samples)
             elbo_est += lw / gs_samples
             gs_est += gs
             cls[s] = cl

@@ -44,7 +44,7 @@ surrogate = () -> begin
     μ₂ = learnable(:μ₂)
     σ₂ = learnable(:σ₂)
     σ = rand(:σ, Normal(μ₁, 0.3))
-    β = rand(:β, Normal(μ₂, σ₂))
+    β = rand(:β, Normal(μ₂, σ₂ ^ 2))
 end
 
 advi_test = () -> begin
