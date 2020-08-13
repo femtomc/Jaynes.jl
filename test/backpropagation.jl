@@ -11,7 +11,7 @@ end
                          (:m, ) => 10.0])
     for i in 1:200
         ret, cl, w = generate(sel, params, learnable_normal, 5.0, 3.0)
-        param_grads = get_learnable_gradients(params, cl, 1.0)
+        _, param_grads = get_learnable_gradients(params, cl, 1.0)
         params = update_learnables(ADAM(0.05, (0.9, 0.8)), params, param_grads)
     end
     @test params[:l] ≈ 6.0 atol = 1e-2

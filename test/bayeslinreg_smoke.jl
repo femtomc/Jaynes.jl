@@ -10,8 +10,11 @@ end
 # Data.
 data_len = 100
 x = [Float64(i) for i in 1 : data_len]
+y = map(x) do k
+    3.0 * k + randn()
+end
 obs = selection(map(1 : data_len) do i
-                    (:y => i, ) => 3.0 * x[i] + randn()
+                    (:y => i, ) => y[i]
                 end)
 
 @testset "Inference library smoke test 1 - Bayesian linear regression" begin
@@ -42,6 +45,36 @@ obs = selection(map(1 : data_len) do i
         calls = []
         for i in 1 : n_iters
             cl, _ = mh(selection([(:σ, ), (:β, )]), cl)
+            i % 30 == 0 && begin
+                println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+                push!(calls, cl)
+            end
+        end
+
+        est_σ = sum(map(calls) do cl
+                        get_ret(cl[:σ])
+                    end) / length(calls)
+        println("Estimated σ: $est_σ")
+
+        est_β = sum(map(calls) do cl
+                        get_ret(cl[:β])
+                    end) / length(calls)
+        println("Estimated β: $est_β")
+    end
+
+    # MH random walk kernel with proposal.
+    proposal = (cl, y) -> begin
+        σ = rand(:σ, Normal(6.0, 1.0))
+        β = rand(:β, Normal(mean(y) / length(y), 3.0))
+    end
+
+    mh_test_with_proposal = () -> begin
+        println("\nMetropolis-Hastings with custom proposal:")
+        n_iters = 10000
+        ret, cl = generate(obs, bayesian_linear_regression, x)
+        calls = []
+        for i in 1 : n_iters
+            cl, _ = mh(cl, proposal, (y, ))
             i % 30 == 0 && begin
                 println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
                 push!(calls, cl)
@@ -90,7 +123,7 @@ obs = selection(map(1 : data_len) do i
         β = rand(:β, Normal(μ₂, σ₂ ^ 2))
     end
 
-    advi_test = () -> begin
+    adgv_test = () -> begin
         println("\nADGV:")
         ps = learnables([(:μ₁, ) => 5.0,
                          (:μ₂, ) => 1.0,
@@ -128,14 +161,45 @@ obs = selection(map(1 : data_len) do i
         println("Estimated β: $est_β")
     end
 
+    # Combination kernel.
+    combo_kernel_test = () -> begin
+        println("\nCombo kernel special:")
+        n_iters = 500
+        ret, cl = generate(obs, bayesian_linear_regression, x)
+        calls = []
+        for i in 1 : n_iters
+            cl, _ = mh(cl, proposal, (y, ))
+            cl, _ = hmc(selection([(:σ, ), (:β, )]), cl)
+            i % 10 == 0 && begin
+                println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+                push!(calls, cl)
+            end
+        end
+
+        est_σ = sum(map(calls) do cl
+                        get_ret(cl[:σ])
+                    end) / length(calls)
+        println("Estimated σ: $est_σ")
+
+        est_β = sum(map(calls) do cl
+                        get_ret(cl[:β])
+                    end) / length(calls)
+        println("Estimated β: $est_β")
+    end
+
     # Boomerang kernel.
     boomerang_test = () -> begin
         println("\nBoomerang sampler:")
         n_iters = 500
         ret, cl = generate(obs, bayesian_linear_regression, x)
+        sel = get_selection(cl)
+        sel_values, _ = get_choice_gradients(sel, cl, 1.0)
+        d = length(array(sel_values, Float64))
+        flow = Boomerang(sparse(I, d, d), zeros(d), 1.0)
+        θ = rand(MvNormal(d, 1.0))
         calls = []
         for i in 1 : n_iters
-            cl, _ = boo(selection([(:σ, ), (:β, )]), cl)
+            cl, _ = pdmk(selection([(:σ, ), (:β, )]), cl, flow, θ)
             i % 10 == 0 && begin
                 println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
                 push!(calls, cl)
@@ -155,9 +219,11 @@ obs = selection(map(1 : data_len) do i
 
     @time is_test()
     @time mh_test()
+    @time mh_test_with_proposal()
     @time hmc_test()
+    @time combo_kernel_test()
     #@time boomerang_test()
-    @time advi_test() 
-    @time adgv_test() 
+    #@time advi_test() 
+    #@time adgv_test() 
 
 end

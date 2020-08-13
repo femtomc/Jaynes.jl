@@ -9,7 +9,7 @@ function one_shot_gradient_estimator(sel::K,
     obs, _ = merge(cl, sel)
     _, mlw = score(obs, ps, mod, args...)
     lw = mlw - get_score(cl)
-    gs = get_learnable_gradients(ps, cl, nothing, lw * scale)
+    _, gs = get_learnable_gradients(ps, cl, nothing, lw * scale)
     return gs, lw, cl
 end
 
@@ -82,7 +82,7 @@ function multi_shot_gradient_estimator(sel::K,
     bs = geometric_base(lws)
     Threads.@threads for i in 1:num_samples
         ls = L - nw[i] - bs[i]
-        gs += get_learnable_gradients(ps, cs[i], nothing, ls * scale)
+        gs += get_learnable_gradients(ps, cs[i], nothing, ls * scale)[2]
     end
     return gs, L, cs, nw
 end
