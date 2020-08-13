@@ -1,6 +1,6 @@
 function hamiltonian_monte_carlo(sel::K, 
                                  cl::C; 
-                                 L=10, eps=0.1) where {K <: UnconstrainedSelection, C <: CallSite}
+                                 L=5, eps=0.1) where {K <: UnconstrainedSelection, C <: CallSite}
     local u_cl = cl
     p_mod_score = get_score(u_cl)
     sel_values, choice_grads = get_choice_gradients(sel, u_cl, 1.0)

@@ -47,7 +47,7 @@ function automatic_differentiation_variational_inference(sel::K,
                                                          v_args::Tuple,
                                                          mod::Function,
                                                          args::Tuple;
-                                                         opt = ADAM(),
+                                                         opt = ADAM(0.05, (0.9, 0.8)),
                                                          iters = 1000, 
                                                          gs_samples = 100) where {K <: ConstrainedSelection, P <: Parameters}
     cls = Vector{CallSite}(undef, gs_samples)
