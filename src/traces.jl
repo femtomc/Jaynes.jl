@@ -17,7 +17,19 @@ factor(args...) = args
 
 # Generic abstract types..
 abstract type RecordSite end
+
 abstract type CallSite <: RecordSite end
+
+get_args(cs::CallSite) = cs.args
+get_trace(cs::CallSite) = cs.trace
+has_top(cs::CallSite, addr) = has_top(cs.trace, addr)
+get_top(cs::CallSite, addr) = get_top(cs.trace, addr)
+has_sub(cs::CallSite, addr) = has_sub(cs.trace, addr)
+get_sub(cs::CallSite, addr) = get_sub(cs.trace, addr)
+get_score(cs::CallSite) = cs.score
+getindex(cs::CallSite, addrs...) = getindex(cs.trace, addrs...)
+haskey(cs::CallSite, addr) = haskey(cs.trace, addr)
+get_ret(cs::CallSite) = cs.ret
 
 get_ret(x) = x
 

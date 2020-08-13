@@ -38,4 +38,8 @@ end
     include("backpropagation.jl")
 end
 
+@time @testset "Smoke tests." begin
+    include("bayeslinreg_smoke.jl")
+end
+
 end #module

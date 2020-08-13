@@ -21,14 +21,6 @@ end
 Update(cl, select, argdiffs) = UpdateContext(cl, select, argdiffs)
 Update(cl, select, ps, argdiffs) = UpdateContext(cl, select, ps, argdiffs)
 
-# Update has a special dynamo.
-@dynamo function (mx::UpdateContext)(a...)
-    ir = IR(a...)
-    ir == nothing && return
-    recur!(ir)
-    return ir
-end
-
 # ------------ Convenience ------------ #
 
 function update(ctx::UpdateContext, bbcs::HierarchicalCallSite, args...) where D <: Diff

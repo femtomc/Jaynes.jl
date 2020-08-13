@@ -95,12 +95,3 @@ struct HierarchicalCallSite{J, K} <: CallSite
     ret::K
 end
 
-get_trace(bbcs::HierarchicalCallSite) = bbcs.trace
-has_top(bbcs::HierarchicalCallSite, addr) = has_top(bbcs.trace, addr)
-get_top(bbcs::HierarchicalCallSite, addr) = get_top(bbcs.trace, addr)
-has_sub(bbcs::HierarchicalCallSite, addr) = has_sub(bbcs.trace, addr)
-get_sub(bbcs::HierarchicalCallSite, addr) = get_sub(bbcs.trace, addr)
-get_score(bbcs::HierarchicalCallSite) = bbcs.score
-getindex(cs::HierarchicalCallSite, addrs...) = getindex(cs.trace, addrs...)
-haskey(cs::HierarchicalCallSite, addr) = haskey(cs.trace, addr)
-get_ret(cs::HierarchicalCallSite) = cs.ret

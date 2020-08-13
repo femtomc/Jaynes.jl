@@ -17,14 +17,6 @@ mutable struct RegenerateContext{C <: CallSite,
 end
 Regenerate(cl, select, argdiffs) = RegenerateContext(cl, select, argdiffs)
 
-# Regenerate has a special dynamo.
-@dynamo function (mx::RegenerateContext)(a...)
-    ir = IR(a...)
-    ir == nothing && return
-    recur!(ir)
-    return ir
-end
-
 # ------------ Convenience ------------ #
 
 function regenerate(ctx::RegenerateContext, bbcs::HierarchicalCallSite, new_args...)

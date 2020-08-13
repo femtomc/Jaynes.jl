@@ -32,6 +32,11 @@ end
 end
 
 (mx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(rand), args...) = mx(c, flatten(args)...)
+function (mx::ExecutionContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        mx(generator.f, i)
+    end
+end
 
 # ------------ includes ------------ #
 

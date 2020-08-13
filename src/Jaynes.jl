@@ -12,9 +12,13 @@ using Reexport
 @reexport using Distributions
 
 # Chainz
-using LinearAlgebra
 using ZigZagBoomerang
-using ZigZagBoomerang: sparse
+import ZigZagBoomerang: Boomerang, sparse
+export Boomerang, sparse
+using SparseArrays
+using LinearAlgebra
+import LinearAlgebra: I
+export I
 using AbstractMCMC
 
 # Differentiable.
@@ -26,6 +30,14 @@ using Flux.Optimise: update!
 # Toplevel importants :)
 const Address = Union{Int, Symbol, Pair}
 
+import Base.isless
+isless(::Symbol, ::Pair) = true
+isless(::Pair, ::Symbol) = false
+isless(::Int, ::Symbol) = true
+isless(::Symbol, ::Int) = false
+isless(::Int, ::Pair) = true
+isless(::Pair, ::Int) = false
+
 # ------------ Com-pirate fixes ------------ #
 
 # TODO: This chunk below me is currently required to fix an unknown performance issue in Base. Don't be alarmed if this suddenly disappears in future versions.
@@ -35,11 +47,11 @@ unwrap(gr) = gr
 # Whitelist includes vectorized calls.
 whitelist = [
              # Base.
-             :rand, :_apply_iterate,
-             
+             :rand, :_apply_iterate, :collect,
+
              # Specialized call sites.
              :markov, :plate, :cond, 
-             
+
              # Interactions with the context.
              :learnable, :fillable, :factor,
 
@@ -109,12 +121,13 @@ export get_selection, compare, has_top, update_learnables, dump_queries, merge!,
 export metropolis_hastings, mh
 export elliptical_slice, es
 export hamiltonian_monte_carlo, hmc
-export boomerang, boo
+export piecewise_deterministic_markov_kernel, pdmk
 export exchange, ex
 export importance_sampling, is
 export initialize_filter, filter_step!, check_ess_resample!, get_lmle, pf
 export metropolis_hastings, mh
 export automatic_differentiation_variational_inference, advi
+export automatic_differentiation_geometric_vimco, adgv
 
 # Foreign model interfaces.
 export @primitive
