@@ -30,11 +30,8 @@ Jaynes allows the usage of pure Julia as a trace-based probabilistic programming
 function bayesian_linear_regression(x::Vector{Float64})
     σ = rand(:σ, InverseGamma(2, 3))
     β = rand(:β, Normal(0.0, 1.0))
-    y = Vector{Float64}(undef, length(x))
-    for i in 1 : length(x)
-        push!(y, rand(:y => i, Normal(β * x[i], σ)))
-    end
-    return y
+    y = [rand(:y => i, Normal(β * x[i], σ)) for i in 1 : length(x)]
+    y
 end
 
 # Data.
@@ -63,12 +60,13 @@ See [Examples](https://femtomc.github.io/Jaynes.jl/dev/examples/) for some more 
 
 ## Inference
 
-Jaynes currently supports the following inference algorithms:
+Jaynes currently supports the following inference algorithms (and MCMC kernels):
 
 1. Importance sampling (with and without custom proposals)
 2. Particle filtering (with and without custom proposals)
 3. Metropolis-Hastings (with and without custom proposals)
-4. ADVI (with [Flux.jl](https://github.com/FluxML/Flux.jl) optimisers, currently uses [Zygote.jl](https://github.com/FluxML/Zygote.jl) for reverse-mode AD)
+4. Hamiltonian Monte Carlo
+5. ADVI (with [Flux.jl](https://github.com/FluxML/Flux.jl) optimisers, currently uses [Zygote.jl](https://github.com/FluxML/Zygote.jl) for reverse-mode AD)
 
 [Jaynes also supports the integration of differentiable programming with probabilistic programming.](https://femtomc.github.io/Jaynes.jl/dev/library_api/diff_prog/)
 
