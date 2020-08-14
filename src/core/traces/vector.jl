@@ -1,5 +1,7 @@
 const VectorTrace = VectorMap{Choice}
 
+get_choices(vt::VectorTrace) = vt.vector
+
 struct VectorCallSite{T, F, A, R} <: CallSite
     trace::VectorTrace
     score::Float64

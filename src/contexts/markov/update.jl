@@ -7,12 +7,12 @@ function trace_retained(vcs::VectorCallSite,
                         min::Int, 
                         o_len::Int, 
                         n_len::Int, 
-                        args...) where {K <: ConstrainedSelection, P <: Parameters}
-    w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
+                        args...) where {K <: AddressMap, P <: AddressMap}
+    w_adj = -sum(map(shallow_iterator(vcs)) do (_, cl)
                      get_score(cl)
                  end)
-    new = vcs.trace.subrecords[1 : min - 1]
-    new_ret = vcs.ret[1 : min - 1]
+    new = get_choices(get_trace(vcs))[1 : min - 1]
+    new_ret = get_ret(vcs)[1 : min - 1]
 
     # Start at min
     ss = get_sub(s, min)
@@ -45,9 +45,9 @@ function trace_new(vcs::VectorCallSite,
                    min::Int, 
                    o_len::Int, 
                    n_len::Int, 
-                   args...) where {K <: ConstrainedSelection, P <: Parameters}
+                   args...) where {K <: AddressMap, P <: AddressMap}
     w_adj = 0.0
-    new = vcs.trace.subrecords[1 : min - 1]
+    new = get_choices(get_trace(vcs))[1 : min - 1]
     new_ret = vcs.ret[1 : min - 1]
 
     # Start at min, check if it's less than old length. Otherwise, constraints will be applied during generate.
@@ -88,16 +88,16 @@ end
 
 # TODO: finish.
 function trace_new(vcs::VectorCallSite, 
-                   s::ConstrainedEmptySelection, 
+                   s::Empty, 
                    ps::P,
                    ks::Set, 
                    min::Int, 
                    o_len::Int, 
                    n_len::Int, 
-                   args...) where P <: Parameters
+                   args...) where P <: AddressMap
 
     w_adj = 0.0
-    new = vcs.trace.subrecords[1 : min - 1]
+    new = get_choices(get_trace(vcs))[1 : min - 1]
     new_ret = vcs.ret[1 : min - 1]
 
     for i in o_len + 1 : n_len
@@ -112,10 +112,10 @@ end
 # ------------ Call sites ------------ #
 
 @inline function (ctx::UpdateContext)(c::typeof(markov), 
-                                      addr::Address, 
+                                      addr::A, 
                                       call::Function, 
                                       len::Int,
-                                      args...)
+                                      args...) where A <: Address
     visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = len, length(vcs.ret)

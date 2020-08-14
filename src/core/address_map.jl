@@ -79,14 +79,19 @@ end
 @inline Base.merge!(l::Leaf, ::Empty) = l
 @inline Base.merge!(::Empty, l::Leaf) = l
 
-function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, v::V, meta) where {T <: Tuple, V <: Leaf{Value}}
+function collect!(par::T, addrs::Vector, chd::Dict, v::V, meta) where {T <: Tuple, V <: Leaf{Choice}}
+    push!(addrs, par)
+    chd[par] = get_value(v)
+end
+
+function collect!(par::T, addrs::Vector, chd::Dict, v::V, meta) where {T <: Tuple, V <: Leaf{Value}}
     push!(addrs, par)
     chd[par] = get_value(v)
 end
 
 function collect(tr::M) where M <: AddressMap
     addrs = Any[]
-    chd = Dict{Any, Any}()
+    chd = Dict()
     meta = Dict()
     collect!(addrs, chd, tr, meta)
     return addrs, chd, meta

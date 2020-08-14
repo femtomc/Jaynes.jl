@@ -88,7 +88,7 @@ end
 
 include("core.jl")
 include("utils/numerical.jl")
-#include("utils/vector.jl")
+include("utils/vector.jl")
 include("compiler.jl")
 include("contexts.jl")
 include("inference.jl")

@@ -4,7 +4,6 @@
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    println(addr)
     if has_value(ctx.target, addr)
         s = getindex(ctx.target, addr)
         score = logpdf(d, s)

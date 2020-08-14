@@ -4,6 +4,9 @@ struct VectorMap{K} <: AddressMap{K}
     vector::Vector{AddressMap{<: K}}
     VectorMap{K}() where K = new{K}(Vector{AddressMap{K}}())
     VectorMap{K}(vector::Vector{<: AddressMap{K}}) where K = new{K}(vector)
+    
+    # TODO: figure out this type witchcraft.
+    VectorMap{K}(vector::Vector{AddressMap{<: T}}) where {K, T} = new{K}(vector)
 end
 VectorMap(vector::Vector{<: AddressMap{K}}) where K = VectorMap{K}(vector)
 Zygote.@adjoint VectorMap(vector) = VectorMap(vector), ret_grad -> (nothing, )
@@ -63,6 +66,12 @@ Zygote.@adjoint merge(a, b) = merge(a, b), s_grad -> (nothing, nothing)
 +(a::VectorMap{K}, b::VectorMap{K}) where K = merge(a, b)
 
 function collect!(par::T, addrs::Vector, chd::Dict, vm::VectorMap, meta) where T <: Tuple
+    iterate(vm) do (k, v)
+        collect!((par..., k), addrs, chd, v, meta)
+    end
 end
 function collect!(addrs::Vector, chd::Dict, vm::VectorMap, meta)
+    iterate(vm) do (k, v)
+        collect!((k, ), addrs, chd, v, meta)
+    end
 end

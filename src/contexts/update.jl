@@ -43,9 +43,9 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/update.jl")
-#include("plate/update.jl")
-#include("markov/update.jl")
-#include("factor/update.jl")
+include("plate/update.jl")
+include("markov/update.jl")
+include("factor/update.jl")
 
 # ------------ Documentation ------------ #
 

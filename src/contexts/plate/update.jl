@@ -5,12 +5,12 @@ function trace_retained(vcs::VectorCallSite,
                         ks, 
                         o_len::Int, 
                         n_len::Int, 
-                        args::Vector) where K <: ConstrainedSelection
-    w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
-                     get_score(cl)
+                        args::Vector) where K <: AddressMap
+    w_adj = -sum(map(shallow_iterator(vcs)) do (_, v)
+                     get_score(v)
                  end)
-    new = vcs.trace.subrecords[1 : n_len]
-    new_ret = typeof(vcs.ret)(undef, n_len)
+    new = get_choices(get_trace(vcs))[1 : n_len]
+    new_ret = typeof(get_ret(vcs))(undef, n_len)
     for i in 1 : n_len
         if i in ks
             ss = get_sub(s, i)
@@ -31,7 +31,7 @@ function trace_new(vcs::VectorCallSite,
                    ks, 
                    o_len::Int, 
                    n_len::Int, 
-                   args::Vector) where K <: ConstrainedSelection
+                   args::Vector) where K <: AddressMap
     w_adj = 0.0
     new_ret = typeof(vcs.ret)(undef, n_len)
     new = vcs.trace.subrecords
@@ -58,14 +58,14 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::UpdateContext{C, T})(c::typeof(plate), 
-                                            addr::Address, 
-                                            call::Function, 
-                                            args::Vector) where {C <: DynamicCallSite, T <: DynamicTrace}
+@inline function (ctx::UpdateContext)(c::typeof(plate), 
+                                      addr::A, 
+                                      call::Function, 
+                                      args::Vector) where A <: Address
     visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = length(args), length(vcs.args)
-    s = get_subselection(ctx, addr)
+    s = get_sub(ctx.target, addr)
     _, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)
@@ -113,14 +113,14 @@ end
 
 function update(sel::L, vcs::VectorCallSite{typeof(plate)}) where L <: AddressMap
     argdiffs = NoChange()
-    ctx = UpdateContext(vcs, sel, argdiffs)
+    ctx = Update(vcs, sel, argdiffs)
     ret = ctx(plate, vcs.fn, vcs.args)
     return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorCallSite{typeof(plate)}) where {L <: AddressMap, P <: AddressMap}
     argdiffs = NoChange()
-    ctx = UpdateContext(vcs, sel, ps, argdiffs)
+    ctx = Update(vcs, sel, ps, argdiffs)
     ret = ctx(plate, vcs.fn, vcs.args)
     return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end

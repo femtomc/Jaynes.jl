@@ -6,7 +6,7 @@ function trace_retained(vcs::VectorCallSite,
                         min::Int, 
                         o_len::Int, 
                         n_len::Int, 
-                        args...) where K <: UnconstrainedSelection
+                        args...) where K <: Target
     w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
                      get_score(cl)
                  end)
@@ -42,7 +42,7 @@ function trace_new(vcs::VectorCallSite,
                    min::Int, 
                    o_len::Int, 
                    n_len::Int, 
-                   args...) where K <: UnconstrainedSelection
+                   args...) where K <: Target
     w_adj = 0.0
     new = vcs.trace.subrecords[1 : min - 1]
     new_ret = vcs.ret[1 : min - 1]
@@ -83,11 +83,11 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::RegenerateContext{C, T})(c::typeof(markov), 
-                                                addr::Address, 
-                                                call::Function, 
-                                                len::Int,
-                                                args...) where {C <: DynamicCallSite, T <: DynamicTrace}
+@inline function (ctx::RegenerateContext)(c::typeof(markov), 
+                                          addr::A, 
+                                          call::Function, 
+                                          len::Int,
+                                          args...) where A <: Address
     visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = len, length(vcs.ret)
@@ -155,4 +155,3 @@ function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}, len::Int
     ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
     return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
-
