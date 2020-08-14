@@ -16,12 +16,12 @@ macro primitive(ex)
             if Jaynes.haskey(ctx.target, addr)
                 s = Jaynes.getindex(ctx.target, addr)
                 score = logpdf($argname, args..., s)
-                Jaynes.add_choice!(ctx.tr, addr, score, s)
+                Jaynes.add_choice!(ctx, addr, score, s)
                 Jaynes.increment!(ctx, score)
             else
                 s = $argname(args...)
                 score = logpdf($argname, args..., s)
-                Jaynes.add_choice!(ctx.tr, addr, score, s)
+                Jaynes.add_choice!(ctx, addr, score, s)
             end
             return s
         end
@@ -29,7 +29,7 @@ macro primitive(ex)
         @inline function (ctx::Jaynes.ProposeContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             s = $argname(args...)
             score = logpdf($argname, args..., s)
-            Jaynes.add_choice!(ctx.tr, addr, score, s)
+            Jaynes.add_choice!(ctx, addr, score, s)
             Jaynes.increment!(ctx, score)
             return s
         end
@@ -51,7 +51,7 @@ macro primitive(ex)
             if in_prev_chm && !in_sel
                 Jaynes.increment!(ctx, score - prev.score)
             end
-            Jaynes.add_choice!(ctx.tr, addr, score, ret)
+            Jaynes.add_choice!(ctx, addr, score, ret)
             return ret
         end
 
@@ -83,7 +83,7 @@ macro primitive(ex)
             elseif in_target
                 Jaynes.increment!(ctx, score)
             end
-            Jaynes.add_choice!(ctx.tr, addr, score, ret)
+            Jaynes.add_choice!(ctx, addr, score, ret)
             return ret
         end
 
