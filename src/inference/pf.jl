@@ -4,7 +4,7 @@ Base.length(ps::Particles) = length(ps.calls)
 function initialize_filter(observations::K,
                            num_particles::Int,
                            fn::Function, 
-                           args::Tuple) where K <: ConstrainedSelection
+                           args::Tuple) where K <: AddressMap
     ps, _ = importance_sampling(observations, num_particles, fn, args)
     return ps
 end
@@ -13,7 +13,7 @@ function initialize_filter(observations::K,
                            ps::P,
                            num_particles::Int,
                            fn::Function, 
-                           args::Tuple) where {K <: ConstrainedSelection, P <: Parameters}
+                           args::Tuple) where {K <: AddressMap, P <: AddressMap}
     ps, _ = importance_sampling(observations, ps, num_particles, fn, args)
     return ps
 end
@@ -21,7 +21,7 @@ end
 function filter_step!(observations::K,
                       ps::Particles,
                       argdiffs::D,
-                      new_args::Tuple) where {K <: ConstrainedSelection, D <: Diff}
+                      new_args::Tuple) where {K <: AddressMap, D <: Diff}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, ps.calls[i], uw, _, _ = update(observations, ps.calls[i], argdiffs, new_args...)
@@ -33,7 +33,7 @@ function filter_step!(observations::K,
                       params::P,
                       ps::Particles,
                       argdiffs::D,
-                      new_args::Tuple) where {K <: ConstrainedSelection, P <: Parameters, D <: Diff}
+                      new_args::Tuple) where {K <: AddressMap, P <: AddressMap, D <: Diff}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, ps.calls[i], uw, _, _ = update(observations, params, ps.calls[i], argdiffs, new_args...)
@@ -46,7 +46,7 @@ function filter_step!(observations::K,
                       argdiffs::D,
                       new_args::Tuple,
                       proposal::Function,
-                      proposal_args::Tuple) where {K <: ConstrainedSelection, D <: Diff}
+                      proposal_args::Tuple) where {K <: AddressMap, D <: Diff}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
@@ -63,7 +63,7 @@ function filter_step!(observations::K,
                       argdiffs::D,
                       new_args::Tuple,
                       proposal::Function,
-                      proposal_args::Tuple) where {K <: ConstrainedSelection, P <: Parameters, D <: Diff}
+                      proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap, D <: Diff}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
@@ -80,7 +80,7 @@ function filter_step!(observations::K,
                       new_args::Tuple,
                       pps::Ps,
                       proposal::Function,
-                      proposal_args::Tuple) where {K <: ConstrainedSelection, Ps <: Parameters, D <: Diff}
+                      proposal_args::Tuple) where {K <: AddressMap, Ps <: AddressMap, D <: Diff}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(pps, proposal, ps.calls[i], proposal_args...)
@@ -98,7 +98,7 @@ function filter_step!(observations::K,
                       new_args::Tuple,
                       pps::Ps,
                       proposal::Function,
-                      proposal_args::Tuple) where {K <: ConstrainedSelection, P <: Parameters, Ps <: Parameters, D <: Diff}
+                      proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap, Ps <: AddressMap, D <: Diff}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(pps, proposal, ps.calls[i], proposal_args...)

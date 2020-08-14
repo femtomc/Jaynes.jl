@@ -1,73 +1,28 @@
-mutable struct ProposeContext{T <: Trace, P <: Parameters} <: ExecutionContext
+mutable struct ProposeContext{T <: AddressMap, 
+                              P <: AddressMap} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
     params::P
-    ProposeContext(tr::T) where T <: Trace = new{T, EmptyParameters}(tr, 0.0, Visitor(), Parameters())
-    ProposeContext(tr::T, params::P) where {T <: Trace, P} = new{T, P}(tr, 0.0, Visitor(), params)
-end
-Propose() = ProposeContext(Trace())
-Propose(params) = ProposeContext(Trace(), params)
-
-# ------------ Convenience ------------ #
-
-function propose(fn::Function, args...)
-    ctx = Propose()
-    ret = ctx(fn, args...)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
 end
 
-function propose(params, fn::Function, args...)
-    ctx = Propose(params)
-    ret = ctx(fn, args...)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
+function Propose(tr)
+    ProposeContext(tr, 
+                   0.0, 
+                   Visitor(), 
+                   Empty())
 end
 
-function propose(fn::typeof(rand), d::Distribution{K}) where K
-    ctx = Propose()
-    addr = gensym()
-    ret = ctx(fn, addr, d)
-    return ret, get_top(ctx.tr, addr), ctx.score
-end
-
-function propose(fn::typeof(markov), call::Function, len::Int, args...)
-    ctx = Propose()
-    addr = gensym()
-    ret = ctx(fn, addr, call, len, args...)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
-function propose(params, fn::typeof(markov), call::Function, len::Int, args...)
-    ctx = Propose(params)
-    addr = gensym()
-    ret = ctx(fn, addr, call, len, args...)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
-function propose(fn::typeof(plate), call::Function, args::Vector)
-    ctx = Propose(params)
-    addr = gensym()
-    ret = ctx(fn, addr, call, args)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
-function propose(params, fn::typeof(plate), call::Function, args::Vector)
-    ctx = Propose(params)
-    addr = gensym()
-    ret = ctx(fn, addr, call, args)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
-function propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
-    ctx = Propose()
-    addr = gensym()
-    ret = ctx(fn, addr, d, len)
-    return ret, get_sub(ctx.tr, addr), ctx.score
+function Propose(tr, params)
+    ProposeContext(tr, 
+                   0.0, 
+                   Visitor(), 
+                   params)
 end
 
 # ------------ includes ------------ #
 
-include("hierarchical/propose.jl")
+include("dynamic/propose.jl")
 include("plate/propose.jl")
 include("markov/propose.jl")
 include("factor/propose.jl")
@@ -77,7 +32,7 @@ include("factor/propose.jl")
 @doc(
 """
 ```julia
-mutable struct ProposeContext{T <: Trace, P <: Parameters} <: ExecutionContext
+mutable struct ProposeContext{T <: AddressMap, P <: AddressMap} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
@@ -85,18 +40,18 @@ mutable struct ProposeContext{T <: Trace, P <: Parameters} <: ExecutionContext
 end
 ```
 
-`ProposeContext` is used to propose traces for inference algorithms which use custom proposals. `ProposeContext` instances can be passed sets of `Parameters` to configure the propose with parameters which have been learned by differentiable programming.
+`ProposeContext` is used to propose traces for inference algorithms which use custom proposals. `ProposeContext` instances can be passed sets of `AddressMap` to configure the propose with parameters which have been learned by differentiable programming.
 
 Inner constructors:
 
 ```julia
-ProposeContext(tr::T) where T <: Trace = new{T}(tr, 0.0, Parameters())
+ProposeContext(tr::T) where T <: AddressMap = new{T}(tr, 0.0, AddressMap())
 ```
 
 Outer constructors:
 
 ```julia
-Propose() = ProposeContext(Trace())
+Propose() = ProposeContext(AddressMap())
 ```
 """, ProposeContext)
 

@@ -86,10 +86,9 @@ end
 
 # ------------ includes ------------ #
 
-include("traces.jl")
-include("selections.jl")
+include("core.jl")
 include("utils/numerical.jl")
-include("utils/vectorized.jl")
+include("utils/vector.jl")
 include("compiler.jl")
 include("contexts.jl")
 include("inference.jl")
@@ -112,10 +111,13 @@ export learnable, fillable, factor
 export NoChange, UndefinedChange, VectorDiff
 export construct_graph, compile_function
 
+# Vectors to dynamic value address map.
+export dynamic
+
 # Selections and parameters.
-export selection, array, learnables
+export target, array, learnables
 export anywhere, intersection, union
-export get_selection, compare, has_top, update_learnables, dump_queries, merge!, merge
+export get_target, compare, update_learnables, dump_queries, merge!, merge
 
 # Inference.
 export metropolis_hastings, mh

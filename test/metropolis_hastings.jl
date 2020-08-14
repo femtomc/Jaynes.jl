@@ -12,7 +12,7 @@ end
 
 @testset "Importance sampling" begin
     ret, cl = simulate(LinearGaussian, 0.0, 1.0)
-    sel = Jaynes.selection([(:x, )])
+    sel = Jaynes.target([(:x, )])
 
     @testset "Linear Gaussian model" begin
         new, discard = Jaynes.metropolis_hastings(sel, cl)

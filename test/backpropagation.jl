@@ -6,7 +6,7 @@ function learnable_normal(x::Float64, y::Float64)
 end
 
 @testset "Convergence for learning - MAP 1" begin
-    sel = selection([(:q, ) => 6.0])
+    sel = target([(:q, ) => 6.0])
     params = learnables([(:l, ) => 3.0,
                          (:m, ) => 10.0])
     for i in 1:200
@@ -38,7 +38,7 @@ function var()
 end
 
 @testset "Convergence for learning - VI 1" begin
-    sel = selection()
+    sel = target()
     initial_params = learnables([(:slope_mu, ) => 0.0,
                                  (:slope_log_std, ) => 0.0,
                                  (:intercept_mu, ) => 0.0,

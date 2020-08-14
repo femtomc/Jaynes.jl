@@ -1,121 +1,60 @@
 # TODO: specialize to different call sites.
 mutable struct UpdateContext{C <: CallSite, 
-                             T <: Trace,
-                             K <: ConstrainedSelection, 
-                             P <: Parameters, 
-                             D <: Diff} <: ExecutionContext
+                             T <: AddressMap,
+                             K <: AddressMap, 
+                             D <: AddressMap,
+                             P <: AddressMap, 
+                             Ag <: Diff} <: ExecutionContext
     prev::C
     tr::T
-    select::K
+    target::K
     weight::Float64
     score::Float64
-    discard::HierarchicalTrace
+    discard::D
     visited::Visitor
     params::P
-    argdiffs::D
-    
-    # Re-write with dispatch for specialized vs. black box.
-    UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, EmptyParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
-    UpdateContext(cl::C, select::K, ps::P, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, P <: Parameters, D <: Diff} = new{C, typeof(cl.trace), K, P, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), ps, argdiffs)
-end
-Update(cl, select, argdiffs) = UpdateContext(cl, select, argdiffs)
-Update(cl, select, ps, argdiffs) = UpdateContext(cl, select, ps, argdiffs)
-
-# ------------ Convenience ------------ #
-
-function update(ctx::UpdateContext, bbcs::HierarchicalCallSite, args...) where D <: Diff
-    ret = ctx(bbcs.fn, args...)
-    visited = ctx.visited
-    adj_w = adjust_to_intersection(get_trace(bbcs), visited)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score - adj_w, bbcs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    argdiffs::Ag
 end
 
-function update(sel::L, bbcs::HierarchicalCallSite) where L <: ConstrainedSelection
-    argdiffs = NoChange()
-    ctx = UpdateContext(bbcs, sel, argdiffs)
-    return update(ctx, bbcs, bbcs.args...)
+function Update(select::K, cl::C) where {K <: AddressMap, C <: CallSite}
+    UpdateContext(cl, 
+                  typeof(cl.trace)(), 
+                  select, 
+                  0.0, 
+                  0.0, 
+                  DynamicDiscard(), 
+                  Visitor(), 
+                  Empty(), 
+                  NoChange())
 end
 
-function update(sel::L, ps::P, bbcs::HierarchicalCallSite) where {L <: ConstrainedSelection, P <: Parameters}
-    argdiffs = NoChange()
-    ctx = UpdateContext(bbcs, sel, ps, argdiffs)
-    return update(ctx, bbcs, bbcs.args...)
+function Update(select::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: CallSite, Ag <: Diff}
+    UpdateContext(cl, 
+                  typeof(cl.trace)(), 
+                  select, 
+                  0.0, 
+                  0.0, 
+                  DynamicDiscard(), 
+                  Visitor(), 
+                  Empty(), 
+                  argdiffs)
 end
 
-function update(bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where D <: Diff
-    sel = selection()
-    ctx = UpdateContext(bbcs, sel, argdiffs)
-    return update(ctx, bbcs, new_args...)
-end
-
-function update(ps::P, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {P <: Parameters, D <: Diff}
-    sel = selection()
-    ctx = UpdateContext(bbcs, sel, ps, argdiffs)
-    return update(ctx, bbcs, new_args...)
-end
-
-function update(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
-    ctx = UpdateContext(bbcs, sel, argdiffs)
-    return update(ctx, bbcs, new_args...)
-end
-
-function update(sel::L, ps::P, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: ConstrainedSelection, P <: Parameters, D <: Diff}
-    ctx = UpdateContext(bbcs, sel, ps, argdiffs)
-    return update(ctx, bbcs, new_args...)
-end
-
-# TODO: disallowed for now.
-#function update(sel::L, vcs::VectorizedCallSite{typeof(plate)}, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
-#    addr = gensym()
-#    v_sel = selection(addr => sel)
-#    ctx = UpdateContext(vcs, v_sel, argdiffs)
-#    ret = ctx(plate, addr, vcs.fn, new_args...)
-#    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-#end
-
-function update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where L <: ConstrainedSelection
-    argdiffs = NoChange()
-    ctx = UpdateContext(vcs, sel, argdiffs)
-    ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(plate)}) where {L <: ConstrainedSelection, P <: Parameters}
-    argdiffs = NoChange()
-    ctx = UpdateContext(vcs, sel, ps, argdiffs)
-    ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where L <: ConstrainedSelection
-    argdiffs = NoChange()
-    ctx = UpdateContext(vcs, sel, argdiffs)
-    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}) where {L <: ConstrainedSelection, P <: Parameters}
-    argdiffs = NoChange()
-    ctx = UpdateContext(vcs, sel, ps, argdiffs)
-    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, D <: Diff}
-    ctx = UpdateContext(vcs, sel, NoChange())
-    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, P <: Parameters, D <: Diff}
-    ctx = UpdateContext(vcs, sel, ps, NoChange())
-    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+function Update(select::K, ps::P, cl::C, argdiffs::Ag) where {K <: AddressMap, P <: AddressMap, C <: CallSite, Ag <: Diff}
+    UpdateContext(cl, 
+                  typeof(cl.trace)(), 
+                  select, 
+                  0.0, 
+                  0.0, 
+                  DynamicDiscard(), 
+                  Visitor(), 
+                  ps,
+                  argdiffs)
 end
 
 # ------------ includes ------------ #
 
-include("hierarchical/update.jl")
+include("dynamic/update.jl")
 include("plate/update.jl")
 include("markov/update.jl")
 include("factor/update.jl")
@@ -126,16 +65,16 @@ include("factor/update.jl")
 """
 ```julia
 mutable struct UpdateContext{C <: CallSite, 
-                             T <: Trace,
-                             K <: ConstrainedSelection, 
-                             P <: Parameters, 
+                             T <: AddressMap,
+                             K <: AddressMap, 
+                             P <: AddressMap, 
                              D <: Diff} <: ExecutionContext
     prev::C
     tr::T
     select::K
     weight::Float64
     score::Float64
-    discard::HierarchicalTrace
+    discard::DynamicAddressMap
     visited::Visitor
     params::P
     argdiffs::D
@@ -145,8 +84,8 @@ end
 Inner constructor:
 
 ```julia
-UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, EmptyParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
-UpdateContext(cl::C, select::K, ps::P, argdiffs::D) where {C <: CallSite, K <: ConstrainedSelection, P <: Parameters, D <: Diff} = new{C, typeof(cl.trace), K, EmptyParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), ps, argdiffs)
+UpdateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: AddressMap, D <: Diff} = new{C, typeof(cl.trace), K, EmptyAddressMap, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, AddressMap(), Visitor(), AddressMap(), argdiffs)
+UpdateContext(cl::C, select::K, ps::P, argdiffs::D) where {C <: CallSite, K <: AddressMap, P <: AddressMap, D <: Diff} = new{C, typeof(cl.trace), K, EmptyAddressMap, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, AddressMap(), Visitor(), ps, argdiffs)
 ```
 
 `UpdateContext` is an execution context used for updating the value of random choices in an existing recorded call site. This context will perform corrective updates to the likehood weights and scores so that this operation produces the correct weights and scores for the original model program constrained with the `select` selection in the `UpdateContext`.
@@ -155,13 +94,13 @@ UpdateContext(cl::C, select::K, ps::P, argdiffs::D) where {C <: CallSite, K <: C
 @doc(
 """
 ```julia
-ret, cl, w, retdiff, d = update(ctx::UpdateContext, bbcs::HierarchicalCallSite, args...) where D <: Diff
-ret, cl, w, retdiff, d = update(sel::L, bbcs::HierarchicalCallSite) where L <: ConstrainedSelection
-ret, cl, w, retdiff, d = update(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: ConstrainedSelection, D <: Diff}
-ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: ConstrainedSelection, D <: Diff}
-ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: ConstrainedSelection, D <: Diff}
-ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: ConstrainedSelection, D <: Diff}
-ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: ConstrainedSelection, D <: Diff}
+ret, cl, w, retdiff, d = update(ctx::UpdateContext, cs::DynamicCallSite, args...) where D <: Diff
+ret, cl, w, retdiff, d = update(sel::L, cs::DynamicCallSite) where L <: AddressMap
+ret, cl, w, retdiff, d = update(sel::L, cs::DynamicCallSite, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
+ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: AddressMap, D <: Diff}
+ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: AddressMap, D <: Diff}
+ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: AddressMap, D <: Diff}
+ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, D <: Diff}
 ```
 
 `update` provides an API to the `UpdateContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, the updated `RecordSite` instance `cl` or `v_cl`, the updated weight `w`, a `Diff` instance for the return value `retdiff`, and a structure which contains any changed (i.e. discarded) record sites `d`.

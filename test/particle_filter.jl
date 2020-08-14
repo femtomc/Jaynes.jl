@@ -64,11 +64,11 @@ end
         lmles = []
 
         # Testing.
-        init_obs = Jaynes.selection([(:obs => 1, :x) => xs[1]])
+        init_obs = Jaynes.target([(:obs => 1, :x) => xs[1]])
         ps = Jaynes.initialize_filter(init_obs, 50000, CategoricalHiddenMarkovModel, (1, ))
         push!(lmles, get_lmle(ps))
         for t=2:5
-            obs = Jaynes.selection([(:obs => t, :x) =>  xs[t]])
+            obs = Jaynes.target([(:obs => t, :x) =>  xs[t]])
             Jaynes.filter_step!(obs, ps, NoChange(), (t,))
             push!(lmles, get_lmle(ps))
         end

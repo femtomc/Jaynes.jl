@@ -1,6 +1,6 @@
 # ------------ Vectorized utilities ------------ #
 
-function keyset(sel::L, n_len::Int) where L <: ConstrainedSelection
+function keyset(sel::L, n_len::Int) where L
     keyset = Set{Int}()
     min = n_len
     for (k, v) in sel.tree
@@ -14,18 +14,12 @@ function keyset(sel::L, n_len::Int) where L <: ConstrainedSelection
     return min, keyset
 end
 
-function keyset(sel::ConstrainedAnywhereSelection, n_len::Int)
-    keyset = Set{Int}()
-    min = n_len
-    return min, keyset
-end
-
-function keyset(sel::ConstrainedEmptySelection, n_len::Int)
+function keyset(sel::Empty, n_len::Int)
     keyset = Set{Int}()
     return n_len, keyset
 end
 
-function keyset(sel::L, n_len::Int) where L <: UnconstrainedSelection
+function keyset(sel::L, n_len::Int) where L <: Target
     keyset = Set{Int}()
     min = n_len
     for (k, _) in sel.tree
@@ -39,7 +33,7 @@ function keyset(sel::L, n_len::Int) where L <: UnconstrainedSelection
     return min, keyset
 end
 
-function keyset(sel::UnconstrainedEmptySelection, n_len::Int)
+function keyset(sel::Empty, n_len::Int)
     keyset = Set{Int}()
     return n_len, keyset
 end

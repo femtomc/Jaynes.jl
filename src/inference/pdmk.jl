@@ -4,7 +4,7 @@ function piecewise_deterministic_markov_kernel(selection::S,
                                                θ;
                                                retval_grad = 1.0,
                                                c=1e1, 
-                                               λ0=Flow.λref) where {S <: UnconstrainedSelection, C <: CallSite}
+                                               λ0=Flow.λref) where {S <: Target, C <: CallSite}
     args = get_args(cl)
     sel_values, choice_grads = get_choice_gradients(selection, cl, retval_grad)
     values = array(sel_values, Float64)

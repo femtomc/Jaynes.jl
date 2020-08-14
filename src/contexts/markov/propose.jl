@@ -20,6 +20,22 @@
     sc = sum(map(v_cl) do cl
                  get_score(cl)
                 end)
-    add_call!(ctx, addr, VectorizedCallSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, len, args, v_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(markov)}(VectorTrace(v_cl), sc, call, len, args, v_ret))
     return v_ret
+end
+
+# ------------ Convenience ------------ #
+
+function propose(fn::typeof(markov), call::Function, len::Int, args...)
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, call, len, args...)
+    return ret, get_sub(ctx.tr, addr), ctx.score
+end
+
+function propose(params, fn::typeof(markov), call::Function, len::Int, args...)
+    ctx = Propose(params)
+    addr = gensym()
+    ret = ctx(fn, addr, call, len, args...)
+    return ret, get_sub(ctx.tr, addr), ctx.score
 end

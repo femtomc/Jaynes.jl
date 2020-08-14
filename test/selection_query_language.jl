@@ -23,59 +23,49 @@ function AnywhereInLoop()
     end
 end
 
-@testset "Constrained selections" begin
+@testset "Constrained targets" begin
 
     @testset "Constrained by address" begin
-        sel = selection([(:x, ) => 5.0,
-                         (:x, :q, :z) => 10.0])
+        sel = target([(:x, ) => 5.0,
+                      (:y, :q, :z) => 10.0])
         @test sel == sel
         @test haskey(sel, (:x, ))
         @test haskey(sel, :x)
-        @test haskey(sel, (:x, :q, :z))
-        @test sel[:x, :q, :z] == 10.0
+        @test haskey(sel, (:y, :q, :z))
+        @test sel[:y, :q, :z] == 10.0
 
-        sel2 = selection([(:z, :m) => 15.0])
+        sel2 = target([(:z, :m) => 15.0])
         merge!(sel, sel2)
-        @test sel == selection([(:x, ) => 5.0,
-                                (:x, :q, :z) => 10.0,
-                                (:z, :m) => 15.0])
+        @test sel == target([(:x, ) => 5.0,
+                             (:m, :q, :z) => 10.0,
+                             (:z, :m) => 15.0])
         arr = array(sel, Float64)
         @test arr == [5.0, 10.0, 15.0]
-        back = selection(sel, arr)
+        back = target(sel, arr)
         @test back == sel
     end
-    
+
     @testset "Unconstrained by address" begin
-        sel = selection([(:x, ), (:x, :q, :z)])
+        sel = target([(:x, ), (:x, :q, :z)])
         @test sel == sel
         @test haskey(sel, (:x, ))
         @test haskey(sel, :x)
         @test haskey(sel, (:x, :q, :z))
 
-        sel2 = selection([(:z, :m)])
+        sel2 = target([(:z, :m)])
         merge!(sel, sel2)
-        @test sel == selection([(:x, ), (:x, :q, :z), (:z, :m)])
+        @test sel == target([(:x, ), (:x, :q, :z), (:z, :m)])
     end
 
-    @testset "Anywhere" begin
-        anyw = anywhere([(:x, ) => 5.0, 
-                         (:q => 21, ) => 10.0])
-        ret, cl, w = generate(anyw, AnywhereTopLevel)
-        @test get_ret(cl[:x]) == 5.0
-        @test get_ret(cl[:y, :x]) == 5.0
-        @test get_ret(cl[:y, :y, :x]) == 5.0
-        @test get_ret(cl[:y, :y, :loop, :q => 21]) == 10.0
-    end
-
-    @testset "Filtering" begin
-        observations = selection([(:x, ) => 5.0, 
-                                  (:z, :x) => 5.0, 
-                                  (:z, :z, :y) => 5.0])
-        filtered = filter(x -> x == :y, x -> true, observations)
-        @test has_top(filtered, (:z, :z, :y))
-        filtered = filter(x -> x == :x, x -> true, observations)
-        @test !has_top(filtered, (:z, :z, :y))
-        @test has_top(filtered, :x)
-        @test has_top(filtered, (:z, :x))
-    end
+    #@testset "Filtering" begin
+    #    observations = target([(:x, ) => 5.0, 
+    #                           (:z, :x) => 5.0, 
+    #                           (:z, :z, :y) => 5.0])
+    #    filtered = filter(x -> x == :y, x -> true, observations)
+    #    @test has_top(filtered, (:z, :z, :y))
+    #    filtered = filter(x -> x == :x, x -> true, observations)
+    #    @test !has_top(filtered, (:z, :z, :y))
+    #    @test has_top(filtered, :x)
+    #    @test has_top(filtered, (:z, :x))
+    #end
 end

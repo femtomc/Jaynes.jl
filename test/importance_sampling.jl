@@ -18,7 +18,7 @@ end
 
 @testset "Importance sampling" begin
     z = 3.0
-    observations = Jaynes.selection([(:z,) =>  z])
+    observations = Jaynes.target([(:z,) =>  z])
     n_traces = 5
 
     @testset "Linear Gaussian model" begin
@@ -28,7 +28,7 @@ end
         @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
         @test !isnan(ps.lmle)
         for call in ps.calls
-            @test get_ret(call[:z]) == z
+            @test (call[:z]) == z
         end
     end
 
@@ -39,7 +39,7 @@ end
         @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
         @test !isnan(ps.lmle)
         for call in ps.calls
-            @test get_ret(call[:z]) == z
+            @test (call[:z]) == z
         end
     end
 end

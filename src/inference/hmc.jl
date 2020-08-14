@@ -1,6 +1,6 @@
 function hamiltonian_monte_carlo(sel::K, 
                                  cl::C; 
-                                 L=5, eps=0.1) where {K <: UnconstrainedSelection, C <: CallSite}
+                                 L=10, eps=0.1) where {K <: Target, C <: CallSite}
     local u_cl = cl
     p_mod_score = get_score(u_cl)
     _, sel_values, choice_grads = get_choice_gradients(sel, u_cl, 1.0)
@@ -12,7 +12,7 @@ function hamiltonian_monte_carlo(sel::K,
     for step in 1 : L
         mom += (eps / 2) * grads
         vals += eps * mom
-        sel_values = selection(sel_values, vals)
+        sel_values = target(sel_values, vals)
         ret, u_cl, w, _ = update(sel_values, u_cl)
         _, _, choice_grads = get_choice_gradients(sel, u_cl, 1.0)
         grads = array(choice_grads, Float64)
@@ -33,7 +33,7 @@ end
 function hamiltonian_monte_carlo(sel::K, 
                                  ps::P,
                                  cl::C; 
-                                 L=10, eps=0.1) where {K <: UnconstrainedSelection, P <: Parameters, C <: CallSite}
+                                 L=10, eps=0.1) where {K <: Target, P <: AddressMap, C <: CallSite}
     local u_cl = cl
     p_mod_score = get_score(u_cl)
     _, sel_values, choice_grads = get_choice_gradients(sel, u_cl, 1.0)
@@ -45,7 +45,7 @@ function hamiltonian_monte_carlo(sel::K,
     for step in 1 : L
         mom += (eps / 2) * grads
         vals += eps * mom
-        sel_values = selection(sel_values, vals)
+        sel_values = target(sel_values, vals)
         ret, u_cl, w, _ = update(sel_values, ps, u_cl)
         _, _, choice_grads = get_choice_gradients(sel, ps, u_cl, 1.0)
         grads = array(choice_grads, Float64)

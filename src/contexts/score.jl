@@ -1,78 +1,35 @@
-mutable struct ScoreContext{P <: Parameters} <: ExecutionContext
-    select::ConstrainedSelection
+mutable struct ScoreContext{M <: AddressMap,
+                            P <: AddressMap} <: ExecutionContext
+    target::M
     weight::Float64
     visited::Visitor
     params::P
-    function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
-        c_sel = selection(obs)
-        new{EmptyParameters}(c_sel, 0.0, Parameters())
-    end
-    ScoreContext(obs::K, params::P) where {K <: ConstrainedSelection, P <: Parameters} = new{P}(obs, 0.0, Visitor(), params)
-end
-Score(obs::Vector) = ScoreContext(selection(obs))
-Score(obs::ConstrainedSelection) = ScoreContext(obs, Parameters())
-Score(obs::ConstrainedSelection, params) = ScoreContext(obs, params)
-
-# ------------ Convenience ------------ #
-
-function score(sel::L, fn::Function, args...) where L <: ConstrainedSelection
-    ctx = Score(sel)
-    ret = ctx(fn, args...)
-    b, missed = compare(sel.query, ctx.visited)
-    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
-    return ret, ctx.weight
 end
 
-function score(sel::L, params, fn::Function, args...) where L <: ConstrainedSelection
-    ctx = Score(sel, params)
-    ret = ctx(fn, args...)
-    b, missed = compare(sel.query, ctx.visited)
-    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
-    return ret, ctx.weight
+function Score(obs::Vector)
+    ScoreContext(target(obs),
+                 0.0,
+                 Visitor(),
+                 Empty())
 end
 
-function score(sel::L, fn::typeof(rand), d::Distribution{K}) where {L <: ConstrainedSelection, K}
-    ctx = Score(sel)
-    addr = gensym()
-    ret = ctx(fn, addr, d)
-    b, missed = compare(sel.query, ctx.visited)
-    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
-    return ret, ctx.weight
+function Score(obs::AddressMap)
+    ScoreContext(obs, 
+                 0.0, 
+                 Visitor(), 
+                 Empty())
 end
 
-# TODO: fix for dispatch on params.
-function score(sel::L, fn::typeof(markov), call::Function, len::Int, args...; params = Parameters()) where L <: ConstrainedSelection
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    ctx = Score(v_sel, params)
-    ret = ctx(fn, addr, call, len, args...)
-    b, missed = compare(sel.query, ctx.visited)
-    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
-    return ret, ctx.weight
-end
-
-function score(sel::L, fn::typeof(plate), call::Function, args::Vector; params = Parameters()) where L <: ConstrainedSelection
-    ctx = Score(sel, params)
-    addr = gensym()
-    ret = ctx(fn, addr, call, args)
-    b, missed = compare(sel.query, ctx.visited)
-    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
-    return ret, ctx.weight
-end
-
-function score(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params = Parameters()) where {L <: ConstrainedSelection, K}
-    addr = gensym()
-    v_sel = selection(addr => sel)
-    ctx = Score(v_sel, params)
-    ret = ctx(fn, addr, d, len)
-    b, missed = compare(sel.query, ctx.visited)
-    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
-    return ret, ctx.weight
+function Score(obs::AddressMap, params)
+    ScoreContext(obs, 
+                 0.0, 
+                 Visitor(),
+                 params)
 end
 
 # ------------ includes ------------ #
 
-include("hierarchical/score.jl")
+include("dynamic/score.jl")
 include("plate/score.jl")
 include("markov/score.jl")
 include("factor/score.jl")
@@ -82,8 +39,8 @@ include("factor/score.jl")
 @doc(
 """
 ```julia
-mutable struct ScoreContext{P <: Parameters} <: ExecutionContext
-    select::ConstrainedSelection
+mutable struct ScoreContext{P <: AddressMap} <: ExecutionContext
+    select::AddressMap
     weight::Float64
     params::P
 end
@@ -96,28 +53,28 @@ Inner constructors:
 ```julia
 function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
     c_sel = selection(obs)
-    new{EmptyParameters}(c_sel, 0.0, Parameters())
+    new{EmptyAddressMap}(c_sel, 0.0, AddressMap())
 end
 ```
 
 Outer constructors:
 
 ```julia
-ScoreContext(obs::K, params) where {K <: ConstrainedSelection} = new(obs, 0.0, params)
+ScoreContext(obs::K, params) where {K <: AddressMap} = new(obs, 0.0, params)
 Score(obs::Vector) = ScoreContext(selection(obs))
-Score(obs::ConstrainedSelection) = ScoreContext(obs, Parameters())
-Score(obs::ConstrainedSelection, params) = ScoreContext(obs, params)
+Score(obs::AddressMap) = ScoreContext(obs, AddressMap())
+Score(obs::AddressMap, params) = ScoreContext(obs, params)
 ```
 """, ScoreContext)
 
 @doc(
 """
 ```julia
-ret, w = score(sel::L, fn::Function, args...; params = Parameters()) where L <: ConstrainedSelection
-ret, w = score(sel::L, fn::typeof(rand), d::Distribution{K}; params = Parameters()) where {L <: ConstrainedSelection, K}
-ret, w = score(sel::L, fn::typeof(markov), call::Function, len::Int, args...; params = Parameters()) where L <: ConstrainedSelection
-ret, w = score(sel::L, fn::typeof(plate), call::Function, args::Vector; params = Parameters()) where L <: ConstrainedSelection
-ret, w = score(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params = Parameters()) where {L <: ConstrainedSelection, K}
+ret, w = score(sel::L, fn::Function, args...; params = AddressMap()) where L <: AddressMap
+ret, w = score(sel::L, fn::typeof(rand), d::Distribution{K}; params = AddressMap()) where {L <: AddressMap, K}
+ret, w = score(sel::L, fn::typeof(markov), call::Function, len::Int, args...; params = AddressMap()) where L <: AddressMap
+ret, w = score(sel::L, fn::typeof(plate), call::Function, args::Vector; params = AddressMap()) where L <: AddressMap
+ret, w = score(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params = AddressMap()) where {L <: AddressMap, K}
 ```
 
 `score` provides an API to the `ScoreContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and the likelihood weight score of the user-provided selection `sel`. The selection should satisfy the following requirement:

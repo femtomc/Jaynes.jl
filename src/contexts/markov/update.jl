@@ -1,18 +1,18 @@
 # ------------ Utilities ------------ #
 
-function trace_retained(vcs::VectorizedCallSite, 
+function trace_retained(vcs::VectorCallSite, 
                         s::K, 
                         ps::P,
                         ks::Set, 
                         min::Int, 
                         o_len::Int, 
                         n_len::Int, 
-                        args...) where {K <: ConstrainedSelection, P <: Parameters}
-    w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
+                        args...) where {K <: AddressMap, P <: AddressMap}
+    w_adj = -sum(map(get_choices(vcs)[1 : min - 1]) do cl
                      get_score(cl)
                  end)
-    new = vcs.trace.subrecords[1 : min - 1]
-    new_ret = vcs.ret[1 : min - 1]
+    new = get_choices(vcs)[1 : min - 1]
+    new_ret = get_ret(vcs)[1 : min - 1]
 
     # Start at min
     ss = get_sub(s, min)
@@ -38,16 +38,16 @@ function trace_retained(vcs::VectorizedCallSite,
 end
 
 # TODO: finish.
-function trace_new(vcs::VectorizedCallSite, 
+function trace_new(vcs::VectorCallSite, 
                    s::K, 
                    ps::P,
                    ks::Set, 
                    min::Int, 
                    o_len::Int, 
                    n_len::Int, 
-                   args...) where {K <: ConstrainedSelection, P <: Parameters}
+                   args...) where {K <: AddressMap, P <: AddressMap}
     w_adj = 0.0
-    new = vcs.trace.subrecords[1 : min - 1]
+    new = get_choices(get_trace(vcs))[1 : min - 1]
     new_ret = vcs.ret[1 : min - 1]
 
     # Start at min, check if it's less than old length. Otherwise, constraints will be applied during generate.
@@ -87,17 +87,17 @@ function trace_new(vcs::VectorizedCallSite,
 end
 
 # TODO: finish.
-function trace_new(vcs::VectorizedCallSite, 
-                   s::ConstrainedEmptySelection, 
+function trace_new(vcs::VectorCallSite, 
+                   s::Empty, 
                    ps::P,
                    ks::Set, 
                    min::Int, 
                    o_len::Int, 
                    n_len::Int, 
-                   args...) where P <: Parameters
+                   args...) where P <: AddressMap
 
     w_adj = 0.0
-    new = vcs.trace.subrecords[1 : min - 1]
+    new = get_choices(get_trace(vcs))[1 : min - 1]
     new_ret = vcs.ret[1 : min - 1]
 
     for i in o_len + 1 : n_len
@@ -112,22 +112,22 @@ end
 # ------------ Call sites ------------ #
 
 @inline function (ctx::UpdateContext)(c::typeof(markov), 
-                                      addr::Address, 
+                                      addr::A, 
                                       call::Function, 
                                       len::Int,
-                                      args...)
+                                      args...) where A <: Address
     visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = len, length(vcs.ret)
-    ps = get_subparameters(ctx, addr)
-    s = get_subselection(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    s = get_sub(ctx.target, addr)
     min, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ps, ks, min, o_len, n_len, args...)
     else
         w_adj, new, new_ret = trace_new(vcs, s, ps, ks, min, o_len, n_len, args...)
     end
-    add_call!(ctx, addr, VectorizedCallSite{typeof(markov)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(markov)}(VectorTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
     increment!(ctx, w_adj)
 
     return new_ret
@@ -136,7 +136,7 @@ end
 @inline function (ctx::UpdateContext{C, T})(c::typeof(markov), 
                                             call::Function, 
                                             len::Int,
-                                            args...) where {C <: VectorizedCallSite, T <: VectorizedTrace}
+                                            args...) where {C <: VectorCallSite, T <: VectorTrace}
     vcs = ctx.prev
     n_len, o_len = len, length(vcs.ret)
     ps = ctx.fixed
@@ -155,4 +155,32 @@ end
     increment!(ctx, w_adj)
 
     return new_ret
+end
+
+# ------------ Convenience ------------ #
+
+function update(sel::L, vcs::VectorCallSite{typeof(markov)}) where L <: AddressMap
+    argdiffs = NoChange()
+    ctx = UpdateContext(vcs, sel, argdiffs)
+    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}) where {L <: AddressMap, P <: AddressMap}
+    argdiffs = NoChange()
+    ctx = UpdateContext(vcs, sel, ps, argdiffs)
+    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, D <: Diff}
+    ctx = UpdateContext(vcs, sel, NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, P <: AddressMap, D <: Diff}
+    ctx = UpdateContext(vcs, sel, ps, NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end

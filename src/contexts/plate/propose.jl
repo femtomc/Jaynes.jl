@@ -17,11 +17,11 @@
     sc = sum(map(v_cs) do cs
                  get_score(cs)
              end)
-    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(v_cs), sc, d, len, (), v_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cs), sc, d, len, (), v_ret))
     return v_ret
 end
 
-# ------------ Vectorized call sites ------------ #
+# ------------ Vector call sites ------------ #
 
 @inline function (ctx::ProposeContext)(c::typeof(plate), 
                                         addr::Address, 
@@ -43,6 +43,29 @@ end
     sc = sum(map(v_cl) do cl
                  get_score(cl)
                 end)
-    add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(v_cl), sc, call, length(args), args, v_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cl), sc, call, length(args), args, v_ret))
     return v_ret
+end
+
+# ------------ Convenience ------------ #
+
+function propose(fn::typeof(plate), call::Function, args::Vector)
+    ctx = Propose(params)
+    addr = gensym()
+    ret = ctx(fn, addr, call, args)
+    return ret, get_sub(ctx.tr, addr), ctx.score
+end
+
+function propose(params, fn::typeof(plate), call::Function, args::Vector)
+    ctx = Propose(params)
+    addr = gensym()
+    ret = ctx(fn, addr, call, args)
+    return ret, get_sub(ctx.tr, addr), ctx.score
+end
+
+function propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, d, len)
+    return ret, get_sub(ctx.tr, addr), ctx.score
 end
