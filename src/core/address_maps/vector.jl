@@ -19,8 +19,10 @@ Zygote.@adjoint VectorMap(vector) = VectorMap(vector), ret_grad -> (nothing, )
 @inline Base.isempty(vm::VectorMap) = isempty(vm.vector)
 
 function haskey(vm::VectorMap, addr)
-    addr <= length(vm.vector)
+    addr <= length(vm.vector) && has_value(get_sub(vm, addr))
 end
+
+@inline has_sub(vm::VectorMap, addr::A) where A <: Address = addr <= length(vm.vector)
 
 function push!(vm::VectorMap{K}, v::AddressMap{<:K}) where K
     push!(vm.vector, v)

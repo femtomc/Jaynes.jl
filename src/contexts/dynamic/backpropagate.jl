@@ -16,11 +16,7 @@ end
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
     haskey(ctx.target, addr) || return get_value(get_sub(ctx.call, addr))
-    if haskey(ctx.fixed, addr)
-        s = getindex(ctx.fixed, addr)
-    else
-        s = getindex(ctx.call, addr)
-    end
+    s = getindex(ctx.call, addr)
     increment!(ctx, logpdf(d, s))
     return s
 end

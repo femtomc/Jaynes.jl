@@ -14,14 +14,14 @@ macro primitive(ex)
         function (ctx::Jaynes.GenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             Jaynes.visit!(ctx.visited, addr)
             if Jaynes.haskey(ctx.target, addr)
-                s = Jaynes.get_sub(ctx.target, addr)
+                s = Jaynes.getindex(ctx.target, addr)
                 score = logpdf($argname, args..., s)
-                Jaynes.add_choice!(ctx.tr, addr, score, s)
+                Jaynes.add_choice!(ctx, addr, score, s)
                 Jaynes.increment!(ctx, score)
             else
                 s = $argname(args...)
                 score = logpdf($argname, args..., s)
-                Jaynes.add_choice!(ctx.tr, addr, score, s)
+                Jaynes.add_choice!(ctx, addr, score, s)
             end
             return s
         end
@@ -29,7 +29,7 @@ macro primitive(ex)
         @inline function (ctx::Jaynes.ProposeContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             s = $argname(args...)
             score = logpdf($argname, args..., s)
-            Jaynes.add_choice!(ctx.tr, addr, score, s)
+            Jaynes.add_choice!(ctx, addr, score, s)
             Jaynes.increment!(ctx, score)
             return s
         end
@@ -39,7 +39,7 @@ macro primitive(ex)
             in_prev_chm = Jaynes.haskey(ctx.prev, addr)
             in_sel = Jaynes.haskey(ctx.target, addr)
             if in_prev_chm
-                prev = Jaynes.get_sub(ctx.prev, addr)
+                prev = Jaynes.getindex(ctx.prev, addr)
                 if in_sel
                     ret = $argname(args...)
                     Jaynes.add_choice!(ctx.discard, addr, prev)
@@ -51,7 +51,7 @@ macro primitive(ex)
             if in_prev_chm && !in_sel
                 Jaynes.increment!(ctx, score - prev.score)
             end
-            Jaynes.add_choice!(ctx.tr, addr, score, ret)
+            Jaynes.add_choice!(ctx, addr, score, ret)
             return ret
         end
 
@@ -61,13 +61,13 @@ macro primitive(ex)
                                                      args...) where {T <: Jaynes.Address, K}
             in_prev_chm = Jaynes.haskey(ctx.prev, addr)
             in_prev_chm && begin
-                prev = Jaynes.get_sub(ctx.prev, addr)
+                prev = Jaynes.getindex(ctx.prev, addr)
                 prev_ret = prev.val
                 prev_score = prev.score
             end
             in_target = Jaynes.haskey(ctx.target, addr)
             if in_target
-                ret = Jaynes.get_sub(ctx.target, addr)
+                ret = Jaynes.getindex(ctx.target, addr)
                 in_prev_chm && begin
                     Jaynes.add_choice!(ctx.discard, addr, prev)
                 end
@@ -83,17 +83,43 @@ macro primitive(ex)
             elseif in_target
                 Jaynes.increment!(ctx, score)
             end
-            Jaynes.add_choice!(ctx.tr, addr, score, ret)
+            Jaynes.add_choice!(ctx, addr, score, ret)
             return ret
         end
 
 
-        @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
+        @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), 
+                                                    addr::T, 
+                                                    $argname::$name, 
+                                                    args...) where {T <: Jaynes.Address, K}
             Jaynes.haskey(ctx.target, addr) || error("ScoreError: constrained target must provide constraints for all possible addresses in trace. Missing at address $addr.")
-            val = Jaynes.get_sub(ctx.target, addr)
-            Jaynes.increment!(ctx, logpdf(d, val))
+            val = Jaynes.getindex(ctx.target, addr)
+            Jaynes.increment!(ctx, logpdf($argname, args..., val))
             return val
 
+        end
+
+        @inline function (ctx::Jaynes.ParameterBackpropagateContext)(call::typeof(rand), 
+                                                                     addr::T, 
+                                                                     $argname::$name,
+                                                                     args...) where {T <: Jaynes.Address, K}
+            if Jaynes.haskey(ctx.fixed, addr)
+                s = Jaynes.getindex(ctx.fixed, addr)
+            else
+                s = Jaynes.get_value(Jaynes.get_sub(ctx.call, addr))
+            end
+            Jaynes.increment!(ctx, logpdf($argname, args..., s))
+            return s
+        end
+
+        @inline function (ctx::Jaynes.ChoiceBackpropagateContext)(call::typeof(rand), 
+                                                                  addr::T, 
+                                                                  $argname::$name, 
+                                                                  args...) where {T <: Jaynes.Address, K}
+            Jaynes.haskey(ctx.target, addr) || return Jaynes.get_value(Jaynes.get_sub(ctx.call, addr))
+            s = Jaynes.getindex(ctx.call, addr)
+            Jaynes.increment!(ctx, logpdf($argname, args..., s))
+            return s
         end
     end
     expr = MacroTools.prewalk(unblock ∘ rmlines, expr)

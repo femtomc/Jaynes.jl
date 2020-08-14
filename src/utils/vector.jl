@@ -32,8 +32,3 @@ function keyset(sel::L, n_len::Int) where L <: Target
     end
     return min, keyset
 end
-
-function keyset(sel::Empty, n_len::Int)
-    keyset = Set{Int}()
-    return n_len, keyset
-end

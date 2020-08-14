@@ -24,7 +24,11 @@ end
 
 @inline Base.isempty(dm::DynamicMap) = isempty(dm.tree)
 
-@inline haskey(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr)
+# This is a fallback for subtypes of DynamicMap.
+@inline haskey(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr) && has_value(get_sub(dm, addr))
+
+# This is a fallback for subtypes of DynamicMap.
+@inline has_sub(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr)
 
 function set_sub!(dm::DynamicMap{K}, addr::A, v::AddressMap{<:K}) where {K, A <: Address}
     delete!(dm.tree, addr)
@@ -73,7 +77,6 @@ function merge(sel1::DynamicMap{T},
 end
 merge(dm::DynamicMap, ::Empty) = Empty(), false
 merge(::Empty, dm::DynamicMap) = deepcopy(dm), false
-Zygote.@adjoint merge(a, b) = merge(a, b), s_grad -> (nothing, nothing)
 
 function merge!(sel1::DynamicMap{K},
                 sel2::DynamicMap{K}) where K

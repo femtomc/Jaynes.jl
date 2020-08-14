@@ -3,11 +3,12 @@
 const Gradients = DynamicMap{Value}
 
 @inline function accumulate!(gs::Gradients, addr, v)
-    set_sub!(gs, addr, Value(v + get(gs, addr, 0.0)))
+    set_sub!(gs, addr, Value(v + get(gs, addr, zero(v))))
 end
 
 @inline function accumulate!(gs::Gradients, addr, v::Value)
-    set_sub!(gs, addr, Value(get_value(v) + get(gs, addr, 0.0)))
+    val = get_value(v)
+    set_sub!(gs, addr, Value(val + get(gs, addr, zero(val))))
 end
 
 @inline function accumulate!(gs1::Gradients, gs2::Gradients)

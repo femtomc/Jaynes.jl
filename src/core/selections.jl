@@ -14,6 +14,8 @@ Base.merge(::Empty, ::SelectAll) = SelectAll()
 
 const DynamicTarget = DynamicMap{Select}
 
+@inline haskey(dm::DynamicTarget, addr::A) where A <: Address = haskey(dm.tree, addr) && !isempty(get_sub(dm, addr))
+
 Base.merge!(dt::DynamicTarget, s::SelectAll) = dt
 
 @inline Base.push!(tg::DynamicTarget, addr) = set_sub!(tg, addr, SelectAll())

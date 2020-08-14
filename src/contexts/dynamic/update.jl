@@ -133,12 +133,6 @@ function update(cs::DynamicCallSite, argdiffs::D, new_args...) where D <: Diff
     return update(ctx, cs, new_args...)
 end
 
-function update(ps::P, cs::DynamicCallSite, argdiffs::D, new_args...) where {P <: AddressMap, D <: Diff}
-    sel = selection()
-    ctx = Update(sel, ps, cs, argdiffs)
-    return update(ctx, cs, new_args...)
-end
-
 function update(sel::L, cs::DynamicCallSite, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
     ctx = Update(sel, cs, argdiffs)
     return update(ctx, cs, new_args...)
