@@ -24,7 +24,7 @@ end
 
 @inline Base.isempty(dm::DynamicMap) = isempty(dm.tree)
 
-@inline haskey(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr)
+@inline haskey(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr) && has_value(get_sub(dm, addr))
 
 function set_sub!(dm::DynamicMap{K}, addr::A, v::AddressMap{<:K}) where {K, A <: Address}
     delete!(dm.tree, addr)
