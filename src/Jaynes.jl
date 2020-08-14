@@ -10,6 +10,7 @@ using MacroTools
 
 using Reexport
 @reexport using Distributions
+import Distributions: logpdf
 
 # Chainz
 using ZigZagBoomerang
@@ -87,12 +88,11 @@ end
 # ------------ includes ------------ #
 
 include("core.jl")
-include("utils/numerical.jl")
-include("utils/vector.jl")
 include("compiler.jl")
 include("contexts.jl")
 include("inference.jl")
 include("foreign_model_interfaces.jl")
+include("utils.jl")
 
 # Contexts.
 export Generate, generate
