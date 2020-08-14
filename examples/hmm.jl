@@ -24,6 +24,8 @@ simulation = () -> begin
 
         # Complexity of filter step is constant as a size of the trace.
         @time filter_step!(sel, ps, NoChange(), (i,))
+        check_ess_resample!(ps)
+        println(get_lmle(ps))
     end
     return ps
 end

@@ -38,14 +38,6 @@ function Update(select::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: Cal
                   argdiffs)
 end
 
-# Update has a special dynamo.
-@dynamo function (mx::UpdateContext)(a...)
-    ir = IR(a...)
-    ir == nothing && return
-    recur!(ir)
-    return ir
-end
-
 # ------------ Convenience ------------ #
 
 function update(ctx::UpdateContext, bbcs::DynamicCallSite, args...) where D <: Diff

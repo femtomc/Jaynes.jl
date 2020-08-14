@@ -282,83 +282,81 @@ end
 function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
-    _, vals, _ = choice_gradients(Parameters(), choice_grads, choice_selection, cl, ret_grad)
-    return vals, choice_grads
+    arg_grads, vals, _ = choice_gradients(Parameters(), choice_grads, choice_selection, cl, ret_grad)
+    return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(fixed::S, cl::T, ret_grad) where {S <: ConstrainedSelection, T <: CallSite}
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
-    _, vals, _ = choice_gradients(fixed, Parameters(), choice_grads, choice_selection, cl, ret_grad)
-    return vals, choice_grads
+    arg_grads, vals, _ = choice_gradients(fixed, Parameters(), choice_grads, choice_selection, cl, ret_grad)
+    return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: Parameters, T <: CallSite}
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
-    _, vals, _ = choice_gradients(ps, choice_grads, choice_selection, cl, ret_grad)
-    return vals, choice_grads
+    arg_grads, vals, _ = choice_gradients(ps, choice_grads, choice_selection, cl, ret_grad)
+    return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(fixed::S, ps::P, cl::T, ret_grad) where {S <: ConstrainedSelection, P <: Parameters, T <: CallSite}
     choice_grads = Gradients()
     choice_selection = UnconstrainedAllSelection()
-    _, vals, _ = choice_gradients(fixed, ps, choice_grads, choice_selection, cl, ret_grad)
-    return vals, choice_grads
+    arg_grads, vals, _ = choice_gradients(fixed, ps, choice_grads, choice_selection, cl, ret_grad)
+    return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection}
     choice_grads = Gradients()
-    _, vals, _ = choice_gradients(Parameters(), choice_grads, sel, cl, ret_grad)
-    return vals, choice_grads
+    arg_grads, vals, _ = choice_gradients(Parameters(), choice_grads, sel, cl, ret_grad)
+    return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(sel::K, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection, P <: Parameters}
     choice_grads = Gradients()
-    _, vals, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
-    return vals, choice_grads
+    arg_grads, vals, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
+    return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(sel::K, fixed::S, cl::T, ret_grad) where {K <: UnconstrainedSelection, S <: ConstrainedSelection, T <: CallSite}
     choice_grads = Gradients()
-    _, vals, _ = choice_gradients(Parameters(), choice_grads, sel, cl, ret_grad)
-    return vals, choice_grads
+    arg_grads, vals, _ = choice_gradients(Parameters(), choice_grads, sel, cl, ret_grad)
+    return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(sel::K, fixed::S, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: UnconstrainedSelection, S <: ConstrainedSelection, P <: Parameters}
     choice_grads = Gradients()
-    _, vals, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
-    return vals, choice_grads
+    arg_grads, vals, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
+    return arg_grads, vals, choice_grads
 end
 
 # ------------ get_learnable_gradients ------------ #
 
 function get_learnable_gradients(ps::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
     param_grads = Gradients()
-    accumulate_learnable_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
-    return param_grads
+    arg_grads = accumulate_learnable_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
+    return arg_grads, param_grads
 end
 
 function get_learnable_gradients(sel::K, ps::P, cl::HierarchicalCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     param_grads = Gradients()
-    accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
-    return param_grads
+    arg_grads = accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
+    return arg_grads, param_grads
 end
 
 function get_learnable_gradients(ps::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where P <: Parameters
     param_grads = Gradients()
-    accumulate_learnable_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
-    for k in keys(param_grads.tree)
-        return param_grads.tree[k]
-    end
+    arg_grads, accumulate_learnable_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
+    key = keys(param_grads.tree)[1]
+    return arg_grads, param_grads[key]
 end
 
 function get_learnable_gradients(sel::K, ps::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
     param_grads = Gradients()
-    accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
-    for k in keys(param_grads.tree)
-        return param_grads.tree[k]
-    end
+    arg_grads = accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
+    key = keys(param_grads.tree)[1]
+    return arg_grads, param_grads[key]
 end
 
 # ------------ train ------------ #
@@ -366,7 +364,7 @@ end
 function train(ps::P, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where P <: Parameters
     for i in 1 : iters
         _, cl = simulate(ps, fn, args...)
-        grads = get_learnable_gradients(ps, cl, 1.0)
+        _, grads = get_learnable_gradients(ps, cl, 1.0)
         ps = update_learnables(opt, ps, grads)
     end
     return ps
@@ -375,7 +373,7 @@ end
 function train(sel::K, ps::P, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where {K <: ConstrainedSelection, P <: Parameters}
     for i in 1 : iters
         _, cl, _ = generate(sel, ps, fn, args...)
-        grads = get_learnable_gradients(sel, ps, cl, 1.0)
+        _, grads = get_learnable_gradients(sel, ps, cl, 1.0)
         ps = update_learnables(opt, ps, grads)
     end
     return ps
