@@ -73,7 +73,6 @@ function merge(sel1::DynamicMap{T},
 end
 merge(dm::DynamicMap, ::Empty) = Empty(), false
 merge(::Empty, dm::DynamicMap) = deepcopy(dm), false
-Zygote.@adjoint merge(a, b) = merge(a, b), s_grad -> (nothing, nothing)
 
 function merge!(sel1::DynamicMap{K},
                 sel2::DynamicMap{K}) where K

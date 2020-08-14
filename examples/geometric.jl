@@ -4,7 +4,7 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using Distributions
 
-geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 1 : 1 + rand(:geo, geo, p)
+geo(p::Float64) = rand(Bernoulli(p)) ? 1 : 1 + geo(p)
 
 # Define as primitive.
 @primitive function logpdf(fn::typeof(geo), p, count)

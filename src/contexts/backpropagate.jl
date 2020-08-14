@@ -186,13 +186,6 @@ function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     return arg_grads, vals, choice_grads
 end
 
-function get_choice_gradients(fixed::S, cl::T, ret_grad) where {S <: AddressMap, T <: CallSite}
-    choice_grads = Gradients()
-    choice_target = SelectAll()
-    arg_grads, vals, _ = choice_gradients(fixed, Empty(), choice_grads, choice_target, cl, ret_grad)
-    return arg_grads, vals, choice_grads
-end
-
 function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
     choice_target = SelectAll()
@@ -216,12 +209,6 @@ end
 function get_choice_gradients(sel::K, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, P <: AddressMap}
     choice_grads = Gradients()
     arg_grads, vals, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
-    return arg_grads, vals, choice_grads
-end
-
-function get_choice_gradients(sel::K, fixed::S, cl::T, ret_grad) where {K <: Target, S <: AddressMap, T <: CallSite}
-    choice_grads = Gradients()
-    arg_grads, vals, _ = choice_gradients(Empty(), choice_grads, sel, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 

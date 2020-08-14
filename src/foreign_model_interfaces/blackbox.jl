@@ -14,7 +14,7 @@ macro primitive(ex)
         function (ctx::Jaynes.GenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             Jaynes.visit!(ctx.visited, addr)
             if Jaynes.haskey(ctx.target, addr)
-                s = Jaynes.get_sub(ctx.target, addr)
+                s = Jaynes.getindex(ctx.target, addr)
                 score = logpdf($argname, args..., s)
                 Jaynes.add_choice!(ctx.tr, addr, score, s)
                 Jaynes.increment!(ctx, score)
@@ -39,7 +39,7 @@ macro primitive(ex)
             in_prev_chm = Jaynes.haskey(ctx.prev, addr)
             in_sel = Jaynes.haskey(ctx.target, addr)
             if in_prev_chm
-                prev = Jaynes.get_sub(ctx.prev, addr)
+                prev = Jaynes.getindex(ctx.prev, addr)
                 if in_sel
                     ret = $argname(args...)
                     Jaynes.add_choice!(ctx.discard, addr, prev)
@@ -61,13 +61,13 @@ macro primitive(ex)
                                                      args...) where {T <: Jaynes.Address, K}
             in_prev_chm = Jaynes.haskey(ctx.prev, addr)
             in_prev_chm && begin
-                prev = Jaynes.get_sub(ctx.prev, addr)
+                prev = Jaynes.getindex(ctx.prev, addr)
                 prev_ret = prev.val
                 prev_score = prev.score
             end
             in_target = Jaynes.haskey(ctx.target, addr)
             if in_target
-                ret = Jaynes.get_sub(ctx.target, addr)
+                ret = Jaynes.getindex(ctx.target, addr)
                 in_prev_chm && begin
                     Jaynes.add_choice!(ctx.discard, addr, prev)
                 end
@@ -90,7 +90,7 @@ macro primitive(ex)
 
         @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             Jaynes.haskey(ctx.target, addr) || error("ScoreError: constrained target must provide constraints for all possible addresses in trace. Missing at address $addr.")
-            val = Jaynes.get_sub(ctx.target, addr)
+            val = Jaynes.getindex(ctx.target, addr)
             Jaynes.increment!(ctx, logpdf(d, val))
             return val
 
