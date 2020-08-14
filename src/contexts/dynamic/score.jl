@@ -38,3 +38,30 @@ end
     increment!(ctx, w)
     return ret
 end
+
+# ------------ Convenience ------------ #
+
+function score(sel::L, fn::Function, args...) where L <: AddressMap
+    ctx = Score(sel)
+    ret = ctx(fn, args...)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end
+
+function score(sel::L, params, fn::Function, args...) where L <: AddressMap
+    ctx = Score(sel, params)
+    ret = ctx(fn, args...)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end
+
+function score(sel::L, fn::typeof(rand), d::Distribution{K}) where {L <: AddressMap, K}
+    ctx = Score(sel)
+    addr = gensym()
+    ret = ctx(fn, addr, d)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end

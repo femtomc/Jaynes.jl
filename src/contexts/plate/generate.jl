@@ -58,3 +58,30 @@ end
     add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(v_cl), sc, call, len, args, v_ret))
     return v_ret
 end
+
+# ------------ Convenience ------------ #
+
+function generate(schema::L, fn::typeof(plate), call::Function, args::Vector) where L <: AddressMap
+    addr = gensym()
+    v_schema = schemaion(addr => schema)
+    ctx = Generate(v_schema)
+    ret = ctx(fn, addr, call, args)
+    return ret, get_sub(ctx.tr, addr), ctx.weight
+end
+
+function generate(schema::L, params, fn::typeof(plate), call::Function, args::Vector) where L <: AddressMap
+    addr = gensym()
+    v_schema = schemaion(addr => schema)
+    v_ps = learnables(addr => params)
+    ctx = Generate(v_schema, v_ps)
+    ret = ctx(fn, addr, call, args)
+    return ret, get_sub(ctx.tr, addr), ctx.weight
+end
+
+function generate(schema::L, fn::typeof(plate), d::Distribution{K}, len::Int) where {L <: AddressMap, K}
+    addr = gensym()
+    v_schema = schemaion(addr => schema)
+    ctx = Generate(v_schema)
+    ret = ctx(fn, addr, d, len)
+    return ret, get_sub(ctx.tr, addr), ctx.weight
+end

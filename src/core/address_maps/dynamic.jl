@@ -17,7 +17,7 @@ Zygote.@adjoint DynamicMap(tree) = DynamicMap(tree), ret_grad -> (nothing, )
 @inline Base.isempty(dm::DynamicMap) = isempty(dm.tree)
 
 function haskey(dm::DynamicMap, addr)
-    haskey(dm.tree, addr) && !isempty(dm.tree[addr])
+    haskey(dm.tree, addr)
 end
 
 function set_sub!(dm::DynamicMap{K}, addr, v::AddressMap{<:K}) where K

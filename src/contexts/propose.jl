@@ -9,62 +9,6 @@ end
 Propose() = ProposeContext(AddressMap())
 Propose(params) = ProposeContext(AddressMap(), params)
 
-# ------------ Convenience ------------ #
-
-function propose(fn::Function, args...)
-    ctx = Propose()
-    ret = ctx(fn, args...)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
-end
-
-function propose(params, fn::Function, args...)
-    ctx = Propose(params)
-    ret = ctx(fn, args...)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
-end
-
-function propose(fn::typeof(rand), d::Distribution{K}) where K
-    ctx = Propose()
-    addr = gensym()
-    ret = ctx(fn, addr, d)
-    return ret, get_top(ctx.tr, addr), ctx.score
-end
-
-function propose(fn::typeof(markov), call::Function, len::Int, args...)
-    ctx = Propose()
-    addr = gensym()
-    ret = ctx(fn, addr, call, len, args...)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
-function propose(params, fn::typeof(markov), call::Function, len::Int, args...)
-    ctx = Propose(params)
-    addr = gensym()
-    ret = ctx(fn, addr, call, len, args...)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
-function propose(fn::typeof(plate), call::Function, args::Vector)
-    ctx = Propose(params)
-    addr = gensym()
-    ret = ctx(fn, addr, call, args)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
-function propose(params, fn::typeof(plate), call::Function, args::Vector)
-    ctx = Propose(params)
-    addr = gensym()
-    ret = ctx(fn, addr, call, args)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
-function propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
-    ctx = Propose()
-    addr = gensym()
-    ret = ctx(fn, addr, d, len)
-    return ret, get_sub(ctx.tr, addr), ctx.score
-end
-
 # ------------ includes ------------ #
 
 include("dynamic/propose.jl")

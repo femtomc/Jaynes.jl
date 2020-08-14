@@ -46,3 +46,26 @@ end
     add_call!(ctx, addr, VectorizedCallSite{typeof(plate)}(VectorizedTrace(v_cl), sc, call, length(args), args, v_ret))
     return v_ret
 end
+
+# ------------ Convenience ------------ #
+
+function propose(fn::typeof(plate), call::Function, args::Vector)
+    ctx = Propose(params)
+    addr = gensym()
+    ret = ctx(fn, addr, call, args)
+    return ret, get_sub(ctx.tr, addr), ctx.score
+end
+
+function propose(params, fn::typeof(plate), call::Function, args::Vector)
+    ctx = Propose(params)
+    addr = gensym()
+    ret = ctx(fn, addr, call, args)
+    return ret, get_sub(ctx.tr, addr), ctx.score
+end
+
+function propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, d, len)
+    return ret, get_sub(ctx.tr, addr), ctx.score
+end

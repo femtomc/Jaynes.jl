@@ -5,7 +5,7 @@ function trace_retained(vcs::VectorizedCallSite,
                         ks, 
                         o_len::Int, 
                         n_len::Int, 
-                        args::Vector) where K <: UnconstrainedSelection
+                        args::Vector) where K <: Target
     w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
                      get_score(cl)
                  end)
@@ -31,7 +31,7 @@ function trace_new(vcs::VectorizedCallSite,
                    ks, 
                    o_len::Int, 
                    n_len::Int, 
-                   args::Vector) where K <: UnconstrainedSelection
+                   args::Vector) where K <: Target
     w_adj = 0.0
     new_ret = typeof(vcs.ret)(undef, n_len)
     new = vcs.trace.subrecords
@@ -97,4 +97,20 @@ end
     increment!(ctx, w_adj)
 
     return new_ret
+end
+
+# ------------ Convenience ------------ #
+
+function regenerate(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: Target, D <: Diff}
+    argdiffs = NoChange()
+    ctx = Regenerate(vcs, sel, argdiffs)
+    ret = ctx(plate, vcs.fn, vcs.args)
+    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function regenerate(sel::L, ps::P, vcs::VectorizedCallSite{typeof(plate)}) where {L <: Target, P <: AddressMap, D <: Diff}
+    argdiffs = NoChange()
+    ctx = Regenerate(vcs, sel, ps, argdiffs)
+    ret = ctx(plate, vcs.fn, vcs.args)
+    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end

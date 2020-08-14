@@ -1,99 +1,48 @@
-mutable struct RegenerateContext{C <: CallSite,
-                                 T <: Trace, 
-                                 K <: UnconstrainedSelection,
-                                 P <: Parameters,
-                                 D <: Diff} <: ExecutionContext
+mutable struct RegenerateContext{C <: AddressMap,
+                                 T <: AddressMap, 
+                                 K <: AddressMap,
+                                 D <: AddressMap,
+                                 P <: AddressMap,
+                                 Ag <: Diff} <: ExecutionContext
     prev::C
     tr::T
     select::K
     weight::Float64
     score::Float64
-    discard::HierarchicalTrace
+    discard::D
     visited::Visitor
     params::P
-    argdiffs::D
-    RegenerateContext(cl::C, select::K, argdiffs::D) where {C <: CallSite, K <: UnconstrainedSelection, D <: Diff} = new{C, typeof(cl.trace), K, EmptyParameters, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), Parameters(), argdiffs)
-    RegenerateContext(cl::C, select::K, params::P, argdiffs::D) where {C <: CallSite, K <: UnconstrainedSelection, P <: Parameters, D <: Diff} = new{C, typeof(cl.trace), K, P, D}(cl, typeof(cl.trace)(), select, 0.0, 0.0, Trace(), Visitor(), params, argdiffs)
+    argdiffs::Ag
 end
-Regenerate(cl, select, argdiffs) = RegenerateContext(cl, select, argdiffs)
-
-# ------------ Convenience ------------ #
-
-function regenerate(ctx::RegenerateContext, bbcs::HierarchicalCallSite, new_args...)
-    ret = ctx(bbcs.fn, new_args...)
-    visited = ctx.visited
-    adj_w = adjust_to_intersection(get_trace(bbcs), visited)
-    return ret, HierarchicalCallSite(ctx.tr, ctx.score - adj_w, bbcs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
+function Regenerate(select::K, cl::C) where {K <: AddressMap, C <: CallSite}
+    RegenerateContext(cl, 
+                  typeof(cl.trace)(), 
+                  select, 
+                  0.0, 
+                  0.0, 
+                  DynamicDiscard(), 
+                  Visitor(), 
+                  Empty(), 
+                  NoChange())
 end
-
-function regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection
-    argdiffs = NoChange()
-    ctx = RegenerateContext(bbcs, sel, argdiffs)
-    return regenerate(ctx, bbcs, bbcs.args...)
-end
-
-function regenerate(sel::L, ps::P, bbcs::HierarchicalCallSite) where {L <: UnconstrainedSelection, P <: Parameters}
-    argdiffs = NoChange()
-    ctx = RegenerateContext(bbcs, sel, ps, argdiffs)
-    return regenerate(ctx, bbcs, bbcs.args...)
-end
-
-function regenerate(sel::L, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: UnconstrainedSelection, D <: Diff}
-    ctx = RegenerateContext(bbcs, sel, argdiffs)
-    return regenerate(ctx, bbcs, new_args...)
-end
-
-function regenerate(sel::L, ps::P, bbcs::HierarchicalCallSite, argdiffs::D, new_args...) where {L <: UnconstrainedSelection, P <: Parameters, D <: Diff}
-    ctx = RegenerateContext(bbcs, sel, ps, argdiffs)
-    return regenerate(ctx, bbcs, new_args...)
-end
-
-function regenerate(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: UnconstrainedSelection, D <: Diff}
-    argdiffs = NoChange()
-    ctx = RegenerateContext(vcs, sel, argdiffs)
-    ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function regenerate(sel::L, ps::P, vcs::VectorizedCallSite{typeof(plate)}) where {L <: UnconstrainedSelection, P <: Parameters, D <: Diff}
-    argdiffs = NoChange()
-    ctx = RegenerateContext(vcs, sel, ps, argdiffs)
-    ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: UnconstrainedSelection, D <: Diff}
-    argdiffs = NoChange()
-    ctx = RegenerateContext(vcs, sel, argdiffs)
-    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function regenerate(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}) where {L <: UnconstrainedSelection, P <: Parameters, D <: Diff}
-    argdiffs = NoChange()
-    ctx = RegenerateContext(vcs, sel, ps, argdiffs)
-    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: UnconstrainedSelection, D <: Diff}
-    ctx = RegenerateContext(vcs, sel, NoChange())
-    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-end
-
-function regenerate(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: UnconstrainedSelection, P <: Parameters, D <: Diff}
-    ctx = RegenerateContext(vcs, sel, ps, NoChange())
-    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+function Regenerate(select::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: CallSite, Ag <: Diff}
+    RegenerateContext(cl, 
+                  typeof(cl.trace)(), 
+                  select, 
+                  0.0, 
+                  0.0, 
+                  DynamicDiscard(), 
+                  Visitor(), 
+                  Empty(), 
+                  argdiffs)
 end
 
 # ------------ includes ------------ #
 
 include("dynamic/regenerate.jl")
-include("plate/regenerate.jl")
-include("markov/regenerate.jl")
-include("factor/regenerate.jl")
+#include("plate/regenerate.jl")
+#include("markov/regenerate.jl")
+#include("factor/regenerate.jl")
 
 # ------------ Documentation ------------ #
 
@@ -101,8 +50,8 @@ include("factor/regenerate.jl")
 """
 ```julia
 mutable struct RegenerateContext{T <: Trace, 
-                                 L <: UnconstrainedSelection,
-                                 P <: Parameters} <: ExecutionContext
+                                 L <: Target,
+                                 P <: AddressMap} <: ExecutionContext
     prev::T
     tr::T
     select::L
@@ -119,10 +68,10 @@ Inner constructors:
 ```julia
 function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
     un_sel = selection(sel)
-    new{T, typeof(un_sel), EmptyParameters}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), Parameters())
+    new{T, typeof(un_sel), EmptyAddressMap}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), AddressMap())
 end
-function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: UnconstrainedSelection}
-    new{T, L, EmptyParameters}(tr, Trace(), sel, 0.0, Trace(), Visitor(), Parameters())
+function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: Target}
+    new{T, L, EmptyAddressMap}(tr, Trace(), sel, 0.0, Trace(), Visitor(), AddressMap())
 end
 ```
 
@@ -130,17 +79,17 @@ Outer constructors:
 
 ```julia
 Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
-Regenerate(tr::Trace, sel::UnconstrainedSelection) = RegenerateContext(tr, sel)
+Regenerate(tr::Trace, sel::Target) = RegenerateContext(tr, sel)
 ```
 
-The `RegenerateContext` is used for MCMC algorithms, to propose new choices for addresses indicated by an `UnconstrainedSelection` in the `select` field.
+The `RegenerateContext` is used for MCMC algorithms, to propose new choices for addresses indicated by an `Target` in the `select` field.
 """, RegenerateContext)
 
 @doc(
 """
 ```julia
-ret, cl = regenerate(sel::L, bbcs::HierarchicalCallSite, new_args...) where L <: UnconstrainedSelection
-ret, cl = regenerate(sel::L, bbcs::HierarchicalCallSite) where L <: UnconstrainedSelection
+ret, cl = regenerate(sel::L, cs::DynamicCallSite, new_args...) where L <: Target
+ret, cl = regenerate(sel::L, cs::DynamicCallSite) where L <: Target
 ```
-`regenerate` is an API to the `RegenerateContext` execution context. `regenerate` requires that users provide an `UnconstrainedSelection`, an original call site, and possibly a set of new arguments to be used in the regeneration step. This context internally keeps track of the bookkeeping required to increment likelihood weights, as well as prune off parts of the trace which are invalid if a regenerated choice changes the shape of the trace (e.g. control flow), and returns a new return value `ret` as well as the modified call site `cl`.
+`regenerate` is an API to the `RegenerateContext` execution context. `regenerate` requires that users provide an `Target`, an original call site, and possibly a set of new arguments to be used in the regeneration step. This context internally keeps track of the bookkeeping required to increment likelihood weights, as well as prune off parts of the trace which are invalid if a regenerated choice changes the shape of the trace (e.g. control flow), and returns a new return value `ret` as well as the modified call site `cl`.
 """, regenerate)

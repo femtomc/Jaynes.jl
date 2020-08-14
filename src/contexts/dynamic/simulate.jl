@@ -29,3 +29,32 @@ end
     add_call!(ctx, addr, cl)
     return ret
 end
+
+# ------------ Convenience ------------ #
+
+function simulate(fn::Function, args...)
+    ctx = SimulateContext()
+    ret = ctx(fn, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
+end
+
+function simulate(params::P, fn::Function, args...) where P <: AddressMap
+    ctx = SimulateContext(params)
+    ret = ctx(fn, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
+end
+
+function simulate(fn::typeof(rand), d::Distribution{T}) where T
+    ctx = SimulateContext()
+    addr = gensym()
+    ret = ctx(rand, addr, d)
+    return ret, get_top(ctx.tr, addr)
+end
+
+function simulate(params::P, fn::typeof(rand), d::Distribution{T}) where {P <: AddressMap, T}
+    ctx = SimulateContext(params)
+    addr = gensym()
+    ret = ctx(rand, addr, d)
+    return ret, get_top(ctx.tr, addr)
+end
+

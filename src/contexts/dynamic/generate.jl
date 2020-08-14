@@ -45,3 +45,24 @@ end
     increment!(ctx, w)
     return ret
 end
+
+# ------------ Convenience ------------ #
+
+function generate(schema::L, fn::Function, args...) where L <: AddressMap
+    ctx = Generate(schema)
+    ret = ctx(fn, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+end
+
+function generate(schema::L, params, fn::Function, args...) where L <: AddressMap
+    ctx = Generate(schema, params)
+    ret = ctx(fn, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+end
+
+function generate(schema::L, fn::typeof(rand), d::Distribution{K}) where {L <: AddressMap, K}
+    ctx = Generate(schema)
+    addr = gensym()
+    ret = ctx(fn, addr, d)
+    return ret, get_top(ctx.tr, addr), ctx.weight
+end

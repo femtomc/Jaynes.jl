@@ -7,6 +7,10 @@ abstract type Leaf{K} <: AddressMap{K} end
 
 struct Empty <: Leaf{Empty} end
 
+abstract type Select <: Leaf{Select} end
+struct SelectAll <: Select end
+struct Special <: Leaf{Special} end
+
 struct Value{K} <: Leaf{Value}
     val::K
 end
@@ -16,12 +20,10 @@ struct Choice{K} <: Leaf{Choice}
     val::K
 end
 
+@inline projection(c::Choice, tg::Empty) = 0.0
+@inline projection(c::Choice, tg::SelectAll) = c.score
+
 @inline get_score(c::Choice) = c.score
-
-abstract type Select <: Leaf{Select} end
-struct SelectAll <: Select end
-
-struct Special <: Leaf{Special} end
 
 # ------------- Interfaces ------------ #
 

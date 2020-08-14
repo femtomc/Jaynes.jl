@@ -99,3 +99,28 @@ end
 
     return new_ret
 end
+
+# ------------ Convenience ------------ #
+
+# TODO: disallowed for now.
+#function update(sel::L, vcs::VectorizedCallSite{typeof(plate)}, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
+#    addr = gensym()
+#    v_sel = selection(addr => sel)
+#    ctx = UpdateContext(vcs, v_sel, argdiffs)
+#    ret = ctx(plate, addr, vcs.fn, new_args...)
+#    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+#end
+
+function update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where L <: AddressMap
+    argdiffs = NoChange()
+    ctx = UpdateContext(vcs, sel, argdiffs)
+    ret = ctx(plate, vcs.fn, vcs.args)
+    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(plate)}) where {L <: AddressMap, P <: AddressMap}
+    argdiffs = NoChange()
+    ctx = UpdateContext(vcs, sel, ps, argdiffs)
+    ret = ctx(plate, vcs.fn, vcs.args)
+    return ret, VectorizedCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end

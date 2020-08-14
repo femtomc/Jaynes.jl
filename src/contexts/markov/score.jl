@@ -19,3 +19,16 @@
     end
     return v_ret
 end
+
+# ------------ Convenience ------------ #
+
+# TODO: fix for dispatch on params.
+function score(sel::L, fn::typeof(markov), call::Function, len::Int, args...; params = AddressMap()) where L <: AddressMap
+    addr = gensym()
+    v_sel = selection(addr => sel)
+    ctx = Score(v_sel, params)
+    ret = ctx(fn, addr, call, len, args...)
+    b, missed = compare(sel.query, ctx.visited)
+    b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
+    return ret, ctx.weight
+end

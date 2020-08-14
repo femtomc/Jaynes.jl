@@ -17,7 +17,7 @@ const DynamicTarget = DynamicMap{Select}
 @inline Base.push!(tg::DynamicTarget, addr) = set_sub!(tg, addr, SelectAll())
 @inline function Base.push!(tg::DynamicTarget, addr::Tuple{}) end
 @inline function Base.push!(tg::DynamicTarget, addr::Tuple{T}) where T
-    Base.push!(s, addr[1])
+    Base.push!(tg, addr[1])
 end
 @inline function Base.push!(tg::DynamicTarget, addr::Tuple) where T
     hd, tl = addr
@@ -29,12 +29,4 @@ end
         merge!(new, sub)
         set_sub!(tg, hd, new)
     end
-end
-
-function target(addrs...)
-    tg = DynamicTarget()
-    for addr in addrs
-        set_sub!(tg, addr, SelectAll())
-    end
-    tg
 end

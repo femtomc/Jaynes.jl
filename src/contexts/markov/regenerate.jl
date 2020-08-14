@@ -127,3 +127,32 @@ end
 
     return new_ret
 end
+
+# ------------ Convenience ------------ #
+
+function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: Target, D <: Diff}
+    argdiffs = NoChange()
+    ctx = Regenerate(vcs, sel, argdiffs)
+    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function regenerate(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}) where {L <: Target, P <: AddressMap, D <: Diff}
+    argdiffs = NoChange()
+    ctx = Regenerate(vcs, sel, ps, argdiffs)
+    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: Target, D <: Diff}
+    ctx = Regenerate(vcs, sel, NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function regenerate(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: Target, P <: AddressMap, D <: Diff}
+    ctx = Regenerate(vcs, sel, ps, NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+

@@ -5,10 +5,6 @@ import Base: +
 # Maps.
 include("core/address_map.jl")
 
-# Traces.
-include("core/traces.jl")
-Trace() = DynamicTrace()
-
 # Selections.
 include("core/selections.jl")
 
@@ -20,8 +16,20 @@ function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
     tg
 end
 
+function target(v::Vector{T}) where T <: Tuple
+    tg = DynamicTarget()
+    for k in v
+        push!(tg, k)
+    end
+    tg
+end
+
 # Visitor.
 include("core/visitor.jl")
+
+# Traces.
+include("core/traces.jl")
+Trace() = DynamicTrace()
 
 # Learnables and gradients.
 include("core/learnables.jl")

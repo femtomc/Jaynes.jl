@@ -156,3 +156,31 @@ end
 
     return new_ret
 end
+
+# ------------ Convenience ------------ #
+
+function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where L <: AddressMap
+    argdiffs = NoChange()
+    ctx = UpdateContext(vcs, sel, argdiffs)
+    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}) where {L <: AddressMap, P <: AddressMap}
+    argdiffs = NoChange()
+    ctx = UpdateContext(vcs, sel, ps, argdiffs)
+    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, D <: Diff}
+    ctx = UpdateContext(vcs, sel, NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end
+
+function update(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, P <: AddressMap, D <: Diff}
+    ctx = UpdateContext(vcs, sel, ps, NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
+    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+end

@@ -1,11 +1,17 @@
 # ------------ Vector map ------------ #
 
 struct VectorMap{K} <: AddressMap{K}
-    vector::Vector{AddressMap{<:K}}
-    VectorMap{K}() where K = new{K}(Vector{AddressMap{<:K}}())
-    VectorMap{K}(vector::Vector{AddressMap{<:K}}) where K = new{K}(vector)
+    vector::Vector{AddressMap{K}}
+    VectorMap{K}() where K = new{K}(Vector{AddressMap{K}}())
+    VectorMap{K}(vector::Vector{K}) where K = new{K}(vector)
 end
-VectorMap(vector::Vector{AddressMap{K}}) where K = VectorMap{K}(vector)
+function VectorMap(vector::Vector{AddressMap{K}}) where K
+    vm = VectorMap{K}()
+    for k in vector
+        push!(vm, k)
+    end
+    vm
+end
 Zygote.@adjoint VectorMap(vector) = VectorMap(vector), ret_grad -> (nothing, )
 
 @inline shallow_iterator(vm::VectorMap) = enumerate(vm.vector)

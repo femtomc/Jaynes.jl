@@ -37,3 +37,24 @@ end
     add_call!(ctx, addr, cl)
     return ret
 end
+
+# ------------ Convenience ------------ #
+
+function propose(fn::Function, args...)
+    ctx = Propose()
+    ret = ctx(fn, args...)
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
+end
+
+function propose(params, fn::Function, args...)
+    ctx = Propose(params)
+    ret = ctx(fn, args...)
+    return ret, HierarchicalCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
+end
+
+function propose(fn::typeof(rand), d::Distribution{K}) where K
+    ctx = Propose()
+    addr = gensym()
+    ret = ctx(fn, addr, d)
+    return ret, get_top(ctx.tr, addr), ctx.score
+end

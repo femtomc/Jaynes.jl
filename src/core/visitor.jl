@@ -1,8 +1,8 @@
 # ------------ Lightweight visitor ------------ #
 
-const Visitor = DynamicMap{Empty}
+const Visitor = DynamicTarget
 
 function visit!(vs::Visitor, addr)
     haskey(vs.tree, addr) && error("VisitorError (visit!): already visited address $(addr).")
-    set_sub!(vs, addr, Empty())
+    push!(vs, addr)
 end

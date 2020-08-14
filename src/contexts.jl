@@ -49,7 +49,7 @@ function adjust_to_intersection(am::T, visited::V) where {T <: AddressMap, V <: 
 end
 
 include("contexts/update.jl")
-#include("contexts/regenerate.jl")
+include("contexts/regenerate.jl")
 
 # Gradients.
 #include("contexts/backpropagate.jl")

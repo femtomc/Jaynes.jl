@@ -24,3 +24,20 @@
     add_call!(ctx, addr, VectorizedCallSite{typeof(markov)}(VectorizedTrace(v_cl), sc, call, len, args, v_ret))
     return v_ret
 end
+
+# ------------ Convenience ------------ #
+
+function simulate(c::typeof(markov), fn::Function, len::Int, args...)
+    ctx = SimulateContext()
+    addr = gensym()
+    ret = ctx(markov, addr, fn, len, args...)
+    return ret, get_sub(ctx.tr, addr)
+end
+
+function simulate(params::P, c::typeof(markov), fn::Function, len::Int, args...) where P <: AddressMap
+    addr = gensym()
+    v_ps = learnables(addr => params)
+    ctx = SimulateContext(v_ps)
+    ret = ctx(markov, addr, fn, len, args...)
+    return ret, get_sub(ctx.tr, addr)
+end
