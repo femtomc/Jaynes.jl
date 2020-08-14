@@ -8,8 +8,8 @@
     # Check if in previous trace's choice map.
     in_prev_chm = has_value(ctx.prev, addr)
     in_prev_chm && begin
-        prev = get_leaf(ctx.prev, addr)
-        prev_ret = get_ret(prev)
+        prev = get_sub(ctx.prev, addr)
+        prev_ret = get_value(prev)
         prev_score = get_score(prev)
     end
 
@@ -20,7 +20,7 @@
     if in_schema
         ret = getindex(ctx.schema, addr)
         in_prev_chm && begin
-            set_submap!(ctx.discard, addr, prev)
+            set_sub!(ctx.discard, addr, prev)
         end
     elseif in_prev_chm
         ret = prev_ret

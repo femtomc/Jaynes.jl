@@ -2,10 +2,17 @@
 
 Base.iterate(s::Symbol) = s
 
-# Special calls recognized by tracer.
-rand(addr::A, d::Distribution{T}) where {A <: Address, T} = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
-rand(addr::A, fn::Function, args...) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
-rand(addr::A, fn::Function, args::Tuple, ret_score::Function) where A <: Address = error("(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand).")
+# Special calls with fallbacks.
+function rand(addr::A, d::Distribution{T}) where {A <: Address, T}
+    @info "(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand)."
+    return rand(d)
+end
+function rand(addr::A, fn::Function, args...) where A <: Address
+    @info "(rand) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell the tracer to recurse into a call site (wrap it with rand)."
+    return fn(args...)
+end
+
+# Special features - must be evaluated by tracer.
 learnable(addr::A) where {A <: Address} = error("(learnable) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
 fillable(addr::A) where {A <: Address} = error("(fillable) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching dispatch correctly.")
 plate(addr::A, args...) where A <: Address = error("(plate) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
@@ -13,13 +20,13 @@ markov(addr::A, args...) where A <: Address = error("(markov) call with address 
 cond(addr::A, args...) where A <: Address = error("(cond) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 factor(args...) = args
 
-# ------------ includes - traces + call sites ------------ #
+# ------------ Call sites ------------ #
 
-abstract type CallSite <: AddressMap{Value} end
+abstract type CallSite <: AddressMap{Choice} end
 
 has_value(cs::CallSite, addr) = has_value(cs.trace, addr)
-get_value(cs::CallSite, addr) = getindex(cs.trace, addr)
-get_leaf(cs::CallSite, addr) = get_leaf(cs.trace, addr)
+get_value(cs::CallSite, addr) = get_value(get_sub(cs.trace, addr))
+get_sub(cs::CallSite, addr) = get_sub(cs.trace, addr)
 get_score(cs::CallSite) = cs.score
 get_ret(cs::CallSite) = cs.ret
 get_args(cs::CallSite) = cs.args
@@ -42,10 +49,11 @@ function Base.display(call::C;
     println("  __________________________________\n")
 end
 
+# ------------ includes ------------ #
+
 include("traces/dynamic.jl")
 include("traces/vector.jl")
 include("traces/conditional.jl")
-
 
 # ------------ Documentation ------------ #
 

@@ -26,7 +26,3 @@ function update_learnables(opt, a::LearnableByAddress, b::Gradients)
     update!(opt, p_arr, -gs_arr)
     return selection(a, p_arr)
 end
-
-# ------------ Learnable anywhere ------------ #
-
-const LearnableAnywhere = AnywhereMap{Value}

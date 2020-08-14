@@ -12,6 +12,14 @@ Trace() = DynamicTrace()
 # Selections.
 include("core/selections.jl")
 
+function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
+    tg = DynamicMap{Value}()
+    for (k, v) in v
+        set_sub!(tg, k, Value(v))
+    end
+    tg
+end
+
 # Visitor.
 include("core/visitor.jl")
 

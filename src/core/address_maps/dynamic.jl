@@ -5,60 +5,37 @@ struct DynamicMap{K} <: AddressMap{K}
     DynamicMap{K}() where K = new{K}(Dict{Any, AddressMap{K}}())
     DynamicMap{K}(tree::Dict{Any, AddressMap{<:K}}) where K = new{K}(tree)
 end
-
 DynamicMap(tree::Dict{Any, AddressMap{K}}) where K = DynamicMap{K}(tree)
-Zygote.@adjoint DynamicMap(tree) = DynamicMap(tree), retgrad -> (nothing, )
+Zygote.@adjoint DynamicMap(tree) = DynamicMap(tree), ret_grad -> (nothing, )
 
-# Dynamic map interfaces
-push!(dm::DynamicMap{K}, addr, v::AddressMap{<:K}) where K = dm.tree[addr] = v
+@inline shallow_iterator(dm::DynamicMap) = dm.tree
+
+@inline get_sub(dm::DynamicMap, addr) = get(dm.tree, addr, Empty())
+@inline get_sub(dm::DynamicMap, addr::Tuple{}) = Empty()
+@inline getindex(dm::DynamicMap, addr) = get_value(get_sub(dm, addr))
+
+@inline Base.isempty(dm::DynamicMap) = isempty(dm.tree)
 
 function haskey(dm::DynamicMap, addr)
     haskey(dm.tree, addr) && !isempty(dm.tree[addr])
 end
 
-get_ret(dm::DynamicMap) = dm
-
-function get_submap(dm::DynamicMap, addr)
-    haskey(dm, addr) && return dm.tree[addr]
-    Empty()
-end
-
-has_value(dm::DynamicMap, addr) = has_value(get_submap(dm, addr))
-has_value(dm::DynamicMap) = false
-
-function isempty(dm::DynamicMap)
-    for (k, v) in dm.tree
-        !isempty(v) && return false
+function set_sub!(dm::DynamicMap{K}, addr, v::AddressMap{<:K}) where K
+    delete!(dm.tree, addr)
+    if !isempty(v)
+        dm.tree[addr] = v
     end
-    return true
 end
-
-function getindex(dm::DynamicMap, addr)
-    val = dm.tree[addr]
-    isempty(val) ? Empty() : get_ret(val)
+function set_sub!(dm::DynamicMap{K}, addr::Tuple{}, v::AddressMap{<:K}) where {K, T} end
+function set_sub!(dm::DynamicMap{K}, addr::Tuple{T}, v::AddressMap{<:K}) where {K, T}
+    set_sub!(dm, addr[1], v)
 end
-
-function get_leaf(dm::DynamicMap, addr)
-    return dm.tree[addr]
-end
-
-function setindex!(dm::DynamicMap{K}, val::AddressMap{<:K}, addr) where K
-    dm.tree[addr] = val
-end
-
-function set_submap!(dm::DynamicMap{K}, addr, val::AddressMap{<: K}) where K
-    setindex!(dm, val, addr)
-end
-
-function get(dm::DynamicMap{K}, addr, val) where K
-    haskey(dm, addr) && return getindex(dm, addr)
-    return val
-end
-
-function get_iter(dm::DynamicMap)
-    return (
-            (k, v) for (k, v) in dm.tree
-           )
+function set_sub!(dm::DynamicMap{K}, addr::Tuple, v::AddressMap{<:K}) where K
+    hd, tl = addr
+    if !haskey(dm.tree, hd)
+        dm.tree[hd] = DynamicMap{K}()
+    end
+    set_sub!(dm.tree[hd], tl, v)
 end
 
 function merge(sel1::DynamicMap{K},
@@ -75,16 +52,10 @@ function merge(sel1::DynamicMap{K},
     end
     return DynamicMap(tree)
 end
-
+merge(dm::DynamicMap, ::Empty) = deepcopy(dm)
+merge(::Empty, dm::DynamicMap) = deepcopy(dm)
 Zygote.@adjoint merge(a, b) = merge(a, b), s_grad -> (nothing, nothing)
-
 +(a::DynamicMap{K}, b::DynamicMap{K}) where K = merge(a, b)
-
-function iterate(fn, tr::D) where D <: DynamicMap
-    for (k, v) in tr.tree
-        fn((k, v))
-    end
-end
 
 function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::D, meta) where {T <: Tuple, D <: DynamicMap}
     iterate(tr) do (k, v)
@@ -96,24 +67,4 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::D, meta) where D 
     iterate(tr) do (k, v)
         collect!((k, ), addrs, chd, v, meta)
     end
-end
-
-# ------------ Dynamic value map ------------ #
-
-function dynamic(sel::Vector{Pair{T, K}}) where {T <: Tuple, K}
-    top = Trace()
-    for (k, v) in sel
-        push!(top, k, Value(v))
-    end
-    top
-end
-
-function push!(dm::M, addr::Tuple{T}, v::AddressMap{<:K}) where {M <: DynamicMap{Value}, T, K <: Value}
-    push!(dm, addr[1], v)
-end
-
-function push!(dm::M, addr::T, v::AddressMap{<:K}) where {M <: DynamicMap{Value}, T <: Tuple, K <: Value}
-    sub = DynamicMap{Value}()
-    push!(sub, addr[2 : end], v)
-    dm[addr[1]] = sub
 end

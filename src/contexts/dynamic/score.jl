@@ -4,8 +4,8 @@
                                      addr::T, 
                                      d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    has_top(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
-    val = get_top(ctx.select, addr)
+    has_sub(ctx.select, addr) || error("ScoreError: constrained selection must provide constraints for all possible addresses in trace. Missing at address $addr.")
+    val = getindex(ctx.select, addr)
     increment!(ctx, logpdf(d, val))
     return val
 end
@@ -14,14 +14,14 @@ end
 
 @inline function (ctx::ScoreContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
+    has_sub(ctx.params, addr) && return getindex(ctx.params, addr)
     error("Parameter not provided at address $addr.")
 end
 
 # ------------ Fillable ------------ #
 
 @inline function (ctx::ScoreContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    has_sub(ctx.select, addr) && return getindex(ctx.select, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -32,8 +32,8 @@ end
                                      call::Function,
                                      args...) where T <: Address
     visit!(ctx, addr)
-    ps = get_subparameters(ctx, addr)
-    ss = get_subselection(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.schema, addr)
     ret, w = score(ss, ps, call, args...) 
     increment!(ctx, w)
     return ret

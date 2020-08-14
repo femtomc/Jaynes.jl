@@ -1,4 +1,4 @@
-const DynamicTrace = DynamicMap{Value}
+const DynamicTrace = DynamicMap{Choice}
 
 struct DynamicCallSite{J, K} <: CallSite
     trace::DynamicTrace
@@ -8,4 +8,4 @@ struct DynamicCallSite{J, K} <: CallSite
     ret::K
 end
 
-const DynamicDiscard = DynamicMap{Value}
+const DynamicDiscard = DynamicMap{Choice}

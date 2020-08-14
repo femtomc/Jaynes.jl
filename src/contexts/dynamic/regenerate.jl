@@ -4,10 +4,10 @@
                                           addr::T, 
                                           d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    in_prev_chm = has_top(ctx.prev, addr)
-    in_sel = has_top(ctx.select, addr)
+    in_prev_chm = has_sub(ctx.prev, addr)
+    in_sel = has_sub(ctx.select, addr)
     if in_prev_chm
-        prev = get_top(ctx.prev.trace, addr)
+        prev = getindex(ctx.prev.trace, addr)
         if in_sel
             ret = rand(d)
             add_choice!(ctx.discard, addr, prev)
@@ -27,14 +27,14 @@ end
 
 @inline function (ctx::RegenerateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
+    has_sub(ctx.params, addr) && return getindex(ctx.params, addr)
     error("(learnable): parameter not provided at address $addr.")
 end
 
 # ------------ Fillable ------------ #
 
 @inline function (ctx::RegenerateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    has_sub(ctx.select, addr) && return getindex(ctx.select, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 

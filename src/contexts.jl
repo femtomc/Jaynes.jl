@@ -8,11 +8,11 @@ visit!(ctx::T, addr) where T <: ExecutionContext = visit!(ctx.visited, addr)
 get_prev(ctx::T, addr) where T <: ExecutionContext = get_sub(ctx.prev, addr)
 function add_choice!(ctx::T, addr, score, v) where T <: ExecutionContext
     ctx.score += score
-    set_submap!(ctx.tr, addr, ChoiceRecord(score, v))
+    set_sub!(ctx.tr, addr, Choice(score, v))
 end
 function add_call!(ctx::T, addr, cs::C) where {T <: ExecutionContext, C <: CallSite}
     ctx.score += get_score(cs)
-    set_submap!(ctx.tr, addr, cs)
+    set_sub!(ctx.tr, addr, cs)
 end
 
 @dynamo function (mx::ExecutionContext)(a...)

@@ -1,4 +1,4 @@
-const VectorTrace = VectorMap{Value}
+const VectorTrace = VectorMap{Choice}
 
 struct VectorizedCallSite{F, A, R} <: CallSite
     trace::VectorTrace
@@ -9,4 +9,4 @@ struct VectorizedCallSite{F, A, R} <: CallSite
     ret::Vector{R}
 end
 
-const VectorizedDiscard = DynamicMap{Value}
+const VectorizedDiscard = DynamicMap{Choice}

@@ -12,9 +12,8 @@ end
 
 # ------------ includes ------------ #
 
-include("compiler/dependency.jl")
-include("compiler/blanket.jl")
+include("compiler/analysis/dependency.jl")
+include("compiler/analysis/blanket.jl")
 include("compiler/diffs.jl")
-include("compiler/generate_trace.jl")
 
 # ------------ Documentation ------------ #
