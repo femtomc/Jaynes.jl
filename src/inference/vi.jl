@@ -82,7 +82,7 @@ function multi_shot_gradient_estimator(sel::K,
     bs = geometric_base(lws)
     Threads.@threads for i in 1:num_samples
         ls = L - nw[i] - bs[i]
-        gs += get_learnable_gradients(ps, cs[i], nothing, ls * scale)[2]
+        accumulate!(gs, get_learnable_gradients(ps, cs[i], nothing, ls * scale)[2])
     end
     return gs, L, cs, nw
 end
@@ -107,7 +107,7 @@ function automatic_differentiation_geometric_vimco(sel::K,
         for s in 1 : gs_samples
             gs, L, cs, nw = multi_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; num_samples = num_samples, scale = 1.0 / gs_samples)
             velbo_est += L / gs_samples
-            gs_est += gs
+            accumulate!(gs_est, gs)
             cls[s] = cs[rand(Categorical(nw))]
         end
         velbows[i] = velbo_est

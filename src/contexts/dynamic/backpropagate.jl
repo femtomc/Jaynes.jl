@@ -15,7 +15,7 @@ end
 @inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
-    haskey(ctx.select, addr) || return getindex(ctx.call, addr)
+    haskey(ctx.target, addr) || return get_value(get_sub(ctx.call, addr))
     if haskey(ctx.fixed, addr)
         s = getindex(ctx.fixed, addr)
     else
@@ -43,7 +43,7 @@ end
 end
 
 @inline function (ctx::ChoiceBackpropagateContext)(fn::typeof(fillable), addr::Address)
-    haskey(ctx.select, addr) && return getindex(ctx.select, addr)
+    haskey(ctx.target, addr) && return getindex(ctx.target, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -58,7 +58,7 @@ end
     ps = get_sub(ctx.initial_params, addr)
     param_grads = Gradients()
     ret = simulate_call_pullback(ss, ps, param_grads, cl, args)
-    ctx.param_grads.tree[addr] = param_grads
+    set_sub!(ctx.param_grads, addr, param_grads)
     return ret
 end
 
@@ -69,8 +69,8 @@ end
     cl = get_sub(ctx.call, addr)
     ps = get_sub(ctx.initial_params, addr)
     choice_grads = Gradients()
-    ret = simulate_choice_pullback(ps, choice_grads, get_sub(ctx.select, addr), cl, args)
-    ctx.choice_grads.tree[addr] = choice_grads
+    ret = simulate_choice_pullback(ps, choice_grads, get_sub(ctx.target, addr), cl, args)
+    set_sub!(ctx.choice_grads, addr, choice_grads)
     return ret
 end
 
@@ -121,35 +121,35 @@ end
 
 # ------------ Choice gradients ------------ #
 
-Zygote.@adjoint function simulate_choice_pullback(params, choice_grads, choice_selection, cl::DynamicCallSite, args)
-    ret = simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
+Zygote.@adjoint function simulate_choice_pullback(params, choice_grads, choice_target, cl::DynamicCallSite, args)
+    ret = simulate_choice_pullback(params, choice_grads, choice_target, cl, args)
     fn = ret_grad -> begin
-        arg_grads, choice_vals, choice_grads = choice_gradients(params, choice_grads, choice_selection, cl, ret_grad)
+        arg_grads, choice_vals, choice_grads = choice_gradients(params, choice_grads, choice_target, cl, ret_grad)
         (nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads)
     end
     return ret, fn
 end
 
-function choice_gradients(initial_params::P, choice_grads, choice_selection::K, cl::DynamicCallSite, ret_grad) where {P <: AddressMap, K <: Target}
+function choice_gradients(initial_params::P, choice_grads, choice_target::K, cl::DynamicCallSite, ret_grad) where {P <: AddressMap, K <: Target}
     fn = (args, call, sel) -> begin
-        ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_selection)
+        ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_target)
         ret = ctx(call.fn, args...)
         (ctx.weight, ret)
     end
-    _, back = Zygote.pullback(fn, cl.args, cl, selection())
+    _, back = Zygote.pullback(fn, cl.args, cl, target())
     arg_grads, grad_ref = back((1.0, ret_grad))
-    choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
+    choice_vals = filter!(choice_grads, cl, grad_ref, choice_target)
     return arg_grads, choice_vals, choice_grads
 end
 
-function choice_gradients(fixed::S, initial_params::P, choice_grads, choice_selection::K, cl::DynamicCallSite, ret_grad) where {S <: AddressMap, P <: AddressMap, K <: Target}
+function choice_gradients(fixed::S, initial_params::P, choice_grads, choice_target::K, cl::DynamicCallSite, ret_grad) where {S <: AddressMap, P <: AddressMap, K <: Target}
     fn = (args, call, sel) -> begin
-        ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_selection)
+        ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_target)
         ret = ctx(call.fn, args...)
         (ctx.weight, ret)
     end
     _, back = Zygote.pullback(fn, cl.args, cl, fixed)
     arg_grads, grad_ref = back((1.0, ret_grad))
-    choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
+    choice_vals = filter!(choice_grads, cl, grad_ref, choice_target)
     return arg_grads, choice_vals, choice_grads
 end

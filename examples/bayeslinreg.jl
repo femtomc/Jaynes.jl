@@ -29,12 +29,12 @@ is_test = () -> begin
     zipped = zip(ps.calls, lnw)
 
     est_σ = sum(map(zipped) do (cl, w)
-                    get_ret(cl[:σ]) * exp(w)
+                    (cl[:σ]) * exp(w)
                 end)
     println("Estimated σ: $est_σ")
 
     est_β = sum(map(zipped) do (cl, w)
-                    get_ret(cl[:β]) * exp(w)
+                    (cl[:β]) * exp(w)
                 end)
     println("Estimated β: $est_β")
 end
@@ -48,18 +48,18 @@ mh_test = () -> begin
     for i in 1 : n_iters
         cl, _ = mh(target([(:σ, ), (:β, )]), cl)
         i % 30 == 0 && begin
-            println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+            println("σ => $((cl[:σ])), β => $((cl[:β]))")
             push!(calls, cl)
         end
     end
 
     est_σ = sum(map(calls) do cl
-                    get_ret(cl[:σ])
+                    (cl[:σ])
                 end) / length(calls)
     println("Estimated σ: $est_σ")
 
     est_β = sum(map(calls) do cl
-                    get_ret(cl[:β])
+                    (cl[:β])
                 end) / length(calls)
     println("Estimated β: $est_β")
 end
@@ -78,18 +78,18 @@ mh_test_with_proposal = () -> begin
     for i in 1 : n_iters
         cl, _ = mh(cl, proposal, (y, ))
         i % 30 == 0 && begin
-            println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+            println("σ => $((cl[:σ])), β => $((cl[:β]))")
             push!(calls, cl)
         end
     end
 
     est_σ = sum(map(calls) do cl
-                    get_ret(cl[:σ])
+                    (cl[:σ])
                 end) / length(calls)
     println("Estimated σ: $est_σ")
 
     est_β = sum(map(calls) do cl
-                    get_ret(cl[:β])
+                    (cl[:β])
                 end) / length(calls)
     println("Estimated β: $est_β")
 end
@@ -108,12 +108,12 @@ advi_test = () -> begin
     ps = learnables([(:μ₁, ) => 5.0,
                      (:μ₂, ) => 1.0,
                      (:σ₂, ) => 1.0])
-    @time ps, elbows, _ = advi(obs, ps,
-                               surrogate, (),
-                               bayesian_linear_regression, (x, );
-                               opt = ADAM(0.05, (0.9, 0.8)),
-                               iters = 1000,
-                               gs_samples = 10)
+    ps, elbows, _ = advi(obs, ps,
+                         surrogate, (),
+                         bayesian_linear_regression, (x, );
+                         opt = ADAM(0.05, (0.9, 0.8)),
+                         iters = 1000,
+                         gs_samples = 10)
     display(ps)
 end
 
@@ -135,7 +135,8 @@ adgv_test = () -> begin
                          surrogate, (),
                          bayesian_linear_regression, (x, );
                          opt = ADAM(0.05, (0.9, 0.8)),
-                         iters = 1000)
+                         iters = 500,
+                         gs_samples = 20)
     display(ps)
 end
 
@@ -148,18 +149,18 @@ hmc_test = () -> begin
     for i in 1 : n_iters
         cl, _ = hmc(target([(:σ, ), (:β, )]), cl)
         i % 10 == 0 && begin
-            println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+            println("σ => $((cl[:σ])), β => $((cl[:β]))")
             push!(calls, cl)
         end
     end
 
     est_σ = sum(map(calls) do cl
-                    get_ret(cl[:σ])
+                    (cl[:σ])
                 end) / length(calls)
     println("Estimated σ: $est_σ")
 
     est_β = sum(map(calls) do cl
-                    get_ret(cl[:β])
+                    (cl[:β])
                 end) / length(calls)
     println("Estimated β: $est_β")
 end
@@ -174,18 +175,18 @@ combo_kernel_test = () -> begin
         cl, _ = mh(cl, proposal, (y, ))
         cl, _ = hmc(target([(:σ, ), (:β, )]), cl)
         i % 10 == 0 && begin
-            println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+            println("σ => $((cl[:σ])), β => $((cl[:β]))")
             push!(calls, cl)
         end
     end
 
     est_σ = sum(map(calls) do cl
-                    get_ret(cl[:σ])
+                    (cl[:σ])
                 end) / length(calls)
     println("Estimated σ: $est_σ")
 
     est_β = sum(map(calls) do cl
-                    get_ret(cl[:β])
+                    (cl[:β])
                 end) / length(calls)
     println("Estimated β: $est_β")
 end
@@ -204,18 +205,18 @@ boomerang_test = () -> begin
     for i in 1 : n_iters
         cl, _ = pdmk(target([(:σ, ), (:β, )]), cl, flow, θ)
         i % 10 == 0 && begin
-            println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+            println("σ => $((cl[:σ])), β => $((cl[:β]))")
             push!(calls, cl)
         end
     end
 
     est_σ = sum(map(calls) do cl
-                    get_ret(cl[:σ])
+                    (cl[:σ])
                 end)
     println("Estimated σ: $est_σ")
 
     est_β = sum(map(calls) do cl
-                    get_ret(cl[:β])
+                    (cl[:β])
                 end)
     println("Estimated β: $est_β")
 end
@@ -223,10 +224,10 @@ end
 @time is_test()
 @time mh_test()
 @time mh_test_with_proposal()
-#@time hmc_test()
-#@time combo_kernel_test()
-#@time boomerang_test()
 @time advi_test() 
-#@time adgv_test() 
+@time hmc_test()
+@time combo_kernel_test()
+#@time boomerang_test()
+@time adgv_test() 
 
 end # module

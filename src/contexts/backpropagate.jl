@@ -98,7 +98,7 @@ function ChoiceBackpropagate(call::T, init, params, choice_grads) where {T <: Ca
                                init, 
                                params, 
                                choice_grads, 
-                               UnconstrainedAllSelection())
+                               SelectAll())
 end
 
 function ChoiceBackpropagate(call::T, fixed::S, init, params, choice_grads) where {T <: CallSite, S <: AddressMap, K <: Target}
@@ -108,7 +108,7 @@ function ChoiceBackpropagate(call::T, fixed::S, init, params, choice_grads) wher
                                init, 
                                params, 
                                choice_grads, 
-                               UnconstrainedAllSelection())
+                               SelectAll())
 end
 
 function ChoiceBackpropagate(call::T, init, params, choice_grads, sel::K) where {T <: CallSite, K <: Target}
@@ -149,7 +149,7 @@ end
 # ------------ Parameter sites ------------ #
 
 # Grads for learnable parameters.
-simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: CallSite = cl.ret
+simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: CallSite = get_ret(cl)
 
 # Grads for choices with differentiable logpdfs.
 simulate_choice_pullback(params, choice_grads, choice_target, cl::T, args) where T <: CallSite = get_ret(cl)
@@ -157,59 +157,59 @@ simulate_choice_pullback(params, choice_grads, choice_target, cl::T, args) where
 # ------------ filter! choice gradients given target ------------ #
 
 function filter!(choice_grads, cl::DynamicCallSite, grad_tr::NamedTuple, sel::K) where K <: Target
-    values = ConstrainedDynamicSelection()
+    choices = DynamicMap{Choice}()
     for (k, v) in shallow_iterator(cl)
         haskey(sel, k) && begin
-            push!(values, k, v.val)
-            haskey(grad_tr.trace.choices, k) && accumulate!(choice_grads, k, grad_tr.trace.choices[k].val)
+            set_sub!(choices, k, v)
+            haskey(grad_tr.trace.tree, k) && accumulate!(choice_grads, k, grad_tr.trace.tree[k].val)
         end
     end
-    return values
+    return choices
 end
 
 function filter!(choice_grads, cl::DynamicCallSite, grad_tr, sel::K) where K <: Target
-    values = ConstrainedDynamicSelection()
+    choices = DynamicMap{Choice}()
     for (k, v) in shallow_iterator(cl)
         haskey(sel, k) && begin
-            push!(values, k, v.val)
+            set_sub!(choices, k, v)
         end
     end
-    return values
+    return choices
 end
 
 # ------------ get_choice_gradients ------------ #
 
 function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
-    choice_target = UnconstrainedAllSelection()
-    arg_grads, vals, _ = choice_gradients(AddressMap(), choice_grads, choice_target, cl, ret_grad)
+    choice_target = SelectAll()
+    arg_grads, vals, _ = choice_gradients(Empty(), choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(fixed::S, cl::T, ret_grad) where {S <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
-    choice_target = UnconstrainedAllSelection()
-    arg_grads, vals, _ = choice_gradients(fixed, AddressMap(), choice_grads, choice_target, cl, ret_grad)
+    choice_target = SelectAll()
+    arg_grads, vals, _ = choice_gradients(fixed, Empty(), choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
-    choice_target = UnconstrainedAllSelection()
+    choice_target = SelectAll()
     arg_grads, vals, _ = choice_gradients(ps, choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(fixed::S, ps::P, cl::T, ret_grad) where {S <: AddressMap, P <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
-    choice_target = UnconstrainedAllSelection()
+    choice_target = SelectAll()
     arg_grads, vals, _ = choice_gradients(fixed, ps, choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: Target}
     choice_grads = Gradients()
-    arg_grads, vals, _ = choice_gradients(AddressMap(), choice_grads, sel, cl, ret_grad)
+    arg_grads, vals, _ = choice_gradients(Empty(), choice_grads, sel, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
@@ -221,7 +221,7 @@ end
 
 function get_choice_gradients(sel::K, fixed::S, cl::T, ret_grad) where {K <: Target, S <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
-    arg_grads, vals, _ = choice_gradients(AddressMap(), choice_grads, sel, cl, ret_grad)
+    arg_grads, vals, _ = choice_gradients(Empty(), choice_grads, sel, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
@@ -323,7 +323,7 @@ end
 
 Outer constructors:
 ```julia
-ChoiceBackpropagate(tr::T, init_params, params, choice_grads) where {T <: Trace, K <: Target} = ChoiceBackpropagateContext(tr, 0.0, params, choice_grads, UnconstrainedAllSelection())
+ChoiceBackpropagate(tr::T, init_params, params, choice_grads) where {T <: Trace, K <: Target} = ChoiceBackpropagateContext(tr, 0.0, params, choice_grads, SelectAll())
 ChoiceBackpropagate(tr::T, init_params, params, choice_grads, sel::K) where {T <: Trace, K <: Target} = ChoiceBackpropagateContext(tr, 0.0, params, choice_grads, sel)
 ```
 """, ChoiceBackpropagateContext)

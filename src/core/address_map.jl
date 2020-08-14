@@ -169,6 +169,6 @@ end
 
 # ------------ includes ------------ #
 
-include("array_compat.jl")
 include("address_maps/dynamic.jl")
 include("address_maps/vector.jl")
+include("array_compat.jl")
