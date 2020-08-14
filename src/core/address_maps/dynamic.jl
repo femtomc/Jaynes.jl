@@ -24,7 +24,11 @@ end
 
 @inline Base.isempty(dm::DynamicMap) = isempty(dm.tree)
 
-@inline haskey(dm::DynamicMap{Value}, addr::A) where A <: Address = haskey(dm.tree, addr) && has_value(get_sub(dm, addr))
+# This is a fallback for subtypes of DynamicMap.
+@inline haskey(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr) && has_value(get_sub(dm, addr))
+
+# This is a fallback for subtypes of DynamicMap.
+@inline has_sub(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr)
 
 function set_sub!(dm::DynamicMap{K}, addr::A, v::AddressMap{<:K}) where {K, A <: Address}
     delete!(dm.tree, addr)

@@ -35,6 +35,7 @@ abstract type CallSite <: AddressMap{Choice} end
 @inline get_args(cs::C) where C <: CallSite = cs.args
 @inline get_trace(cs::C) where C <: CallSite = cs.trace
 @inline get_choices(cs::C) where C <: CallSite = get_choices(cs.trace)
+@inline has_sub(cs::C, addr::A) where {C <: CallSite, A <: Address} = has_sub(cs.trace, addr)
 @inline haskey(cs::C, addr::A) where {C <: CallSite, A <: Address} = haskey(cs.trace, addr)
 @inline getindex(cs::C, addrs...) where C <: CallSite = getindex(cs.trace, addrs...)
 @inline shallow_iterator(cs::C) where C <: CallSite = shallow_iterator(cs.trace)

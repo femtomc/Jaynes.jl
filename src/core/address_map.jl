@@ -29,13 +29,17 @@ end
 
 # ------------- Interfaces ------------ #
 
+@inline has_sub(::Leaf, _) = false
+@inline has_sub(::Leaf, ::Tuple{}) = false
+@inline has_sub(::AddressMap, ::Tuple{}) = false
+
 @inline haskey(::Leaf, _) = false
 @inline haskey(::Leaf, ::Tuple{}) = false
 @inline haskey(::AddressMap, ::Tuple{}) = false
 @inline haskey(am::AddressMap, addr::Tuple{A}) where A <: Address = haskey(am, addr[1])
 @inline function haskey(am::AddressMap, addr::Tuple)
     hd, tl = addr[1], addr[2 : end]
-    haskey(am, hd) && haskey(get_sub(am, hd), tl)
+    has_sub(am, hd) && haskey(get_sub(am, hd), tl)
 end
 
 @inline set_sub!(::Leaf, args...) = error("(set_sub!): trying to set submap of an instance of Leaf type.\nThis normally happens because you've already assigned to this address, or part of the prefix of this address.")
