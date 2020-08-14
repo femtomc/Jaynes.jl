@@ -30,11 +30,8 @@ Jaynes allows the usage of pure Julia as a trace-based probabilistic programming
 function bayesian_linear_regression(x::Vector{Float64})
     σ = rand(:σ, InverseGamma(2, 3))
     β = rand(:β, Normal(0.0, 1.0))
-    y = Vector{Float64}(undef, length(x))
-    for i in 1 : length(x)
-        push!(y, rand(:y => i, Normal(β * x[i], σ)))
-    end
-    return y
+    y = [rand(:y => i, Normal(β * x[i], σ)) for i in 1 : length(x)]
+    y
 end
 
 # Data.
