@@ -5,7 +5,7 @@
                                           d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
     in_prev_chm = haskey(get_trace(ctx.prev), addr)
-    in_sel = haskey(ctx.select, addr)
+    in_sel = haskey(ctx.target, addr)
     if in_prev_chm
         prev = get_sub(get_trace(ctx.prev), addr)
         if in_sel
@@ -34,7 +34,7 @@ end
 # ------------ Fillable ------------ #
 
 @inline function (ctx::RegenerateContext)(fn::typeof(fillable), addr::Address)
-    haskey(ctx.select, addr) && return getindex(ctx.select, addr)
+    haskey(ctx.target, addr) && return getindex(ctx.target, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -45,8 +45,8 @@ end
                                           call::Function,
                                           args...) where T <: Address
     visit!(ctx, addr)
-    ps = get_subparameters(ctx, addr)
-    ss = get_subselection(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
     if haskey(get_trace(ctx.prev), addr)
         prev_call = get_prev(ctx, addr)
         ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, args...)

@@ -1,22 +1,16 @@
 # ------------ Vector map ------------ #
 
 struct VectorMap{K} <: AddressMap{K}
-    vector::Vector{AddressMap{K}}
+    vector::Vector{AddressMap{<: K}}
     VectorMap{K}() where K = new{K}(Vector{AddressMap{K}}())
-    VectorMap{K}(vector::Vector{K}) where K = new{K}(vector)
+    VectorMap{K}(vector::Vector{<: AddressMap{K}}) where K = new{K}(vector)
 end
-function VectorMap(vector::Vector{AddressMap{K}}) where K
-    vm = VectorMap{K}()
-    for k in vector
-        push!(vm, k)
-    end
-    vm
-end
+VectorMap(vector::Vector{<: AddressMap{K}}) where K = VectorMap{K}(vector)
 Zygote.@adjoint VectorMap(vector) = VectorMap(vector), ret_grad -> (nothing, )
 
 @inline shallow_iterator(vm::VectorMap) = enumerate(vm.vector)
 
-@inline get_sub(vm::VectorMap, addr) = get(t.vector, addr, Empty())
+@inline get_sub(vm::VectorMap, addr::A) where A <: Address = get(vm.vector, addr, Empty())
 @inline get_sub(vm::VectorMap, addr::Tuple{}) = Empty()
 
 @inline Base.isempty(vm::VectorMap) = isempty(vm.vector)
@@ -38,7 +32,7 @@ function set_sub!(vm::VectorMap{K}, addr::Tuple{T}, v::AddressMap{<:K}) where {K
     set_sub!(vm, addr[1], v)
 end
 function set_sub!(vm::VectorMap{K}, addr::Tuple, v::AddressMap{<:K}) where K
-    hd, tl = addr
+    hd, tl = addr[1], addr[2 : end]
     !haskey(t.vm, hd) && error("(set_sub!): instance of type VectorMap does not have index with head $hd of $addr.")
     set_sub!(t.vector[hd], tl, v)
 end

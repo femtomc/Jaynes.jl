@@ -1,6 +1,6 @@
 # ------------ Utilities ------------ #
 
-function trace_retained(vcs::VectorizedCallSite, 
+function trace_retained(vcs::VectorCallSite, 
                         s::K, 
                         ks::Set, 
                         min::Int, 
@@ -36,7 +36,7 @@ function trace_retained(vcs::VectorizedCallSite,
     return w_adj, new, new_ret
 end
 
-function trace_new(vcs::VectorizedCallSite, 
+function trace_new(vcs::VectorCallSite, 
                    s::K, 
                    ks::Set, 
                    min::Int, 
@@ -87,18 +87,18 @@ end
                                                 addr::Address, 
                                                 call::Function, 
                                                 len::Int,
-                                                args...) where {C <: HierarchicalCallSite, T <: HierarchicalTrace}
+                                                args...) where {C <: DynamicCallSite, T <: DynamicTrace}
     visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = len, length(vcs.ret)
-    s = get_subselection(ctx, addr)
+    s = get_sub(ctx.target, addr)
     min, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ks, min, o_len, n_len, args...)
     else
         w_adj, new, new_ret = trace_new(vcs, s, ks, min, o_len, n_len, args...)
     end
-    add_call!(ctx, addr, VectorizedCallSite{typeof(markov)}(VectorizedTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(markov)}(VectorTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
     increment!(ctx, w_adj)
 
     return new_ret
@@ -107,7 +107,7 @@ end
 @inline function (ctx::RegenerateContext{C, T})(c::typeof(markov), 
                                                 call::Function, 
                                                 len::Int,
-                                                args...) where {C <: VectorizedCallSite, T <: VectorizedTrace}
+                                                args...) where {C <: VectorCallSite, T <: VectorTrace}
     vcs = ctx.prev
     n_len, o_len = len, length(vcs.ret)
     s = ctx.select
@@ -130,29 +130,29 @@ end
 
 # ------------ Convenience ------------ #
 
-function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: Target, D <: Diff}
+function regenerate(sel::L, vcs::VectorCallSite{typeof(markov)}) where {L <: Target, D <: Diff}
     argdiffs = NoChange()
     ctx = Regenerate(vcs, sel, argdiffs)
     ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function regenerate(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}) where {L <: Target, P <: AddressMap, D <: Diff}
+function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}) where {L <: Target, P <: AddressMap, D <: Diff}
     argdiffs = NoChange()
     ctx = Regenerate(vcs, sel, ps, argdiffs)
     ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function regenerate(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: Target, D <: Diff}
+function regenerate(sel::L, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: Target, D <: Diff}
     ctx = Regenerate(vcs, sel, NoChange())
     ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
-function regenerate(sel::L, ps::P, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: Target, P <: AddressMap, D <: Diff}
+function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: Target, P <: AddressMap, D <: Diff}
     ctx = Regenerate(vcs, sel, ps, NoChange())
     ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorizedCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 

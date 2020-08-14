@@ -8,22 +8,6 @@ include("core/address_map.jl")
 # Selections.
 include("core/selections.jl")
 
-function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
-    tg = DynamicMap{Value}()
-    for (k, v) in v
-        set_sub!(tg, k, Value(v))
-    end
-    tg
-end
-
-function target(v::Vector{T}) where T <: Tuple
-    tg = DynamicTarget()
-    for k in v
-        push!(tg, k)
-    end
-    tg
-end
-
 # Visitor.
 include("core/visitor.jl")
 

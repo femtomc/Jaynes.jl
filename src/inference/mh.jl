@@ -1,5 +1,5 @@
 function metropolis_hastings(sel::K,
-                             call::C) where {K <: UnconstrainedSelection, C <: CallSite}
+                             call::C) where {K <: Target, C <: CallSite}
     ret, cl, w, retdiff, d = regenerate(sel, call)
     log(rand()) < w && return (cl, true)
     return (call, false)
@@ -7,7 +7,7 @@ end
 
 function metropolis_hastings(sel::K,
                              ps::P,
-                             call::C) where {K <: UnconstrainedSelection, P <: Parameters, C <: CallSite}
+                             call::C) where {K <: Target, P <: AddressMap, C <: CallSite}
     ret, cl, w, retdiff, d = regenerate(sel, ps, call)
     log(rand()) < w && return (cl, true)
     return (call, false)
@@ -29,7 +29,7 @@ end
 function metropolis_hastings(ps::P,
                              call::C,
                              proposal::Function,
-                             proposal_args::Tuple) where {P <: Parameters, C <: CallSite}
+                             proposal_args::Tuple) where {P <: AddressMap, C <: CallSite}
     p_ret, p_cl, p_w = propose(proposal, call, proposal_args...)
     s = get_selection(p_cl)
     u_ret, u_cl, u_w, retdiff, d = update(s, ps, call, NoChange(), call.args...)
@@ -43,7 +43,7 @@ end
 function metropolis_hastings(call::C,
                              pps::Ps,
                              proposal::Function,
-                             proposal_args::Tuple) where {Ps <: Parameters, C <: CallSite}
+                             proposal_args::Tuple) where {Ps <: AddressMap, C <: CallSite}
     p_ret, p_cl, p_w = propose(pps, proposal, call, proposal_args...)
     s = selection(p_cl)
     u_ret, u_cl, u_w, retdiff, d = update(s, call.fn, NoChange(), call.args...)
@@ -58,7 +58,7 @@ function metropolis_hastings(ps::P,
                              call::C,
                              pps::Ps,
                              proposal::Function,
-                             proposal_args::Tuple) where {P <: Parameters, Ps <: Parameters, C <: CallSite}
+                             proposal_args::Tuple) where {P <: AddressMap, Ps <: AddressMap, C <: CallSite}
     p_ret, p_cl, p_w = propose(pps, proposal, call, proposal_args...)
     s = selection(p_cl)
     u_ret, u_cl, u_w, retdiff, d = update(s, ps, call.fn, NoChange(), call.args...)

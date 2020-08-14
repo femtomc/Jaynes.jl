@@ -10,9 +10,9 @@ Zygote.@adjoint DynamicMap(tree) = DynamicMap(tree), ret_grad -> (nothing, )
 
 @inline shallow_iterator(dm::DynamicMap) = dm.tree
 
-@inline get_sub(dm::DynamicMap, addr) = get(dm.tree, addr, Empty())
+@inline get_sub(dm::DynamicMap, addr::A) where A <: Address = get(dm.tree, addr, Empty())
 @inline get_sub(dm::DynamicMap, addr::Tuple{}) = Empty()
-@inline getindex(dm::DynamicMap, addr) = get_value(get_sub(dm, addr))
+@inline getindex(dm::DynamicMap, addrs...) = get_value(get_sub(dm, addrs))
 
 @inline Base.isempty(dm::DynamicMap) = isempty(dm.tree)
 
@@ -31,7 +31,7 @@ function set_sub!(dm::DynamicMap{K}, addr::Tuple{T}, v::AddressMap{<:K}) where {
     set_sub!(dm, addr[1], v)
 end
 function set_sub!(dm::DynamicMap{K}, addr::Tuple, v::AddressMap{<:K}) where K
-    hd, tl = addr
+    hd, tl = addr[1], addr[2 : end]
     if !haskey(dm.tree, hd)
         dm.tree[hd] = DynamicMap{K}()
     end
@@ -67,4 +67,12 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::D, meta) where D 
     iterate(tr) do (k, v)
         collect!((k, ), addrs, chd, v, meta)
     end
+end
+
+function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
+    tg = DynamicMap{Value}()
+    for (k, v) in v
+        set_sub!(tg, k, Value(v))
+    end
+    tg
 end

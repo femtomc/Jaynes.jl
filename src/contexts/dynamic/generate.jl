@@ -4,8 +4,9 @@
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    if has_value(ctx.schema, addr)
-        s = getindex(ctx.schema, addr)
+    println(addr)
+    if has_value(ctx.target, addr)
+        s = getindex(ctx.target, addr)
         score = logpdf(d, s)
         add_choice!(ctx, addr, score, s)
         increment!(ctx, score)
@@ -27,7 +28,7 @@ end
 # ------------ Fillable ------------ #
 
 @inline function (ctx::GenerateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.schema, addr) && return get_top(ctx.schema, addr)
+    has_top(ctx.target, addr) && return get_top(ctx.target, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -39,7 +40,7 @@ end
                                         args...) where T <: Address
     visit!(ctx, addr)
     ps = get_subparameters(ctx, addr)
-    ss = get_subschema(ctx, addr)
+    ss = get_subtarget(ctx, addr)
     ret, cl, w = generate(ss, ps, call, args...)
     add_call!(ctx, addr, cl)
     increment!(ctx, w)
@@ -48,20 +49,20 @@ end
 
 # ------------ Convenience ------------ #
 
-function generate(schema::L, fn::Function, args...) where L <: AddressMap
-    ctx = Generate(schema)
+function generate(target::L, fn::Function, args...) where L <: AddressMap
+    ctx = Generate(target)
     ret = ctx(fn, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
-function generate(schema::L, params, fn::Function, args...) where L <: AddressMap
-    ctx = Generate(schema, params)
+function generate(target::L, params, fn::Function, args...) where L <: AddressMap
+    ctx = Generate(target, params)
     ret = ctx(fn, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
-function generate(schema::L, fn::typeof(rand), d::Distribution{K}) where {L <: AddressMap, K}
-    ctx = Generate(schema)
+function generate(target::L, fn::typeof(rand), d::Distribution{K}) where {L <: AddressMap, K}
+    ctx = Generate(target)
     addr = gensym()
     ret = ctx(fn, addr, d)
     return ret, get_top(ctx.tr, addr), ctx.weight

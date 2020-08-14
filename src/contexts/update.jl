@@ -7,7 +7,7 @@ mutable struct UpdateContext{C <: CallSite,
                              Ag <: Diff} <: ExecutionContext
     prev::C
     tr::T
-    schema::K
+    target::K
     weight::Float64
     score::Float64
     discard::D

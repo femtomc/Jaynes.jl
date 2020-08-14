@@ -6,7 +6,7 @@ mutable struct RegenerateContext{C <: AddressMap,
                                  Ag <: Diff} <: ExecutionContext
     prev::C
     tr::T
-    select::K
+    target::K
     weight::Float64
     score::Float64
     discard::D
@@ -14,10 +14,10 @@ mutable struct RegenerateContext{C <: AddressMap,
     params::P
     argdiffs::Ag
 end
-function Regenerate(select::K, cl::C) where {K <: AddressMap, C <: CallSite}
+function Regenerate(target::K, cl::C) where {K <: AddressMap, C <: CallSite}
     RegenerateContext(cl, 
                   typeof(cl.trace)(), 
-                  select, 
+                  target, 
                   0.0, 
                   0.0, 
                   DynamicDiscard(), 
@@ -25,10 +25,10 @@ function Regenerate(select::K, cl::C) where {K <: AddressMap, C <: CallSite}
                   Empty(), 
                   NoChange())
 end
-function Regenerate(select::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: CallSite, Ag <: Diff}
+function Regenerate(target::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: CallSite, Ag <: Diff}
     RegenerateContext(cl, 
                   typeof(cl.trace)(), 
-                  select, 
+                  target, 
                   0.0, 
                   0.0, 
                   DynamicDiscard(), 
@@ -54,7 +54,7 @@ mutable struct RegenerateContext{T <: Trace,
                                  P <: AddressMap} <: ExecutionContext
     prev::T
     tr::T
-    select::L
+    target::L
     weight::Float64
     score::Float64
     discard::T
@@ -67,7 +67,7 @@ Inner constructors:
 
 ```julia
 function RegenerateContext(tr::T, sel::Vector{Address}) where T <: Trace
-    un_sel = selection(sel)
+    un_sel = targetion(sel)
     new{T, typeof(un_sel), EmptyAddressMap}(tr, Trace(), un_sel, 0.0, Trace(), Visitor(), AddressMap())
 end
 function RegenerateContext(tr::T, sel::L) where {T <: Trace, L <: Target}
@@ -82,7 +82,7 @@ Regenerate(tr::Trace, sel::Vector{Address}) = RegenerateContext(tr, sel)
 Regenerate(tr::Trace, sel::Target) = RegenerateContext(tr, sel)
 ```
 
-The `RegenerateContext` is used for MCMC algorithms, to propose new choices for addresses indicated by an `Target` in the `select` field.
+The `RegenerateContext` is used for MCMC algorithms, to propose new choices for addresses indicated by an `Target` in the `target` field.
 """, RegenerateContext)
 
 @doc(

@@ -7,6 +7,7 @@ struct DynamicCallSite{J, K} <: CallSite
     args::J
     ret::K
 end
+@inline isempty(dcs::DynamicCallSite) = false
 
 function projection(tr::DynamicTrace, tg::Target)
     weight = 0.0

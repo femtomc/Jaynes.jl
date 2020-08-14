@@ -58,7 +58,7 @@ end
 
 # ------------ Parameter gradients ------------ #
 
-Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::VectorizedCallSite{typeof(markov)}, args)
+Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::VectorCallSite{typeof(markov)}, args)
     ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
         arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, get_sub(cl, cl.len), ret_grad)
@@ -70,7 +70,7 @@ Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, c
     return ret, fn
 end
 
-function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::VectorizedCallSite{typeof(markov)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::VectorCallSite{typeof(markov)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(markov, cl.fn, cl.len, args...)

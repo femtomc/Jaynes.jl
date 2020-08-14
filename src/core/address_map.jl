@@ -5,6 +5,8 @@ abstract type AddressMap{K} end
 # Leaves.
 abstract type Leaf{K} <: AddressMap{K} end
 
+@inline haskey(::Leaf, _) = false
+
 struct Empty <: Leaf{Empty} end
 
 abstract type Select <: Leaf{Select} end
@@ -29,11 +31,10 @@ end
 
 @inline set_sub!(::Leaf, args...) = error("(set_sub!): trying to set submap of an instance of Leaf type.\nThis normally happens because you've already assigned to this address, or part of the prefix of this address.")
 @inline get_sub(::Leaf, _) = Empty()
-function get_sub(::AddressMap{K}, addr)::AddressMap{K} where K end
-function get_sub(::AddressMap{K}, addr::Tuple{T})::AddressMap{K} where {K, T}
+function get_sub(am::AddressMap{K}, addr::Tuple{T})::Union{Empty, AddressMap{K}} where {K, T}
     get_sub(am, addr[1])
 end
-function get_sub(am::AddressMap{K}, addr::Tuple)::AddressMap{K} where K
+function get_sub(am::AddressMap{K}, addr::Tuple)::Union{Empty, AddressMap{K}} where K
     get_sub(get_sub(am, addr[1]), addr[2 : end])
 end
 
@@ -80,7 +81,7 @@ end
 
 function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, v::V, meta) where {T <: Tuple, V <: Leaf{Value}}
     push!(addrs, par)
-    chd[par] = get_ret(v)
+    chd[par] = get_value(v)
 end
 
 function collect(tr::M) where M <: AddressMap

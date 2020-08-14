@@ -6,7 +6,7 @@
                                      len::Int, 
                                      args...)
     visit!(ctx, addr => 1)
-    ss = get_subselection(ctx, addr)
+    ss = get_sub(ctx.target, addr)
     ret, w = score(get_sub(ss, 1), call, args...)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_ret[1] = ret

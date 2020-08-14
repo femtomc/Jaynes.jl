@@ -15,10 +15,12 @@
         v_ret[i] = s
         v_cl[i] = Choice(score, s)
     end
-    sc = sum(map(v_cl) do cl
-                 get_score(cl)
-             end)
-    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cl), sc, d, len, (), v_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cl), 
+                                                       sc, 
+                                                       d, 
+                                                       len, 
+                                                       (), 
+                                                       v_ret))
     return v_ret
 end
 
@@ -29,9 +31,11 @@ end
                                         call::Function, 
                                         args::Vector)
     visit!(ctx, addr => 1)
-    ps = get_subparameters(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    sc = 0.0
     len = length(args)
     ret, cl = simulate(ps, call, args[1]...)
+    sc += get_score(cl)
     v_ret = Vector{typeof(ret)}(undef, len)
     v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
@@ -41,11 +45,14 @@ end
         ret, cl = simulate(ps, call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl
+        sc += get_score(cl)
     end
-    sc = sum(map(v_cl) do cl
-                 get_score(cl)
-             end)
-    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cl), sc, call, length(args), args, v_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cl), 
+                                                       sc, 
+                                                       call, 
+                                                       length(args), 
+                                                       args, 
+                                                       v_ret))
     return v_ret
 end
 

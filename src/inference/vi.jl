@@ -4,7 +4,7 @@ function one_shot_gradient_estimator(sel::K,
                                      v_args::Tuple,
                                      mod::Function,
                                      args::Tuple;
-                                     scale = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
+                                     scale = 1.0) where {K <: AddressMap, P <: AddressMap}
     _, cl = simulate(ps, v_mod, v_args...)
     obs, _ = merge(cl, sel)
     _, mlw = score(obs, ps, mod, args...)
@@ -23,7 +23,7 @@ function automatic_differentiation_variational_inference(sel::K,
                                                          args::Tuple;
                                                          opt = ADAM(0.05, (0.9, 0.8)),
                                                          iters = 1000, 
-                                                         gs_samples = 100) where {K <: ConstrainedSelection, P <: Parameters}
+                                                         gs_samples = 100) where {K <: AddressMap, P <: AddressMap}
     cls = Vector{CallSite}(undef, gs_samples)
     elbows = Vector{Float64}(undef, iters)
     Threads.@threads for i in 1 : iters
@@ -66,7 +66,7 @@ function multi_shot_gradient_estimator(sel::K,
                                        mod::Function,
                                        args::Tuple;
                                        num_samples::Int = 100,
-                                       scale = 1.0) where {K <: ConstrainedSelection, P <: Parameters}
+                                       scale = 1.0) where {K <: AddressMap, P <: AddressMap}
     cs = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
@@ -98,7 +98,7 @@ function automatic_differentiation_geometric_vimco(sel::K,
                                                    args::Tuple;
                                                    opt = ADAM(0.05, (0.9, 0.8)),
                                                    iters = 1000, 
-                                                   gs_samples = 100) where {K <: ConstrainedSelection, P <: Parameters}
+                                                   gs_samples = 100) where {K <: AddressMap, P <: AddressMap}
     cls = Vector{CallSite}(undef, gs_samples)
     velbows = Vector{Float64}(undef, iters)
     Threads.@threads for i in 1 : iters

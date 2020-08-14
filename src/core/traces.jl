@@ -24,13 +24,18 @@ factor(args...) = args
 
 abstract type CallSite <: AddressMap{Choice} end
 
-has_value(cs::CallSite, addr) = has_value(cs.trace, addr)
-get_value(cs::CallSite, addr) = get_value(get_sub(cs.trace, addr))
-get_sub(cs::CallSite, addr) = get_sub(cs.trace, addr)
-get_score(cs::CallSite) = cs.score
-get_ret(cs::CallSite) = cs.ret
-get_args(cs::CallSite) = cs.args
-get_trace(cs::CallSite) = cs.trace
+has_value(cs::C, addr) where C <: CallSite = has_value(cs.trace, addr)
+get_value(cs::C, addr) where C <: CallSite = get_value(get_sub(cs.trace, addr))
+get_sub(cs::C, addr::A) where {C <: CallSite, A <: Address} = get_sub(cs.trace, addr)
+get_sub(cs::C, addr::Tuple{}) where {C <: CallSite, A <: Address} = get_sub(cs.trace, addr)
+get_sub(cs::C, addr::Tuple{A}) where {C <: CallSite, A <: Address} = get_sub(cs.trace, addr)
+get_sub(cs::C, addr::Tuple) where C <: CallSite = get_sub(cs.trace, addr::Tuple)
+get_score(cs::C) where C <: CallSite = cs.score
+get_ret(cs::C) where C <: CallSite = cs.ret
+get_args(cs::C) where C <: CallSite = cs.args
+get_trace(cs::C) where C <: CallSite = cs.trace
+haskey(cs::C, addr) where C <: CallSite = haskey(cs.trace, addr)
+getindex(cs::C, addrs...) where C <: CallSite = getindex(cs.trace, addrs...)
 
 function Base.display(call::C; 
                       fields::Array{Symbol, 1} = [:val],

@@ -1,17 +1,30 @@
 mutable struct ScoreContext{P <: AddressMap} <: ExecutionContext
-    select::AddressMap
+    target::AddressMap
     weight::Float64
     visited::Visitor
     params::P
-    function Score(obs::Vector{Tuple{K, P}}) where {P, K <: Union{Symbol, Pair}}
-        c_sel = selection(obs)
-        new{EmptyAddressMap}(c_sel, 0.0, AddressMap())
-    end
-    ScoreContext(obs::K, params::P) where {K <: AddressMap, P <: AddressMap} = new{P}(obs, 0.0, Visitor(), params)
 end
-Score(obs::Vector) = ScoreContext(selection(obs))
-Score(obs::AddressMap) = ScoreContext(obs, AddressMap())
-Score(obs::AddressMap, params) = ScoreContext(obs, params)
+
+function Score(obs::Vector)
+    ScoreContext(target(obs),
+                 0.0,
+                 Visitor(),
+                 Empty())
+end
+
+function Score(obs::AddressMap)
+    ScoreContext(obs, 
+                 0.0, 
+                 Visitor(), 
+                 Empty())
+end
+
+function Score(obs::AddressMap, params)
+    ScoreContext(obs, 
+                 0.0, 
+                 Visitor,
+                 params)
+end
 
 # ------------ includes ------------ #
 

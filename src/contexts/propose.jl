@@ -3,11 +3,21 @@ mutable struct ProposeContext{T <: AddressMap, P <: AddressMap} <: ExecutionCont
     score::Float64
     visited::Visitor
     params::P
-    ProposeContext(tr::T) where T <: AddressMap = new{T, EmptyAddressMap}(tr, 0.0, Visitor(), AddressMap())
-    ProposeContext(tr::T, params::P) where {T <: AddressMap, P} = new{T, P}(tr, 0.0, Visitor(), params)
 end
-Propose() = ProposeContext(AddressMap())
-Propose(params) = ProposeContext(AddressMap(), params)
+
+function Propose(tr)
+    ProposeContext(tr, 
+                   0.0, 
+                   Visitor(), 
+                   Empty())
+end
+
+function Propose(tr, params)
+    ProposeContext(tr, 
+                   0.0, 
+                   Visitor(), 
+                   params)
+end
 
 # ------------ includes ------------ #
 

@@ -91,7 +91,7 @@ include("utils/numerical.jl")
 #include("utils/vector.jl")
 include("compiler.jl")
 include("contexts.jl")
-#include("inference.jl")
+include("inference.jl")
 #include("foreign_model_interfaces.jl")
 
 # Contexts.

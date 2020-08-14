@@ -13,12 +13,12 @@
         prev_score = get_score(prev)
     end
 
-    # Check if in schema.
-    in_schema = has_value(ctx.schema, addr)
+    # Check if in target.
+    in_target = has_value(ctx.target, addr)
 
     # Ret.
-    if in_schema
-        ret = getindex(ctx.schema, addr)
+    if in_target
+        ret = getindex(ctx.target, addr)
         in_prev_chm && begin
             set_sub!(ctx.discard, addr, prev)
         end
@@ -32,7 +32,7 @@
     score = logpdf(d, ret)
     if in_prev_chm
         increment!(ctx, score - prev_score)
-    elseif in_schema
+    elseif in_target
         increment!(ctx, score)
     end
     add_choice!(ctx, addr, score, ret)
@@ -51,7 +51,7 @@ end
 # ------------ Fillable ------------ #
 
 @inline function (ctx::UpdateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.schema, addr) && return get_top(ctx.schema, addr)
+    has_top(ctx.target, addr) && return get_top(ctx.target, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -62,8 +62,8 @@ end
                                       call::Function,
                                       args...) where {T <: Address, D <: Diff}
     visit!(ctx, addr)
-    ps = get_subparameters(ctx, addr)
-    ss = get_subschema(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
     if has_sub(ctx.prev, addr)
         prev = get_prev(ctx, addr)
         ret, cl, w, rd, d = update(ss, ps, prev, UndefinedChange(), args...)

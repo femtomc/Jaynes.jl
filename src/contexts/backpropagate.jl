@@ -47,7 +47,7 @@ end
 function ParameterBackpropagate(call::T, init, params) where T <: CallSite
     ParameterBackpropagateContext(call, 
                                   0.0, 
-                                  selection(), 
+                                  target(), 
                                   init, 
                                   params, 
                                   Gradients())
@@ -65,7 +65,7 @@ end
 function ParameterBackpropagate(call::T, init, params, param_grads::Gradients) where {T <: CallSite, K <: Target}
     ParameterBackpropagateContext(call, 
                                   0.0, 
-                                  selection(), 
+                                  target(), 
                                   init, 
                                   params, 
                                   param_grads)
@@ -88,13 +88,13 @@ mutable struct ChoiceBackpropagateContext{T <: CallSite, S <: ConstrainedSelecti
     initial_params::AddressMap
     params::ParameterStore
     choice_grads::Gradients
-    select::K
+    target::K
 end
 
 function ChoiceBackpropagate(call::T, init, params, choice_grads) where {T <: CallSite, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
-                               selection(), 
+                               target(), 
                                init, 
                                params, 
                                choice_grads, 
@@ -114,7 +114,7 @@ end
 function ChoiceBackpropagate(call::T, init, params, choice_grads, sel::K) where {T <: CallSite, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
-                               selection(), 
+                               target(), 
                                init, 
                                params, 
                                choice_grads, 
@@ -152,9 +152,9 @@ end
 simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: CallSite = cl.ret
 
 # Grads for choices with differentiable logpdfs.
-simulate_choice_pullback(params, choice_grads, choice_selection, cl::T, args) where T <: CallSite = get_ret(cl)
+simulate_choice_pullback(params, choice_grads, choice_target, cl::T, args) where T <: CallSite = get_ret(cl)
 
-# ------------ filter! choice gradients given selection ------------ #
+# ------------ filter! choice gradients given target ------------ #
 
 function filter!(choice_grads, cl::DynamicCallSite, grad_tr::NamedTuple, sel::K) where K <: Target
     values = ConstrainedDynamicSelection()
@@ -181,29 +181,29 @@ end
 
 function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
     choice_grads = Gradients()
-    choice_selection = UnconstrainedAllSelection()
-    arg_grads, vals, _ = choice_gradients(AddressMap(), choice_grads, choice_selection, cl, ret_grad)
+    choice_target = UnconstrainedAllSelection()
+    arg_grads, vals, _ = choice_gradients(AddressMap(), choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(fixed::S, cl::T, ret_grad) where {S <: ConstrainedSelection, T <: CallSite}
     choice_grads = Gradients()
-    choice_selection = UnconstrainedAllSelection()
-    arg_grads, vals, _ = choice_gradients(fixed, AddressMap(), choice_grads, choice_selection, cl, ret_grad)
+    choice_target = UnconstrainedAllSelection()
+    arg_grads, vals, _ = choice_gradients(fixed, AddressMap(), choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
-    choice_selection = UnconstrainedAllSelection()
-    arg_grads, vals, _ = choice_gradients(ps, choice_grads, choice_selection, cl, ret_grad)
+    choice_target = UnconstrainedAllSelection()
+    arg_grads, vals, _ = choice_gradients(ps, choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
 function get_choice_gradients(fixed::S, ps::P, cl::T, ret_grad) where {S <: ConstrainedSelection, P <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
-    choice_selection = UnconstrainedAllSelection()
-    arg_grads, vals, _ = choice_gradients(fixed, ps, choice_grads, choice_selection, cl, ret_grad)
+    choice_target = UnconstrainedAllSelection()
+    arg_grads, vals, _ = choice_gradients(fixed, ps, choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
@@ -235,7 +235,7 @@ end
 
 function get_learnable_gradients(ps::P, cl::DynamicCallSite, ret_grad, scaler::Float64 = 1.0) where P <: AddressMap
     param_grads = Gradients()
-    arg_grads = accumulate_learnable_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
+    arg_grads = accumulate_learnable_gradients!(target(), ps, param_grads, cl, ret_grad, scaler)
     return arg_grads, param_grads
 end
 
@@ -247,7 +247,7 @@ end
 
 function get_learnable_gradients(ps::P, cl::VectorizedCallSite, ret_grad, scaler::Float64 = 1.0) where P <: AddressMap
     param_grads = Gradients()
-    arg_grads, accumulate_learnable_gradients!(selection(), ps, param_grads, cl, ret_grad, scaler)
+    arg_grads, accumulate_learnable_gradients!(target(), ps, param_grads, cl, ret_grad, scaler)
     key = keys(param_grads.tree)[1]
     return arg_grads, param_grads[key]
 end

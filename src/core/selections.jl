@@ -25,8 +25,22 @@ end
     if sub isa DynamicTarget
         push!(sub, tl)
     else
-        new = target(rest)
+        new = target(tl)
         merge!(new, sub)
         set_sub!(tg, hd, new)
     end
+end
+
+function target(v::Vector{T}) where T <: Tuple
+    tg = DynamicTarget()
+    for k in v
+        push!(tg, k)
+    end
+    tg
+end
+
+function target(k::A) where A <: Address
+    tg = DynamicTarget()
+    push!(tg, k)
+    tg
 end

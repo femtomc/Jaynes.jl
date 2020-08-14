@@ -3,10 +3,21 @@ mutable struct SimulateContext{T <: AddressMap, P <: AddressMap} <: ExecutionCon
     score::Float64
     visited::Visitor
     params::P
-    SimulateContext() = new{DynamicMap, Empty}(Trace(), 0.0, Visitor(), Empty())
-    SimulateContext(params::P) where P = new{DynamicMap, P}(AddressMap(), 0.0, Visitor(), params)
 end
-Simulate() = SimulateContext()
+
+function Simulate()
+    SimulateContext(DynamicTrace(), 
+                    0.0, 
+                    Visitor(), 
+                    Empty())
+end
+
+function Simulate(params)
+    SimulateContext(DynamicTrace(), 
+                    0.0, 
+                    Visitor(), 
+                    params)
+end
 
 # ------------ includes ------------ #
 
