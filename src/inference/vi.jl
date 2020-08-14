@@ -6,7 +6,7 @@ function one_shot_gradient_estimator(sel::K,
                                      args::Tuple;
                                      scale = 1.0) where {K <: AddressMap, P <: AddressMap}
     _, cl = simulate(ps, v_mod, v_args...)
-    obs, _ = merge(cl, sel)
+    obs, _ = merge(get_trace(cl), sel)
     _, mlw = score(obs, ps, mod, args...)
     lw = mlw - get_score(cl)
     _, gs = get_learnable_gradients(ps, cl, nothing, lw * scale)
@@ -32,7 +32,7 @@ function automatic_differentiation_variational_inference(sel::K,
         for s in 1 : gs_samples
             gs, lw, cl = one_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; scale = 1.0 / gs_samples)
             elbo_est += lw / gs_samples
-            gs_est += gs
+            accumulate!(gs_est, gs)
             cls[s] = cl
         end
         elbows[i] = elbo_est
@@ -71,7 +71,7 @@ function multi_shot_gradient_estimator(sel::K,
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
         _, cs[i] = simulate(ps, v_mod, v_args...)
-        obs, _ = merge(cs[i], sel)
+        obs, _ = merge(get_trace(cs[i]), sel)
         ret, mlw = score(obs, ps, mod, args...)
         lws[i] = mlw - get_score(cs[i])
     end

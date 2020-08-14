@@ -64,7 +64,7 @@ end
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)
-    if has_sub(ctx.prev, addr)
+    if haskey(ctx.prev, addr)
         prev = get_prev(ctx, addr)
         ret, cl, w, rd, d = update(ss, ps, prev, UndefinedChange(), args...)
     else

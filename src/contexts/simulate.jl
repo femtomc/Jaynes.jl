@@ -1,4 +1,5 @@
-mutable struct SimulateContext{T <: AddressMap, P <: AddressMap} <: ExecutionContext
+mutable struct SimulateContext{T <: AddressMap, 
+                               P <: AddressMap} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor

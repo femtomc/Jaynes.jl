@@ -40,6 +40,18 @@ function Update(select::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: Cal
                   argdiffs)
 end
 
+function Update(select::K, ps::P, cl::C, argdiffs::Ag) where {K <: AddressMap, P <: AddressMap, C <: CallSite, Ag <: Diff}
+    UpdateContext(cl, 
+                  typeof(cl.trace)(), 
+                  select, 
+                  0.0, 
+                  0.0, 
+                  DynamicDiscard(), 
+                  Visitor(), 
+                  ps,
+                  argdiffs)
+end
+
 # ------------ includes ------------ #
 
 include("dynamic/update.jl")

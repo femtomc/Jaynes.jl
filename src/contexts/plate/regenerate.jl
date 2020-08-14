@@ -6,7 +6,7 @@ function trace_retained(vcs::VectorCallSite,
                         o_len::Int, 
                         n_len::Int, 
                         args::Vector) where K <: Target
-    w_adj = -sum(map(shallow_iterator(vcs)) do (_, v)
+    w_adj = -sum(map(get_choices(vcs)[1 : n_len]) do v
                      get_score(v)
                  end)
     new = get_choices(get_trace(vcs))[1 : n_len]
@@ -33,8 +33,8 @@ function trace_new(vcs::VectorCallSite,
                    n_len::Int, 
                    args::Vector) where K <: Target
     w_adj = 0.0
-    new_ret = typeof(vcs.ret)(undef, n_len)
-    new = vcs.trace.subrecords
+    new_ret = typeof(get_ret(vcs))(undef, n_len)
+    new = get_choices(vcs)
     for i in o_len + 1 : n_len
         ss = get_sub(s, i)
         ret, cl = simulate(call, args[i]...)
@@ -64,7 +64,7 @@ end
     visit!(ctx, addr)
     vcs = get_prev(ctx, addr)
     n_len, o_len = length(args), length(vcs.args)
-    s = get_subselection(ctx, addr)
+    s = get_sub(ctx.target, addr)
     _, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)
@@ -82,7 +82,7 @@ end
                                                 args::Vector) where {C <: VectorCallSite, T <: VectorTrace}
     vcs = ctx.prev
     n_len, o_len = length(args), length(vcs.args)
-    s = ctx.select
+    s = ctx.target
     _, ks = keyset(s, n_len)
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)

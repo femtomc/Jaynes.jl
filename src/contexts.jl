@@ -52,4 +52,4 @@ include("contexts/update.jl")
 include("contexts/regenerate.jl")
 
 # Gradients.
-#include("contexts/backpropagate.jl")
+include("contexts/backpropagate.jl")

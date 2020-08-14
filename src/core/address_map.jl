@@ -5,8 +5,6 @@ abstract type AddressMap{K} end
 # Leaves.
 abstract type Leaf{K} <: AddressMap{K} end
 
-@inline haskey(::Leaf, _) = false
-
 struct Empty <: Leaf{Empty} end
 
 abstract type Select <: Leaf{Select} end
@@ -22,6 +20,8 @@ struct Choice{K} <: Leaf{Choice}
     val::K
 end
 
+@inline convert(::Type{Value}, c::Choice) = Value(get_value(c))
+
 @inline projection(c::Choice, tg::Empty) = 0.0
 @inline projection(c::Choice, tg::SelectAll) = c.score
 
@@ -29,7 +29,18 @@ end
 
 # ------------- Interfaces ------------ #
 
+@inline haskey(::Leaf, _) = false
+@inline haskey(::Leaf, ::Tuple{}) = false
+@inline haskey(::AddressMap, ::Tuple{}) = false
+@inline haskey(am::AddressMap, addr::Tuple{A}) where A <: Address = haskey(am, addr[1])
+@inline function haskey(am::AddressMap, addr::Tuple)
+    hd, tl = addr[1], addr[2 : end]
+    haskey(am, hd) && haskey(get_sub(am, hd), tl)
+end
+
 @inline set_sub!(::Leaf, args...) = error("(set_sub!): trying to set submap of an instance of Leaf type.\nThis normally happens because you've already assigned to this address, or part of the prefix of this address.")
+@inline function set_sub!(am::AddressMap{K}, addr::Tuple{}, v::AddressMap{<: K}) where {A <: Address, K} end
+
 @inline get_sub(::Leaf, _) = Empty()
 function get_sub(am::AddressMap{K}, addr::Tuple{T})::Union{Empty, AddressMap{K}} where {K, T}
     get_sub(am, addr[1])
@@ -37,6 +48,7 @@ end
 function get_sub(am::AddressMap{K}, addr::Tuple)::Union{Empty, AddressMap{K}} where K
     get_sub(get_sub(am, addr[1]), addr[2 : end])
 end
+#Zygote.@adjoint get_sub(a, addr) = get_sub(a, addr), ret_grad -> (ret_grad, nothing)
 
 function shallow_iterator(::AddressMap{K}) where K end
 @inline shallow_iterator(::Leaf) = ()
@@ -62,22 +74,26 @@ end
 # TODO: inefficient.
 function Base.:(==)(a::AddressMap, b::AddressMap)
     for (k, sub) in shallow_iterator(a)
-        get_sub(b, addr) != sub && return false
+        get_sub(b, k) != sub && return false
     end
     for (k, sub) in shallow_iterator(b)
-        get_sub(a, addr) != sub && return false
+        get_sub(a, k) != sub && return false
     end
     return true
 end
 
-@inline Base.merge(am::AddressMap, ::Empty) = deepcopy(am)
-@inline Base.merge(::Empty, am::AddressMap) = deepcopy(am)
-@inline Base.merge(l::Leaf, ::Empty) = deepcopy(l)
-@inline Base.merge(::Empty, l::Leaf) = deepcopy(l)
-@inline Base.merge!(am::AddressMap, ::Empty) = am
-@inline Base.merge!(::Empty, am::AddressMap) = am
-@inline Base.merge!(l::Leaf, ::Empty) = l
-@inline Base.merge!(::Empty, l::Leaf) = l
+@inline Base.merge(am::AddressMap, ::Empty) = deepcopy(am), false
+@inline Base.merge(::Empty, am::AddressMap) = deepcopy(am), false
+@inline Base.merge(l::Leaf, ::Empty) = deepcopy(l), false
+@inline Base.merge(::Empty, l::Leaf) = deepcopy(l), false
+@inline Base.merge(c::Choice, v::Value) = deepcopy(c), true
+@inline Base.merge(v::Value, c::Choice) = Value(get_value(c)), true
+@inline Base.merge!(am::AddressMap, ::Empty) = am, false
+@inline Base.merge!(::Empty, am::AddressMap) = am, false
+@inline Base.merge!(l::Leaf, ::Empty) = l, false
+@inline Base.merge!(::Empty, l::Leaf) = l, false
+@inline Base.merge!(c::Choice, v::Value) = v, true
+@inline Base.merge!(v::Value, c::Choice) = Value(get_value(c)), true
 
 function collect!(par::T, addrs::Vector, chd::Dict, v::V, meta) where {T <: Tuple, V <: Leaf{Choice}}
     push!(addrs, par)
@@ -87,6 +103,10 @@ end
 function collect!(par::T, addrs::Vector, chd::Dict, v::V, meta) where {T <: Tuple, V <: Leaf{Value}}
     push!(addrs, par)
     chd[par] = get_value(v)
+end
+
+function collect!(par::T, addrs::Vector, chd::Dict, v::SelectAll, meta) where T <: Tuple
+    push!(addrs, par)
 end
 
 function collect(tr::M) where M <: AddressMap
@@ -111,19 +131,33 @@ function Base.display(tr::D;
     addrs, chd, meta = collect(tr)
     if show_values
         for a in addrs
-            if haskey(meta, a)
+            if haskey(meta, a) && haskey(chd, a)
                 println(" $(meta[a]) $(a) = $(chd[a])")
-            else
+            elseif haskey(chd, a)
                 println(" $(a) = $(chd[a])")
+            else
+                println(" $(a)")
             end
         end
     elseif show_types
         for a in addrs
-            println(" $(a) = $(typeof(chd[a]))")
+            if haskey(meta, a) && haskey(chd, a)
+                println(" $(meta[a]) $(a) = $(typeof(chd[a]))")
+            elseif haskey(chd, a)
+                println(" $(a) = $(typeof(chd[a]))")
+            else
+                println(" $(a)")
+            end
         end
     elseif show_types && show_values
         for a in addrs
-            println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
+            if haskey(meta, a) && haskey(chd, a)
+                println(" $(meta[a]) $(a) = $(chd[a]) : $(typeof(chd[a]))")
+            elseif haskey(chd, a)
+                println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
+            else
+                println(" $(a)")
+            end
         end
     else
         for a in addrs
@@ -137,5 +171,4 @@ end
 
 include("array_compat.jl")
 include("address_maps/dynamic.jl")
-include("address_maps/anywhere.jl")
 include("address_maps/vector.jl")

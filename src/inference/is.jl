@@ -37,7 +37,7 @@ function importance_sampling(observations::K,
     lws = Vector{Float64}(undef, num_samples)
     for i in 1 : num_samples
         ret, pcall, pw = propose(proposal, proposal_args...)
-        select, overlapped = Jaynes.merge(pcall, observations)
+        select, overlapped = Jaynes.merge(get_trace(pcall), observations)
         overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
         _, calls[i], lws[i] = generate(select, model, args...)
     end

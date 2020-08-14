@@ -3,10 +3,10 @@
 @inline function (ctx::ParameterBackpropagateContext)(call::typeof(rand), 
                                                       addr::T, 
                                                       d::Distribution{K}) where {T <: Address, K}
-    if has_top(ctx.fixed, addr)
-        s = get_top(ctx.fixed, addr)
+    if haskey(ctx.fixed, addr)
+        s = getindex(ctx.fixed, addr)
     else
-        s = get_top(ctx.call, addr).val
+        s = get_value(get_sub(ctx.call, addr))
     end
     increment!(ctx, logpdf(d, s))
     return s
@@ -15,11 +15,11 @@ end
 @inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
-    has_top(ctx.select, addr) || return get_top(ctx.call, addr).val
-    if has_top(ctx.fixed, addr)
-        s = get_top(ctx.fixed, addr)
+    haskey(ctx.select, addr) || return getindex(ctx.call, addr)
+    if haskey(ctx.fixed, addr)
+        s = getindex(ctx.fixed, addr)
     else
-        s = get_top(ctx.call, addr).val
+        s = getindex(ctx.call, addr)
     end
     increment!(ctx, logpdf(d, s))
     return s
@@ -38,12 +38,12 @@ end
 # ------------ Fillable ------------ #
 
 @inline function (ctx::ParameterBackpropagateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.fixed, addr) && return get_top(ctx.fixed, addr)
+    haskey(ctx.fixed, addr) && return getindex(ctx.fixed, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
 @inline function (ctx::ChoiceBackpropagateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.select, addr) && return get_top(ctx.select, addr)
+    haskey(ctx.select, addr) && return getindex(ctx.select, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -96,7 +96,7 @@ function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::D
     arg_grads, ps_grad = back((1.0, ret_grad))
     if !(ps_grad isa Nothing)
         for (addr, grad) in ps_grad.params
-            push!(param_grads, addr, scaler .* grad)
+            accumulate!(param_grads, addr, scaler .* grad)
         end
     end
     return arg_grads
@@ -113,7 +113,7 @@ function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::D
     arg_grads, ps_grad = back((1.0, ret_grad...))
     if !(ps_grad isa Nothing)
         for (addr, grad) in ps_grad.params
-            push!(param_grads, addr, scaler .* grad)
+            accumulate!(param_grads, addr, scaler .* grad)
         end
     end
     return arg_grads
@@ -142,7 +142,7 @@ function choice_gradients(initial_params::P, choice_grads, choice_selection::K, 
     return arg_grads, choice_vals, choice_grads
 end
 
-function choice_gradients(fixed::S, initial_params::P, choice_grads, choice_selection::K, cl::DynamicCallSite, ret_grad) where {S <: ConstrainedSelection, P <: AddressMap, K <: Target}
+function choice_gradients(fixed::S, initial_params::P, choice_grads, choice_selection::K, cl::DynamicCallSite, ret_grad) where {S <: AddressMap, P <: AddressMap, K <: Target}
     fn = (args, call, sel) -> begin
         ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_selection)
         ret = ctx(call.fn, args...)

@@ -20,14 +20,14 @@ end
 
 @inline function (ctx::GenerateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
+    haskey(ctx.params, addr) && return getindex(ctx.params, addr)
     error("(learnable): parameter not provided at address $addr.")
 end
 
 # ------------ Fillable ------------ #
 
 @inline function (ctx::GenerateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.target, addr) && return get_top(ctx.target, addr)
+    haskey(ctx.target, addr) && return getindex(ctx.target, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
@@ -38,8 +38,8 @@ end
                                         call::Function,
                                         args...) where T <: Address
     visit!(ctx, addr)
-    ps = get_subparameters(ctx, addr)
-    ss = get_subtarget(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
     ret, cl, w = generate(ss, ps, call, args...)
     add_call!(ctx, addr, cl)
     increment!(ctx, w)
@@ -64,5 +64,5 @@ function generate(target::L, fn::typeof(rand), d::Distribution{K}) where {L <: A
     ctx = Generate(target)
     addr = gensym()
     ret = ctx(fn, addr, d)
-    return ret, get_top(ctx.tr, addr), ctx.weight
+    return ret, get_sub(ctx.tr, addr), ctx.weight
 end

@@ -6,7 +6,7 @@ function trace_retained(vcs::VectorCallSite,
                         o_len::Int, 
                         n_len::Int, 
                         args::Vector) where K <: AddressMap
-    w_adj = -sum(map(shallow_iterator(vcs)) do (_, v)
+    w_adj = -sum(map(get_choices(vcs)) do v
                      get_score(v)
                  end)
     new = get_choices(get_trace(vcs))[1 : n_len]

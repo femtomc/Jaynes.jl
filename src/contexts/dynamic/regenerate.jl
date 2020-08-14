@@ -106,16 +106,16 @@ end
 
 function regenerate(sel::L, ps::P, cs::DynamicCallSite) where {L <: Target, P <: AddressMap}
     argdiffs = NoChange()
-    ctx = Regenerate(cs, sel, ps, argdiffs)
+    ctx = Regenerate(sel, ps, cs, argdiffs)
     return regenerate(ctx, cs, cs.args...)
 end
 
 function regenerate(sel::L, cs::DynamicCallSite, argdiffs::D, new_args...) where {L <: Target, D <: Diff}
-    ctx = Regenerate(cs, sel, argdiffs)
+    ctx = Regenerate(sel, cs, argdiffs)
     return regenerate(ctx, cs, new_args...)
 end
 
 function regenerate(sel::L, ps::P, cs::DynamicCallSite, argdiffs::D, new_args...) where {L <: Target, P <: AddressMap, D <: Diff}
-    ctx = Regenerate(cs, sel, ps, argdiffs)
+    ctx = Regenerate(sel, ps, cs, argdiffs)
     return regenerate(ctx, cs, new_args...)
 end

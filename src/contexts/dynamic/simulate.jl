@@ -13,7 +13,7 @@ end
 
 @inline function (ctx::SimulateContext)(fn::typeof(learnable), addr::T) where T <: Address
     visit!(ctx, addr)
-    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
+    haskey(ctx.params, addr) && return getindex(ctx.params, addr)
     error("Parameter not provided at address $addr.")
 end
 
@@ -24,7 +24,7 @@ end
                                         call::Function,
                                         args...) where T <: Address
     visit!(ctx, addr)
-    ps = get_subparameters(ctx, addr)
+    ps = get_sub(ctx.params, addr)
     ret, cl = simulate(ps, call, args...)
     add_call!(ctx, addr, cl)
     return ret
@@ -48,13 +48,13 @@ function simulate(fn::typeof(rand), d::Distribution{T}) where T
     ctx = Simulate()
     addr = gensym()
     ret = ctx(rand, addr, d)
-    return ret, get_top(ctx.tr, addr)
+    return ret, get_sub(ctx.tr, addr)
 end
 
 function simulate(params::P, fn::typeof(rand), d::Distribution{T}) where {P <: AddressMap, T}
     ctx = Simulate(params)
     addr = gensym()
     ret = ctx(rand, addr, d)
-    return ret, get_top(ctx.tr, addr)
+    return ret, get_sub(ctx.tr, addr)
 end
 

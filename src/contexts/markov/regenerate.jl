@@ -7,11 +7,11 @@ function trace_retained(vcs::VectorCallSite,
                         o_len::Int, 
                         n_len::Int, 
                         args...) where K <: Target
-    w_adj = -sum(map(vcs.trace.subrecords[n_len + 1 : end]) do cl
+    w_adj = -sum(map(get_choices(vcs)[1 : min - 1]) do cl
                      get_score(cl)
                  end)
-    new = vcs.trace.subrecords[1 : min - 1]
-    new_ret = vcs.ret[1 : min - 1]
+    new = get_choices(vcs)[1 : min - 1]
+    new_ret = get_ret(vcs)[1 : min - 1]
 
     # Start at min
     ss = get_sub(s, min)

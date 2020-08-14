@@ -19,21 +19,18 @@ Zygote.@adjoint VectorMap(vector) = VectorMap(vector), ret_grad -> (nothing, )
 @inline Base.isempty(vm::VectorMap) = isempty(vm.vector)
 
 function haskey(vm::VectorMap, addr)
-    addr < length(vm.vector)
+    addr <= length(vm.vector)
 end
 
 function push!(vm::VectorMap{K}, v::AddressMap{<:K}) where K
     push!(vm.vector, v)
 end
 
-function set_sub!(vm::VectorMap{K}, addr, v::AddressMap{<:K}) where K
+function set_sub!(vm::VectorMap{K}, addr::Int, v::AddressMap{<:K}) where K
     haskey(vm, addr) || error("(set_sub!): field $(:vector) of instance type VectorMap does not have $addr as index.")
     insert!(vm.vector, addr, v)
 end
-function set_sub!(vm::VectorMap{K}, addr::Tuple{}, v::AddressMap{<:K}) where K end
-function set_sub!(vm::VectorMap{K}, addr::Tuple{T}, v::AddressMap{<:K}) where {K, T}
-    set_sub!(vm, addr[1], v)
-end
+@inline set_sub!(vm::VectorMap{K}, addr::Tuple{A}, v::AddressMap{<: K}) where {A <: Address, K} = set_sub!(vm, addr[1], v)
 function set_sub!(vm::VectorMap{K}, addr::Tuple, v::AddressMap{<:K}) where K
     hd, tl = addr[1], addr[2 : end]
     !haskey(t.vm, hd) && error("(set_sub!): instance of type VectorMap does not have index with head $hd of $addr.")

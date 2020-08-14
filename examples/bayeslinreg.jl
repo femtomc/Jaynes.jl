@@ -17,7 +17,7 @@ x = [Float64(i) for i in 1 : data_len]
 y = map(x) do k
     3.0 * k + randn()
 end
-obs = selection(map(1 : data_len) do i
+obs = target(map(1 : data_len) do i
                     (:y => i, ) => y[i]
                 end)
 
@@ -46,7 +46,7 @@ mh_test = () -> begin
     ret, cl = generate(obs, bayesian_linear_regression, x)
     calls = []
     for i in 1 : n_iters
-        cl, _ = mh(selection([(:σ, ), (:β, )]), cl)
+        cl, _ = mh(target([(:σ, ), (:β, )]), cl)
         i % 30 == 0 && begin
             println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
             push!(calls, cl)
@@ -112,7 +112,8 @@ advi_test = () -> begin
                                surrogate, (),
                                bayesian_linear_regression, (x, );
                                opt = ADAM(0.05, (0.9, 0.8)),
-                               iters = 1000)
+                               iters = 1000,
+                               gs_samples = 10)
     display(ps)
 end
 
@@ -145,7 +146,7 @@ hmc_test = () -> begin
     ret, cl = generate(obs, bayesian_linear_regression, x)
     calls = []
     for i in 1 : n_iters
-        cl, _ = hmc(selection([(:σ, ), (:β, )]), cl)
+        cl, _ = hmc(target([(:σ, ), (:β, )]), cl)
         i % 10 == 0 && begin
             println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
             push!(calls, cl)
@@ -171,7 +172,7 @@ combo_kernel_test = () -> begin
     calls = []
     for i in 1 : n_iters
         cl, _ = mh(cl, proposal, (y, ))
-        cl, _ = hmc(selection([(:σ, ), (:β, )]), cl)
+        cl, _ = hmc(target([(:σ, ), (:β, )]), cl)
         i % 10 == 0 && begin
             println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
             push!(calls, cl)
@@ -194,14 +195,14 @@ boomerang_test = () -> begin
     println("\nBoomerang sampler:")
     n_iters = 500
     ret, cl = generate(obs, bayesian_linear_regression, x)
-    sel = get_selection(cl)
+    sel = get_target(cl)
     sel_values, _ = get_choice_gradients(sel, cl, 1.0)
     d = length(array(sel_values, Float64))
     flow = Boomerang(sparse(I, d, d), zeros(d), 1.0)
     θ = rand(MvNormal(d, 1.0))
     calls = []
     for i in 1 : n_iters
-        cl, _ = pdmk(selection([(:σ, ), (:β, )]), cl, flow, θ)
+        cl, _ = pdmk(target([(:σ, ), (:β, )]), cl, flow, θ)
         i % 10 == 0 && begin
             println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
             push!(calls, cl)
@@ -222,10 +223,10 @@ end
 @time is_test()
 @time mh_test()
 @time mh_test_with_proposal()
-@time hmc_test()
-@time combo_kernel_test()
+#@time hmc_test()
+#@time combo_kernel_test()
 #@time boomerang_test()
-#@time advi_test() 
+@time advi_test() 
 #@time adgv_test() 
 
 end # module

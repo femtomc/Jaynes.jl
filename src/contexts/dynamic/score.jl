@@ -1,8 +1,8 @@
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::ScoreContext)(call::typeof(rand), 
-                                     addr::T, 
-                                     d::Distribution{K}) where {T <: Address, K}
+                                     addr::A, 
+                                     d::Distribution{K}) where {A <: Address, K}
     visit!(ctx, addr)
     haskey(ctx.target, addr) || error("ScoreError: constrained target must provide constraints for all possible addresses in trace. Missing at address $addr.")
     val = getindex(ctx.target, addr)
@@ -28,9 +28,9 @@ end
 # ------------ Call sites ------------ #
 
 @inline function (ctx::ScoreContext)(c::typeof(rand),
-                                     addr::T,
+                                     addr::A,
                                      call::Function,
-                                     args...) where T <: Address
+                                     args...) where A <: Address
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)

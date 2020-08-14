@@ -1,16 +1,40 @@
-mutable struct GenerateContext{T <: AddressMap, K <: AddressMap, P <: AddressMap} <: ExecutionContext
+mutable struct GenerateContext{T <: AddressMap, 
+                               K <: AddressMap, 
+                               P <: AddressMap} <: ExecutionContext
     tr::T
     target::K
     weight::Float64
     score::Float64
     visited::Visitor
     params::P
-    GenerateContext(tr::T, target::K) where {T <: AddressMap, K <: AddressMap} = new{T, K, Empty}(tr, target, 0.0, 0.0, Visitor(), Empty())
-    GenerateContext(tr::T, target::K, params::P) where {T <: AddressMap, K <: AddressMap, P <: AddressMap} = new{T, K, P}(tr, target, 0.0, 0.0, Visitor(), params)
 end
-Generate(target::AddressMap) = GenerateContext(Trace(), target, Parameters())
-Generate(target::AddressMap, params) = GenerateContext(Trace(), target, params)
-Generate(tr::AddressMap, target::AddressMap) = GenerateContext(tr, target)
+
+function Generate(target::AddressMap)
+    GenerateContext(DynamicTrace(), 
+                    target, 
+                    0.0,
+                    0.0,
+                    Visitor(),
+                    Empty())
+end
+
+function Generate(target::AddressMap, params)
+    GenerateContext(DynamicTrace(), 
+                    target, 
+                    0.0,
+                    0.0,
+                    Visitor(),
+                    params)
+end
+
+function Generate(tr::AddressMap, target::AddressMap, params::AddressMap)
+    GenerateContext(tr, 
+                    target,
+                    0.0,
+                    0.0,
+                    Visitor(),
+                    params)
+end
 
 # ------------ includes ------------ #
 

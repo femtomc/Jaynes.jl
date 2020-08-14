@@ -1,5 +1,6 @@
-mutable struct ScoreContext{P <: AddressMap} <: ExecutionContext
-    target::AddressMap
+mutable struct ScoreContext{M <: AddressMap,
+                            P <: AddressMap} <: ExecutionContext
+    target::M
     weight::Float64
     visited::Visitor
     params::P
@@ -22,7 +23,7 @@ end
 function Score(obs::AddressMap, params)
     ScoreContext(obs, 
                  0.0, 
-                 Visitor,
+                 Visitor(),
                  params)
 end
 

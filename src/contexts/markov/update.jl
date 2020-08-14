@@ -8,10 +8,10 @@ function trace_retained(vcs::VectorCallSite,
                         o_len::Int, 
                         n_len::Int, 
                         args...) where {K <: AddressMap, P <: AddressMap}
-    w_adj = -sum(map(shallow_iterator(vcs)) do (_, cl)
+    w_adj = -sum(map(get_choices(vcs)[1 : min - 1]) do cl
                      get_score(cl)
                  end)
-    new = get_choices(get_trace(vcs))[1 : min - 1]
+    new = get_choices(vcs)[1 : min - 1]
     new_ret = get_ret(vcs)[1 : min - 1]
 
     # Start at min

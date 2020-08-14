@@ -1,9 +1,10 @@
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::SimulateContext)(c::typeof(plate), 
-                                        addr::T, 
+                                        addr::A, 
                                         d::Distribution{K},
-                                        len::Int) where {T <: Address, K}
+                                        len::Int) where {A <: Address, K}
+    visit!(ctx, addr)
     v_ret = Vector{eltype(d)}(undef, len)
     v_cl = Vector{Choice{eltype(d)}}(undef, len)
     sc = 0.0
@@ -30,7 +31,7 @@ end
                                         addr::Address, 
                                         call::Function, 
                                         args::Vector)
-    visit!(ctx, addr => 1)
+    visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     sc = 0.0
     len = length(args)
@@ -41,7 +42,6 @@ end
     v_ret[1] = ret
     v_cl[1] = cl
     for i in 2:len
-        visit!(ctx, addr => i)
         ret, cl = simulate(ps, call, args[i]...)
         v_ret[i] = ret
         v_cl[i] = cl

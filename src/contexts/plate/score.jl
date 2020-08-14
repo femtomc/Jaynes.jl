@@ -4,7 +4,7 @@
                                      addr::Address, 
                                      call::Function, 
                                      args::Vector)
-    visit!(ctx, addr => 1)
+    visit!(ctx, addr)
     ss = get_sub(ctx.target, (addr, 1))
     len = length(args)
     ret, w = score(ss, call, args[1]...)
@@ -12,7 +12,6 @@
     v_ret[1] = ret
     increment!(ctx, w)
     for i in 2:len
-        visit!(ctx, addr => i)
         ss = get_sub(ctx.target, (addr, i))
         ret, w = score(ss, call, args[i]...)
         v_ret[i] = ret

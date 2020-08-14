@@ -13,7 +13,7 @@ x = [Float64(i) for i in 1 : data_len]
 y = map(x) do k
     3.0 * k + randn()
 end
-obs = selection(map(1 : data_len) do i
+obs = target(map(1 : data_len) do i
                     (:y => i, ) => y[i]
                 end)
 
@@ -27,12 +27,12 @@ obs = selection(map(1 : data_len) do i
         zipped = zip(ps.calls, lnw)
 
         est_σ = sum(map(zipped) do (cl, w)
-                        get_ret(cl[:σ]) * exp(w)
+                        (cl[:σ]) * exp(w)
                     end)
         println("Estimated σ: $est_σ")
 
         est_β = sum(map(zipped) do (cl, w)
-                        get_ret(cl[:β]) * exp(w)
+                        (cl[:β]) * exp(w)
                     end)
         println("Estimated β: $est_β")
     end
@@ -44,20 +44,20 @@ obs = selection(map(1 : data_len) do i
         ret, cl = generate(obs, bayesian_linear_regression, x)
         calls = []
         for i in 1 : n_iters
-            cl, _ = mh(selection([(:σ, ), (:β, )]), cl)
+            cl, _ = mh(target([(:σ, ), (:β, )]), cl)
             i % 30 == 0 && begin
-                println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
 
         est_σ = sum(map(calls) do cl
-                        get_ret(cl[:σ])
+                        (cl[:σ])
                     end) / length(calls)
         println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
-                        get_ret(cl[:β])
+                        (cl[:β])
                     end) / length(calls)
         println("Estimated β: $est_β")
     end
@@ -76,18 +76,18 @@ obs = selection(map(1 : data_len) do i
         for i in 1 : n_iters
             cl, _ = mh(cl, proposal, (y, ))
             i % 30 == 0 && begin
-                println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
 
         est_σ = sum(map(calls) do cl
-                        get_ret(cl[:σ])
+                        (cl[:σ])
                     end) / length(calls)
         println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
-                        get_ret(cl[:β])
+                        (cl[:β])
                     end) / length(calls)
         println("Estimated β: $est_β")
     end
@@ -143,20 +143,20 @@ obs = selection(map(1 : data_len) do i
         ret, cl = generate(obs, bayesian_linear_regression, x)
         calls = []
         for i in 1 : n_iters
-            cl, _ = hmc(selection([(:σ, ), (:β, )]), cl)
+            cl, _ = hmc(target([(:σ, ), (:β, )]), cl)
             i % 10 == 0 && begin
-                println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
 
         est_σ = sum(map(calls) do cl
-                        get_ret(cl[:σ])
+                        (cl[:σ])
                     end) / length(calls)
         println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
-                        get_ret(cl[:β])
+                        (cl[:β])
                     end) / length(calls)
         println("Estimated β: $est_β")
     end
@@ -169,20 +169,20 @@ obs = selection(map(1 : data_len) do i
         calls = []
         for i in 1 : n_iters
             cl, _ = mh(cl, proposal, (y, ))
-            cl, _ = hmc(selection([(:σ, ), (:β, )]), cl)
+            cl, _ = hmc(target([(:σ, ), (:β, )]), cl)
             i % 10 == 0 && begin
-                println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
 
         est_σ = sum(map(calls) do cl
-                        get_ret(cl[:σ])
+                        (cl[:σ])
                     end) / length(calls)
         println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
-                        get_ret(cl[:β])
+                        (cl[:β])
                     end) / length(calls)
         println("Estimated β: $est_β")
     end
@@ -192,27 +192,27 @@ obs = selection(map(1 : data_len) do i
         println("\nBoomerang sampler:")
         n_iters = 500
         ret, cl = generate(obs, bayesian_linear_regression, x)
-        sel = get_selection(cl)
+        sel = get_target(cl)
         sel_values, _ = get_choice_gradients(sel, cl, 1.0)
         d = length(array(sel_values, Float64))
         flow = Boomerang(sparse(I, d, d), zeros(d), 1.0)
         θ = rand(MvNormal(d, 1.0))
         calls = []
         for i in 1 : n_iters
-            cl, _ = pdmk(selection([(:σ, ), (:β, )]), cl, flow, θ)
+            cl, _ = pdmk(target([(:σ, ), (:β, )]), cl, flow, θ)
             i % 10 == 0 && begin
-                println("σ => $(get_ret(cl[:σ])), β => $(get_ret(cl[:β]))")
+                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
 
         est_σ = sum(map(calls) do cl
-                        get_ret(cl[:σ])
+                        (cl[:σ])
                     end)
         println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
-                        get_ret(cl[:β])
+                        (cl[:β])
                     end)
         println("Estimated β: $est_β")
     end

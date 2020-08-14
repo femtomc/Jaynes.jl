@@ -1,4 +1,5 @@
-mutable struct ProposeContext{T <: AddressMap, P <: AddressMap} <: ExecutionContext
+mutable struct ProposeContext{T <: AddressMap, 
+                              P <: AddressMap} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
