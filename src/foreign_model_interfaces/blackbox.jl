@@ -88,12 +88,38 @@ macro primitive(ex)
         end
 
 
-        @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
+        @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), 
+                                                    addr::T, 
+                                                    $argname::$name, 
+                                                    args...) where {T <: Jaynes.Address, K}
             Jaynes.haskey(ctx.target, addr) || error("ScoreError: constrained target must provide constraints for all possible addresses in trace. Missing at address $addr.")
             val = Jaynes.getindex(ctx.target, addr)
-            Jaynes.increment!(ctx, logpdf(d, val))
+            Jaynes.increment!(ctx, logpdf($argname, args..., val))
             return val
 
+        end
+
+        @inline function (ctx::Jaynes.ParameterBackpropagateContext)(call::typeof(rand), 
+                                                                     addr::T, 
+                                                                     $argname::$name,
+                                                                     args...) where {T <: Jaynes.Address, K}
+            if Jaynes.haskey(ctx.fixed, addr)
+                s = Jaynes.getindex(ctx.fixed, addr)
+            else
+                s = Jaynes.get_value(Jaynes.get_sub(ctx.call, addr))
+            end
+            Jaynes.increment!(ctx, logpdf($argname, args..., s))
+            return s
+        end
+
+        @inline function (ctx::Jaynes.ChoiceBackpropagateContext)(call::typeof(rand), 
+                                                                  addr::T, 
+                                                                  $argname::$name, 
+                                                                  args...) where {T <: Jaynes.Address, K}
+            Jaynes.haskey(ctx.target, addr) || return Jaynes.get_value(Jaynes.get_sub(ctx.call, addr))
+            s = Jaynes.getindex(ctx.call, addr)
+            Jaynes.increment!(ctx, logpdf($argname, args..., s))
+            return s
         end
     end
     expr = MacroTools.prewalk(unblock ∘ rmlines, expr)

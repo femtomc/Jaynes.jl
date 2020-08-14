@@ -1,7 +1,7 @@
 name = "Jaynes"
 uuid = "a2015381-cef8-4fe1-827c-95a77dd17ccf"
 authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
-version = "0.1.10"
+version = "0.1.11"
 
 [deps]
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
