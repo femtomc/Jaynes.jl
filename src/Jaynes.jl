@@ -141,4 +141,8 @@ export foreign
 # Utilities.
 export display, getindex, haskey, get_score, get_ret
 
+# Just a little sugar.
+include("sugar.jl")
+export @sugar
+
 end # module
