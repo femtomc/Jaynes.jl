@@ -26,5 +26,5 @@ end
 
 macro sugar(expr)
     trans = MacroTools.postwalk(unblock ∘ rmlines, _sugar(expr))
-    trans
+    esc(trans)
 end
