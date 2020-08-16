@@ -92,6 +92,7 @@ include("compiler.jl")
 include("contexts.jl")
 include("inference.jl")
 include("foreign_model_interfaces.jl")
+include("language_extensions.jl")
 include("utils.jl")
 
 # Contexts.
@@ -142,7 +143,6 @@ export foreign
 export display, getindex, haskey, get_score, get_ret
 
 # Just a little sugar.
-include("sugar.jl")
 export @sugar
 
 end # module
