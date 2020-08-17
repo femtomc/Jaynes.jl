@@ -53,3 +53,4 @@ include("contexts/regenerate.jl")
 
 # Gradients.
 include("contexts/backpropagate.jl")
+include("contexts/forwardmode.jl")

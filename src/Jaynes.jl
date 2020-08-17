@@ -24,6 +24,8 @@ using AbstractMCMC
 
 # Differentiable.
 using Zygote
+using ForwardDiff
+using ForwardDiff: Dual
 using DistributionsAD
 using Flux.Optimise: update!
 @reexport using Flux.Optimise
@@ -103,6 +105,7 @@ export Propose, propose
 export Regenerate, regenerate
 export Score, score
 export Backpropagate, get_learnable_gradients, get_choice_gradients, train
+export ForwardMode, get_target_gradient
 
 # Tracer language features.
 export plate, markov, cond
