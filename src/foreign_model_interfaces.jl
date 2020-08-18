@@ -5,12 +5,14 @@ include("foreign_model_interfaces/soss.jl")
 include("foreign_model_interfaces/turing.jl")
 include("foreign_model_interfaces/gen.jl")
 include("foreign_model_interfaces/flux.jl")
+include("foreign_model_interfaces/abstract_mcmc.jl")
 
 function primitive end
 function load_soss_fmi end
 function load_turing_fmi end
 function load_flux_fmi end
 function load_gen_fmi end
+function load_abstract_mcmc end
 
 foreign(addr::A, args...) where A <: Address = error("(foreign) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 
