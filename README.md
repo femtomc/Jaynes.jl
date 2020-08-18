@@ -42,7 +42,8 @@ obs = selection(map(1 : 100) do i
 
 # Inference.
 n_samples = 5000
-@time ps, lnw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
+ps, lnw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
+
 zipped = zip(ps.calls, lnw)
 
 est_σ = sum(map(zipped) do (cl, w)
@@ -56,7 +57,18 @@ est_β = sum(map(zipped) do (cl, w)
 println("Estimated β: $est_β")
 ```
 
-See [Examples](https://femtomc.github.io/Jaynes.jl/dev/examples/) for some more code snippets - including arbitrary control flow!
+See [Examples](https://femtomc.github.io/Jaynes.jl/dev/examples/) for some more code snippets - including arbitrary control flow! 
+
+For those with a flair for syntax, Jaynes also features a sugary macro to make modeling more syntactically intuitive.
+
+```julia
+@sugar function bayesian_linear_regression(x::Vector{Float64})
+    σ ~ InverseGamma(2, 3))
+    β ~ Normal(0.0, 1.0))
+    y = [(:y => i) ~ Normal(β * x[i], σ) for i in 1 : length(x)]
+    y
+end
+```
 
 ## Inference
 
@@ -76,7 +88,7 @@ These algorithms automatically support adaptive multi-threading, which is enable
 
 [Jaynes supports interoperability with models and inference algorithms expressed in Gen.jl and Soss.jl](https://femtomc.github.io/Jaynes.jl/dev/library_api/fmi/)
 
-In particular, after loading the model interface (using `@load_gen_fmi` or `@load_soss_fmi`), you can write models in `Gen.jl` or `Soss.jl` and have the dynamo tracers construct and reason about specialized call site representations for the interface.
+In particular, after loading the model interface (using `@load_gen_fmi` or `@load_soss_fmi`), you can write models in `Gen.jl` or `Soss.jl` and have the dynamo tracers construct and reason about specialized call site representations.
 
 ```julia
 Jaynes.@load_gen_fmi()
