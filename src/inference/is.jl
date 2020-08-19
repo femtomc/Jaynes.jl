@@ -36,10 +36,10 @@ function importance_sampling(observations::K,
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1 : num_samples
-        ret, pcall, pw = propose(proposal, proposal_args...)
-        select, overlapped = Jaynes.merge(get_trace(pcall), observations)
-        overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
-        _, calls[i], lws[i] = generate(select, model, args...)
+        ret, pmap, pw = propose(proposal, proposal_args...)
+        overlapped = Jaynes.merge!(pmap, observations)
+        overlapped && error("(importance_sampling, merge!): proposal produced a selection which overlapped with observations.")
+        _, calls[i], lws[i] = generate(pmap, model, args...)
     end
     ltw = lse(lws)
     lnw = lws .- ltw
@@ -56,10 +56,10 @@ function importance_sampling(observations::K,
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
-        ret, pcall, pw = propose(proposal, proposal_args...)
-        select, overlapped = merge(pcall, observations)
-        overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
-        _, calls[i], lws[i] = generate(select, ps, model, args...)
+        ret, pmap, pw = propose(proposal, proposal_args...)
+        overlapped = merge!(pmap, observations)
+        overlapped && error("(importance_sampling, merge!): proposal produced a selection which overlapped with observations.")
+        _, calls[i], lws[i] = generate(pmap, ps, model, args...)
     end
     ltw = lse(lws)
     lnw = lws .- ltw
@@ -76,10 +76,10 @@ function importance_sampling(observations::K,
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
-        ret, pcall, pw = propose(pps, proposal, proposal_args...)
-        select, overlapped = merge(pcall, observations)
-        overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
-        _, calls[i], lws[i] = generate(select, model, args...)
+        ret, pmap, pw = propose(pps, proposal, proposal_args...)
+        overlapped = merge!(pmap, observations)
+        overlapped && error("(importance_sampling, merge!): proposal produced a selection which overlapped with observations.")
+        _, calls[i], lws[i] = generate(pmap, model, args...)
     end
     ltw = lse(lws)
     lnw = lws .- ltw
@@ -97,10 +97,10 @@ function importance_sampling(observations::K,
     calls = Vector{CallSite}(undef, num_samples)
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
-        ret, pcall, pw = propose(pps, proposal, proposal_args...)
-        select, overlapped = merge(pcall, observations)
-        overlapped && error("(importance_sampling, merge): proposal produced a selection which overlapped with observations.")
-        _, calls[i], lws[i] = generate(select, ps, model, args...)
+        ret, pmap, pw = propose(pps, proposal, proposal_args...)
+        overlapped = merge!(pmap, observations)
+        overlapped && error("(importance_sampling, merge!): proposal produced a selection which overlapped with observations.")
+        _, calls[i], lws[i] = generate(pmap, ps, model, args...)
     end
     ltw = lse(lws)
     lnw = lws .- ltw

@@ -39,6 +39,31 @@ is_test = () -> begin
     println("Estimated β: $est_β")
 end
 
+is_proposal = () -> begin
+    σ = rand(:σ, InverseGamma(2, 3))
+    β = rand(:β, Normal(0.0, 1.0))
+end
+
+# Importance sampling with proposal.
+is_proposal_test = () -> begin
+    println("Importance sampling:")
+    n_samples = 5000
+    ps, lnw = importance_sampling(obs, n_samples, 
+                                  bayesian_linear_regression, (x, ), 
+                                  is_proposal, ())
+    zipped = zip(ps.calls, lnw)
+
+    est_σ = sum(map(zipped) do (cl, w)
+                    (cl[:σ]) * exp(w)
+                end)
+    println("Estimated σ: $est_σ")
+
+    est_β = sum(map(zipped) do (cl, w)
+                    (cl[:β]) * exp(w)
+                end)
+    println("Estimated β: $est_β")
+end
+
 # MH random walk kernel.
 mh_test = () -> begin
     println("\nRandom walk Metropolis-Hastings:")
@@ -222,6 +247,7 @@ boomerang_test = () -> begin
 end
 
 @time is_test()
+@time is_proposal_test()
 @time mh_test()
 @time mh_test_with_proposal()
 @time advi_test() 

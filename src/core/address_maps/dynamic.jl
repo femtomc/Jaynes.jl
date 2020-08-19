@@ -80,13 +80,14 @@ merge(::Empty, dm::DynamicMap) = deepcopy(dm), false
 
 function merge!(sel1::DynamicMap{K},
                 sel2::DynamicMap{K}) where K
+    inter = intersect(keys(sel1.tree), keys(sel2.tree))
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         set_sub!(sel1, k, get_sub(sel2, k))
     end
-    inter = intersect(keys(sel1.tree), keys(sel2.tree))
     for k in inter
         set_sub!(sel1, k, get_sub(sel2, k))
     end
+    !isempty(inter)
 end
 merge!(dm::DynamicMap, ::Empty) = Empty(), false
 merge!(::Empty, dm::DynamicMap) = dm, false

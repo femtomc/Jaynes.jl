@@ -16,6 +16,11 @@ function add_choice!(ctx::T, addr, score, v) where T <: ExecutionContext
     set_sub!(ctx.tr, addr, Choice(score, v))
 end
 
+function add_value!(ctx::T, addr, score, v) where T <: ExecutionContext
+    ctx.score += score
+    set_sub!(ctx.map, addr, Value(v))
+end
+
 function add_call!(ctx::T, addr, cs::C) where {T <: ExecutionContext, C <: CallSite}
     ctx.score += get_score(cs)
     set_sub!(ctx.tr, addr, cs)

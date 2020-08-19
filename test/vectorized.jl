@@ -82,13 +82,11 @@ end
 @testset "Propose" begin
     @testset "Vectorized plate" begin
         ret, cl, w = propose(test_plate)
-        @test get_score(cl) != 0.0
-        @test get_score(cl) == w
+        @test w != 0.0
     end
     @testset "Vectorized markov" begin
         ret, cl, w = propose(test_markov)
-        @test get_score(cl) != 0.0
-        @test get_score(cl) == w
+        @test w != 0.0
     end
 end
 

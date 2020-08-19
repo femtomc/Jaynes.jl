@@ -59,9 +59,9 @@ end
 end
 
 @testset "Propose" begin
-    ret, cl, w = propose(LinearGaussian, 0.5, 3.0)
+    ret, pmap, w = propose(LinearGaussian, 0.5, 3.0)
     # Propose should track score.
-    @test get_score(cl) != 0.0
+    @test w != 0.0
 end
 
 @testset "Score" begin
