@@ -28,16 +28,20 @@ end
 
 @testset "Update" begin
     ret, cl = simulate(LinearGaussian, 0.5, 3.0)
+    score = get_score(cl)
     stored_at_x = (cl[:x])
     stored_at_y = (cl[:y])
     sel = target([(:x,) => 5.0])
     ret, cl, w, retdiff, d = update(sel, cl)
+    @test score ≈ get_score(cl) - w
+    score = get_score(cl)
     # Discard should be original :x
     @test (d[:x]) == stored_at_x
     # New should be equal to constraint.
     @test (cl[:x]) == 5.0
     sel = target([(:y,) => 10.0])
     ret, cl, w, retdiff, d = update(sel, cl)
+    @test score ≈ get_score(cl) - w
     @test (d[:y]) == stored_at_y
     @test (cl[:x]) == 5.0
     @test (cl[:y]) == 10.0
