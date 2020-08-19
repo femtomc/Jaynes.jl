@@ -45,16 +45,20 @@ end
 
 @testset "Regenerate" begin
     ret, cl = simulate(LinearGaussian, 0.5, 3.0)
+    score = get_score(cl)
     stored_at_x = (cl[:x])
     stored_at_y = (cl[:y])
     sel = target([(:x, )])
     ret, cl, w, retdiff, d = regenerate(sel, cl)
+    @test score ≈ get_score(cl) - w
+    score = get_score(cl)
     # Discard should be original :x
     @test (d[:x]) == stored_at_x
     # New should not be equal to original.
     @test (cl[:x]) != stored_at_x
     sel = target([(:y, )])
     ret, cl, w, retdiff, d = regenerate(sel, cl)
+    @test score ≈ get_score(cl) - w
     @test (d[:y]) == stored_at_y
 end
 
