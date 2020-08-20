@@ -2,11 +2,16 @@ macro load_abstract_mcmc()
 
     expr = quote
         @info "Loading kernel interface to \u001b[3m\u001b[34;1mAbstractMCMC.jl\u001b[0m\n\n      \u001b[34;1mhttps://github.com/TuringLang/AbstractMCMC.jl\n\n "
-        import AbstractMCMC
-        using StatsBase
-        import StatsBase: sample
-        using MCMCChains
-        using StatsPlots
+        try
+            import AbstractMCMC
+            using StatsBase
+            import StatsBase: sample
+            using MCMCChains
+            using StatsPlots
+            using Random
+        catch
+            error("This interface requires that your environment has the following dependencies:\n\n StatsBase\n MCMCChains\n StatsPlots\n AbstractMCMC\n")
+        end
 
         mutable struct KernelSampler{C <: Jaynes.AddressMap,
                                      T <: Jaynes.AddressMap,
@@ -39,7 +44,7 @@ macro load_abstract_mcmc()
                           primitive, 
                           kwargs)
         end
-        
+
         function kernelize(constraints, target::Vector, args, primitive; kwargs...)
             KernelSampler(Jaynes.target(constraints), 
                           target, 
@@ -63,16 +68,40 @@ macro load_abstract_mcmc()
 
         function StatsBase.sample(rng, call::Function, sampler::KernelSampler, nsamples::Int; kwargs...)
             sample_arr = StatsBase.sample(rng, BlackBoxWrapper(call), sampler, nsamples; kwargs...)
-            chain = Array{Real, 3}(undef, length(sample_arr), length(sampler.addresses), 1)
+            chain = Array{Union{Missing, Real}, 3}(undef, length(sample_arr), length(sampler.addresses), 1)
             for (i, samp) in enumerate(sample_arr)
                 for (k, addr) in enumerate(sampler.addresses)
-                    chain[i, k, 1] = samp[addr...]
+                    if Jaynes.has_value(samp, addr)
+                        chain[i, k, 1] = samp[addr...]
+                    else
+                        chain[i, k, 1] = missing
+                    end
                 end
             end
             addrs = map(sampler.addresses) do addr
                 String(foldr(=>, addr))
             end
             Chains(chain, addrs)
+        end
+
+        function chain(primitive, n_samples::Int, constraints, target, ps::P, fn::Function, args::Tuple; kwargs...) where P <: Jaynes.AddressMap
+            ker = kernelize(constraints,
+                            targets,
+                            ps, 
+                            args, 
+                            primitive; 
+                            kwargs...)
+            StatsBase.sample(MersenneTwister(), fn, ker, n_samples)
+        end
+
+        function chain(primitive, n_samples::Int, constraints, target, fn::Function, args::Tuple; kwargs...)
+            ker = kernelize(constraints,
+                            targets,
+                            Jaynes.Empty(), 
+                            args, 
+                            primitive; 
+                            kwargs...)
+            StatsBase.sample(MersenneTwister(), fn, ker, n_samples)
         end
     end
 

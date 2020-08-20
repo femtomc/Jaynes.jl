@@ -20,7 +20,6 @@ using SparseArrays
 using LinearAlgebra
 import LinearAlgebra: I
 export I
-using AbstractMCMC
 
 # Differentiable.
 using Zygote
