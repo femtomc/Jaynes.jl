@@ -116,7 +116,7 @@ export dynamic
 
 # Selections and parameters.
 const selection = target
-export selection, target, array, learnables
+export selection, select, target, array, learnables
 export anywhere, intersection, union
 export get_target, compare, update_learnables, dump_queries, merge!, merge
 
