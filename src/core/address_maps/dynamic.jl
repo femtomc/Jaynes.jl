@@ -112,3 +112,30 @@ function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
     end
     tg
 end
+
+# Filter.
+function filter(fn, dm::DynamicMap{K}) where K
+    new = DynamicMap{K}()
+    for (k, v) in shallow_iterator(dm)
+        if fn((k, ))
+            set_sub!(new, k, v)
+        else
+            ret = filter(fn, (k, ), v)
+            !isempty(ret) && set_sub!(new, k, filter(fn, (k, ), v))
+        end
+    end
+    new
+end
+
+function filter(fn, par, dm::DynamicMap{K}) where K
+    new = DynamicMap{K}()
+    for (k, v) in shallow_iterator(dm)
+        if fn((par..., k))
+            set_sub!(new, k, v)
+        else
+            ret = filter(fn, (par..., k), v)
+            !isempty(ret) && set_sub!(new, k, filter(fn, (par..., k), v))
+        end
+    end
+    new
+end

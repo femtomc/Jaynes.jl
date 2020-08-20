@@ -25,6 +25,9 @@ end
 @inline projection(c::Choice, tg::Empty) = 0.0
 @inline projection(c::Choice, tg::SelectAll) = c.score
 
+@inline filter(fn, l::Leaf) = Empty()
+@inline filter(fn, addr, l::Leaf) = Empty()
+
 @inline get_score(c::Choice) = c.score
 
 # ------------- Interfaces ------------ #

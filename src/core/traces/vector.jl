@@ -26,4 +26,7 @@ projection(cs::VectorCallSite, tg::Empty) = 0.0
 projection(cs::VectorCallSite, tg::SelectAll) = cs.score
 projection(cs::VectorCallSite, tg::Target) = project(c.trace, tg)
 
+filter(fn, cs::VectorCallSite) = filter(fn, cs.trace)
+filter(fn, addr, cs::VectorCallSite) = filter(fn, addr, cs.trace)
+
 const VectorDiscard = DynamicMap{Choice}

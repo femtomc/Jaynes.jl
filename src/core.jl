@@ -1,5 +1,5 @@
 import Base: rand
-import Base: getindex, haskey, iterate, isempty, convert, collect, getindex, setindex!, push!, merge, merge!, get
+import Base: getindex, haskey, iterate, isempty, convert, collect, getindex, setindex!, push!, merge, merge!, get, filter
 import Base: +
 
 # Maps.

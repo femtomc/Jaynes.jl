@@ -24,4 +24,7 @@ projection(cs::DynamicCallSite, tg::Empty) = 0.0
 projection(cs::DynamicCallSite, tg::SelectAll) = cs.score
 projection(cs::DynamicCallSite, tg::Target) = project(c.trace, tg)
 
+filter(fn, cs::DynamicCallSite) = filter(fn, cs.trace)
+filter(fn, addr, cs::DynamicCallSite) = filter(fn, addr, cs.trace)
+
 const DynamicDiscard = DynamicMap{Choice}
