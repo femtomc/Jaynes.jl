@@ -4,13 +4,13 @@ const Target = AddressMap{<:Union{Empty, Select}}
     get_sub(tg, addr) === SelectAll()
 end
 
-Base.getindex(tg::AddressMap{S}, addr) where S <: Select = get_sub(tg, addr)
-get_sub(tg::Target, addr) = get_sub(tg, addr)
-Base.merge(::SelectAll, ::Target) = SelectAll()
-Base.merge(::Target, ::SelectAll) = SelectAll()
-Base.merge(::SelectAll, ::SelectAll) = SelectAll()
-Base.merge(::SelectAll, ::Empty) = SelectAll()
-Base.merge(::Empty, ::SelectAll) = SelectAll()
+@inline Base.getindex(tg::AddressMap{S}, addr) where S <: Select = get_sub(tg, addr)
+@inline get_sub(tg::Target, addr) = get_sub(tg, addr)
+@inline Base.merge(::SelectAll, ::Target) = SelectAll()
+@inline Base.merge(::Target, ::SelectAll) = SelectAll()
+@inline Base.merge(::SelectAll, ::SelectAll) = SelectAll()
+@inline Base.merge(::SelectAll, ::Empty) = SelectAll()
+@inline Base.merge(::Empty, ::SelectAll) = SelectAll()
 
 const DynamicTarget = DynamicMap{Select}
 

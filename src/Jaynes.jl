@@ -115,10 +115,9 @@ export construct_graph, compile_function
 export dynamic
 
 # Selections and parameters.
-const selection = target
-export selection, select, target, array, learnables
+export select, target, array, learnables
 export anywhere, intersection, union
-export get_target, compare, update_learnables, dump_queries, merge!, merge
+export compare, update_learnables, merge!, merge
 
 # Inference.
 export metropolis_hastings, mh

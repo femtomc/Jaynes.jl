@@ -28,6 +28,7 @@ end
 @inline filter(fn, l::Leaf) = Empty()
 @inline filter(fn, addr, l::Leaf) = Empty()
 
+@inline select(c::Select) = c
 @inline select(c::Value) = SelectAll()
 @inline select(c::Choice) = SelectAll()
 
