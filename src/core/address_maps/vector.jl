@@ -101,3 +101,12 @@ function filter(fn, par, dm::VectorMap{K}) where K
     end
     new
 end
+
+# Select.
+function select(dm::VectorMap{K}) where K
+    new = DynamicTarget()
+    for (k, v) in shallow_iterator(dm)
+        set_sub!(new, k, select(v))
+    end
+    new
+end
