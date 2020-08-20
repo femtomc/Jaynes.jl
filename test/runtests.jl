@@ -4,42 +4,64 @@ using Test
 
 include("../src/Jaynes.jl")
 using .Jaynes
-using Distributions
 
-@time @testset "Execution contexts." begin
-    include("contexts.jl")
+println("\n________________________\n")
+
+@testset "Core" begin
+    println("Execution contexts.")
+    @time @testset "Execution contexts." begin
+        include("core/contexts.jl")
+    end
+
+    println("Vectorized interfaces.")
+    @time @testset "Vectorized interfaces." begin
+        include("core/vectorized.jl")
+    end
+
+    println("Black-box extensions.")
+    @time @testset "Black-box extensions." begin
+        include("core/blackbox.jl")
+    end
+
+    println("Selection query language.")
+    @time @testset "Selection query language." begin
+        include("core/selection_query_language.jl")
+    end
+
+    println("Gradient learning.")
+    @time @testset "Gradient learning." begin
+        include("core/backpropagation.jl")
+    end
+    println()
 end
 
-@time @testset "Vectorized interfaces." begin
-    include("vectorized.jl")
+println("\n________________________\n")
+
+@testset "Inference" begin
+    println("Importance sampling.")
+    @time @testset "Importance sampling." begin
+        include("inference/importance_sampling.jl")
+    end
+
+    println("Particle filtering.")
+    @time @testset "Particle filtering." begin
+        include("inference/particle_filter.jl")
+    end
+
+    println("Metropolis-Hastings.")
+    @time @testset "Metropolis-Hastings." begin
+        include("inference/metropolis_hastings.jl")
+    end
+    println()
 end
 
-@time @testset "Importance sampling." begin
-    include("importance_sampling.jl")
-end
+println("\n________________________\n")
 
-@time @testset "Particle filtering." begin
-    include("particle_filter.jl")
-end
-
-@time @testset "Metropolis-Hastings." begin
-    include("metropolis_hastings.jl")
-end
-
-@time @testset "Black-box extensions." begin
-    include("blackbox.jl")
-end
-
-@time @testset "Selection query language." begin
-    include("selection_query_language.jl")
-end
-
-@time @testset "Gradient learning." begin
-    include("backpropagation.jl")
-end
-
-@time @testset "Smoke tests." begin
-    include("bayeslinreg_smoke.jl")
+@testset "Smoke tests." begin
+    println("Bayesian linear regression.")
+    @time @testset "Bayesian linear regression." begin
+        include("smoke_tests/bayeslinreg_smoke.jl")
+    end
 end
 
 end #module

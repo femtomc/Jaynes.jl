@@ -35,17 +35,7 @@ macro load_gen_fmi()
             args::A
             ret::K
         end
-
-        get_score(gfcs::GenerativeFunctionCallSite) = gfcs.score
-        get_gen_trace(cs::GenerativeFunctionCallSite) = cs.trace.tr
-        get_ret(cs::GenerativeFunctionCallSite) = get_retval(get_gen_trace(cs))
-        get_choices(cs::GenerativeFunctionCallSite) = get_choices(get_gen_trace(cs))
-        has_top(cs::GenerativeFunctionCallSite, addr) = has_top(cs.trace, addr)
-        get_top(cs::GenerativeFunctionCallSite, addr) = get_top(cs.trace, addr)
-        has_sub(cs::GenerativeFunctionCallSite, addr) = has_sub(cs.trace, addr)
-        get_sub(cs::GenerativeFunctionCallSite, addr) = get_sub(cs.trace, addr)
-        haskey(cs::GenerativeFunctionCallSite, addr) = has_value(get_choices(cs.trace), addr)
-        getindex(cs::GenerativeFunctionCallSite, addr) = getindex(get_gen_trace(cs), addr)
+        @inline isempty(gfcs::GenerativeFunctionCallSite) = false
 
         # ------------ Choice map integration ------------ #
 

@@ -35,22 +35,25 @@ macro primitive(ex)
         end
 
         @inline function (ctx::Jaynes.RegenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
-            Jaynes.visit!(ctx.visited, addr)
-            in_prev_chm = Jaynes.haskey(ctx.prev, addr)
+            Jaynes.visit!(ctx, addr)
+            in_prev_chm = Jaynes.has_value(Jaynes.get_trace(ctx.prev), addr)
             in_sel = Jaynes.haskey(ctx.target, addr)
+
             if in_prev_chm
-                prev = Jaynes.getindex(ctx.prev, addr)
-                if in_sel
-                    ret = $argname(args...)
-                    Jaynes.add_choice!(ctx.discard, addr, prev)
-                else
-                    ret = prev.val
-                end
+                prev = Jaynes.get_sub(Jaynes.get_trace(ctx.prev), addr)
             end
-            score = logpdf($argname, args..., ret)
-            if in_prev_chm && !in_sel
-                Jaynes.increment!(ctx, score - prev.score)
+
+            if in_sel && in_prev_chm
+                ret = rand(d)
+                Jaynes.set_sub!(ctx.discard, addr, prev)
+            elseif in_prev_chm
+                ret = prev.val
+            else
+                ret = rand(d)
             end
+
+            score = logpdf(d, ret)
+            in_prev_chm && Jaynes.increment!(ctx, score - Jaynes.get_score(prev))
             Jaynes.add_choice!(ctx, addr, score, ret)
             return ret
         end

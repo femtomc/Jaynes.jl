@@ -14,39 +14,35 @@ y = map(x) do k
     3.0 * k + randn()
 end
 obs = target(map(1 : data_len) do i
-                    (:y => i, ) => y[i]
-                end)
+                 (:y => i, ) => y[i]
+             end)
 
 @testset "Inference library smoke test 1 - Bayesian linear regression" begin
 
     # Importance sampling.
     is_test = () -> begin
-        println("Importance sampling:")
-        n_samples = 5000
+        n_samples = 50000
         ps, lnw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
         zipped = zip(ps.calls, lnw)
 
         est_σ = sum(map(zipped) do (cl, w)
                         (cl[:σ]) * exp(w)
                     end)
-        println("Estimated σ: $est_σ")
 
         est_β = sum(map(zipped) do (cl, w)
                         (cl[:β]) * exp(w)
                     end)
-        println("Estimated β: $est_β")
+        @test isapprox(0.0, est_β - 3.0, atol=1e-1)
     end
 
     # MH random walk kernel.
     mh_test = () -> begin
-        println("\nRandom walk Metropolis-Hastings:")
-        n_iters = 5000
+        n_iters = 50000
         ret, cl = generate(obs, bayesian_linear_regression, x)
         calls = []
         for i in 1 : n_iters
             cl, _ = mh(target([(:σ, ), (:β, )]), cl)
             i % 30 == 0 && begin
-                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
@@ -54,12 +50,11 @@ obs = target(map(1 : data_len) do i
         est_σ = sum(map(calls) do cl
                         (cl[:σ])
                     end) / length(calls)
-        println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
                         (cl[:β])
                     end) / length(calls)
-        println("Estimated β: $est_β")
+        @test isapprox(0.0, est_β - 3.0, atol=1e-1)
     end
 
     # MH random walk kernel with proposal.
@@ -69,14 +64,12 @@ obs = target(map(1 : data_len) do i
     end
 
     mh_test_with_proposal = () -> begin
-        println("\nMetropolis-Hastings with custom proposal:")
         n_iters = 10000
         ret, cl = generate(obs, bayesian_linear_regression, x)
         calls = []
         for i in 1 : n_iters
             cl, _ = mh(cl, proposal, (y, ))
             i % 30 == 0 && begin
-                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
@@ -84,12 +77,11 @@ obs = target(map(1 : data_len) do i
         est_σ = sum(map(calls) do cl
                         (cl[:σ])
                     end) / length(calls)
-        println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
                         (cl[:β])
                     end) / length(calls)
-        println("Estimated β: $est_β")
+        @test isapprox(0.0, est_β - 3.0, atol=1e-1)
     end
 
     # ADVI.
@@ -102,7 +94,6 @@ obs = target(map(1 : data_len) do i
     end
 
     advi_test = () -> begin
-        println("\nADVI:")
         ps = learnables([(:μ₁, ) => 5.0,
                          (:μ₂, ) => 1.0,
                          (:σ₂, ) => 1.0])
@@ -111,7 +102,6 @@ obs = target(map(1 : data_len) do i
                                    bayesian_linear_regression, (x, );
                                    opt = ADAM(0.05, (0.9, 0.8)),
                                    iters = 1000)
-        display(ps)
     end
 
     # ADGV.
@@ -124,7 +114,6 @@ obs = target(map(1 : data_len) do i
     end
 
     adgv_test = () -> begin
-        println("\nADGV:")
         ps = learnables([(:μ₁, ) => 5.0,
                          (:μ₂, ) => 1.0,
                          (:σ₂, ) => 1.0])
@@ -133,19 +122,16 @@ obs = target(map(1 : data_len) do i
                              bayesian_linear_regression, (x, );
                              opt = ADAM(0.05, (0.9, 0.8)),
                              iters = 1000)
-        display(ps)
     end
 
     # HMC kernel.
     hmc_test = () -> begin
-        println("\nHamiltonian Monte Carlo:")
-        n_iters = 500
+        n_iters = 1000
         ret, cl = generate(obs, bayesian_linear_regression, x)
         calls = []
         for i in 1 : n_iters
             cl, _ = hmc(target([(:σ, ), (:β, )]), cl)
             i % 10 == 0 && begin
-                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
@@ -153,25 +139,22 @@ obs = target(map(1 : data_len) do i
         est_σ = sum(map(calls) do cl
                         (cl[:σ])
                     end) / length(calls)
-        println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
                         (cl[:β])
                     end) / length(calls)
-        println("Estimated β: $est_β")
+        @test isapprox(0.0, est_β - 3.0, atol=1e-1)
     end
 
     # Combination kernel.
     combo_kernel_test = () -> begin
-        println("\nCombo kernel special:")
-        n_iters = 500
+        n_iters = 1000
         ret, cl = generate(obs, bayesian_linear_regression, x)
         calls = []
         for i in 1 : n_iters
             cl, _ = mh(cl, proposal, (y, ))
             cl, _ = hmc(target([(:σ, ), (:β, )]), cl)
             i % 10 == 0 && begin
-                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
@@ -179,17 +162,15 @@ obs = target(map(1 : data_len) do i
         est_σ = sum(map(calls) do cl
                         (cl[:σ])
                     end) / length(calls)
-        println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
                         (cl[:β])
                     end) / length(calls)
-        println("Estimated β: $est_β")
+        @test isapprox(0.0, est_β - 3.0, atol=1e-1)
     end
 
     # Boomerang kernel.
     boomerang_test = () -> begin
-        println("\nBoomerang sampler:")
         n_iters = 500
         ret, cl = generate(obs, bayesian_linear_regression, x)
         sel = get_target(cl)
@@ -201,7 +182,6 @@ obs = target(map(1 : data_len) do i
         for i in 1 : n_iters
             cl, _ = pdmk(target([(:σ, ), (:β, )]), cl, flow, θ)
             i % 10 == 0 && begin
-                println("σ => $((cl[:σ])), β => $((cl[:β]))")
                 push!(calls, cl)
             end
         end
@@ -209,19 +189,17 @@ obs = target(map(1 : data_len) do i
         est_σ = sum(map(calls) do cl
                         (cl[:σ])
                     end)
-        println("Estimated σ: $est_σ")
 
         est_β = sum(map(calls) do cl
                         (cl[:β])
                     end)
-        println("Estimated β: $est_β")
     end
 
-    @time is_test()
-    @time mh_test()
-    @time mh_test_with_proposal()
-    @time hmc_test()
-    @time combo_kernel_test()
+    is_test()
+    mh_test()
+    mh_test_with_proposal()
+    hmc_test()
+    combo_kernel_test()
     #@time boomerang_test()
     #@time advi_test() 
     #@time adgv_test() 

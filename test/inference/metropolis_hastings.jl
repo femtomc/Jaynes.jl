@@ -10,12 +10,16 @@ function LinearGaussianProposal()
     x = rand(:x, Normal(α * 3.0, 3.0))
 end
 
-@testset "Importance sampling" begin
+@testset "Metropolis-Hastings" begin
     ret, cl = simulate(LinearGaussian, 0.0, 1.0)
     sel = Jaynes.target([(:x, )])
 
     @testset "Linear Gaussian model" begin
-        new, discard = Jaynes.metropolis_hastings(sel, cl)
+        obs = target([(:y, ) => 5.0])
+        ret, cl, w = generate(obs, LinearGaussian, 0.0, 1.0)
+        for i in 1 : 100
+            new, discard = Jaynes.metropolis_hastings(sel, cl)
+        end
     end
 
     @testset "Linear Gaussian proposal" begin
