@@ -7,6 +7,7 @@ function ∂Cat(probs::Vector{Float64}, τ)
     sample
 end
 
+# TODO: fix.
 @primitive function logpdf(fn::typeof(∂Cat), probs, τ, sample::Vector{Float64})
     return sum(log.(probs .* sample))
 end
