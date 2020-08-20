@@ -84,6 +84,8 @@ Jaynes currently supports the following inference algorithms (and MCMC kernels):
 
 These algorithms automatically support adaptive multi-threading, which is enabled by setting your `JULIA_NUM_THREADS` environment variable. See [Multi-Threading](https://docs.julialang.org/en/v1/base/multi-threading/) for more details.
 
+<!---
+
 ## Foreign model interfaces
 
 [Jaynes supports interoperability with models and inference algorithms expressed in Gen.jl and Soss.jl](https://femtomc.github.io/Jaynes.jl/dev/library_api/fmi/)
@@ -138,6 +140,7 @@ end
 
 ret, cl = Jaynes.simulate(bar)
 ```
+-->
 
 ## Poke holes in your programs!
 
