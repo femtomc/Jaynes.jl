@@ -3,9 +3,9 @@ module Jaynes
 # Yarrrr I'm a com-pirate!
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta
-#using Mjolnir
-#using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
-#using Mjolnir: Defaults
+using Mjolnir
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
+using Mjolnir: Defaults
 using MacroTools
 
 using Reexport
