@@ -52,6 +52,10 @@ function from_array(::T, arr::Vector{T}, f_ind::Int) where T
     (1, arr[f_ind])
 end
 
+function from_array(::SelectAll, arr::Vector{K}, f_ind::Int) where K
+    (1, Value(arr[f_ind]))
+end
+
 function from_array(::Value, arr::Vector{K}, f_ind::Int) where K
     (1, Value(arr[f_ind]))
 end
