@@ -6,6 +6,7 @@ include("language_extensions/turing.jl")
 include("language_extensions/gen.jl")
 include("language_extensions/flux.jl")
 include("language_extensions/abstract_mcmc.jl")
+include("language_extensions/advanced_hmc.jl")
 include("language_extensions/sugar.jl")
 
 function primitive end

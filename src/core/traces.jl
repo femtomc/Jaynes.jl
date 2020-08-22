@@ -41,6 +41,7 @@ abstract type CallSite <: AddressMap{Choice} end
 @inline shallow_iterator(cs::C) where C <: CallSite = shallow_iterator(cs.trace)
 
 @inline collect!(par::T, addrs::Vector, chd::Dict, cl::C, meta) where {T <: Tuple, C <: CallSite} = collect!(par, addrs, chd, get_trace(cl), meta)
+@inline target(cl::C, arr::Vector) where C <: CallSite = target(cl.trace, arr)
 
 function Base.display(call::C; 
                       fields::Array{Symbol, 1} = [:val],
