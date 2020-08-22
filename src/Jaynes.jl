@@ -90,7 +90,6 @@ include("core.jl")
 include("compiler.jl")
 include("contexts.jl")
 include("inference.jl")
-include("foreign_model_interfaces.jl")
 include("language_extensions.jl")
 include("utils.jl")
 

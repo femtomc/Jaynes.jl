@@ -10,15 +10,6 @@ macro load_advanced_hmc()
             error("This interface requires that your environment has the following dependencies:\n\n StatsBase\n MCMCChains\n StatsPlots\n AbstractMCMC\n")
         end
 
-        struct AdvancedHMCRecipe{K <: AddressMap}
-            target::K
-            n_samples::Int
-            n_adapts::Int
-            initial_θ::Vector{Float64}
-            metric
-            AdvancedHMCRecipe(target::K, initial_θ::Vector{Float64}) = new(target, 2000, 1000, initial_θ, DiagEuclideanMetric(length(initial_θ)))
-        end
-
         function ∇π(vals, target, cl)
             target_values = target(target, vals)
             ret, u_cl, w, _ = update(target_values, cl)
@@ -33,26 +24,36 @@ macro load_advanced_hmc()
             get_score(u_cl)
         end
 
-        function sample(recipe::HMCRecipe, constraints, model, args...)
+        function advanced_hmc(target::T 
+                              initial_θ::Vector{Float64},
+                              constraints::C, 
+                              model::Function,
+                              args...; 
+                              n_samples = 2000,
+                              n_adapts = 1000,
+                              metric = DiagEuclideanMetric(length(initial_θ))) where {T <: AddressMap, C <: AddressMap}
+
             ret, cl, w = generate(constraints, model, args...)
-            hamiltonian = Hamiltonian(recipe.metric, 
-                                      vals -> π(vals, recipe.target, cl), 
-                                      vals -> ∇π(vals, recipe.target, cl))
+            hamiltonian = Hamiltonian(metric, 
+                                      vals -> π(vals, target, cl), 
+                                      vals -> ∇π(vals, target, cl))
             initial_ϵ = find_good_stepsize(hamiltonian, 
-                                           recipe.initial_θ)
+                                           initial_θ)
             integrator = Leapfrog(initial_ϵ)
-            proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(recipe.integrator)
-            adaptor = StanHMCAdaptor(MassMatrixAdaptor(recipe.metric), 
-                                     StepSizeAdaptor(0.8, recipe.integrator))
+            proposal = NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+            adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), 
+                                     StepSizeAdaptor(0.8, integrator))
             samples, stats = sample(hamiltonian, 
                                     proposal, 
-                                    recipe.initial_θ, 
-                                    recipe.n_samples, 
-                                    recipe.adaptor, 
-                                    recipe.n_adapts; 
+                                    initial_θ, 
+                                    n_samples, 
+                                    adaptor, 
+                                    n_adapts; 
                                     progress=true)
             Chains(samples), stats
         end
+
+        const ahmc = advanced_hmc
     end
 
     expr = MacroTools.prewalk(unblock ∘ rmlines, expr)
