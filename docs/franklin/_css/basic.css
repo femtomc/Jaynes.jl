@@ -3,7 +3,7 @@
 ================================================================== */
 
 nav {
-    width: 64%;
+    width: 100%;
     display: inline-block; }
 
 nav ul {
@@ -31,18 +31,16 @@ nav li a {
     transition: color 0.3s ease; }
 
 header {
-    text-align: right;
+    text-align: left;
     margin-top: 50px;
     margin-bottom: 50px;
     display: flex;
     align-items: center; }
 
 header .blog-name {
-    width: 35%;
+    width: 100%;
     display: inline-block;
     text-align: left;
-    font-size: 18px;
-    font-family: "Lucida Console", Monaco, monospace;
     padding-top: 10px;}
 
 header .blog-name a {
@@ -81,55 +79,14 @@ header li a:hover {
 /*
 medium display: nav goes under name
 */
-@media (max-width: 760px) {
+@media (max-width: 360px) {
     header { display: block; }
     header .blog-name {
         display: block;
-        width: 100%;
         padding-bottom: 10px; }
     nav {
-        width: 100%; }
-    }
-
-/*
-narrow display: collapse the header (don't show the menu items)
-instead, display a burger menu.
-*/
-@media (max-width: 500px) {
-    header {
-        height: 35px;
-        display: block;
-        align-items: center; }
-    header .blog-name {
-        display: inline-block;
-        width: 70%; }
-    nav {
-        display: inline-block;
-        width: 27%; }
-    nav ul, nav:active ul {
-        display: none;
-        position: absolute;
-        /* padding: 20px; */
-        background: #fff;
-        border: 1px solid #444;
-        right: 50px;
-        top: 60px;
-        width: 30%;
-        border-radius: 4px 0 4px 4px;
-        z-index: 1;}
-    nav li {
-        text-align: left;
-        display: block;
-        padding: 0;
-        margin: 0; }
-    header li a { border-bottom: none; }
-    header li a:hover { border-bottom: none; }
-    nav:hover ul{
-        display: block; }
-    #menu-icon {
-        display: inline-block;
-        margin-right: 10px;
-        margin-top: 5px; }
+        display: inline;
+        width: 60%; }
     }
 
 table {
