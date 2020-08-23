@@ -13,4 +13,5 @@ git add .
 git commit -a -m "Publish website."
 git push -f origin gh-pages
 cd ..
+rm -rf franklin/library_api
 rm -rf website
