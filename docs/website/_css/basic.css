@@ -98,7 +98,7 @@ instead, display a burger menu.
 @media (max-width: 500px) {
     header {
         height: 35px;
-        display: flex;
+        display: block;
         align-items: center; }
     header .blog-name {
         display: inline-block;

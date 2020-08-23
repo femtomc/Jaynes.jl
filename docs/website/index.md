@@ -1,4 +1,4 @@
-@def title = "Jaynes"
+@def title = "E.T. Jaynes home phone"
 @def tags = ["probabilistic programming", "programmable inference"]
 
 **Jaynes.jl** (Jaynes) is a probabilistic programming framework based on a compiler interception version of [the generative function interface of Gen.jl](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1)[^1].
