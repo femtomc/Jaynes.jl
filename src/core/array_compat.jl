@@ -33,14 +33,6 @@ function fill_array!(val::T, arr::Vector{K}, f_ind::Int) where {K, T <: AddressM
     idx - f_ind
 end
 
-function fill_array!(val::Vector{T}, arr::Vector{T}, f_ind::Int) where T
-    if length(arr) < f_ind + length(val)
-        resize!(arr, 2 * (f_ind + length(val)))
-    end
-    arr[f_ind : f_ind + length(val) - 1] = val
-    length(val)
-end
-
 function array(gs::K, ::Type{T}) where {T, K}
     arr = Vector{T}(undef, 32)
     n = fill_array!(gs, arr, 1)

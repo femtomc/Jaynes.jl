@@ -17,8 +17,5 @@ makedocs(sitename = "Jaynes.jl",
                                   assets = ["assets/favicon.ico"]),
          clean = true,
          doctest = true,
-         build = "_api"
+         build = "website/library_api"
          )
-
-         deploydocs(repo = "github.com/femtomc/Jaynes.jl.git",
-                    target = "_api")
