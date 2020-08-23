@@ -1,0 +1,3 @@
+[deps]
+Jaynes = "a2015381-cef8-4fe1-827c-95a77dd17ccf"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"

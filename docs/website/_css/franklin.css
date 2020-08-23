@@ -141,7 +141,7 @@ html {
         margin: 10px 0; }
 
 .franklin-content a {
-    color: #74c394;
+    color: #77a6aa;
     text-decoration: none; }
 
 .franklin-content a:hover {
@@ -214,6 +214,7 @@ body { counter-reset: eqnum; }
 ================================================================== */
 
 code {
+    font-family: Iosevka;
     background-color: rgba(27,31,35,0.05);
     padding: 0.1em 0.2em;
     border-radius: 2px;

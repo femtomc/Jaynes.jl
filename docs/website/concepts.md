@@ -1,5 +1,3 @@
-The majority of the concepts used in the initial implementation of this package come from a combination of research papers and research systems (the most notable in the Julia ecosystem is [Gen](https://www.gen.dev/)). See [Related Work](related_work.md) for a more comprehensive list of references.
-
 ## Universal probabilistic programming
 
 Probabilistic programming systems are classified according to their ability to express the subset of stochastic computable functions which form valid probability distributions over program execution (in some interpretation). That's a terrible mouthful - but it's wide enough to conveniently capture systems which focus on Bayesian networks, as well as systems which capture a wider set of programs, which we will examine shortly. 
