@@ -1,3 +1,5 @@
+@def title = "Concepts"
+
 ## Universal probabilistic programming
 
 Probabilistic programming systems are classified according to their ability to express the subset of stochastic computable functions which form valid probability distributions over program execution (in some interpretation). That's a terrible mouthful - but it's wide enough to conveniently capture systems which focus on Bayesian networks, as well as systems which capture a wider set of programs, which we will examine shortly. 
