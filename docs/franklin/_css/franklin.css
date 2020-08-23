@@ -2,8 +2,72 @@
     DEFAULT FONT AND LAYOUT
 ================================================================== */
 
+@font-face {
+    font-family: 'Iosevka';
+    src: url('/assets/fonts/iosevka-medium.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 400;
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+    font-family: 'Iosevka';
+    src: url('/assets/fonts/iosevka-mediumitalic.ttf') format('truetype');
+    font-style: italic;
+    font-weight: 400;
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+    font-family: 'Iosevka';
+    src: url('/assets/fonts/iosevka-bold.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 700;
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+    font-family: 'Iosevka';
+    src: url('/assets/fonts/iosevka-bolditalic.ttf') format('truetype');
+    font-style: italic;
+    font-weight: 700;
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: url('/assets/fonts/Lato-Medium.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 400;
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: url('/assets/fonts/Lato-MediumItalic.ttf') format('truetype');
+    font-style: italic;
+    font-weight: 400;
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: url('/assets/fonts/Lato-Bold.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 700;
+    text-rendering: optimizeLegibility;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: url('/assets/fonts/Lato-BoldItalic.ttf') format('truetype');
+    font-style: italic;
+    font-weight: 700;
+    text-rendering: optimizeLegibility;
+}
+
 html {
-    font-family: Lato, Arial, sans-serif;
+    font-family: 'Lato', Arial, sans-serif;
     font-size  : 17px;
     color: #1c1c1c;
 }
@@ -44,7 +108,7 @@ html {
 
 .page-foot {
     font-size: 80%;
-    font-family: Lato;
+    font-family: 'Lato';
     color: #a6a2a0;
     text-align: center;
     margin-top: 6em;
@@ -214,7 +278,7 @@ body { counter-reset: eqnum; }
 ================================================================== */
 
 code {
-    font-family: Iosevka;
+    font-family: 'Iosevka';
     background-color: rgba(27,31,35,0.05);
     padding: 0.1em 0.2em;
     border-radius: 2px;
@@ -228,7 +292,7 @@ code {
     /* font-size: 90%; } */
 
 .hljs {
-    font-family: Iosevka;
+    font-family: 'Iosevka';
     font-size: 90%;
     line-height: 1.35em;
     border-radius: 10px; }
