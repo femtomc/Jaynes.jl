@@ -17,5 +17,5 @@ makedocs(sitename = "Jaynes.jl",
                                   assets = ["assets/favicon.ico"]),
          clean = true,
          doctest = true,
-         build = "website/library_api"
+         build = "franklin/library_api"
          )

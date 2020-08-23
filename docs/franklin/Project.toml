@@ -1,0 +1,5 @@
+[deps]
+Franklin = "713c75ef-9fc9-4b05-94a9-213340da978e"
+Jaynes = "a2015381-cef8-4fe1-827c-95a77dd17ccf"
+NodeJS = "2bd173c7-0d6d-553b-b6af-13a54713934c"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
