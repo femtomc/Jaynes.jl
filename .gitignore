@@ -1,6 +1,7 @@
 Manifest.toml
 *.mem
 docs/build
-docs/website/__site
+docs/website
+docs/franklin/__site
 *.cov
 scratch
