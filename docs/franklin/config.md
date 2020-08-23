@@ -6,7 +6,7 @@ The website_* must be defined for the RSS to work
 @def website_title = "Jaynes"
 @def website_descr = "Probabilistic programming with Jaynes.jl"
 @def website_url   = "https://femtomc.github.io/Jaynes.jl/"
-@def prepath = "project"
+@def prepath = "Jaynes.jl"
 
 @def author = "McCoy R. Becker"
 
