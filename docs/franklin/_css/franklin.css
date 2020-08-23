@@ -4,7 +4,7 @@
 
 @font-face {
     font-family: 'Iosevka';
-    src: url('/assets/fonts/iosevka-medium.ttf') format('truetype');
+    src: url('../assets/fonts/iosevka-medium.ttf') format('truetype');
     font-style: normal;
     font-weight: 400;
     text-rendering: optimizeLegibility;
@@ -12,7 +12,7 @@
 
 @font-face {
     font-family: 'Iosevka';
-    src: url('/assets/fonts/iosevka-mediumitalic.ttf') format('truetype');
+    src: url('../assets/fonts/iosevka-mediumitalic.ttf') format('truetype');
     font-style: italic;
     font-weight: 400;
     text-rendering: optimizeLegibility;
@@ -20,7 +20,7 @@
 
 @font-face {
     font-family: 'Iosevka';
-    src: url('/assets/fonts/iosevka-bold.ttf') format('truetype');
+    src: url('../assets/fonts/iosevka-bold.ttf') format('truetype');
     font-style: normal;
     font-weight: 700;
     text-rendering: optimizeLegibility;
@@ -28,7 +28,7 @@
 
 @font-face {
     font-family: 'Iosevka';
-    src: url('/assets/fonts/iosevka-bolditalic.ttf') format('truetype');
+    src: url('../assets/fonts/iosevka-bolditalic.ttf') format('truetype');
     font-style: italic;
     font-weight: 700;
     text-rendering: optimizeLegibility;
@@ -36,7 +36,7 @@
 
 @font-face {
     font-family: 'Lato';
-    src: url('/assets/fonts/Lato-Medium.ttf') format('truetype');
+    src: url('../assets/fonts/Lato-Medium.ttf') format('truetype');
     font-style: normal;
     font-weight: 400;
     text-rendering: optimizeLegibility;
@@ -44,7 +44,7 @@
 
 @font-face {
     font-family: 'Lato';
-    src: url('/assets/fonts/Lato-MediumItalic.ttf') format('truetype');
+    src: url('../assets/fonts/Lato-MediumItalic.ttf') format('truetype');
     font-style: italic;
     font-weight: 400;
     text-rendering: optimizeLegibility;
@@ -52,7 +52,7 @@
 
 @font-face {
     font-family: 'Lato';
-    src: url('/assets/fonts/Lato-Bold.ttf') format('truetype');
+    src: url('../assets/fonts/Lato-Bold.ttf') format('truetype');
     font-style: normal;
     font-weight: 700;
     text-rendering: optimizeLegibility;
@@ -60,7 +60,7 @@
 
 @font-face {
     font-family: 'Lato';
-    src: url('/assets/fonts/Lato-BoldItalic.ttf') format('truetype');
+    src: url('../assets/fonts/Lato-BoldItalic.ttf') format('truetype');
     font-style: italic;
     font-weight: 700;
     text-rendering: optimizeLegibility;
