@@ -135,10 +135,12 @@ export @primitive
 export @load_gen_fmi
 export @load_soss_fmi
 export @load_flux_fmi
+export @load_advanced_hmc
+export @load_chains
 export foreign
 
 # Utilities.
-export display, getindex, haskey, get_score, get_ret
+export display, getindex, haskey, get_score, get_ret, flatten
 
 # Just a little sugar.
 export @sugar

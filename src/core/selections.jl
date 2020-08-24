@@ -1,5 +1,17 @@
 const Target = AddressMap{<:Union{Empty, Select}}
 
+function (t::Target)(am::A) where A <: AddressMap
+    d = Dict()
+    for (k, v) in shallow_iterator(am)
+        if haskey(t, k)
+            d[k] = get_value(v)
+        else
+            t(d, get_sub(v))
+        end
+    end
+    d
+end
+
 @inline function Base.in(addr, tg::Target)
     get_sub(tg, addr) === SelectAll()
 end
@@ -53,4 +65,9 @@ function target(k::Tuple)
     tg = DynamicTarget()
     push!(tg, k)
     tg
+end
+
+function flatten(t::Target)
+    addrs, chd, _ = collect(t)
+    addrs, Float64[], chd
 end

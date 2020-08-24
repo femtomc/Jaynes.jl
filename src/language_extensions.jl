@@ -5,7 +5,7 @@ include("language_extensions/soss.jl")
 include("language_extensions/turing.jl")
 include("language_extensions/gen.jl")
 include("language_extensions/flux.jl")
-include("language_extensions/abstract_mcmc.jl")
+include("language_extensions/mcmc_chains.jl")
 include("language_extensions/advanced_hmc.jl")
 include("language_extensions/sugar.jl")
 
@@ -14,7 +14,8 @@ function load_soss_fmi end
 function load_turing_fmi end
 function load_flux_fmi end
 function load_gen_fmi end
-function load_abstract_mcmc end
+function load_advanced_hmc end
+function load_chains end
 
 foreign(addr::A, args...) where A <: Address = error("(foreign) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 

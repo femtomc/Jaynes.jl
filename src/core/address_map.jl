@@ -156,11 +156,11 @@ function collect!(par::T, addrs::Vector, chd::Dict, v::SelectAll, meta) where T 
     push!(addrs, par)
 end
 
-function collect(tr::M) where M <: AddressMap
+function collect(am::M) where M <: AddressMap
     addrs = Any[]
     chd = Dict()
     meta = Dict()
-    collect!(addrs, chd, tr, meta)
+    collect!(addrs, chd, am, meta)
     return addrs, chd, meta
 end
 
@@ -170,12 +170,18 @@ function iterate(fn, am::M) where M <: AddressMap
     end
 end
 
-function Base.display(tr::D; 
+function flatten(am::M) where M <: AddressMap
+    addrs, chd, _ = collect(am)
+    arr = array(am, Float64)
+    addrs, arr, chd
+end
+
+function Base.display(am::M; 
                       show_values = true, 
-                      show_types = false) where D <: AddressMap
+                      show_types = false) where M <: AddressMap
     println(" ___________________________________\n")
     println("             Address Map\n")
-    addrs, chd, meta = collect(tr)
+    addrs, chd, meta = collect(am)
     if show_values
         for a in addrs
             if haskey(meta, a) && haskey(chd, a)

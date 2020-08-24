@@ -22,7 +22,7 @@ end
 
 @inline projection(cs::DynamicCallSite, tg::Empty) = 0.0
 @inline projection(cs::DynamicCallSite, tg::SelectAll) = cs.score
-@inline projection(cs::DynamicCallSite, tg::Target) = project(c.trace, tg)
+@inline projection(cs::DynamicCallSite, tg::Target) = projection(c.trace, tg)
 
 @inline filter(fn, cs::DynamicCallSite) = filter(fn, cs.trace)
 @inline filter(fn, addr, cs::DynamicCallSite) = filter(fn, addr, cs.trace)
