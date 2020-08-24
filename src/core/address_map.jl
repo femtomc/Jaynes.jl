@@ -22,6 +22,18 @@ end
 
 @inline convert(::Type{Value}, c::Choice) = Value(get_value(c))
 
+@inline length(e::Empty) = 0
+@inline length(v::Value) = 1
+@inline length(c::Choice) = 1
+
+@inline value_length(e::Empty) = 0
+@inline value_length(v::Value{K}) where K = length(get_value(v))
+@inline value_length(c::Choice{K}) where K = length(get_value(v))
+
+@inline ndims(e::Empty) = 0
+@inline ndims(v::Value{K}) where K = ndims(get_value(v))
+@inline ndims(v::Choice{K}) where K = ndims(get_value(v))
+
 @inline projection(c::Choice, tg::Empty) = 0.0
 @inline projection(c::Choice, tg::SelectAll) = c.score
 
@@ -91,6 +103,30 @@ function Base.:(==)(a::AddressMap, b::AddressMap)
         get_sub(a, k) != sub && return false
     end
     return true
+end
+
+function Base.length(a::AddressMap)
+    l = 0
+    for (_, sub) in shallow_iterator(a)
+        l += length(sub)
+    end
+    l
+end
+
+function value_length(a::AddressMap)
+    l = 0
+    for (_, sub) in shallow_iterator(a)
+        l += value_length(sub)
+    end
+    l
+end
+
+function Base.ndims(a::AddressMap)
+    l = 0
+    for (_, sub) in shallow_iterator(a)
+        l += ndims(sub)
+    end
+    l
 end
 
 @inline Base.merge(am::AddressMap, ::Empty) = deepcopy(am), false

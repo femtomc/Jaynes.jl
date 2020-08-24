@@ -2,6 +2,7 @@ distributions = [:MvNormal,
                  :Normal,
                  :Categorical,
                  :Bernoulli,
+                 :Dirichlet,
                  :InverseGamma]
 
 function _sugar(expr)
