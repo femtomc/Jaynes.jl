@@ -19,10 +19,12 @@ N = 30
 x = mapreduce(c -> rand(MvNormal([μs[c], μs[c]], 1.), N), hcat, 1:2)
 
 # Visualization.
-scatter(x[1,:], x[2,:], legend = false, title = "Synthetic Dataset")
+fig = scatter(x[1,:], x[2,:], legend = false, title = "Synthetic Dataset")
+savefig(fig, joinpath(@OUTPUT, "gmm_synth.svg"))
 ```
 
-\show{/code/gmm}
+\fig{/code/gmm_synth.svg}
+
 
 Here's the model! It's very easy to transfer models between `Turing.jl` and Jaynes. (Note that here, I'm not pre-allocating and then mutating arrays because the current AD engine is Zygote)
 
