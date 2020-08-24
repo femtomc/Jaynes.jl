@@ -20,12 +20,10 @@ Because we are constructing a distribution over address maps, we must specify ou
 # Data.
 data_len = 100
 x = [Float64(i) for i in 1 : data_len]
-obs = target(map(1 : data_len) do i
-                    (:y => i, ) => 3.0 * x[i] + randn()
-                end)
+obs = target([(:y => i, ) => 3.0 * x[i] + randn() for i in 1 : data_len])
 ```
 
-This constructs a `DynamicMap{Value}` - a structure which specifies that the specified addresses should be fixed for inference contexts. Here, we're constraining the data observation `y`.
+The call to `target` constructs a `DynamicMap{Value}` - a structure which specifies that the specified addresses should be fixed for inference contexts. Here, we're constraining the data observation `y`.
 
 Now we can perform _importance sampling_ - here, we use the prior as the proposal.
 
