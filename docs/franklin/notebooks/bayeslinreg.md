@@ -1,3 +1,5 @@
+@def title = "Bayesian linear regression"
+
 Here's a simple example of Bayesian linear regression.
 
 ```julia:/code/bayeslinreg

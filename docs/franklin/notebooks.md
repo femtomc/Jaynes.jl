@@ -1,6 +1,6 @@
-@def title = "Pluto notebooks"
+@def title = "Notebooks"
 
-Here are a number of [Pluto.jl](https://github.com/fonsp/Pluto.jl) notebooks which explore common models, modeling idioms, and usage of the inference library.
+Here are a number of notebooks which explore common models, modeling idioms, and usage of the inference library.
 
 * [Bayesian linear regression (with HMC and AdvancedHMC inference)](../notebooks/bayeslinreg)
 
