@@ -3,7 +3,7 @@
 
 **Jaynes.jl** (Jaynes) is a probabilistic programming framework based on a compiler interception version of [the generative function interface of Gen.jl](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1)[^1].
 
-> This package is in open-alpha. Expect some bumps, especially as [new compiler interfaces](https://github.com/Keno/Compiler3.jl) stabilize in Julia `VERSION` > 1.6.
+> This package is in open alpha. Expect some bumps, especially as [new compiler interfaces](https://github.com/Keno/Compiler3.jl) stabilize in Julia `VERSION` > 1.6.
 
 ---
 
