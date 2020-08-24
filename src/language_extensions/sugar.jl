@@ -1,7 +1,8 @@
 distributions = [:MvNormal,
                  :Normal,
                  :Categorical,
-                 :Bernoulli]
+                 :Bernoulli,
+                 :InverseGamma]
 
 function _sugar(expr)
     MacroTools.postwalk(expr) do s
