@@ -37,18 +37,20 @@ GR.savefig(joinpath(@OUTPUT, "gmm_synthetic_data.png"))
     return k
 end;
 
-# Here's a simple inference program with a custom kernel - the kernel proposes a Metropolis-Hastings move (from the prior) for the target addresses `:k => i` for `i in 1 : N`, followed by an HMC move for the continuous latent means. 
+# Here's a simple inference program with a custom kernel - the kernel proposes a Metropolis-Hastings move (from the prior) for the target addresses `:k => i` for `i in 1 : N`, followed by an HMC move for the continuous latent means, following by another MH move from the prior for the density coefficients drawn from the Dirichlet.
 
 infer = (n_iters, n_samples) -> begin
     obs = target([(:x => i, ) => [x[2*i], x[2*i + 1]] for i in 1 : 2 * N - 1])
     tg1 = target([(:μ1, ), (:μ2, )])
     tg2 = target([(:k => i, ) for i in 1 : N])
+    tg3 = target([(:w, )])
     ret, cl, _ = generate(obs, GaussianMixtureModel, N)
     calls = []
     for i in 1 : n_iters
         cl, _ = mh(tg2, cl)
         cl, _ = hmc(tg1, cl)
-        i % (n_iters / n_samples) == 0 && begin
+        cl, _ = mh(tg3, cl)
+        i % Int(floor(n_iters / n_samples)) == 0 && begin
             push!(calls, cl)
         end
     end
@@ -56,8 +58,8 @@ infer = (n_iters, n_samples) -> begin
     chn
 end;
 
-n_iters = 3000
-n_samples = 50
+n_iters = 10000
+n_samples = 300
 chn = infer(n_iters, n_samples)
 
 # Now we can generate a nice plot of the chains using `StatsPlots`.
