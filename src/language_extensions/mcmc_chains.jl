@@ -4,7 +4,6 @@ macro load_chains()
         @info "Loading diagnostic interface to \u001b[3m\u001b[34;1mMCMCChains.jl\u001b[0m\n\n      \u001b[34;1mhttps://github.com/TuringLang/MCMCChains.jl\n\n "
         try
             using MCMCChains
-            using GR
             using StatsPlots
             using Random
         catch
