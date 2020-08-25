@@ -12,7 +12,7 @@ using Reexport
 @reexport using Distributions
 import Distributions: logpdf
 
-# Chainz
+# Chainz.
 using ZigZagBoomerang
 import ZigZagBoomerang: Boomerang, sparse
 export Boomerang, sparse
@@ -23,6 +23,24 @@ export I
 
 # Differentiable.
 using Zygote
+import Zygote.literal_getproperty
+
+# Fix for: https://github.com/FluxML/Zygote.jl/issues/717
+Zygote.@adjoint function literal_getproperty(x, ::Val{f}) where f
+    val = getproperty(x, f)
+    function back(Δ)
+        Zygote.accum_param(__context__, val, Δ) # === nothing && return
+        if isimmutable(x)
+            ((;Zygote.nt_nothing(x)..., Zygote.pair(Val(f), Δ)...), nothing)
+        else
+            dx = Zygote.grad_mut(__context__, x)
+            dx[] = (;dx[]...,Zygote.pair(Val(f), Zygote.accum(getfield(dx[], f), Δ))...)
+            return (dx, nothing)
+        end
+    end
+    unwrap(val), back
+end
+
 using DistributionsAD
 using Flux.Optimise: update!
 @reexport using Flux.Optimise
