@@ -3,8 +3,9 @@
 This example follows [this example from the Turing.jl tutorials.](https://turing.ml/dev/tutorials/1-gaussianmixturemodel/)
 
 ```julia:/code/gmm
-using Jaynes
-using Distributions, StatsPlots, Random
+using Jaynes, Random
+Jaynes.@load_chains()
+GR.ioff()
 
 # Set a random seed.
 Random.seed!(3)
@@ -19,8 +20,8 @@ N = 30
 x = mapreduce(c -> rand(MvNormal([μs[c], μs[c]], 1.), N), hcat, 1:2)
 
 # Visualization.
-fig = scatter(x[1,:], x[2,:], legend = false, title = "Synthetic Dataset")
-savefig(fig, joinpath(@OUTPUT, "gmm_synth.svg"))
+fig = GR.scatter(x[1,:], x[2,:], legend = false, title = "Synthetic Dataset")
+GR.savefig(joinpath(@OUTPUT, "gmm_synth.svg"))
 ```
 
 \fig{/code/gmm_synth.svg}
@@ -39,14 +40,9 @@ Here's the model! It's very easy to transfer models between `Turing.jl` and Jayn
 
     μ = [μ1, μ2]
 
-    # Uncomment the following lines to draw the weights for the K clusters 
-    # from a Dirichlet distribution.
-
-    #α = 1.0
-    #w ~ Dirichlet(2, α)
-
-    # Comment out this line if you instead want to draw the weights.
-    w = [0.5, 0.5]
+    # Draw the weights for the K clusters from a Dirichlet distribution.
+    α = 1.0
+    w ~ Dirichlet(2, α)
 
     # Draw assignments for each datum and generate it from a multivariate normal.
     k = [(:k => i) ~ Categorical(w) for i in 1 : N]
@@ -55,9 +51,10 @@ Here's the model! It's very easy to transfer models between `Turing.jl` and Jayn
 end
 ```
 
-Here's a small inference program - we will improve upon this in a moment.
+Here's a simple inference program with a custom kernel - the kernel proposes a Metropolis-Hastings move (from the prior) for the target addresses `:k => i` for `i in 1 : N`, followed by an HMC move for the continuous latent means. 
 
 ```julia:/code/gmm
+N = 30
 infer = (n_iters, n_samples) -> begin
 
     # Observations.
@@ -73,14 +70,19 @@ infer = (n_iters, n_samples) -> begin
     # Run an MCMC chain.
     calls = []
     for i in 1 : n_iters
-        @time begin
-            cl, _ = mh(tg2, cl)
-            cl, _ = hmc(tg1, cl)
-            i % (n_iters / n_samples) == 0 && begin
-                push!(calls, cl)
-            end
+        cl, _ = mh(tg2, cl)
+        cl, _ = hmc(tg1, cl)
+        i % (n_iters / n_samples) == 0 && begin
+            push!(calls, cl)
         end
     end
-    calls
+    chain(tg1, calls)
 end
+
+chn = infer(10000, 300)
+
+fig = StatsPlots.plot(chn, size = (640, 480))
+StatsPlots.savefig(joinpath(@OUTPUT, "chain_plot.svg"))
 ```
+
+\fig{/code/chain_plot.svg}
