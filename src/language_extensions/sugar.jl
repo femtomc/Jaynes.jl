@@ -37,6 +37,10 @@ function _sugar(expr)
                     k = Expr(:(=), val, Expr(:call, :rand, addr, fn, args...))
                 end
             end
+
+        elseif @capture(s, val_ <- fn_(args__))
+            k = quote $val = deep($fn, $(args...)) end
+
         else
             # Fallthrough.
             k = s
