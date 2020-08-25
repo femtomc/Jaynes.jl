@@ -143,7 +143,7 @@ obs = target(map(1 : data_len) do i
         est_β = sum(map(calls) do cl
                         (cl[:β])
                     end) / length(calls)
-        @test isapprox(0.0, est_β - 3.0, atol=1e-1)
+        @test isapprox(0.0, est_β - 3.0, atol=2e-1)
     end
 
     # Combination kernel.

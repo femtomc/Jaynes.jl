@@ -87,6 +87,7 @@ end
 @inline has_value(am::AddressMap, addr) = has_value(get_sub(am, addr))
 @inline has_value(am::AddressMap) = false
 
+@inline get_value(v::Empty) = missing
 @inline get_value(v::Value) = v.val
 @inline get_value(v::Choice) = v.val
 @inline has_value(v::Value) = true
