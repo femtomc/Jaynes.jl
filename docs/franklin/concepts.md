@@ -68,11 +68,11 @@ The end result of this definition is: if you define any concrete struct which in
 What does this afford us? Well, we can now define through dispatch the behavior for any function call we want, for any inheritor of `ExecutionContext`:
 
 ```julia
-mutable struct GenerateContext{T <: Trace, 
-                               K <: ConstrainedSelection, 
-                               P <: Parameters} <: ExecutionContext
+mutable struct GenerateContext{T <: AddressMap, 
+                               K <: AddressMap, 
+                               P <: AddressMap} <: ExecutionContext
     tr::T
-    select::K
+    target::K
     weight::Float64
     score::Float64
     visited::Visitor
@@ -83,26 +83,26 @@ end
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    if has_query(ctx.select, addr)
-        s = get_query(ctx.select, addr)
+    if has_value(ctx.target, addr)
+        s = getindex(ctx.target, addr)
         score = logpdf(d, s)
-        add_choice!(ctx, addr, ChoiceSite(score, s))
+        add_choice!(ctx, addr, score, s)
         increment!(ctx, score)
     else
         s = rand(d)
-        add_choice!(ctx, addr, ChoiceSite(logpdf(d, s), s))
+        add_choice!(ctx, addr, logpdf(d, s), s)
     end
     return s
 end
 ```
 
-Now, we define a concrete inheritor of `ExecutionContext` called `GenerateContext` which keeps a few pieces of metadata around which we will use to record information about calls which include random choices. The inlined closure definition below the struct definition outlines what happens when the dynamo wrapping encounters a call of the following form:
+Here, we define a concrete inheritor of `ExecutionContext` called `GenerateContext` which keeps a few pieces of metadata around which we will use to record information about calls which include random choices. The inlined closure definition below the struct definition outlines what happens when the dynamo wrapping encounters a call of the following form:
 
 ```julia
 rand(addr::T, d::Distribution{K}) where T <: Address
 ```
 
-where `Address` is a `Union{Symbol, Pair{Symbol, Int}}` and is used by the user to denote the sites in their probabilistic program which the tracer will pay attention to. What happens in this call instead of the normal execution for `rand(addr, d)`? First we do some bookkeeping to make sure the probabilistic program is valid using `visit!`, then we check a field called `select` to determine if the user has provided any constraints (i.e. observations) which the execution context should use to constrain this call at this address. If we do have a constraint, we grab the constraint, score it using `logpdf` for the distribution in the call and add a record of the call to a piece of metadata called a `Trace` in the execution context. Otherwise, we randomly sample and record the call in the `Trace`. Finally, we return the sample (or observation) `s`.
+where `Address` is a `Union{Symbol, Int, Pair}` and is used by the user to denote the sites in their probabilistic program which the tracer will pay attention to. What happens in this call instead of the normal execution for `rand(addr, d)`? First we do some bookkeeping to make sure the probabilistic program is valid using `visit!`, then we check a field called `select` to determine if the user has provided any constraints (i.e. observations) which the execution context should use to constrain this call at this address. If we do have a constraint, we grab the constraint, score it using `logpdf` for the distribution in the call and add a record of the call to a piece of metadata called a `Trace` in the execution context. Otherwise, we randomly sample and record the call in the `Trace`. Finally, we return the sample (or observation) `s`.
 
 This is exactly what happens in the `GenerateContext` every time the dynamo sees a call of the `rand` form above instead of the normal execution. But this is exactly what we need to allow sampling of probabilistic programs where some of the address have user-provided constraints. And it all happens automatically, courtesy of compiler metaprogramming.
 

@@ -80,5 +80,3 @@ end
 ```
 
 so this context records the random choice, as well as performs some bookkeepign with the `logpdf` which we will use for inference programming. Each of the other contexts define unique interception dispatch to implement functionality required for inference over probabilistic program traces. [These can be found here.](https://github.com/femtomc/Jaynes.jl/tree/master/src/contexts)
-
-## Address maps
