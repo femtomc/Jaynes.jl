@@ -22,7 +22,7 @@ import LinearAlgebra: I
 export I
 
 # Differentiable.
-using Zygote
+@reexport using Zygote
 import Zygote.literal_getproperty
 
 # Fix for: https://github.com/FluxML/Zygote.jl/issues/717
@@ -74,7 +74,7 @@ whitelist = [
              :learnable, :fillable, :factor,
 
              # Foreign model interfaces.
-             :foreign
+             :foreign, :deep
             ]
 
 # Fix for specialized tracing.
@@ -155,7 +155,7 @@ export @load_soss_fmi
 export @load_flux_fmi
 export @load_advanced_hmc
 export @load_chains
-export foreign
+export foreign, deep
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret, flatten

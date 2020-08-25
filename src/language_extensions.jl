@@ -19,6 +19,8 @@ function load_chains end
 
 foreign(addr::A, args...) where A <: Address = error("(foreign) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 
+deep(addr::A, model, args...) where A <: Address = error("(deep) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+
 # ------------ Documentation -------------- #
 
 @doc(
