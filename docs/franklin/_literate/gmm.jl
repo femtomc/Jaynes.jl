@@ -1,7 +1,7 @@
 # This example follows [this example from the Turing.jl tutorials.](https://turing.ml/dev/tutorials/1-gaussianmixturemodel/)
 
 using Jaynes, Random
-using Plots
+using GR
 Jaynes.@load_chains();
 
 # Set a random seed.
@@ -19,7 +19,10 @@ N = 30;
 # Construct the data points.
 
 x = mapreduce(c -> rand(MvNormal([μs[c], μs[c]], 1.), N), hcat, 1:2)
-fig = Plots.scatter(x[1,:], x[2,:], title = "Synthetic Dataset")
+fig = GR.scatter(x[1,:], x[2,:], title = "Synthetic Dataset");
+GR.savefig(joinpath(@OUTPUT, "gmm_synthetic_data.png"))
+
+# \fig{output/gmm_synthetic_data}
 
 # Here's the model! It's very easy to transfer models between Turing.jl and Jaynes. (Note that here, I'm not pre-allocating and then mutating arrays because the current AD engine is Zygote)
 
@@ -59,4 +62,7 @@ chn = infer(n_iters, n_samples)
 
 # Now we can generate a nice plot of the chains using `StatsPlots`.
 
-fig = StatsPlots.plot(chn)
+fig = StatsPlots.plot(chn);
+StatsPlots.savefig(fig, joinpath(@OUTPUT, "gmm_chain_plot.png"))
+
+# \fig{output/gmm_chain_plot}
