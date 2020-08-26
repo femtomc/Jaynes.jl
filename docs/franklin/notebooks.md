@@ -16,6 +16,6 @@ Here are a number of notebooks which explore common models, modeling idioms, and
 
 * [Hidden Markov model with multivariate transition and observation (with programmable particle filtering)](../hmm)
 
-* [Variational autoencoder (with neural VIMCO)](../vae_nvim)
-
 * [Data-driven proposals (with neural VI)](../ddp_nvi)
+
+* [Variational autoencoder (with neural geometric VIMCO)](../vae_nvim)

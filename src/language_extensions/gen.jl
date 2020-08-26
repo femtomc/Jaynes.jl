@@ -116,7 +116,7 @@ macro load_gen_fmi()
         end
 
         # Convenience.
-        function generate(sel::L, gen_fn::G, args...) where {L <: Jaynes.ConstrainedSelection, G <: Gen.GenerativeFunction}
+        function generate(sel::L, gen_fn::G, args...) where {L <: Jaynes.AddressMap, G <: Gen.GenerativeFunction}
             addr = gensym()
             v_sel = selection(addr => sel)
             ctx = Generate(v_sel)
@@ -154,7 +154,7 @@ macro load_gen_fmi()
         end
 
         # Convenience.
-        function update(sel::L, gen_cl::C) where {L <: Jaynes.ConstrainedSelection, C <: GenerativeFunctionCallSite}
+        function update(sel::L, gen_cl::C) where {L <: Jaynes.AddressMap, C <: GenerativeFunctionCallSite}
             ctx = Jaynes.UpdateContext(gen_cl, sel, Jaynes.NoChange())
             ret = ctx(foreign, gen_cl.model, gen_cl.args...)
             return ret, GenerativeFunctionCallSite(ctx.tr, ctx.score, gen_cl.model, gen_cl.args, ret), ctx.weight, Jaynes.UndefinedChange(), nothing
@@ -190,7 +190,7 @@ macro load_gen_fmi()
         end
 
         # Convenience.
-        function regenerate(sel::L, gen_cl::C) where {L <: Jaynes.UnconstrainedSelection, C <: GenerativeFunctionCallSite}
+        function regenerate(sel::L, gen_cl::C) where {L <: Jaynes.Target, C <: GenerativeFunctionCallSite}
             ctx = Jaynes.Regenerate(gen_cl, sel, Jaynes.NoChange())
             ret = ctx(foreign, gen_cl.model, gen_cl.args...)
             return ret, GenerativeFunctionCallSite(ctx.tr, ctx.score, gen_cl.model, gen_cl.args, ret), ctx.weight, Jaynes.UndefinedChange(), nothing
@@ -210,7 +210,7 @@ macro load_gen_fmi()
         end
 
         # Convenience.
-        function score(sel::L, gen_fn::M, args...) where {L <: Jaynes.UnconstrainedSelection, M <: GenerativeFunctionCallSite}
+        function score(sel::L, gen_fn::M, args...) where {L <: Jaynes.Target, M <: GenerativeFunctionCallSite}
             addr = gensym()
             v_sel = selection(addr => sel)
             ctx = Jaynes.Score(v_sel)

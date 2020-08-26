@@ -33,14 +33,14 @@ const adgv = automatic_differentiation_geometric_vimco
 """
 Samples from the model prior.
 ```julia
-particles, normalized_weights = importance_sampling(observations::ConstrainedSelection,
+particles, normalized_weights = importance_sampling(observations::AddressMap,
                                                     num_samples::Int,
                                                     model::Function, 
                                                     args::Tuple)
 ```
 Samples from a programmer-provided proposal function.
 ```julia
-particles, normalized_weights = importance_sampling(observations::ConstrainedSelection,
+particles, normalized_weights = importance_sampling(observations::AddressMap,
                                                     num_samples::Int,
                                                     model::Function, 
                                                     args::Tuple, 
@@ -147,7 +147,7 @@ params, elbows, call_sites =  advi(sel::K,
                                    mod::Function,
                                    args::Tuple;
                                    opt = ADAM(),
-                                   gs_samples = 100) where K <: ConstrainedSelection
+                                   gs_samples = 100) where K <: AddressMap
 ```
 
 Given a selection `sel`, perform _automatic-differentiation variational inference_ with a proposal model `v_mod`. The result is a new set of trained parameters `params` for the variational model, the history of ELBO estimates `elbows`, and the call sites `calls` produced by the gradient estimator computation.

@@ -193,7 +193,7 @@ macro load_soss_fmi()
         end
 
         # Convenience.
-        function regenerate(sel::L, soss_cl::C) where {L <: Jaynes.UnconstrainedSelection, C <: SossModelCallSite}
+        function regenerate(sel::L, soss_cl::C) where {L <: Jaynes.Target, C <: SossModelCallSite}
             addr = gensym()
             v_sel = selection(addr => sel)
             ctx = Jaynes.Regenerate(soss_cl, v_sel, NoChange())
@@ -213,7 +213,7 @@ macro load_soss_fmi()
         end
 
         # Convenience.
-        function score(sel::L, model::M, args...) where {L <: Jaynes.UnconstrainedSelection, M <: SossModelCallSite}
+        function score(sel::L, model::M, args...) where {L <: Jaynes.Target, M <: SossModelCallSite}
             addr = gensym()
             v_sel = selection(addr => sel)
             ctx = Jaynes.Score(v_sel)
