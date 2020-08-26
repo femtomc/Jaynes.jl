@@ -1,4 +1,4 @@
-function one_shot_gradient_estimator(sel::K,
+function one_shot_gradient_estimator(tg::K,
                                      ps::P,
                                      v_mod::Function,
                                      v_args::Tuple,
@@ -6,16 +6,16 @@ function one_shot_gradient_estimator(sel::K,
                                      args::Tuple;
                                      scale = 1.0) where {K <: AddressMap, P <: AddressMap}
     _, cl = simulate(ps, v_mod, v_args...)
-    obs, _ = merge(get_trace(cl), sel)
-    _, mlw = score(obs, ps, mod, args...)
+    merge!(cl, tg) && error("(one_shot_gradient_estimator): variational model proposes to addresses in observations.")
+    _, mlw = score(cl, ps, mod, args...)
     lw = mlw - get_score(cl)
-    _, gs = get_learnable_gradients(ps, cl, nothing, lw * scale)
+    _, gs = get_learnable_gradients(ps, cl, 1.0, lw * scale)
     return gs, lw, cl
 end
 
 # ------------ Automatic differentiation variational inference ------------ #
 
-function automatic_differentiation_variational_inference(sel::K,
+function automatic_differentiation_variational_inference(tg::K,
                                                          ps::P,
                                                          v_mod::Function,
                                                          v_args::Tuple,
@@ -30,7 +30,7 @@ function automatic_differentiation_variational_inference(sel::K,
         elbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples
-            gs, lw, cl = one_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; scale = 1.0 / gs_samples)
+            gs, lw, cl = one_shot_gradient_estimator(tg, ps, v_mod, v_args, mod, args; scale = 1.0 / gs_samples)
             elbo_est += lw / gs_samples
             accumulate!(gs_est, gs)
             cls[s] = cl
@@ -42,56 +42,51 @@ function automatic_differentiation_variational_inference(sel::K,
 end
 
 function geometric_base(lws::Vector{Float64})
-    num_samples = length(lws)
+    est_samples = length(lws)
     s = sum(lws)
-    baselines = Vector{Float64}(undef, num_samples)
-    for i=1:num_samples
+    baselines = Vector{Float64}(undef, est_samples)
+    for i=1:est_samples
         temp = lws[i]
-        lws[i] = (s - lws[i]) / (num_samples - 1)
-        baselines[i] = lse(lws) - log(num_samples)
+        lws[i] = (s - lws[i]) / (est_samples - 1)
+        baselines[i] = lse(lws) - log(est_samples)
         lws[i] = temp
     end
     baselines
 end
 
-function lde(x, y)
-    m = max(x, y)
-    m + log(exp(x - m) - exp(y - m))
-end
-
-function multi_shot_gradient_estimator(sel::K,
-                                       ps::P,
-                                       v_mod::Function,
-                                       v_args::Tuple,
-                                       mod::Function,
-                                       args::Tuple;
-                                       num_samples::Int = 100,
-                                       scale = 1.0) where {K <: AddressMap, P <: AddressMap}
-    cs = Vector{CallSite}(undef, num_samples)
-    lws = Vector{Float64}(undef, num_samples)
-    Threads.@threads for i in 1:num_samples
+function vimco_gradient_estimator(tg::K,
+                                  ps::P,
+                                  v_mod::Function,
+                                  v_args::Tuple,
+                                  mod::Function,
+                                  args::Tuple;
+                                  est_samples::Int = 100,
+                                  scale = 1.0) where {K <: AddressMap, P <: AddressMap}
+    cs = Vector{CallSite}(undef, est_samples)
+    lws = Vector{Float64}(undef, est_samples)
+    Threads.@threads for i in 1:est_samples
         _, cs[i] = simulate(ps, v_mod, v_args...)
-        obs, _ = merge(get_trace(cs[i]), sel)
-        ret, mlw = score(obs, ps, mod, args...)
+        merge!(cs[i], tg) && error("(vimco_gradient_estimator): variational model proposes to addresses in observations.")
+        ret, mlw = score(cs[i], ps, mod, args...)
         lws[i] = mlw - get_score(cs[i])
     end
     ltw = lse(lws)
-    L = ltw - log(num_samples)
+    L = ltw - log(est_samples)
     nw = exp.(lws .- ltw)
     gs = Gradients()
     bs = geometric_base(lws)
-    Threads.@threads for i in 1:num_samples
+    Threads.@threads for i in 1:est_samples
         ls = L - nw[i] - bs[i]
-        accumulate!(gs, get_learnable_gradients(ps, cs[i], nothing, ls * scale)[2])
+        accumulate!(gs, get_learnable_gradients(ps, cs[i], 1.0, ls * scale)[2])
     end
     return gs, L, cs, nw
 end
 
 # ------------  ADVI with geometric baseline ------------ #
 
-function automatic_differentiation_geometric_vimco(sel::K,
+function automatic_differentiation_geometric_vimco(tg::K,
                                                    ps::P,
-                                                   num_samples::Int,
+                                                   est_samples::Int,
                                                    v_mod::Function,
                                                    v_args::Tuple,
                                                    mod::Function,
@@ -105,7 +100,7 @@ function automatic_differentiation_geometric_vimco(sel::K,
         velbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples
-            gs, L, cs, nw = multi_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; num_samples = num_samples, scale = 1.0 / gs_samples)
+            gs, L, cs, nw = vimco_gradient_estimator(tg, ps, v_mod, v_args, mod, args; est_samples = est_samples, scale = 1.0 / gs_samples)
             velbo_est += L / gs_samples
             accumulate!(gs_est, gs)
             cls[s] = cs[rand(Categorical(nw))]

@@ -1,9 +1,9 @@
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::ProposeContext)(c::typeof(plate), 
-                                        addr::T, 
-                                        d::Distribution{K},
-                                        len::Int) where {T <: Address, K}
+                                       addr::T, 
+                                       d::Distribution{K},
+                                       len::Int) where {T <: Address, K}
     v_ret = Vector{eltype(d)}(undef, len)
     v_cs = Vector{ChoiceSite{eltype(d)}}(undef, len)
     for i in 1:len
@@ -24,26 +24,26 @@ end
 # ------------ Vector call sites ------------ #
 
 @inline function (ctx::ProposeContext)(c::typeof(plate), 
-                                        addr::Address, 
-                                        call::Function, 
-                                        args::Vector)
+                                       addr::Address, 
+                                       call::Function, 
+                                       args::Vector)
+    visit!(ctx, addr)
     visit!(ctx, addr => 1)
     len = length(args)
-    ret, cl, w = propose(call, args[1]...)
+    ret, submap, sc = propose(call, args[1]...)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_cl = Vector{typeof(cl)}(undef, len)
+    v_submap = Vector{typeof(submap)}(undef, len)
     v_ret[1] = ret
-    v_cl[1] = cl
+    v_submap[1] = submap
     for i in 2:len
         visit!(ctx, addr => i)
-        ret, cl, w = propose(call, args[i]...)
+        ret, submap, w = propose(call, args[i]...)
         v_ret[i] = ret
-        v_cl[i] = cl
+        v_submap[i] = submap
+        sc += w
     end
-    sc = sum(map(v_cl) do cl
-                 get_score(cl)
-                end)
-    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cl), sc, call, length(args), args, v_ret))
+    set_sub!(ctx.map, addr, VectorMap{Value}(v_submap))
+    ctx.score += sc
     return v_ret
 end
 

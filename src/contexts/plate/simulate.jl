@@ -59,7 +59,7 @@ end
 # ------------ Convenience ------------ #
 
 function simulate(c::typeof(plate), fn::Function, args::Vector)
-    ctx = SimulateContext()
+    ctx = Simulate()
     addr = gensym()
     ret = ctx(plate, addr, fn, args)
     return ret, get_sub(ctx.tr, addr)
@@ -68,13 +68,13 @@ end
 function simulate(params::P, c::typeof(plate), fn::Function, args::Vector) where P <: AddressMap
     addr = gensym()
     v_ps = learnables(addr => params)
-    ctx = SimulateContext(v_ps)
+    ctx = Simulate(v_ps)
     ret = ctx(plate, addr, fn, args)
     return ret, get_sub(ctx.tr, addr)
 end
 
 function simulate(fn::typeof(plate), d::Distribution{T}, len::Int) where T
-    ctx = SimulateContext()
+    ctx = Simulate()
     addr = gensym()
     ret = ctx(plate, addr, d, len)
     return ret, get_sub(ctx.tr, addr)

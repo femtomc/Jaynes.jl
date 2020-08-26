@@ -9,6 +9,9 @@ struct DynamicCallSite{J, K} <: CallSite
     args::J
     ret::K
 end
+
+@inline get_model(dcs::DynamicCallSite) = dcs.fn
+
 @inline isempty(dcs::DynamicCallSite) = false
 
 function projection(tr::DynamicTrace, tg::Target)
@@ -20,8 +23,13 @@ function projection(tr::DynamicTrace, tg::Target)
     weight
 end
 
-projection(cs::DynamicCallSite, tg::Empty) = 0.0
-projection(cs::DynamicCallSite, tg::SelectAll) = cs.score
-projection(cs::DynamicCallSite, tg::Target) = project(c.trace, tg)
+@inline projection(cs::DynamicCallSite, tg::Empty) = 0.0
+@inline projection(cs::DynamicCallSite, tg::SelectAll) = cs.score
+@inline projection(cs::DynamicCallSite, tg::Target) = projection(c.trace, tg)
+
+@inline filter(fn, cs::DynamicCallSite) = filter(fn, cs.trace)
+@inline filter(fn, addr, cs::DynamicCallSite) = filter(fn, addr, cs.trace)
+
+@inline select(cs::DynamicCallSite) = select(cs.trace)
 
 const DynamicDiscard = DynamicMap{Choice}

@@ -1,10 +1,10 @@
 name = "Jaynes"
 uuid = "a2015381-cef8-4fe1-827c-95a77dd17ccf"
 authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
-version = "0.1.12"
+version = "0.1.22"
 
 [deps]
-AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
+Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DistributionsAD = "ced4e74d-a319-5a8a-b0ac-84af2272839c"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
@@ -18,15 +18,15 @@ ZigZagBoomerang = "36347407-b186-4a6a-8c98-4f4567861712"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-AbstractMCMC = "2.0"
+Distances = "0.9"
 Distributions = "0.23"
 DistributionsAD = "0.6"
-Flux = "0.8, 0.11"
-IRTools = "0.3"
+Flux = "0.11"
+IRTools = "0.4"
 MacroTools = "0.5"
 Reexport = "0.2"
 ZigZagBoomerang = "0.5"
-Zygote = "0.4.20"
+Zygote = "0.5"
 julia = "1"
 
 [extras]

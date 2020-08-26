@@ -126,6 +126,20 @@ function check_ess_resample!(ps::Particles)
     return false
 end
 
+function resample!(ps::Particles)
+    num_particles = length(ps.calls)
+    ltw, lnw = nw(ps.lws)
+    weights = exp.(lnw)
+    ps.lmle += ltw - log(num_particles)
+    selections = rand(Categorical(weights/sum(weights)), num_particles)
+    calls = map(selections) do ind
+        ps.calls[ind]
+    end
+    ps.calls = calls
+    ps.lws = zeros(num_particles)
+    return true
+end
+
 function get_lmle(ps::Particles)
     return ps.lmle + lse(ps.lws) - log(length(ps))
 end

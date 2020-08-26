@@ -246,25 +246,6 @@ function get_learnable_gradients(sel::K, ps::P, cl::VectorCallSite, ret_grad, sc
     return arg_grads, param_grads[key]
 end
 
-# ------------ train ------------ #
-
-function train(ps::P, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where P <: AddressMap
-    for i in 1 : iters
-        _, cl = simulate(ps, fn, args...)
-        _, grads = get_learnable_gradients(ps, cl, 1.0)
-        ps = update_learnables(opt, ps, grads)
-    end
-    return ps
-end
-
-function train(sel::K, ps::P, fn::Function, args...; opt = ADAM(0.05, (0.9, 0.8)), iters = 1000) where {K <: AddressMap, P <: AddressMap}
-    for i in 1 : iters
-        _, cl, _ = generate(sel, ps, fn, args...)
-        _, grads = get_learnable_gradients(sel, ps, cl, 1.0)
-        ps = update_learnables(opt, ps, grads)
-    end
-    return ps
-end
 
 # ------------ includes ------------ #
 

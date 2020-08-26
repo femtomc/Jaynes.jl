@@ -12,7 +12,7 @@ using Reexport
 @reexport using Distributions
 import Distributions: logpdf
 
-# Chainz
+# Chainz.
 using ZigZagBoomerang
 import ZigZagBoomerang: Boomerang, sparse
 export Boomerang, sparse
@@ -20,12 +20,30 @@ using SparseArrays
 using LinearAlgebra
 import LinearAlgebra: I
 export I
-using AbstractMCMC
 
 # Differentiable.
-using Zygote
-using ForwardDiff
-using ForwardDiff: Dual
+@reexport using Zygote
+import Zygote.literal_getproperty
+
+# Distances.
+@reexport using Distances
+
+# Fix for: https://github.com/FluxML/Zygote.jl/issues/717
+Zygote.@adjoint function literal_getproperty(x, ::Val{f}) where f
+    val = getproperty(x, f)
+    function back(Δ)
+        Zygote.accum_param(__context__, val, Δ) # === nothing && return
+        if isimmutable(x)
+            ((;Zygote.nt_nothing(x)..., Zygote.pair(Val(f), Δ)...), nothing)
+        else
+            dx = Zygote.grad_mut(__context__, x)
+            dx[] = (;dx[]...,Zygote.pair(Val(f), Zygote.accum(getfield(dx[], f), Δ))...)
+            return (dx, nothing)
+        end
+    end
+    unwrap(val), back
+end
+
 using DistributionsAD
 using Flux.Optimise: update!
 @reexport using Flux.Optimise
@@ -59,7 +77,7 @@ whitelist = [
              :learnable, :fillable, :factor,
 
              # Foreign model interfaces.
-             :foreign
+             :foreign, :deep
             ]
 
 # Fix for specialized tracing.
@@ -93,7 +111,6 @@ include("core.jl")
 include("compiler.jl")
 include("contexts.jl")
 include("inference.jl")
-include("foreign_model_interfaces.jl")
 include("language_extensions.jl")
 include("utils.jl")
 
@@ -119,20 +136,20 @@ export construct_graph, compile_function
 export dynamic
 
 # Selections and parameters.
-const selection = target
-export selection, target, array, learnables
+export select, target, array, learnables
 export anywhere, intersection, union
-export get_target, compare, update_learnables, dump_queries, merge!, merge
+export compare, update_learnables, merge!, merge
 
 # Inference.
+export maximum_likelihood_estimation, mle
+export maximum_a_posteriori_estimation, maxap
+export importance_sampling, is
 export metropolis_hastings, mh
-export elliptical_slice, es
 export hamiltonian_monte_carlo, hmc
+export elliptical_slice, es
 export piecewise_deterministic_markov_kernel, pdmk
 export exchange, ex
-export importance_sampling, is
-export initialize_filter, filter_step!, check_ess_resample!, get_lmle, pf
-export metropolis_hastings, mh
+export initialize_filter, filter_step!, check_ess_resample!, resample!, get_lmle, pf
 export automatic_differentiation_variational_inference, advi
 export automatic_differentiation_geometric_vimco, adgv
 
@@ -141,10 +158,12 @@ export @primitive
 export @load_gen_fmi
 export @load_soss_fmi
 export @load_flux_fmi
-export foreign
+export @load_advanced_hmc
+export @load_chains
+export foreign, deep
 
 # Utilities.
-export display, getindex, haskey, get_score, get_ret
+export display, getindex, haskey, get_score, get_ret, flatten
 
 # Just a little sugar.
 export @sugar

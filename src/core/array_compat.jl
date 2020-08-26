@@ -7,20 +7,20 @@ function fill_array!(val::T, arr::Vector{T}, f_ind::Int) where T
     1
 end
 
-function fill_array!(val::Value, arr::Vector{T}, f_ind::Int) where T
-    if length(arr) < f_ind
-        resize!(arr, 2 * f_ind)
+function fill_array!(val::Vector{T}, arr::Vector{T}, f_ind::Int) where T
+    if length(arr) < f_ind + length(val)
+        resize!(arr, 2 * (f_ind + length(val)))
     end
-    arr[f_ind] = get_value(val)
-    1
+    arr[f_ind : f_ind + length(val) - 1] = val
+    length(val)
+end
+
+function fill_array!(val::Value, arr::Vector{T}, f_ind::Int) where T
+    fill_array!(get_value(val), arr, f_ind)
 end
 
 function fill_array!(val::Choice, arr::Vector{T}, f_ind::Int) where T
-    if length(arr) < f_ind
-        resize!(arr, 2 * f_ind)
-    end
-    arr[f_ind] = get_value(val)
-    1
+    fill_array!(get_value(val), arr, f_ind)
 end
 
 function fill_array!(val::T, arr::Vector{K}, f_ind::Int) where {K, T <: AddressMap}
@@ -31,14 +31,6 @@ function fill_array!(val::T, arr::Vector{K}, f_ind::Int) where {K, T <: AddressM
         idx += n
     end
     idx - f_ind
-end
-
-function fill_array!(val::Vector{T}, arr::Vector{T}, f_ind::Int) where T
-    if length(arr) < f_ind + length(val)
-        resize!(arr, 2 * (f_ind + length(val)))
-    end
-    arr[f_ind : f_ind + length(val) - 1] = val
-    length(val)
 end
 
 function array(gs::K, ::Type{T}) where {T, K}
@@ -52,17 +44,25 @@ function from_array(::T, arr::Vector{T}, f_ind::Int) where T
     (1, arr[f_ind])
 end
 
-function from_array(::Value, arr::Vector{K}, f_ind::Int) where K
+function from_array(val::Vector{T}, arr::Vector{T}, f_ind::Int) where {T}
+    n_read = length(val)
+    (n_read, arr[f_ind : f_ind + n_read - 1])
+end
+
+function from_array(::SelectAll, arr::Vector{K}, f_ind::Int) where K
     (1, Value(arr[f_ind]))
 end
 
-function from_array(::Choice, arr::Vector{K}, f_ind::Int) where K
-    (1, Value(arr[f_ind]))
+function from_array(v::Value, arr::Vector{K}, f_ind::Int) where K
+    shape = get_value(v)
+    n, v = from_array(shape, arr, f_ind)
+    (n, Value(v))
 end
 
-function from_array(val::Vector{T}, arr::Vector{T}, f_ind::Int) where T
-    n = length(val)
-    (n, arr[f_ind : f_ind + n - 1])
+function from_array(c::Choice, arr::Vector{K}, f_ind::Int) where K
+    shape = get_value(c)
+    n, v = from_array(shape, arr, f_ind)
+    (n, Value(v))
 end
 
 function from_array(schema::T, arr::Vector{K}, f_ind::Int) where {K, T <: DynamicMap}

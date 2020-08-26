@@ -11,7 +11,7 @@ anywhere
 
 ## Compositions of selections
 
-The selections produced by the above APIs can be combined compositionally to form more complex selections. Some of these compositions are only available for subtypes of `UnconstrainedSelection`.
+The selections produced by the above APIs can be combined compositionally to form more complex selections. Some of these compositions are only available for subtypes of `Target`.
 
 ## Selection utilities
 

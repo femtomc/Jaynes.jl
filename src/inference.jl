@@ -9,21 +9,25 @@ end
 
 map(fn::Function, ps::Particles) = map(fn, ps.calls)
 
+include("inference/mle.jl")
+include("inference/map.jl")
 include("inference/is.jl")
 include("inference/mh.jl")
+include("inference/hmc.jl")
 include("inference/es.jl")
 include("inference/pdmk.jl")
 include("inference/ex.jl")
-include("inference/hmc.jl")
 include("inference/pf.jl")
 include("inference/vi.jl")
 
+const mle = maximum_likelihood_estimation
+const maxap = maximum_a_posteriori_estimation
+const is = importance_sampling
 const mh = metropolis_hastings
 const hmc = hamiltonian_monte_carlo
 const es = elliptical_slice
 const pdmk = piecewise_deterministic_markov_kernel
 const ex = exchange
-const is = importance_sampling
 const advi = automatic_differentiation_variational_inference
 const adgv = automatic_differentiation_geometric_vimco
 
@@ -33,14 +37,14 @@ const adgv = automatic_differentiation_geometric_vimco
 """
 Samples from the model prior.
 ```julia
-particles, normalized_weights = importance_sampling(observations::ConstrainedSelection,
+particles, normalized_weights = importance_sampling(observations::AddressMap,
                                                     num_samples::Int,
                                                     model::Function, 
                                                     args::Tuple)
 ```
 Samples from a programmer-provided proposal function.
 ```julia
-particles, normalized_weights = importance_sampling(observations::ConstrainedSelection,
+particles, normalized_weights = importance_sampling(observations::AddressMap,
                                                     num_samples::Int,
                                                     model::Function, 
                                                     args::Tuple, 
@@ -97,21 +101,42 @@ Checks the effective sample size using `ess`, then resamples from an existing in
 @doc(
 """
 ```julia
-call, accepted, metropolis_hastings(sel::UnconstrainedSelection,
-                                    call::HierarchicalCallSite)
+call, accepted = metropolis_hastings(sel::Target,
+                                     call::CallSite)
 ```
 
 Perform a Metropolis-Hastings step by proposing new choices using the prior at addressed specified by `sel`. Returns a call site, as well as a Boolean value `accepted` to indicate if the proposal was accepted or rejected.
 
 ```julia
-call, accepted = metropolis_hastings(sel::UnconstrainedSelection,
-                                     call::HierarchicalCallSite,
+call, accepted = metropolis_hastings(sel::Target,
+                                     call::CallSite,
                                      proposal::Function,
                                      proposal_args::Tuple)
 ```
 
 Perform a Metropolis-Hastings step by proposing new choices using a custom proposal at addressed specified by `sel`. Returns a call site, as well as a Boolean value `accepted` to indicate if the proposal was accepted or rejected.
 """, metropolis_hastings)
+
+# ------------ Documentation (HMC) ------------ #
+
+@doc(
+"""
+```julia
+call, accepted = metropolis_hastings(sel::Target, call::CallSite; L = 10, eps = 0.1)
+call, accepted = metropolis_hastings(sel::Target, ps::AddressMap, call::CallSite,; L = 10, eps = 0.1)
+```
+
+Perform a Hamiltonian Monte Carlo step with number of leap frog steps `L` and gradient scale `eps`.
+
+This is specified by the following proposal:
+
+1. First, compute gradients of the unnormalized logpdf with respect to choices targeted by `sel`.
+2. Then, perform `L` numerical Leapfrog integration steps, updating the values at `sel`.
+3. Compute the likelihood ratio `alpha` between the new set of choices and momentum and the old set of choices and momentum.
+4. Accept or reject with `log(rand()) < alpha`.
+
+Reference: [A conceptual introduction to Hamiltonian Monte Carlo](https://arxiv.org/pdf/1701.02434.pdf)
+""", hamiltonian_monte_carlo)
 
 
 # ------------ Documentation (VI) ------------ #
@@ -126,7 +151,7 @@ params, elbows, call_sites =  advi(sel::K,
                                    mod::Function,
                                    args::Tuple;
                                    opt = ADAM(),
-                                   gs_samples = 100) where K <: ConstrainedSelection
+                                   gs_samples = 100) where K <: AddressMap
 ```
 
 Given a selection `sel`, perform _automatic-differentiation variational inference_ with a proposal model `v_mod`. The result is a new set of trained parameters `params` for the variational model, the history of ELBO estimates `elbows`, and the call sites `calls` produced by the gradient estimator computation.

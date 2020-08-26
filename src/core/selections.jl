@@ -1,16 +1,28 @@
 const Target = AddressMap{<:Union{Empty, Select}}
 
+function (t::Target)(am::A) where A <: AddressMap
+    d = Dict()
+    for (k, v) in shallow_iterator(am)
+        if haskey(t, k)
+            d[k] = get_value(v)
+        else
+            t(d, get_sub(v))
+        end
+    end
+    d
+end
+
 @inline function Base.in(addr, tg::Target)
     get_sub(tg, addr) === SelectAll()
 end
 
-Base.getindex(tg::AddressMap{S}, addr) where S <: Select = get_sub(tg, addr)
-get_sub(tg::Target, addr) = get_sub(tg, addr)
-Base.merge(::SelectAll, ::Target) = SelectAll()
-Base.merge(::Target, ::SelectAll) = SelectAll()
-Base.merge(::SelectAll, ::SelectAll) = SelectAll()
-Base.merge(::SelectAll, ::Empty) = SelectAll()
-Base.merge(::Empty, ::SelectAll) = SelectAll()
+@inline Base.getindex(tg::AddressMap{S}, addr) where S <: Select = get_sub(tg, addr)
+@inline get_sub(tg::Target, addr) = get_sub(tg, addr)
+@inline Base.merge(::SelectAll, ::Target) = SelectAll()
+@inline Base.merge(::Target, ::SelectAll) = SelectAll()
+@inline Base.merge(::SelectAll, ::SelectAll) = SelectAll()
+@inline Base.merge(::SelectAll, ::Empty) = SelectAll()
+@inline Base.merge(::Empty, ::SelectAll) = SelectAll()
 
 const DynamicTarget = DynamicMap{Select}
 
@@ -53,4 +65,9 @@ function target(k::Tuple)
     tg = DynamicTarget()
     push!(tg, k)
     tg
+end
+
+function flatten(t::Target)
+    addrs, chd, _ = collect(t)
+    addrs, Float64[], chd
 end

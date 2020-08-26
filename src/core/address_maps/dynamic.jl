@@ -30,10 +30,16 @@ end
 # This is a fallback for subtypes of DynamicMap.
 @inline has_sub(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr)
 
-function set_sub!(dm::DynamicMap{K}, addr::A, v::AddressMap{<:K}) where {K, A <: Address}
+function set_sub!(dm::DynamicMap{K}, addr::A, v::AddressMap{<: K}) where {K, A <: Address}
     delete!(dm.tree, addr)
     if !isempty(v)
         dm.tree[addr] = v
+    end
+end
+function set_sub!(dm::DynamicMap{K}, addr::A, v::V) where {K, V, A <: Address}
+    delete!(dm.tree, addr)
+    if !isempty(v)
+        dm.tree[addr] = convert(K, v)
     end
 end
 @inline set_sub!(dm::DynamicMap{K}, addr::Tuple{A}, v::AddressMap{<: K}) where {A <: Address, K} = set_sub!(dm, addr[1], v)
@@ -80,13 +86,26 @@ merge(::Empty, dm::DynamicMap) = deepcopy(dm), false
 
 function merge!(sel1::DynamicMap{K},
                 sel2::DynamicMap{K}) where K
+    inter = intersect(keys(sel1.tree), keys(sel2.tree))
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         set_sub!(sel1, k, get_sub(sel2, k))
     end
-    inter = intersect(keys(sel1.tree), keys(sel2.tree))
     for k in inter
+        merge!(get_sub(sel1, k), get_sub(sel2, k))
+    end
+    !isempty(inter)
+end
+
+function merge!(sel1::DynamicMap{T},
+                sel2::DynamicMap{K}) where {T, K}
+    inter = intersect(keys(sel1.tree), keys(sel2.tree))
+    for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         set_sub!(sel1, k, get_sub(sel2, k))
     end
+    for k in inter
+        merge!(get_sub(sel1, k), get_sub(sel2, k))
+    end
+    !isempty(inter)
 end
 merge!(dm::DynamicMap, ::Empty) = Empty(), false
 merge!(::Empty, dm::DynamicMap) = dm, false
@@ -110,4 +129,40 @@ function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
         set_sub!(tg, k, Value(v))
     end
     tg
+end
+
+# Filter.
+function filter(fn, dm::DynamicMap{K}) where K
+    new = DynamicMap{K}()
+    for (k, v) in shallow_iterator(dm)
+        if fn((k, ))
+            set_sub!(new, k, v)
+        else
+            ret = filter(fn, (k, ), v)
+            !isempty(ret) && set_sub!(new, k, filter(fn, (k, ), v))
+        end
+    end
+    new
+end
+
+function filter(fn, par, dm::DynamicMap{K}) where K
+    new = DynamicMap{K}()
+    for (k, v) in shallow_iterator(dm)
+        if fn((par..., k))
+            set_sub!(new, k, v)
+        else
+            ret = filter(fn, (par..., k), v)
+            !isempty(ret) && set_sub!(new, k, filter(fn, (par..., k), v))
+        end
+    end
+    new
+end
+
+# Select.
+function select(dm::DynamicMap{K}) where K
+    new = DynamicTarget()
+    for (k, v) in shallow_iterator(dm)
+        set_sub!(new, k, select(v))
+    end
+    new
 end

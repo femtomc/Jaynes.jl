@@ -15,15 +15,35 @@ struct Value{K} <: Leaf{Value}
     val::K
 end
 
-struct Choice{K} <: Leaf{Choice}
-    score::Float64
+struct Choice{S, K} <: Leaf{Choice}
+    score::S
     val::K
 end
 
 @inline convert(::Type{Value}, c::Choice) = Value(get_value(c))
+@inline convert(::Type{Choice}, c::Value) = Choice(missing, get_value(c))
+
+@inline length(e::Empty) = 0
+@inline length(v::Value) = 1
+@inline length(c::Choice) = 1
+
+@inline value_length(e::Empty) = 0
+@inline value_length(v::Value{K}) where K = length(get_value(v))
+@inline value_length(c::Choice{K}) where K = length(get_value(v))
+
+@inline ndims(e::Empty) = 0
+@inline ndims(v::Value{K}) where K = ndims(get_value(v))
+@inline ndims(v::Choice{K}) where K = ndims(get_value(v))
 
 @inline projection(c::Choice, tg::Empty) = 0.0
 @inline projection(c::Choice, tg::SelectAll) = c.score
+
+@inline filter(fn, l::Leaf) = Empty()
+@inline filter(fn, addr, l::Leaf) = Empty()
+
+@inline select(c::Select) = c
+@inline select(c::Value) = SelectAll()
+@inline select(c::Choice) = SelectAll()
 
 @inline get_score(c::Choice) = c.score
 
@@ -68,6 +88,7 @@ end
 @inline has_value(am::AddressMap, addr) = has_value(get_sub(am, addr))
 @inline has_value(am::AddressMap) = false
 
+@inline get_value(v::Empty) = missing
 @inline get_value(v::Value) = v.val
 @inline get_value(v::Choice) = v.val
 @inline has_value(v::Value) = true
@@ -86,18 +107,47 @@ function Base.:(==)(a::AddressMap, b::AddressMap)
     return true
 end
 
+function Base.length(a::AddressMap)
+    l = 0
+    for (_, sub) in shallow_iterator(a)
+        l += length(sub)
+    end
+    l
+end
+
+function value_length(a::AddressMap)
+    l = 0
+    for (_, sub) in shallow_iterator(a)
+        l += value_length(sub)
+    end
+    l
+end
+
+function Base.ndims(a::AddressMap)
+    l = 0
+    for (_, sub) in shallow_iterator(a)
+        l += ndims(sub)
+    end
+    l
+end
+
 @inline Base.merge(am::AddressMap, ::Empty) = deepcopy(am), false
 @inline Base.merge(::Empty, am::AddressMap) = deepcopy(am), false
 @inline Base.merge(l::Leaf, ::Empty) = deepcopy(l), false
 @inline Base.merge(::Empty, l::Leaf) = deepcopy(l), false
 @inline Base.merge(c::Choice, v::Value) = deepcopy(c), true
 @inline Base.merge(v::Value, c::Choice) = Value(get_value(c)), true
-@inline Base.merge!(am::AddressMap, ::Empty) = am, false
-@inline Base.merge!(::Empty, am::AddressMap) = am, false
-@inline Base.merge!(l::Leaf, ::Empty) = l, false
-@inline Base.merge!(::Empty, l::Leaf) = l, false
-@inline Base.merge!(c::Choice, v::Value) = v, true
-@inline Base.merge!(v::Value, c::Choice) = Value(get_value(c)), true
+@inline Base.merge!(am::AddressMap, ::Empty) = false
+@inline Base.merge!(l::Leaf, ::Empty) = false
+@inline function Base.merge!(c::Choice, v::Value)
+    c.value = get_value(v)
+    c.score = missing
+    true
+end
+@inline function Base.merge!(v::Value, c::Choice)
+    v.val = get_value(c)
+    true
+end
 
 function collect!(par::T, addrs::Vector, chd::Dict, v::V, meta) where {T <: Tuple, V <: Leaf{Choice}}
     push!(addrs, par)
@@ -113,11 +163,11 @@ function collect!(par::T, addrs::Vector, chd::Dict, v::SelectAll, meta) where T 
     push!(addrs, par)
 end
 
-function collect(tr::M) where M <: AddressMap
+function collect(am::M) where M <: AddressMap
     addrs = Any[]
     chd = Dict()
     meta = Dict()
-    collect!(addrs, chd, tr, meta)
+    collect!(addrs, chd, am, meta)
     return addrs, chd, meta
 end
 
@@ -127,12 +177,18 @@ function iterate(fn, am::M) where M <: AddressMap
     end
 end
 
-function Base.display(tr::D; 
+function flatten(am::M) where M <: AddressMap
+    addrs, chd, _ = collect(am)
+    arr = array(am, Float64)
+    addrs, arr, chd
+end
+
+function Base.display(am::M; 
                       show_values = true, 
-                      show_types = false) where D <: AddressMap
+                      show_types = false) where M <: AddressMap
     println(" ___________________________________\n")
     println("             Address Map\n")
-    addrs, chd, meta = collect(tr)
+    addrs, chd, meta = collect(am)
     if show_values
         for a in addrs
             if haskey(meta, a) && haskey(chd, a)
@@ -175,4 +231,5 @@ end
 
 include("address_maps/dynamic.jl")
 include("address_maps/vector.jl")
+include("address_maps/conditional.jl")
 include("array_compat.jl")

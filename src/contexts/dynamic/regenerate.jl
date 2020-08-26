@@ -4,21 +4,24 @@
                                           addr::T, 
                                           d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
-    in_prev_chm = haskey(get_trace(ctx.prev), addr)
+    in_prev_chm = has_value(get_trace(ctx.prev), addr)
     in_sel = haskey(ctx.target, addr)
+    
     if in_prev_chm
         prev = get_sub(get_trace(ctx.prev), addr)
-        if in_sel
-            ret = rand(d)
-            set_sub!(ctx.discard, addr, prev)
-        else
-            ret = prev.val
-        end
     end
+    
+    if in_sel && in_prev_chm
+        ret = rand(d)
+        set_sub!(ctx.discard, addr, prev)
+    elseif in_prev_chm
+        ret = prev.val
+    else
+        ret = rand(d)
+    end
+
     score = logpdf(d, ret)
-    if in_prev_chm && in_sel
-        increment!(ctx, score - prev.score)
-    end
+    in_prev_chm && increment!(ctx, score - get_score(prev))
     add_choice!(ctx, addr, score, ret)
     return ret
 end
@@ -47,13 +50,13 @@ end
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)
-    if haskey(get_trace(ctx.prev), addr)
+    if has_sub(get_trace(ctx.prev), addr)
         prev_call = get_prev(ctx, addr)
-        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, args...)
+        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, UndefinedChange(), args...)
     else
         ret, cl, w = generate(ss, ps, call, args...)
     end
-    add_call!(ctx.tr, addr, cl)
+    add_call!(ctx, addr, cl)
     increment!(ctx, w)
     return ret
 end
@@ -61,7 +64,7 @@ end
 # ------------ Utilities ------------ #
 
 function regenerate_projection_walk(tr::DynamicTrace,
-                                visited::Visitor)
+                                    visited::Visitor)
     weight = 0.0
     for (k, v) in shallow_iterator(tr)
         if !(k in visited)
@@ -72,8 +75,8 @@ function regenerate_projection_walk(tr::DynamicTrace,
 end
 
 function regenerate_discard_walk!(d::DynamicDiscard,
-                              visited::Visitor,
-                              prev::DynamicTrace)
+                                  visited::Visitor,
+                                  prev::DynamicTrace)
     for (k, v) in shallow_iterator(prev)
         if !(k in visited)
             ss = get_sub(visited, k)

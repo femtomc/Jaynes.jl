@@ -6,7 +6,7 @@
     visit!(ctx, addr)
     s = rand(d)
     score = logpdf(d, s)
-    add_choice!(ctx, addr, score, s)
+    add_value!(ctx, addr, score, s)
     return s
 end
 
@@ -33,28 +33,28 @@ end
                                        args...) where T <: Address
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
-    ret, cl, w = propose(ps, call, args...)
-    add_call!(ctx, addr, cl)
+    ret, submap, w = propose(ps, call, args...)
+    set_sub!(ctx.map, addr, submap)
     return ret
 end
 
 # ------------ Convenience ------------ #
 
 function propose(fn::Function, args...)
-    ctx = Propose(DynamicTrace())
+    ctx = Propose(DynamicMap{Value}())
     ret = ctx(fn, args...)
-    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
+    return ret, ctx.map, ctx.score
 end
 
 function propose(params, fn::Function, args...)
-    ctx = Propose(DynamicTrace(), params)
+    ctx = Propose(DynamicMap{Value}(), params)
     ret = ctx(fn, args...)
-    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.score
+    return ret, ctx.map, ctx.score
 end
 
 function propose(fn::typeof(rand), d::Distribution{K}) where K
     ctx = Propose()
     addr = gensym()
     ret = ctx(fn, addr, d)
-    return ret, get_sub(ctx.tr, addr), ctx.score
+    return ret, get_sub(ctx.map, addr), ctx.score
 end
