@@ -1,9 +1,9 @@
-function maximum_a_posteriori(tg::T, 
-                              distance,
-                              cl::C; 
-                              max_ss = 1.0,
-                              min_ss = 1e-16,
-                              τ = 0.999) where {T <: Target, C <: CallSite}
+function maximum_a_posteriori_estimation(tg::T, 
+                                         distance,
+                                         cl::C; 
+                                         max_ss = 1.0,
+                                         min_ss = 1e-16,
+                                         τ = 0.999) where {T <: Target, C <: CallSite}
     step_size = max_ss
     while step_size > min_ss
         _, am, gs = get_choice_gradients(tg, cl, 1.0)

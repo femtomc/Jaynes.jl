@@ -9,6 +9,7 @@ end
 
 map(fn::Function, ps::Particles) = map(fn, ps.calls)
 
+include("inference/mle.jl")
 include("inference/map.jl")
 include("inference/is.jl")
 include("inference/mh.jl")
@@ -19,7 +20,8 @@ include("inference/ex.jl")
 include("inference/pf.jl")
 include("inference/vi.jl")
 
-const maxap = maximum_a_posteriori
+const mle = maximum_likelihood_estimation
+const maxap = maximum_a_posteriori_estimation
 const is = importance_sampling
 const mh = metropolis_hastings
 const hmc = hamiltonian_monte_carlo

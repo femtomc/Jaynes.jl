@@ -140,7 +140,8 @@ export anywhere, intersection, union
 export compare, update_learnables, merge!, merge
 
 # Inference.
-export maximum_a_posteriori, maxap
+export maximum_likelihood_estimation, mle
+export maximum_a_posteriori_estimation, maxap
 export importance_sampling, is
 export metropolis_hastings, mh
 export hamiltonian_monte_carlo, hmc

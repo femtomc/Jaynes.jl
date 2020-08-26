@@ -9,6 +9,9 @@ struct DynamicCallSite{J, K} <: CallSite
     args::J
     ret::K
 end
+
+@inline get_model(dcs::DynamicCallSite) = dcs.fn
+
 @inline isempty(dcs::DynamicCallSite) = false
 
 function projection(tr::DynamicTrace, tg::Target)

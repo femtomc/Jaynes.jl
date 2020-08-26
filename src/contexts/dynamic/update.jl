@@ -44,14 +44,14 @@ end
 
 @inline function (ctx::UpdateContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    has_top(ctx.params, addr) && return get_top(ctx.params, addr)
+    haskey(ctx.params, addr) && return getindex(ctx.params, addr)
     error("(learnable): parameter not provided at address $addr.")
 end
 
 # ------------ Fillable ------------ #
 
 @inline function (ctx::UpdateContext)(fn::typeof(fillable), addr::Address)
-    has_top(ctx.target, addr) && return get_top(ctx.target, addr)
+    has_sub(ctx.target, addr) && return get_sub(ctx.target, addr)
     error("(fillable): parameter not provided at address $addr.")
 end
 
