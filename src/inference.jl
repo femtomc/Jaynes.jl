@@ -9,21 +9,23 @@ end
 
 map(fn::Function, ps::Particles) = map(fn, ps.calls)
 
+include("inference/map.jl")
 include("inference/is.jl")
 include("inference/mh.jl")
+include("inference/hmc.jl")
 include("inference/es.jl")
 include("inference/pdmk.jl")
 include("inference/ex.jl")
-include("inference/hmc.jl")
 include("inference/pf.jl")
 include("inference/vi.jl")
 
+const maxap = maximum_a_posteriori
+const is = importance_sampling
 const mh = metropolis_hastings
 const hmc = hamiltonian_monte_carlo
 const es = elliptical_slice
 const pdmk = piecewise_deterministic_markov_kernel
 const ex = exchange
-const is = importance_sampling
 const advi = automatic_differentiation_variational_inference
 const adgv = automatic_differentiation_geometric_vimco
 

@@ -137,14 +137,14 @@ export anywhere, intersection, union
 export compare, update_learnables, merge!, merge
 
 # Inference.
+export maximum_a_posteriori, maxap
+export importance_sampling, is
 export metropolis_hastings, mh
-export elliptical_slice, es
 export hamiltonian_monte_carlo, hmc
+export elliptical_slice, es
 export piecewise_deterministic_markov_kernel, pdmk
 export exchange, ex
-export importance_sampling, is
 export initialize_filter, filter_step!, check_ess_resample!, resample!, get_lmle, pf
-export metropolis_hastings, mh
 export automatic_differentiation_variational_inference, advi
 export automatic_differentiation_geometric_vimco, adgv
 
