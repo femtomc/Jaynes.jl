@@ -25,6 +25,9 @@ export I
 @reexport using Zygote
 import Zygote.literal_getproperty
 
+# Distances.
+@reexport using Distances
+
 # Fix for: https://github.com/FluxML/Zygote.jl/issues/717
 Zygote.@adjoint function literal_getproperty(x, ::Val{f}) where f
     val = getproperty(x, f)

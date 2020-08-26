@@ -1,4 +1,5 @@
 function maximum_a_posteriori(tg::T, 
+                              distance,
                               cl::C; 
                               max_ss = 1.0,
                               min_ss = 1e-16,
@@ -13,9 +14,10 @@ function maximum_a_posteriori(tg::T,
         new_map = target(am, new)
         _, new_cl, _ = update(new_map, cl)
         if get_score(new_cl) - score >= 0 
-            return (new_cl, true)
+            δ = evaluate(distance, new, vals)
+            return (δ, new_cl, true)
         end
         step_size = τ * step_size
     end
-    return (cl, false)
+    return (0.0, cl, false)
 end
