@@ -1,7 +1,7 @@
 name = "Jaynes"
 uuid = "a2015381-cef8-4fe1-827c-95a77dd17ccf"
 authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
-version = "0.1.21"
+version = "0.1.22"
 
 [deps]
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
@@ -17,6 +17,7 @@ ZigZagBoomerang = "36347407-b186-4a6a-8c98-4f4567861712"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
+Distances = "0.9"
 Distributions = "0.23"
 DistributionsAD = "0.6"
 Flux = "0.11"
