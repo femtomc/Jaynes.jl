@@ -39,7 +39,8 @@ function importance_sampling(observations::K,
         ret, pmap, pw = propose(proposal, proposal_args...)
         overlapped = Jaynes.merge!(pmap, observations)
         overlapped && error("(importance_sampling, merge!): proposal produced a selection which overlapped with observations.")
-        _, calls[i], lws[i] = generate(pmap, model, args...)
+        _, calls[i], gw = generate(pmap, model, args...)
+        lws[i] = gw - pw
     end
     ltw = lse(lws)
     lnw = lws .- ltw
@@ -59,7 +60,8 @@ function importance_sampling(observations::K,
         ret, pmap, pw = propose(proposal, proposal_args...)
         overlapped = merge!(pmap, observations)
         overlapped && error("(importance_sampling, merge!): proposal produced a selection which overlapped with observations.")
-        _, calls[i], lws[i] = generate(pmap, ps, model, args...)
+        _, calls[i], gw = generate(pmap, ps, model, args...)
+        lws[i] = gw - pw
     end
     ltw = lse(lws)
     lnw = lws .- ltw
@@ -79,7 +81,8 @@ function importance_sampling(observations::K,
         ret, pmap, pw = propose(pps, proposal, proposal_args...)
         overlapped = merge!(pmap, observations)
         overlapped && error("(importance_sampling, merge!): proposal produced a selection which overlapped with observations.")
-        _, calls[i], lws[i] = generate(pmap, model, args...)
+        _, calls[i], gw = generate(pmap, model, args...)
+        lws[i] = gw - pw
     end
     ltw = lse(lws)
     lnw = lws .- ltw
@@ -100,7 +103,8 @@ function importance_sampling(observations::K,
         ret, pmap, pw = propose(pps, proposal, proposal_args...)
         overlapped = merge!(pmap, observations)
         overlapped && error("(importance_sampling, merge!): proposal produced a selection which overlapped with observations.")
-        _, calls[i], lws[i] = generate(pmap, ps, model, args...)
+        _, calls[i], gw = generate(pmap, ps, model, args...)
+        lws[i] = gw - pw
     end
     ltw = lse(lws)
     lnw = lws .- ltw
