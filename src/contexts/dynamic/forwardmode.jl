@@ -26,32 +26,24 @@ end
 
 # ------------ Call sites ------------ #
 
-# TODO.
-#@inline function (ctx::ForwardModeContext)(c::typeof(rand),
-#                                           addr::A,
-#                                           call::Function,
-#                                           args...) where A <: Address
-#    visit!(ctx, addr)
-#    ps = get_sub(ctx.params, addr)
-#    ss = get_sub(ctx.target, addr)
-#    ret, w = score(ss, ps, call, args...) 
-#    increment!(ctx, w)
-#    return ret
-#end
+@inline function (ctx::ForwardModeContext)(c::typeof(rand),
+                                           addr::A,
+                                           call::Function,
+                                           args...) where A <: Address
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ret, w = forward(ctx.target[2 : end], ps, get_sub(ctx.map, addr), Dual(1.0, 0.0))
+    ctx.weight += w
+    return ret
+end
 
 # ------------ Convenience ------------ #
 
 function get_target_gradient(addr::T, cl::DynamicCallSite) where T <: Tuple
-    arr = array(cl, Float64)
     fn = seed -> begin
-        ctx = ForwardMode(addr, cl, seed)
-        ret = ctx(cl.fn, cl.args...)
-        ctx.weight
+        ret, w = forward(addr, Empty(), cl, seed)
+        w
     end
-    grad = gradient(1.0) do x
-        Zygote.forwarddiff(x) do x
-            fn(x)
-        end
-    end
-    grad
+    d = fn(Dual(1.0, 0.0))
+    cl[addr], d.partials.values[1]
 end

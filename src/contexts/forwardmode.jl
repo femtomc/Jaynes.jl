@@ -19,8 +19,14 @@ function ForwardMode(addr, params, cl, weight)
     ForwardModeContext(addr, cl, weight, Visitor(), params)
 end
 
+function forward(addr, params, cl, seed)
+    ctx = ForwardMode(addr, params, cl, seed)
+    ret = ctx(cl.fn, cl.args...)
+    ret, ctx.weight
+end
+
 @inline function context_getindex(ctx, am, addr)
-    if addr == ctx.target[1]
+    if (addr, ) == ctx.target
         Zygote.ForwardDiff.Dual(getindex(am, addr), 1.0)
     else
         getindex(am, addr)

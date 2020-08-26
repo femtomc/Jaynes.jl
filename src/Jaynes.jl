@@ -23,7 +23,8 @@ export I
 
 # Differentiable.
 @reexport using Zygote
-using Zygote.Forward: @tangent
+using ForwardDiff
+using ForwardDiff: Dual
 import Zygote.literal_getproperty
 
 # Distances.
