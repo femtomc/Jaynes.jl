@@ -123,8 +123,8 @@ export Update, update
 export Propose, propose
 export Regenerate, regenerate
 export Score, score
-export Backpropagate, get_learnable_gradients, get_choice_gradients, train
-export ForwardMode, get_target_gradient
+export Backpropagate, get_learnable_gradients, get_choice_gradients
+export ForwardMode, get_learnable_gradient, get_choice_gradient
 
 # Tracer language features.
 export plate, markov, cond

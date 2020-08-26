@@ -13,7 +13,7 @@ end
 
 @inline function (ctx::ForwardModeContext)(fn::typeof(learnable), addr::Address)
     visit!(ctx, addr)
-    haskey(ctx.params, addr) && return getindex(ctx.params, addr)
+    haskey(ctx.params, addr) && return context_getindex(ctx, ctx.params, addr)
     error("Parameter not provided at address $addr.")
 end
 
@@ -39,11 +39,29 @@ end
 
 # ------------ Convenience ------------ #
 
-function get_target_gradient(addr::T, cl::DynamicCallSite) where T <: Tuple
+function get_choice_gradient(addr::T, cl::DynamicCallSite) where T <: Tuple
     fn = seed -> begin
         ret, w = forward(addr, Empty(), cl, seed)
         w
     end
     d = fn(Dual(1.0, 0.0))
     cl[addr], d.partials.values[1]
+end
+
+function get_choice_gradient(ps::P, addr::T, cl::DynamicCallSite) where {P <: AddressMap, T <: Tuple}
+    fn = seed -> begin
+        ret, w = forward(addr, ps, cl, seed)
+        w
+    end
+    d = fn(Dual(1.0, 0.0))
+    cl[addr], d.partials.values[1]
+end
+
+function get_learnable_gradient(ps::P, addr::T, cl::DynamicCallSite) where {P <: AddressMap, T <: Tuple}
+    fn = seed -> begin
+        ret, w = forward(addr, ps, cl, seed)
+        w
+    end
+    d = fn(Dual(1.0, 0.0))
+    ps[addr], d.partials.values[1]
 end
