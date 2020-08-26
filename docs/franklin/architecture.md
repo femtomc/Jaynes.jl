@@ -137,7 +137,7 @@ Importance sampling works as follows: you have a distribution $P(x)$ which is ha
 
 If this is true, you can compute expectations with respect to $P(x)$ by sampling from $Q(x)$ and then correcting for the fact that you're not sampling from $P(x)$.
 
-In the code, here you sample from $P(x)$ with the call to `propose` - this produces a proposal `CallSite` (here, `pmap`) and the score of the proposal sample with respect to its own prior. Then, we merge the `pmap` into the set of observations using `merge!` - this simultaneously produces a new `AddressMap` (which will constrain addresses in any call) and checks if there is overlap. **If there is overlap, it is a support error**. Finally, we call `generate` with the new `AddressMap` and compute the importance weight `gw - pw` to store in the collection of log weights.
+In the code, here you sample from $P(x)$ with the call to `propose` - this produces a proposal `CallSite` (here, `pmap`) and the score of the proposal sample with respect to its own prior. Then, we merge the `pmap` into the set of observations using `merge!` - this simultaneously produces a new `AddressMap` (which will constrain addresses in any call) and checks if there is overlap. If there is overlap, it is a support error - so this is checked for. Finally, we call `generate` with the new `AddressMap` and compute the importance weight `gw - pw` to store in the collection of log weights.
 
 Now, it becomes simple to apply importance sampling inference - because it has been built from the interface calls to execution contexts.
 
