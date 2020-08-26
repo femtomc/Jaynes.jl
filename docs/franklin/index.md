@@ -3,6 +3,19 @@
 
 **Jaynes.jl** (Jaynes) is a probabilistic programming framework based on a compiler interception version of [the generative function interface of Gen.jl](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1)[^1].
 
+Currently supported inference algorithms (and MCMC kernels):
+
+* [MAP optimization (for `learnable` parameters and `Choice` sites)](library_api/inference/map)
+* [Importance sampling (with and without custom proposals)](library_api/inference/is)
+* [Metropolis-Hastings (with and without custom proposals)](library_api/inference/mh)
+* [Hamiltonian Monte Carlo (with and without custom proposals)](library_api/inference/hmc)
+* [Particle filtering (with and without custom proposals)](library_api/inference/pf)
+* [Variational inference (with and without baselines)](library_api/inference/vi)
+
+Integration with deep networks provided by an interface to [Flux.jl](https://github.com/FluxML/Flux.jl):
+
+* [Neural variational inference (with and without baselines)](library_api/inference/nvi)
+
 > This package is in open alpha. Expect some bumps, especially as [new compiler interfaces](https://github.com/Keno/Compiler3.jl) stabilize in Julia `VERSION` > 1.6.
 
 ---
@@ -11,10 +24,9 @@ Jaynes emphasizes _ease-of-use_, _interoperability_, and _scalability_.
 
 * _Ease-of-use_ means that new users should be able to quickly understand how to create probabilistic programs, as well as understand how to utilize the inference library to accomplish their tasks. This also means that Jaynes provides extension interfaces to highly optimized inference packages (like [AdvancedHMC.jl](https://github.com/TuringLang/AdvancedHMC.jl)) for models out of the box.
 
-* _Interoperability_ means that Jaynes plays nicely across the probabilistic programming ecosystem. If you are familiar with [Gen.jl](https://www.gen.dev/), [Turing.jl](https://turing.ml/dev/), [Soss.jl](https://github.com/cscherrer/Soss.jl), even [Pyro](https://pyro.ai/)[^2] - Jaynes provides a set of interfaces (the _foreign model interface_) for utilizing models in these other systems. Other systems can be integrated rapidly - by writing an extension module.
+* _Interoperability_ means that Jaynes plays nicely across the probabilistic programming ecosystem. If you are familiar with [Gen.jl](https://www.gen.dev/), [Turing.jl](https://turing.ml/dev/), [Soss.jl](https://github.com/cscherrer/Soss.jl), even [Pyro](https://pyro.ai/)[^2] - Jaynes provides a set of interfaces (the _foreign model interface_) for utilizing models in these other systems. Other systems can be integrated rapidly by writing an extension module which tells Jaynes how to handle calls to a system.
 
-* _Scalability_ means that models and inference programs expressed using Jaynes can be optimized as you grow into the framework. This goal manifests itself in a few ways: specialized call site representations, a suite of compiler tools for use in constructing specialized inference algorithms, and [programmable inference](https://people.csail.mit.edu/rinard/paper/pldi18.pdf)[^3].
-
+* _Scalability_ means that models and inference programs expressed using Jaynes can be optimized as you grow into the framework. This goal manifests itself in a few ways: specialized call site representations, a suite of compiler tools for use in constructing specialized inference algorithms, [programmable inference](https://people.csail.mit.edu/rinard/paper/pldi18.pdf)[^3] and support for integrating data-driven neural components in your probabilistic programs.
 
 ---
 

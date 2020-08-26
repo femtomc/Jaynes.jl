@@ -97,21 +97,42 @@ Checks the effective sample size using `ess`, then resamples from an existing in
 @doc(
 """
 ```julia
-call, accepted, metropolis_hastings(sel::UnconstrainedSelection,
-                                    call::HierarchicalCallSite)
+call, accepted = metropolis_hastings(sel::Target,
+                                     call::CallSite)
 ```
 
 Perform a Metropolis-Hastings step by proposing new choices using the prior at addressed specified by `sel`. Returns a call site, as well as a Boolean value `accepted` to indicate if the proposal was accepted or rejected.
 
 ```julia
-call, accepted = metropolis_hastings(sel::UnconstrainedSelection,
-                                     call::HierarchicalCallSite,
+call, accepted = metropolis_hastings(sel::Target,
+                                     call::CallSite,
                                      proposal::Function,
                                      proposal_args::Tuple)
 ```
 
 Perform a Metropolis-Hastings step by proposing new choices using a custom proposal at addressed specified by `sel`. Returns a call site, as well as a Boolean value `accepted` to indicate if the proposal was accepted or rejected.
 """, metropolis_hastings)
+
+# ------------ Documentation (HMC) ------------ #
+
+@doc(
+"""
+```julia
+call, accepted = metropolis_hastings(sel::Target, call::CallSite; L = 10, eps = 0.1)
+call, accepted = metropolis_hastings(sel::Target, ps::AddressMap, call::CallSite,; L = 10, eps = 0.1)
+```
+
+Perform a Hamiltonian Monte Carlo step with number of leap frog steps `L` and gradient scale `eps`.
+
+This is specified by the following proposal:
+
+1. First, compute gradients of the unnormalized logpdf with respect to choices targeted by `sel`.
+2. Then, perform `L` numerical Leapfrog integration steps, updating the values at `sel`.
+3. Compute the likelihood ratio `alpha` between the new set of choices and momentum and the old set of choices and momentum.
+4. Accept or reject with `log(rand()) < alpha`.
+
+Reference: [A conceptual introduction to Hamiltonian Monte Carlo](https://arxiv.org/pdf/1701.02434.pdf)
+""", hamiltonian_monte_carlo)
 
 
 # ------------ Documentation (VI) ------------ #

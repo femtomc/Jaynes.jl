@@ -15,12 +15,13 @@ struct Value{K} <: Leaf{Value}
     val::K
 end
 
-struct Choice{S <: AbstractFloat, K} <: Leaf{Choice}
+struct Choice{S, K} <: Leaf{Choice}
     score::S
     val::K
 end
 
 @inline convert(::Type{Value}, c::Choice) = Value(get_value(c))
+@inline convert(::Type{Choice}, c::Value) = Choice(missing, get_value(c))
 
 @inline length(e::Empty) = 0
 @inline length(v::Value) = 1
@@ -136,12 +137,17 @@ end
 @inline Base.merge(::Empty, l::Leaf) = deepcopy(l), false
 @inline Base.merge(c::Choice, v::Value) = deepcopy(c), true
 @inline Base.merge(v::Value, c::Choice) = Value(get_value(c)), true
-@inline Base.merge!(am::AddressMap, ::Empty) = am, false
-@inline Base.merge!(::Empty, am::AddressMap) = am, false
-@inline Base.merge!(l::Leaf, ::Empty) = l, false
-@inline Base.merge!(::Empty, l::Leaf) = l, false
-@inline Base.merge!(c::Choice, v::Value) = v, true
-@inline Base.merge!(v::Value, c::Choice) = Value(get_value(c)), true
+@inline Base.merge!(am::AddressMap, ::Empty) = false
+@inline Base.merge!(l::Leaf, ::Empty) = false
+@inline function Base.merge!(c::Choice, v::Value)
+    c.value = get_value(v)
+    c.score = missing
+    true
+end
+@inline function Base.merge!(v::Value, c::Choice)
+    v.val = get_value(c)
+    true
+end
 
 function collect!(par::T, addrs::Vector, chd::Dict, v::V, meta) where {T <: Tuple, V <: Leaf{Choice}}
     push!(addrs, par)

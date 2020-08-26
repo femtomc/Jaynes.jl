@@ -1,5 +1,5 @@
 macro load_flux_fmi()
-    @info "Loading differentiable compatibility to \u001b[3m\u001b[34;1mFlux.jl\u001b[0m\n\n          \u001b[34;1mhttps://github.com/FluxML/Flux.jl\n "
+    @info "Loading differentiable compatibility interface to \u001b[3m\u001b[34;1mFlux.jl\u001b[0m\n\n          \u001b[34;1mhttps://github.com/FluxML/Flux.jl\n "
 
     expr = quote
 
@@ -120,8 +120,8 @@ macro load_flux_fmi()
                                                           opt = ADAM(),
                                                           scale = 1.0) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
             _, cl = simulate(ps, v_mod, v_args...)
-            obs, _ = merge(cl, tg)
-            _, mlw = score(obs, ps, mod, args...)
+            merge!(cl, tg) && error("(one_shot_neural_gradient_estimator_step!): variational model proposes to addresses in observations.")
+            _, mlw = score(cl, ps, mod, args...)
             lw = mlw - get_score(cl)
             _, model_grads = get_deep_gradients!(ps, cl, 1.0; opt = opt, scaler = lw * scale)
             return model_grads, lw, cl
@@ -215,40 +215,40 @@ macro load_flux_fmi()
 
         const nvi! = neural_variational_inference!
 
-        function multi_shot_neural_gradient_estimator_step!(tg::K,
-                                                            ps::P,
-                                                            v_mod::Function,
-                                                            v_args::Tuple,
-                                                            mod::Function,
-                                                            args::Tuple;
-                                                            opt = ADAM(),
-                                                            num_samples::Int = 100,
-                                                            scale = 1.0) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
-            cs = Vector{Jaynes.CallSite}(undef, num_samples)
-            lws = Vector{Float64}(undef, num_samples)
-            Threads.@threads for i in 1:num_samples
+        function vimco_neural_gradient_estimator_step!(tg::K,
+                                                       ps::P,
+                                                       v_mod::Function,
+                                                       v_args::Tuple,
+                                                       mod::Function,
+                                                       args::Tuple;
+                                                       opt = ADAM(),
+                                                       est_samples::Int = 100,
+                                                       scale = 1.0) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
+            cs = Vector{Jaynes.CallSite}(undef, est_samples)
+            lws = Vector{Float64}(undef, est_samples)
+            Threads.@threads for i in 1:est_samples
                 _, cs[i] = simulate(ps, v_mod, v_args...)
-                obs, _ = merge(cs[i], tg)
-                ret, mlw = score(obs, ps, mod, args...)
+                merge!(cs[i], tg) && error("(vimco_gradient_estimator): variational model proposes to addresses in observations.")
+                ret, mlw = score(cs[i], ps, mod, args...)
                 lws[i] = mlw - get_score(cs[i])
             end
             ltw = Jaynes.lse(lws)
-            L = ltw - log(num_samples)
+            L = ltw - log(est_samples)
             nw = exp.(lws .- ltw)
             gs_est = IdDict()
             bs = Jaynes.geometric_base(lws)
-            Threads.@threads for i in 1 : num_samples
+            Threads.@threads for i in 1 : est_samples
                 ls = L - nw[i] - bs[i]
                 accumulate!(gs_est, get_deep_gradients!(ps, cs[i], 1.0; opt = opt, scaler = ls * scale)[2])
             end
             return gs_est, L, cs, nw
         end
 
-        const msnges! = multi_shot_neural_gradient_estimator_step!
+        const vimges! = vimco_neural_gradient_estimator_step!
 
         function neural_geometric_vimco!(tg::K,
                                          ps::P,
-                                         num_samples::Int,
+                                         est_samples::Int,
                                          v_mod::Function,
                                          v_args::Tuple,
                                          mod::Function,
@@ -262,10 +262,10 @@ macro load_flux_fmi()
                 velbo_est = 0.0
                 gs_est = IdDict()
                 for s in 1 : gs_samples
-                    gs, L, cs, nw = msnges!(tg, ps, 
+                    gs, L, cs, nw = vimges!(tg, ps, 
                                             v_mod, v_args, 
                                             mod, args; 
-                                            opt = opt, num_samples = num_samples, scale = 1.0 / gs_samples)
+                                            opt = opt, est_samples = est_samples, scale = 1.0 / gs_samples)
                     velbo_est += L / gs_samples
                     accumulate!(gs_est, gs)
                     cls[s] = cs[rand(Categorical(nw))]
@@ -277,7 +277,7 @@ macro load_flux_fmi()
         end
 
         function neural_geometric_vimco!(tg::K,
-                                         num_samples::Int,
+                                         est_samples::Int,
                                          v_mod::Function,
                                          v_args::Tuple,
                                          mod::Function,
@@ -287,7 +287,7 @@ macro load_flux_fmi()
                                          gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
             neural_geometric_vimco!(tg, 
                                     Jaynes.Empty(), 
-                                    num_samples, 
+                                    est_samples, 
                                     v_mod, 
                                     v_args, 
                                     mod, 

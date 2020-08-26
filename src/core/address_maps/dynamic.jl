@@ -30,10 +30,16 @@ end
 # This is a fallback for subtypes of DynamicMap.
 @inline has_sub(dm::DynamicMap, addr::A) where A <: Address = haskey(dm.tree, addr)
 
-function set_sub!(dm::DynamicMap{K}, addr::A, v::AddressMap{<:K}) where {K, A <: Address}
+function set_sub!(dm::DynamicMap{K}, addr::A, v::AddressMap{<: K}) where {K, A <: Address}
     delete!(dm.tree, addr)
     if !isempty(v)
         dm.tree[addr] = v
+    end
+end
+function set_sub!(dm::DynamicMap{K}, addr::A, v::V) where {K, V, A <: Address}
+    delete!(dm.tree, addr)
+    if !isempty(v)
+        dm.tree[addr] = convert(K, v)
     end
 end
 @inline set_sub!(dm::DynamicMap{K}, addr::Tuple{A}, v::AddressMap{<: K}) where {A <: Address, K} = set_sub!(dm, addr[1], v)
@@ -85,7 +91,19 @@ function merge!(sel1::DynamicMap{K},
         set_sub!(sel1, k, get_sub(sel2, k))
     end
     for k in inter
+        merge!(get_sub(sel1, k), get_sub(sel2, k))
+    end
+    !isempty(inter)
+end
+
+function merge!(sel1::DynamicMap{T},
+                sel2::DynamicMap{K}) where {T, K}
+    inter = intersect(keys(sel1.tree), keys(sel2.tree))
+    for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         set_sub!(sel1, k, get_sub(sel2, k))
+    end
+    for k in inter
+        merge!(get_sub(sel1, k), get_sub(sel2, k))
     end
     !isempty(inter)
 end
