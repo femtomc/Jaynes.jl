@@ -85,12 +85,12 @@ so this context records the random choice, as well as performs some bookkeeping 
 
 The programmer is not expected to interact with these contexts directly. Instead, the programmer can utilize a set of high-level function calls which construct the contexts, run a function call with some arguments in the context, and return useful information (usually, a return value, a bundled record of the call in a `CallSite` instance, and some other probabilistic metadata). These high-level calls match the same high-level calls in `Gen.jl`:
 
-* simulate
-* propose
-* generate
-* update
-* regenerate
-* score
+* `simulate`
+* `propose`
+* `generate`
+* `update`
+* `regenerate`
+* `score`
 
 (roughly, `Gen.jl` may change their interfaces, these may also change here - but the ideas behind these interfaces will remain the same)
 
@@ -138,3 +138,11 @@ Importance sampling works as follows: you have a distribution $P(x)$ which is ha
 If this is true, you can compute expectations with respect to $P(x)$ by sampling from $Q(x)$ and then correcting for the fact that you're not sampling from $P(x)$.
 
 In the code, here you sample from $P(x)$ with the call to `propose` - this produces a proposal `CallSite` (here, `pmap`) and the score of the proposal sample with respect to its own prior. Then, we merge the `pmap` into the set of observations using `merge!` - this simultaneously produces a new `AddressMap` (which will constrain addresses in any call) and checks if there is overlap. **If there is overlap, it is a support error**. Finally, we call `generate` with the new `AddressMap` and compute the importance weight `gw - pw` to store in the collection of log weights.
+
+Now, it becomes simple to apply importance sampling inference - because it has been built from the interface calls to execution contexts.
+
+```julia
+ps, lnw = importance_sampling(obs, n_samples, 
+                              some_model, (args..., ),
+                              proposal, (data, ))
+```
