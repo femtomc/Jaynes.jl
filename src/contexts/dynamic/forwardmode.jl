@@ -4,9 +4,9 @@
                                            addr::A, 
                                            d::Distribution{K}) where {A <: Address, K}
     visit!(ctx, addr)
-    val = Dual(getindex(ctx.target, addr), addr == ctx.addr[1] ? 1.0 : 0.0)
-    ctx.weight += logpdf(d, val)
-    return val
+    v = context_getindex(ctx, ctx.map, addr)
+    ctx.weight += logpdf(d, v)
+    v
 end
 
 # ------------ Learnable ------------ #
@@ -43,12 +43,15 @@ end
 
 function get_target_gradient(addr::T, cl::DynamicCallSite) where T <: Tuple
     arr = array(cl, Float64)
-    fn = arr -> begin
-        tg = target(get_trace(cl), arr)
-        ctx = ForwardMode(addr, tg)
+    fn = seed -> begin
+        ctx = ForwardMode(addr, cl, seed)
         ret = ctx(cl.fn, cl.args...)
         ctx.weight
     end
-    grad = ForwardDiff.gradient(fn, arr)
+    grad = gradient(1.0) do x
+        Zygote.forwarddiff(x) do x
+            fn(x)
+        end
+    end
     grad
 end
