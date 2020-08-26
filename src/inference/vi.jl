@@ -1,4 +1,4 @@
-function one_shot_gradient_estimator(sel::K,
+function one_shot_gradient_estimator(tg::K,
                                      ps::P,
                                      v_mod::Function,
                                      v_args::Tuple,
@@ -6,7 +6,7 @@ function one_shot_gradient_estimator(sel::K,
                                      args::Tuple;
                                      scale = 1.0) where {K <: AddressMap, P <: AddressMap}
     _, cl = simulate(ps, v_mod, v_args...)
-    obs, _ = merge(get_trace(cl), sel)
+    obs, _ = merge(cl, tg)
     _, mlw = score(obs, ps, mod, args...)
     lw = mlw - get_score(cl)
     _, gs = get_learnable_gradients(ps, cl, nothing, lw * scale)
@@ -15,7 +15,7 @@ end
 
 # ------------ Automatic differentiation variational inference ------------ #
 
-function automatic_differentiation_variational_inference(sel::K,
+function automatic_differentiation_variational_inference(tg::K,
                                                          ps::P,
                                                          v_mod::Function,
                                                          v_args::Tuple,
@@ -30,7 +30,7 @@ function automatic_differentiation_variational_inference(sel::K,
         elbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples
-            gs, lw, cl = one_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; scale = 1.0 / gs_samples)
+            gs, lw, cl = one_shot_gradient_estimator(tg, ps, v_mod, v_args, mod, args; scale = 1.0 / gs_samples)
             elbo_est += lw / gs_samples
             accumulate!(gs_est, gs)
             cls[s] = cl
@@ -59,7 +59,7 @@ function lde(x, y)
     m + log(exp(x - m) - exp(y - m))
 end
 
-function multi_shot_gradient_estimator(sel::K,
+function multi_shot_gradient_estimator(tg::K,
                                        ps::P,
                                        v_mod::Function,
                                        v_args::Tuple,
@@ -71,7 +71,7 @@ function multi_shot_gradient_estimator(sel::K,
     lws = Vector{Float64}(undef, num_samples)
     Threads.@threads for i in 1:num_samples
         _, cs[i] = simulate(ps, v_mod, v_args...)
-        obs, _ = merge(get_trace(cs[i]), sel)
+        obs, _ = merge(cs[i], tg)
         ret, mlw = score(obs, ps, mod, args...)
         lws[i] = mlw - get_score(cs[i])
     end
@@ -89,7 +89,7 @@ end
 
 # ------------  ADVI with geometric baseline ------------ #
 
-function automatic_differentiation_geometric_vimco(sel::K,
+function automatic_differentiation_geometric_vimco(tg::K,
                                                    ps::P,
                                                    num_samples::Int,
                                                    v_mod::Function,
@@ -105,7 +105,7 @@ function automatic_differentiation_geometric_vimco(sel::K,
         velbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples
-            gs, L, cs, nw = multi_shot_gradient_estimator(sel, ps, v_mod, v_args, mod, args; num_samples = num_samples, scale = 1.0 / gs_samples)
+            gs, L, cs, nw = multi_shot_gradient_estimator(tg, ps, v_mod, v_args, mod, args; num_samples = num_samples, scale = 1.0 / gs_samples)
             velbo_est += L / gs_samples
             accumulate!(gs_est, gs)
             cls[s] = cs[rand(Categorical(nw))]

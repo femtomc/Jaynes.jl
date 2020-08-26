@@ -1,7 +1,7 @@
 abstract type ExecutionContext end
 
 # These are "soft" interfaces, not all of these methods apply to every subtype of ExecutionContext.
-increment!(ctx::T, w::Float64) where T <: ExecutionContext = ctx.weight += w
+increment!(ctx::T, w::F) where {T <: ExecutionContext, F <: AbstractFloat} = ctx.weight += w
 
 visit!(ctx::T, addr) where T <: ExecutionContext = visit!(ctx.visited, addr)
 

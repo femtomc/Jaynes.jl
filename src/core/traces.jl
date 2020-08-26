@@ -24,25 +24,26 @@ factor(args...) = args
 
 abstract type CallSite <: AddressMap{Choice} end
 
-@inline has_value(cs::C, addr) where C <: CallSite = has_value(cs.trace, addr)
-@inline get_value(cs::C, addr) where C <: CallSite = get_value(get_sub(cs.trace, addr))
-@inline get_sub(cs::C, addr::A) where {C <: CallSite, A <: Address} = get_sub(cs.trace, addr)
-@inline get_sub(cs::C, addr::Tuple{}) where {C <: CallSite, A <: Address} = get_sub(cs.trace, addr)
-@inline get_sub(cs::C, addr::Tuple{A}) where {C <: CallSite, A <: Address} = get_sub(cs.trace, addr)
-@inline get_sub(cs::C, addr::Tuple) where C <: CallSite = get_sub(cs.trace, addr::Tuple)
+@inline get_trace(cs::C) where C <: CallSite = cs.trace
+@inline has_value(cs::C, addr) where C <: CallSite = has_value(get_trace(cs), addr)
+@inline get_value(cs::C, addr) where C <: CallSite = get_value(get_sub(get_trace(cs), addr))
+@inline get_sub(cs::C, addr::A) where {C <: CallSite, A <: Address} = get_sub(get_trace(cs), addr)
+@inline get_sub(cs::C, addr::Tuple{}) where {C <: CallSite, A <: Address} = get_sub(get_trace(cs), addr)
+@inline get_sub(cs::C, addr::Tuple{A}) where {C <: CallSite, A <: Address} = get_sub(get_trace(cs), addr)
+@inline get_sub(cs::C, addr::Tuple) where C <: CallSite = get_sub(get_trace(cs), addr::Tuple)
 @inline get_score(cs::C) where C <: CallSite = cs.score
 @inline get_ret(cs::C) where C <: CallSite = cs.ret
 @inline get_args(cs::C) where C <: CallSite = cs.args
-@inline get_trace(cs::C) where C <: CallSite = cs.trace
-@inline get_choices(cs::C) where C <: CallSite = get_choices(cs.trace)
-@inline has_sub(cs::C, addr::A) where {C <: CallSite, A <: Address} = has_sub(cs.trace, addr)
-@inline haskey(cs::C, addr::A) where {C <: CallSite, A <: Address} = haskey(cs.trace, addr)
-@inline getindex(cs::C, addrs...) where C <: CallSite = getindex(cs.trace, addrs...)
-@inline shallow_iterator(cs::C) where C <: CallSite = shallow_iterator(cs.trace)
-
-@inline collect!(par::T, addrs::Vector, chd::Dict, cl::C, meta) where {T <: Tuple, C <: CallSite} = collect!(par, addrs, chd, get_trace(cl), meta)
-@inline flatten(cl::C) where C <: CallSite = flatten(cl.trace)
-@inline target(cl::C, arr::Vector) where C <: CallSite = target(cl.trace, arr)
+@inline get_choices(cs::C) where C <: CallSite = get_choices(get_trace(cs))
+@inline has_sub(cs::C, addr::A) where {C <: CallSite, A <: Address} = has_sub(get_trace(cs), addr)
+@inline haskey(cs::C, addr::A) where {C <: CallSite, A <: Address} = haskey(get_trace(cs), addr)
+@inline getindex(cs::C, addrs...) where C <: CallSite = getindex(get_trace(cs), addrs...)
+@inline shallow_iterator(cs::C) where C <: CallSite = shallow_iterator(get_trace(cs))
+@inline collect!(par::T, addrs::Vector, chd::Dict, cs::C, meta) where {T <: Tuple, C <: CallSite} = collect!(par, addrs, chd, get_trace(cs), meta)
+@inline flatten(cs::C) where C <: CallSite = flatten(get_trace(cs))
+@inline merge(cs::C, am::A) where {C <: CallSite, A <: AddressMap} = merge(get_trace(cs), am)
+@inline merge!(cs::C, am::A) where {C <: CallSite, A <: AddressMap} = merge!(get_trace(cs), am)
+@inline target(cs::C, arr::Vector) where C <: CallSite = target(get_trace(cs), arr)
 
 function Base.display(call::C; 
                       fields::Array{Symbol, 1} = [:val],

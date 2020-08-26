@@ -15,8 +15,8 @@ struct Value{K} <: Leaf{Value}
     val::K
 end
 
-struct Choice{K} <: Leaf{Choice}
-    score::Float64
+struct Choice{S <: AbstractFloat, K} <: Leaf{Choice}
+    score::S
     val::K
 end
 
