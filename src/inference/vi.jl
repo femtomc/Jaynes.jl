@@ -54,11 +54,6 @@ function geometric_base(lws::Vector{Float64})
     baselines
 end
 
-function lde(x, y)
-    m = max(x, y)
-    m + log(exp(x - m) - exp(y - m))
-end
-
 function multi_shot_gradient_estimator(tg::K,
                                        ps::P,
                                        v_mod::Function,
