@@ -35,6 +35,24 @@ macro load_flux_fmi()
 
         apply_model!(ctx, model, args...) = model(args...)
 
+        function load!(m, xs)
+            for (p, x) in zip(Flux.params(m), xs)
+                size(p) == size(x) ||
+                error("Expected param size $(size(p)), got $(size(x))")
+                copyto!(p, x)
+            end
+        end
+
+        function restructure(m, xs)
+            i = 0
+            fmap(m) do x
+                x isa AbstractArray || return x
+                x = reshape(xs[i.+(1:length(x))], size(x))
+                i += length(x)
+                return x
+            end
+        end
+
         Zygote.@adjoint function apply_model!(ctx, model, args...)
             ret = model(args...)
             fn = params_grad -> begin
@@ -43,7 +61,8 @@ macro load_flux_fmi()
                 _, re = Flux.destructure(Flux.params(model))
                 ps = Flux.destructure(model)[1]
                 update!(ctx.opt, ps, Flux.destructure(gs)[1])
-                Flux.loadparams!(model, re(ps))
+                new = Flux.params(restructure(model, ps))
+                load!(model, new)
                 (nothing, nothing, arg_grads...)
             end
             return ret, fn
