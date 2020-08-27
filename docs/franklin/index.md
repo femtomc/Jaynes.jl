@@ -9,7 +9,7 @@ Currently supported inference algorithms (and MCMC kernels):
 * [MAP optimization for `Choice` sites](library_api/inference/map)
 * [Importance sampling (with and without custom proposals)](library_api/inference/is)
 * [Metropolis-Hastings (with and without custom proposals)](library_api/inference/mh)
-* [Hamiltonian Monte Carlo (with and without custom proposals)](library_api/inference/hmc)
+* [Hamiltonian Monte Carlo](library_api/inference/hmc)
 * [Particle filtering (with and without custom proposals)](library_api/inference/pf)
 * [Variational inference (with and without baselines)](library_api/inference/vi)
 
