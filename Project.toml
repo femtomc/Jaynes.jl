@@ -1,7 +1,7 @@
 name = "Jaynes"
 uuid = "a2015381-cef8-4fe1-827c-95a77dd17ccf"
 authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
-version = "0.1.22"
+version = "0.1.23"
 
 [deps]
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
