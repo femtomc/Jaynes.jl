@@ -27,7 +27,7 @@ end
 
 @inline function context_getindex(ctx, am, addr)
     if (addr, ) == ctx.target
-        Zygote.ForwardDiff.Dual(getindex(am, addr), 1.0)
+        Dual(getindex(am, addr), 1.0)
     else
         getindex(am, addr)
     end
