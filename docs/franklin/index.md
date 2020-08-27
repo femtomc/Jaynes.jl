@@ -13,7 +13,7 @@ Currently supported inference algorithms (and MCMC kernels):
 * [Particle filtering (with and without custom proposals)](library_api/inference/pf)
 * [Variational inference (with and without baselines)](library_api/inference/vi)
 
-Integration with deep networks provided by an interface to [Flux.jl](https://github.com/FluxML/Flux.jl):
+Integration with deep networks provided by an extension module to [Flux.jl](https://github.com/FluxML/Flux.jl):
 
 * [Neural variational inference (with and without baselines)](library_api/inference/nvi)
 
