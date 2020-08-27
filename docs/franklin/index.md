@@ -17,6 +17,8 @@ Integration with deep networks provided by an interface to [Flux.jl](https://git
 
 * [Neural variational inference (with and without baselines)](library_api/inference/nvi)
 
+Automatic differentiation support provided by [Zygote.jl](https://github.com/FluxML/Zygote.jl) and [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl).
+
 > This package is in open alpha. Expect some bumps, especially as [new compiler interfaces](https://github.com/Keno/Compiler3.jl) stabilize in Julia `VERSION` > 1.6.
 
 ---

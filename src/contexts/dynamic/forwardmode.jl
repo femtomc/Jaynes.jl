@@ -48,7 +48,7 @@ function get_choice_gradient(addr::T, cl::DynamicCallSite) where T <: Tuple
     cl[addr], d.partials.values[1]
 end
 
-function get_choice_gradient(ps::P, addr::T, cl::DynamicCallSite) where {P <: AddressMap, T <: Tuple}
+function get_choice_gradient(addr::T, ps::P, cl::DynamicCallSite) where {P <: AddressMap, T <: Tuple}
     fn = seed -> begin
         ret, w = forward(addr, ps, cl, seed)
         w
@@ -57,7 +57,7 @@ function get_choice_gradient(ps::P, addr::T, cl::DynamicCallSite) where {P <: Ad
     cl[addr], d.partials.values[1]
 end
 
-function get_learnable_gradient(ps::P, addr::T, cl::DynamicCallSite) where {P <: AddressMap, T <: Tuple}
+function get_learnable_gradient(addr::T, ps::P, cl::DynamicCallSite) where {P <: AddressMap, T <: Tuple}
     fn = seed -> begin
         ret, w = forward(addr, ps, cl, seed)
         w

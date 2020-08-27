@@ -11,7 +11,7 @@ end
                          (:m, ) => 10.0])
     ret, cl, w = generate(sel, params, learnable_normal, 5.0, 3.0)
     for i in 1 : 30
-        δ, params, acc = mle(params, Euclidean(), cl)
+        δ, params, acc = mle(params, cl)
         δ < 1e-12 && acc && break
     end
     @test params[:l] ≈ 6.0 atol = 1e-2

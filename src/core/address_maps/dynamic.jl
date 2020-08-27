@@ -54,32 +54,36 @@ end
 function merge(sel1::DynamicMap{K},
                sel2::DynamicMap{K}) where K
     tree = Dict{Any, AddressMap{K}}()
+    inter = intersect(keys(sel1.tree), keys(sel2.tree))
+    check = false
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         tree[k] = sel2.tree[k]
     end
     for k in setdiff(keys(sel1.tree), keys(sel2.tree))
         tree[k] = sel1.tree[k]
     end
-    inter = intersect(keys(sel1.tree), keys(sel2.tree))
     for k in inter
-        tree[k] = merge(sel1.tree[k], sel2.tree[k])
+        tree[k], b = merge(sel1.tree[k], sel2.tree[k])
+        check = check || b
     end
-    return DynamicMap(tree), !isempty(inter)
+    return DynamicMap(tree), !isempty(inter) || check
 end
 function merge(sel1::DynamicMap{T},
                sel2::DynamicMap{K}) where {T, K}
     tree = Dict{Any, AddressMap{K}}()
+    inter = intersect(keys(sel1.tree), keys(sel2.tree))
+    check = false
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         tree[k] = sel2.tree[k]
     end
     for k in setdiff(keys(sel1.tree), keys(sel2.tree))
         tree[k] = convert(K, sel1.tree[k])
     end
-    inter = intersect(keys(sel1.tree), keys(sel2.tree))
     for k in inter
-        tree[k] = merge(sel1.tree[k], sel2.tree[k])
+        tree[k], b = merge(sel1.tree[k], sel2.tree[k])
+        check = check || b
     end
-    return DynamicMap(tree), !isempty(inter)
+    return DynamicMap(tree), !isempty(inter) || check
 end
 merge(dm::DynamicMap, ::Empty) = Empty(), false
 merge(::Empty, dm::DynamicMap) = deepcopy(dm), false
@@ -87,25 +91,28 @@ merge(::Empty, dm::DynamicMap) = deepcopy(dm), false
 function merge!(sel1::DynamicMap{K},
                 sel2::DynamicMap{K}) where K
     inter = intersect(keys(sel1.tree), keys(sel2.tree))
+    check = false
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         set_sub!(sel1, k, get_sub(sel2, k))
     end
     for k in inter
-        merge!(get_sub(sel1, k), get_sub(sel2, k))
+        b = merge!(get_sub(sel1, k), get_sub(sel2, k))
+        check = check || b
     end
-    !isempty(inter)
+    !isempty(inter) || check
 end
-
 function merge!(sel1::DynamicMap{T},
                 sel2::DynamicMap{K}) where {T, K}
     inter = intersect(keys(sel1.tree), keys(sel2.tree))
+    check = false
     for k in setdiff(keys(sel2.tree), keys(sel1.tree))
         set_sub!(sel1, k, get_sub(sel2, k))
     end
     for k in inter
-        merge!(get_sub(sel1, k), get_sub(sel2, k))
+        b = merge!(get_sub(sel1, k), get_sub(sel2, k))
+        check = check || b
     end
-    !isempty(inter)
+    !isempty(inter) || check
 end
 merge!(dm::DynamicMap, ::Empty) = Empty(), false
 merge!(::Empty, dm::DynamicMap) = dm, false
@@ -130,6 +137,11 @@ function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
     end
     tg
 end
+function target(v::Pair{T, K}) where {T <: Tuple, K}
+    tg = DynamicMap{Value}()
+    set_sub!(tg, v[1], Value(v[2]))
+    tg
+end
 
 # Filter.
 function filter(fn, dm::DynamicMap{K}) where K
@@ -144,7 +156,6 @@ function filter(fn, dm::DynamicMap{K}) where K
     end
     new
 end
-
 function filter(fn, par, dm::DynamicMap{K}) where K
     new = DynamicMap{K}()
     for (k, v) in shallow_iterator(dm)

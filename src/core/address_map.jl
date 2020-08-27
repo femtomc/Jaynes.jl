@@ -137,6 +137,7 @@ end
 @inline Base.merge(::Empty, l::Leaf) = deepcopy(l), false
 @inline Base.merge(c::Choice, v::Value) = deepcopy(c), true
 @inline Base.merge(v::Value, c::Choice) = Value(get_value(c)), true
+@inline Base.merge(v1::Value, v2::Value) = Value(get_value(v2)), true
 @inline Base.merge!(am::AddressMap, ::Empty) = false
 @inline Base.merge!(l::Leaf, ::Empty) = false
 @inline function Base.merge!(c::Choice, v::Value)
