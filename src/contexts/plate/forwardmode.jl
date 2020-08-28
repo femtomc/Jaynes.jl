@@ -1,6 +1,6 @@
 @inline function (ctx::ForwardModeContext)(c::typeof(plate),
                                            d::Distribution{K},
-                                           len::Int) where A <: Address
+                                           len::Int) where K
     v_ret = Vector{eltype(d)}(undef, len)
     for i in 1:len
         visit!(ctx, i)
@@ -18,9 +18,9 @@ end
     # First index.
     visit!(ctx, 1)
     len = length(args)
-    ss = get_sub(ctx.target, 1)
+    ss = get_sub(ctx.map, 1)
     ps = get_sub(ctx.params, 1)
-    ret, cl, w = forward(ctx.target[2 : end], ps, ss, Dual(1.0, 0.0))
+    ret, w = forward(ctx.target[2 : end], ps, ss, Dual(1.0, 0.0))
     v_ret = Vector{typeof(ret)}(undef, len)
     v_ret[1] = ret
     ctx.weight += w
@@ -28,8 +28,8 @@ end
     # Rest.
     for i in 2:len
         visit!(ctx, i)
-        ss = get_sub(ctx.target, i)
-        ret, cl, w = forward(ctx.target[2 : end], ps, ss, Dual(1.0, 0.0))
+        ss = get_sub(ctx.map, i)
+        ret, w = forward(ctx.target[2 : end], ps, ss, Dual(1.0, 0.0))
         v_ret[i] = ret
         ctx.weight += w
     end

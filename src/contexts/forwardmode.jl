@@ -33,7 +33,7 @@ end
 
 function forward(addr, params, cl::VectorCallSite{typeof(markov)}, seed)
     ctx = ForwardMode(addr, params, cl, seed)
-    ret = ctx(markov, cl.fn, cl.args...)
+    ret = ctx(markov, cl.fn, cl.len, cl.args...)
     ret, ctx.weight
 end
 
@@ -79,5 +79,6 @@ end
 
 include("dynamic/forwardmode.jl")
 include("plate/forwardmode.jl")
+include("markov/forwardmode.jl")
 
 # ------------ Documentation ------------ #

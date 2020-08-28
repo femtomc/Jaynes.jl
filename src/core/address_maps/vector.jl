@@ -17,6 +17,8 @@ Zygote.@adjoint VectorMap(vector) = VectorMap(vector), ret_grad -> (nothing, )
 @inline get_sub(vm::VectorMap, addr::A) where A <: Address = get(vm.vector, addr, Empty())
 @inline get_sub(vm::VectorMap, addr::Tuple{}) = Empty()
 
+@inline getindex(vm::VectorMap, addrs...) = get_value(get_sub(vm, addrs))
+
 @inline Base.isempty(vm::VectorMap) = isempty(vm.vector)
 
 function haskey(vm::VectorMap, addr)
