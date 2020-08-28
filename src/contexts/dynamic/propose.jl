@@ -41,7 +41,7 @@ end
 # ------------ Convenience ------------ #
 
 function propose(fn::Function, args...)
-    ctx = Propose(DynamicMap{Value}())
+    ctx = Propose(DynamicMap{Value}(), Empty())
     ret = ctx(fn, args...)
     return ret, ctx.map, ctx.score
 end

@@ -6,10 +6,10 @@ struct VectorCallSite{T, F, A, R} <: CallSite
     trace::VectorTrace
     score::Float64
     fn::F
-    len::Int
     args::A
     ret::Vector{R}
-    VectorCallSite{T}(tr, sc, fn::F, len, args::A, ret::Vector{R}) where {T, F, A, R} = new{T, F, A, R}(tr, sc, fn, len, args, ret)
+    len::Int
+    VectorCallSite{T}(tr, sc, fn::F, args::A, ret::Vector{R}, len) where {T, F, A, R} = new{T, F, A, R}(tr, sc, fn, args, ret, len)
 end
 @inline isempty(vcs::VectorCallSite) = false
 

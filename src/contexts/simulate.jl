@@ -6,15 +6,8 @@ mutable struct SimulateContext{T <: AddressMap,
     params::P
 end
 
-function Simulate()
-    SimulateContext(DynamicTrace(), 
-                    0.0, 
-                    Visitor(), 
-                    Empty())
-end
-
-function Simulate(params)
-    SimulateContext(DynamicTrace(), 
+function Simulate(tr, params)
+    SimulateContext(tr,
                     0.0, 
                     Visitor(), 
                     params)

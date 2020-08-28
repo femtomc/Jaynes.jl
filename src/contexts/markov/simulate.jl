@@ -1,43 +1,44 @@
-# ------------ Call sites ------------ #
-
-@inline function (ctx::SimulateContext)(c::typeof(markov), 
-                                        addr::Address, 
-                                        call::Function, 
-                                        len::Int, 
+@inline function (ctx::SimulateContext)(c::typeof(markov),
+                                        call::Function,
+                                        len::Int,
                                         args...)
-    visit!(ctx, addr => 1)
-    ps = get_sub(ctx.params, addr)
+    visit!(ctx, 1)
+    ps = get_sub(ctx.params, 1)
     ret, cl = simulate(ps, call, args...)
+    add_call!(ctx, 1, cl)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
-    v_cl[1] = cl
     for i in 2:len
-        visit!(ctx, addr => i)
+        visit!(ctx, i)
         ret, cl = simulate(ps, call, v_ret[i-1]...)
+        add_call!(ctx, i, cl)
         v_ret[i] = ret
-        v_cl[i] = cl
     end
-    sc = sum(map(v_cl) do cl
-                 get_score(cl)
-             end)
-    add_call!(ctx, addr, VectorCallSite{typeof(markov)}(VectorTrace(v_cl), sc, call, len, args, v_ret))
     return v_ret
+end
+
+@inline function (ctx::SimulateContext)(c::typeof(markov),
+                                        addr::A,
+                                        call::Function,
+                                        len::Int,
+                                        args...) where A <: Address
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ret, cl = simulate(ps, markov, call, len, args...)
+    add_call!(ctx, addr, cl)
+    return ret
 end
 
 # ------------ Convenience ------------ #
 
 function simulate(c::typeof(markov), fn::Function, len::Int, args...)
-    ctx = SimulateContext()
-    addr = gensym()
-    ret = ctx(markov, addr, fn, len, args...)
-    return ret, get_sub(ctx.tr, addr)
+    ctx = Simulate(VectorTrace(len), Empty())
+    ret = ctx(markov, fn, len, args...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, fn, args, ret, len)
 end
 
 function simulate(params::P, c::typeof(markov), fn::Function, len::Int, args...) where P <: AddressMap
-    addr = gensym()
-    v_ps = learnables(addr => params)
-    ctx = SimulateContext(v_ps)
-    ret = ctx(markov, addr, fn, len, args...)
-    return ret, get_sub(ctx.tr, addr)
+    ctx = Simulate(VectorTrace(len), params)
+    ret = ctx(markov, fn, len, args...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, fn, args, ret, len)
 end
