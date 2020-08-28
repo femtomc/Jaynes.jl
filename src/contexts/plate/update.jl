@@ -59,28 +59,8 @@ end
 # ------------ Call sites ------------ #
 
 @inline function (ctx::UpdateContext)(c::typeof(plate), 
-                                      addr::A, 
                                       call::Function, 
-                                      args::Vector) where A <: Address
-    visit!(ctx, addr)
-    vcs = get_prev(ctx, addr)
-    n_len, o_len = length(args), length(vcs.args)
-    s = get_sub(ctx.target, addr)
-    _, ks = keyset(s, n_len)
-    if n_len <= o_len
-        w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)
-    else
-        w_adj, new, new_ret = trace_new(vcs, s, ks, o_len, n_len, args)
-    end
-    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
-    increment!(ctx, w_adj)
-
-    return new_ret
-end
-
-@inline function (ctx::UpdateContext{C, T})(c::typeof(plate), 
-                                            call::Function, 
-                                            args::Vector) where {C <: VectorCallSite, T <: VectorTrace}
+                                      args::Vector)
     vcs = ctx.prev
     n_len, o_len = length(args), length(vcs.args)
     s = ctx.select
@@ -100,16 +80,26 @@ end
     return new_ret
 end
 
-# ------------ Convenience ------------ #
+@inline function (ctx::UpdateContext)(c::typeof(plate), 
+                                      addr::A, 
+                                      call::Function, 
+                                      args::Vector) where A <: Address
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
+    if haskey(ctx.prev, addr)
+        prev = get_prev(ctx, addr)
+        ret, cl, w, rd, d = update(ss, ps, plate, prev, UndefinedChange(), args...)
+    else
+        ret, cl, w = generate(ss, ps, plate, call, args...)
+    end
+    add_call!(ctx, addr, cl)
+    increment!(ctx, w)
+    return ret
+end
 
-# TODO: disallowed for now.
-#function update(sel::L, vcs::VectorCallSite{typeof(plate)}, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
-#    addr = gensym()
-#    v_sel = selection(addr => sel)
-#    ctx = UpdateContext(vcs, v_sel, argdiffs)
-#    ret = ctx(plate, addr, vcs.fn, new_args...)
-#    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
-#end
+
+# ------------ Convenience ------------ #
 
 function update(sel::L, vcs::VectorCallSite{typeof(plate)}) where L <: AddressMap
     argdiffs = NoChange()

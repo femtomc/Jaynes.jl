@@ -13,7 +13,7 @@ mutable struct UpdateContext{C <: CallSite,
     discard::D
     visited::Visitor
     params::P
-    argdiffs::Ag
+    diff::Ag
 end
 
 function Update(select::K, cl::C) where {K <: AddressMap, C <: CallSite}
