@@ -9,6 +9,7 @@
     v_ret[1] = ret
     increment!(ctx, w)
     for i in 2:len
+        visit!(ctx, i)
         ss = get_sub(ctx.target, i)
         ret, w = score(ss, call, args[i]...)
         v_ret[i] = ret

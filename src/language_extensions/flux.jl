@@ -1,7 +1,6 @@
 (ctx::Jaynes.SimulateContext)(fn::typeof(deep), model, args...) = model(args...)
 (ctx::Jaynes.GenerateContext)(fn::typeof(deep), model, args...) = model(args...)
 (ctx::Jaynes.UpdateContext)(fn::typeof(deep), model, args...) = model(args...)
-
 (ctx::Jaynes.RegenerateContext)(fn::typeof(deep), model, args...) = model(args...)
 (ctx::Jaynes.ProposeContext)(fn::typeof(deep), model, args...) = model(args...)
 (ctx::Jaynes.ScoreContext)(fn::typeof(deep), model, args...) = model(args...)

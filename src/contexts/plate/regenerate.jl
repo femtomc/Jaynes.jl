@@ -71,7 +71,7 @@ end
     else
         w_adj, new, new_ret = trace_new(vcs, s, ks, o_len, n_len, args)
     end
-    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(new), get_score(vcs) + w_adj, call, args, new_ret, n_len))
     increment!(ctx, w_adj)
 
     return new_ret
@@ -105,12 +105,12 @@ function regenerate(sel::L, vcs::VectorCallSite{typeof(plate)}) where {L <: Targ
     argdiffs = NoChange()
     ctx = Regenerate(vcs, sel, argdiffs)
     ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(plate)}) where {L <: Target, P <: AddressMap, D <: Diff}
     argdiffs = NoChange()
     ctx = Regenerate(vcs, sel, ps, argdiffs)
     ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end

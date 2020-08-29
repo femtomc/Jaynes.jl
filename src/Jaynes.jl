@@ -48,6 +48,7 @@ end
 
 using DistributionsAD
 @reexport using Flux
+import Flux: update!
 
 # Toplevel importants :)
 const Address = Union{Int, Symbol, Pair}
@@ -161,7 +162,6 @@ export neural_geometric_vimco!, nvimco!
 export @primitive
 export @load_gen_fmi
 export @load_soss_fmi
-export @load_flux_fmi
 export @load_advanced_hmc
 export @load_chains
 export foreign, deep

@@ -37,7 +37,7 @@ end
                                        args::Vector) where A <: Address
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
-    ret, submap, sc = propose(ps, call, args...)
+    ret, submap, sc = propose(ps, plate, call, args)
     set_sub!(ctx.map, addr, submap)
     ctx.score += sc
     return ret

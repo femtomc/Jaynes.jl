@@ -10,7 +10,10 @@
     v_ret[1] = ret
     increment!(ctx, w)
     for i in 2 : len
-        ret, w = score(get_sub(ss, i), call, v_ret[i-1]...)
+        visit!(ctx, i)
+        ss = get_sub(ctx.target, i)
+        ps = get_sub(ctx.params, i)
+        ret, w = score(ss, ps, call, v_ret[i-1]...)
         v_ret[i] = ret
         increment!(ctx, w)
     end
@@ -35,7 +38,7 @@ end
 function score(sel::L, fn::typeof(markov), call::Function, len::Int, args...) where L <: AddressMap
     ctx = Score(sel, Empty())
     ret = ctx(fn, call, len, args...)
-    b, missed = compare(sel.query, ctx.visited)
+    b, missed = compare(sel, ctx.visited)
     b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
     return ret, ctx.weight
 end
@@ -43,7 +46,7 @@ end
 function score(sel::L, params::P, fn::typeof(markov), call::Function, len::Int, args...) where {L <: AddressMap, P <: AddressMap}
     ctx = Score(sel, params)
     ret = ctx(fn, call, len, args...)
-    b, missed = compare(sel.query, ctx.visited)
+    b, missed = compare(sel, ctx.visited)
     b || error("ScoreError: did not visit all constraints in selection.\nDid not visit: $(missed).")
     return ret, ctx.weight
 end
