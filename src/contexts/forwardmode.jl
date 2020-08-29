@@ -31,8 +31,35 @@ function forward(addr, params, cl::VectorCallSite{typeof(plate)}, seed)
     ret, ctx.weight
 end
 
+mutable struct ForwardModeMarkovContext{T <: Tuple,
+                                        C <: AddressMap,
+                                        D,
+                                        P <: AddressMap} <: ExecutionContext
+    target::T
+    map::C
+    weight::D
+    visited::Visitor
+    params::P
+    args
+    ForwardModeMarkovContext(t::T, m::C, w::D, v, p::P) where {T, C, D, P} = new{T, C, D, P}(t, m, w, v, p)
+end
+
+function ForwardModeMarkov(addr, cl, weight)
+    ForwardModeMarkovContext(addr, cl, weight, Visitor(), Empty())
+end
+
+function ForwardModeMarkov(addr, params, cl, weight)
+    ForwardModeMarkovContext(addr, cl, weight, Visitor(), params)
+end
+
+function markov_forward(addr, params, cl::C, seed, args...) where C <: CallSite
+    ctx = ForwardModeMarkov(addr, params, cl, seed)
+    ret = ctx(cl.fn, args...)
+    ret, ctx.weight
+end
+
 function forward(addr, params, cl::VectorCallSite{typeof(markov)}, seed)
-    ctx = ForwardMode(addr, params, cl, seed)
+    ctx = ForwardModeMarkov(addr, params, cl, seed)
     ret = ctx(markov, cl.fn, cl.len, cl.args...)
     ret, ctx.weight
 end
