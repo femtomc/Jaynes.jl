@@ -1,5 +1,3 @@
-# ------------ Call sites ------------ #
-
 @inline function (ctx::ParameterBackpropagateContext)(c::typeof(markov),
                                                       addr::T,
                                                       call::Function,

@@ -1,5 +1,3 @@
-# ------------ Call sites ------------ #
-
 @inline function (ctx::ParameterBackpropagateContext)(c::typeof(plate),
                                                       addr::T,
                                                       call::Function,
@@ -101,11 +99,8 @@ end
 
 function choice_gradients(initial_params::P, choice_grads, choice_selection::K, cl::VectorCallSite{typeof(plate)}, ret_grad) where {P <: AddressMap, K <: Target}
     fn = (args, call, sel) -> begin
-        addr = gensym()
-        v_sel = selection(addr => sel)
-        v_ps = learnables(addr => initial_params)
-        ctx = ChoiceBackpropagate(call, v_sel, v_ps, ParameterStore(), choice_grads, choice_selection)
-        ret = ctx(plate, gensym(), call.fn, args)
+        ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_selection)
+        ret = ctx(plate, call.fn, args)
         (ctx.weight, ret)
     end
     (w, r), back = Zygote.pullback(fn, cl.args, cl, selection())
