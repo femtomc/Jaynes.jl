@@ -116,13 +116,21 @@ function update(ctx::UpdateContext, cs::DynamicCallSite, args...) where D <: Dif
 end
 
 function update(sel::L, cs::DynamicCallSite) where L <: AddressMap
-    argdiffs = NoChange()
-    ctx = Update(sel, Empty(), cs, DynamicTrace(), DynamicDiscard(), argdiffs)
+    ctx = Update(sel, Empty(), cs, DynamicTrace(), DynamicDiscard(), NoChange())
     return update(ctx, cs, cs.args...)
 end
 
-function update(sel::L, ps::P, cs::DynamicCallSite) where {L <: AddressMap, P <: AddressMap}
-    argdiffs = NoChange()
-    ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard(), argdiffs)
+function update(sel::L, ps::P, cs::DynamicCallSite) where {P <: AddressMap, L <: AddressMap}
+    ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard(), NoChange())
     return update(ctx, cs, cs.args...)
+end
+
+function update(sel::L, cs::DynamicCallSite, argdiffs, args...) where L <: AddressMap
+    ctx = Update(sel, Empty(), cs, DynamicTrace(), DynamicDiscard(), argdiffs)
+    return update(ctx, cs, args...)
+end
+
+function update(sel::L, ps::P, cs::DynamicCallSite, argdiffs, args...) where {L <: AddressMap, P <: AddressMap}
+    ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard(), argdiffs)
+    return update(ctx, cs, args...)
 end
