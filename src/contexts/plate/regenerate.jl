@@ -6,9 +6,7 @@ function trace_retained(vcs::VectorCallSite,
                         o_len::Int, 
                         n_len::Int, 
                         args::Vector) where K <: Target
-    w_adj = -sum(map(get_choices(vcs)[1 : n_len]) do v
-                     get_score(v)
-                 end)
+    w_adj = 0.0
     new = get_choices(get_trace(vcs))[1 : n_len]
     new_ret = typeof(get_ret(vcs))(undef, n_len)
     for i in 1 : n_len
@@ -57,26 +55,6 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::RegenerateContext)(c::typeof(plate), 
-                                          addr::A, 
-                                          call::Function, 
-                                          args::Vector) where A <: Address
-    visit!(ctx, addr)
-    vcs = get_prev(ctx, addr)
-    n_len, o_len = length(args), length(vcs.args)
-    s = get_sub(ctx.target, addr)
-    _, ks = keyset(s, n_len)
-    if n_len <= o_len
-        w_adj, new, new_ret = trace_retained(vcs, s, ks, o_len, n_len, args)
-    else
-        w_adj, new, new_ret = trace_new(vcs, s, ks, o_len, n_len, args)
-    end
-    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(new), get_score(vcs) + w_adj, call, args, new_ret, n_len))
-    increment!(ctx, w_adj)
-
-    return new_ret
-end
-
 @inline function (ctx::RegenerateContext{C, T})(c::typeof(plate), 
                                                 call::Function, 
                                                 args::Vector) where {C <: VectorCallSite, T <: VectorTrace}
@@ -97,6 +75,24 @@ end
     increment!(ctx, w_adj)
 
     return new_ret
+end
+
+@inline function (ctx::RegenerateContext)(c::typeof(plate), 
+                                          addr::A, 
+                                          call::Function, 
+                                          args::Vector) where A <: Address
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
+    if has_sub(get_trace(ctx.prev), addr)
+        prev_call = get_prev(ctx, addr)
+        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, UndefinedChange(), args)
+    else
+        ret, cl, w = generate(ss, ps, plate, call, args)
+    end
+    add_call!(ctx, addr, cl)
+    increment!(ctx, w)
+    return ret
 end
 
 # ------------ Convenience ------------ #

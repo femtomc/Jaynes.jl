@@ -7,7 +7,7 @@ function trace_retained(vcs::VectorCallSite,
                         o_len::Int, 
                         n_len::Int, 
                         args::Vector) where K <: AddressMap
-    w_adj = -1 * get_score(vcs)
+    w_adj = 0.0
     new = get_choices(get_trace(vcs))[1 : n_len]
     new_ret = typeof(get_ret(vcs))(undef, n_len)
     for i in 1 : n_len
@@ -73,6 +73,9 @@ end
     else
         w_adj, new, new_ret = trace_new(vcs, s, ps, ks, o_len, n_len, args)
     end
+    for (i, cl) in enumerate(new)
+        add_call!(ctx, i, cl)
+    end
     increment!(ctx, w_adj)
 
     return new_ret
@@ -101,14 +104,14 @@ end
 
 function update(sel::L, vcs::VectorCallSite{typeof(plate)}) where L <: AddressMap
     argdiffs = NoChange()
-    ctx = Update(sel, Empty(), vcs, argdiffs)
+    ctx = Update(sel, Empty(), vcs, VectorTrace(vcs.len), VectorDiscard(), argdiffs)
     ret = ctx(plate, vcs.fn, vcs.args)
     return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorCallSite{typeof(plate)}) where {L <: AddressMap, P <: AddressMap}
     argdiffs = NoChange()
-    ctx = Update(sel, ps, vcs, argdiffs)
+    ctx = Update(sel, ps, vcs, VectorTrace(vcs.len), VectorDiscard(), argdiffs)
     ret = ctx(plate, vcs.fn, vcs.args)
     return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end

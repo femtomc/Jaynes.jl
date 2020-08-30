@@ -16,37 +16,13 @@ mutable struct UpdateContext{C <: CallSite,
     diff::Ag
 end
 
-function Update(select::K, cl::C) where {K <: AddressMap, C <: CallSite}
+function Update(select::K, ps::P, cl::C, tr, discard, argdiffs::Ag) where {K <: AddressMap, P <: AddressMap, C <: CallSite, Ag <: Diff}
     UpdateContext(cl, 
-                  typeof(cl.trace)(), 
+                  tr,
                   select, 
                   0.0, 
                   0.0, 
-                  DynamicDiscard(), 
-                  Visitor(), 
-                  Empty(), 
-                  NoChange())
-end
-
-function Update(select::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: CallSite, Ag <: Diff}
-    UpdateContext(cl, 
-                  typeof(cl.trace)(), 
-                  select, 
-                  0.0, 
-                  0.0, 
-                  DynamicDiscard(), 
-                  Visitor(), 
-                  Empty(), 
-                  argdiffs)
-end
-
-function Update(select::K, ps::P, cl::C, argdiffs::Ag) where {K <: AddressMap, P <: AddressMap, C <: CallSite, Ag <: Diff}
-    UpdateContext(cl, 
-                  typeof(cl.trace)(), 
-                  select, 
-                  0.0, 
-                  0.0, 
-                  DynamicDiscard(), 
+                  discard,
                   Visitor(), 
                   ps,
                   argdiffs)
