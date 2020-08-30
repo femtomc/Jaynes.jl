@@ -57,23 +57,23 @@ end
 
 @testset "Particle filtering" begin
 
-    @testset "Categorical hidden Markov model" begin
-        tol = 0.1
-        checks = [-1.05, -2.18, -2.57, -2.907, -4.19]
-        xs = [1, 1, 2, 2, 1]
-        lmles = []
+    #@testset "Categorical hidden Markov model" begin
+    #    tol = 0.1
+    #    checks = [-1.05, -2.18, -2.57, -2.907, -4.19]
+    #    xs = [1, 1, 2, 2, 1]
+    #    lmles = []
 
-        # Testing.
-        init_obs = Jaynes.target([(:obs => 1, :x) => xs[1]])
-        ps = Jaynes.initialize_filter(init_obs, 50000, CategoricalHiddenMarkovModel, (1, ))
-        push!(lmles, get_lmle(ps))
-        for t=2:5
-            obs = Jaynes.target([(:obs => t, :x) =>  xs[t]])
-            Jaynes.filter_step!(obs, ps, NoChange(), (t,))
-            push!(lmles, get_lmle(ps))
-        end
-        map(enumerate(checks)) do (k, v)
-            @test v ≈ lmles[k] atol = tol
-        end
-    end
+    #    # Testing.
+    #    init_obs = Jaynes.target([(:obs => 1, :x) => xs[1]])
+    #    ps = Jaynes.initialize_filter(init_obs, 50000, CategoricalHiddenMarkovModel, (1, ))
+    #    push!(lmles, get_lmle(ps))
+    #    for t=2:5
+    #        obs = Jaynes.target([(:obs => t, :x) =>  xs[t]])
+    #        Jaynes.filter_step!(obs, ps, NoChange(), (t,))
+    #        push!(lmles, get_lmle(ps))
+    #    end
+    #    map(enumerate(checks)) do (k, v)
+    #        @test v ≈ lmles[k] atol = tol
+    #    end
+    #end
 end

@@ -14,7 +14,7 @@ function trace_retained(vcs::VectorCallSite,
         if i in ks
             ss = get_sub(s, i)
             prev_cl = get_sub(vcs, i)
-            ret, u_cl, u_w, rd, ds = update(ss, prev_cl, UndefinedChange(), args[i]...)
+            ret, u_cl, u_w, rd, ds = update(ss, prev_cl)
             new_ret[i] = ret
             new[i] = u_cl
             w_adj += u_w
@@ -48,7 +48,7 @@ function trace_new(vcs::VectorCallSite,
         i in ks && begin
             ss = get_sub(s, i)
             prev_cl = get_sub(vcs, i)
-            ret, u_cl, u_w, rd, d = update(ss, prev_cl, UndefinedChange(), args[i]...)
+            ret, u_cl, u_w, rd, d = update(ss, prev_cl)
             new_ret[i] = ret
             new[i] = u_cl
             w_adj += u_w
@@ -88,9 +88,9 @@ end
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)
-    if haskey(ctx.prev, addr)
-        prev = get_prev(ctx, addr)
-        ret, cl, w, rd, d = update(ss, ps, plate, prev, UndefinedChange(), args)
+    if has_sub(ctx.prev, addr)
+        sub = get_sub(ctx.prev, addr)
+        ret, cl, w, rd, d = update(ss, ps, sub)
     else
         ret, cl, w = generate(ss, ps, plate, call, args)
     end

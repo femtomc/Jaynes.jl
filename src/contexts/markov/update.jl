@@ -16,9 +16,9 @@ function trace_retained(vcs::VectorCallSite,
     ss = get_sub(s, min)
     prev_cl = get_sub(vcs, min)
     if min == 1
-        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), args...)
+        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
     else
-        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), new_ret[min - 1]...)
+        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
     end
     push!(new_ret, ret)
     push!(new, u_cl)
@@ -27,7 +27,7 @@ function trace_retained(vcs::VectorCallSite,
     for i in min + 1 : n_len
         ss = get_sub(s, i)
         prev_cl = get_sub(vcs, i)
-        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), new_ret[i - 1]...)
+        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
         push!(new_ret, ret)
         push!(new, u_cl)
         w_adj += u_w
@@ -53,9 +53,9 @@ function trace_new(vcs::VectorCallSite,
         ss = get_sub(s, min)
         prev_cl = get_sub(vcs, min)
         if min == 1
-            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), args...)
+            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
         else
-            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), new_ret[min - 1]...)
+            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
         end
         push!(new_ret, ret)
         push!(new, u_cl)
@@ -65,7 +65,7 @@ function trace_new(vcs::VectorCallSite,
         for i in min + 1 : o_len
             ss = get_sub(s, i)
             prev_cl = get_sub(vcs, i)
-            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), new_ret[i - 1]...)
+            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
             push!(new_ret, ret)
             push!(new, u_cl)
             w_adj += u_w
@@ -141,9 +141,9 @@ end
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)
-    if haskey(ctx.prev, addr)
-        prev = get_prev(ctx, addr)
-        ret, cl, w, rd, d = update(ss, ps, markov, prev, UndefinedChange(), args)
+    if has_sub(ctx.prev, addr)
+        prev = get_sub(ctx.prev, addr)
+        ret, cl, w, rd, d = update(ss, ps, prev)
     else
         ret, cl, w = generate(ss, ps, markov, call, len, args...)
     end
@@ -155,15 +155,13 @@ end
 # ------------ Convenience ------------ #
 
 function update(sel::L, vcs::VectorCallSite{typeof(markov)}) where L <: AddressMap
-    argdiffs = NoChange()
-    ctx = Update(sel, Empty(), vcs, VectorTrace(vcs.len), VectorDiscard(), argdiffs)
+    ctx = Update(sel, Empty(), vcs, VectorTrace(vcs.len), VectorDiscard(), NoChange())
     ret = ctx(markov, vcs.fn, vcs.len, vcs.args[1]...)
     return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}) where {L <: AddressMap, P <: AddressMap}
-    argdiffs = NoChange()
-    ctx = Update(sel, ps, vcs, VectorTrace(vcs.len), VectorDiscard(), argdiffs)
+    ctx = Update(sel, ps, vcs, VectorTrace(vcs.len), VectorDiscard(), NoChange())
     ret = ctx(markov, vcs.fn, vcs.len, vcs.args[1]...)
     return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end

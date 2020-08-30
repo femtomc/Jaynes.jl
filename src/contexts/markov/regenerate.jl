@@ -17,9 +17,9 @@ function trace_retained(vcs::VectorCallSite,
     ss = get_sub(s, min)
     prev_cl = get_sub(vcs, min)
     if min == 1
-        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), args...)
+        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
     else
-        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[min - 1])
+        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
     end
     push!(new_ret, ret)
     push!(new, u_cl)
@@ -28,7 +28,7 @@ function trace_retained(vcs::VectorCallSite,
     for i in min + 1 : n_len
         ss = get_sub(s, i)
         prev_cl = get_sub(vcs, i)
-        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[i - 1]...)
+        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
         push!(new_ret, ret)
         push!(new, u_cl)
         w_adj += get_score(u_cl)
@@ -52,9 +52,9 @@ function trace_new(vcs::VectorCallSite,
         ss = get_sub(s, min)
         prev_cl = get_sub(vcs, min)
         if min == 1
-            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), args...)
+            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
         else
-            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[min - 1])
+            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
         end
         push!(new_ret, ret)
         push!(new, u_cl)
@@ -64,7 +64,7 @@ function trace_new(vcs::VectorCallSite,
         for i in min + 1 : o_len
             ss = get_sub(s, i)
             prev_cl = get_sub(vcs, i)
-            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[i - 1]...)
+            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
             push!(new_ret, ret)
             push!(new, u_cl)
             w_adj += u_w
