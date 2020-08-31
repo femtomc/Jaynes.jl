@@ -1,13 +1,21 @@
 language: julia
 julia:
     - 1.5.0
+    - 1.4.2
 
 codecov: true
 
 jobs:
     include:
-        - stage: "Testing"
+        - stage: "Testing 1.5.0"
           julia: 1.5.0
+          os: linux
+          script:
+              - julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.add("Test")'
+              - julia --project=. --code-coverage test/runtests.jl
+              - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+        - stage: "Testing 1.4.2"
+          julia: 1.4.2
           os: linux
           script:
               - julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.add("Test")'
