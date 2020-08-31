@@ -1,25 +1,33 @@
 # ------------ includes ------------ #
 
-include("language_extensions/blackbox.jl")
-include("language_extensions/soss.jl")
-include("language_extensions/turing.jl")
-include("language_extensions/gen.jl")
-include("language_extensions/flux.jl")
-include("language_extensions/mcmc_chains.jl")
-include("language_extensions/advanced_hmc.jl")
-include("language_extensions/sugar.jl")
-
-function primitive end
-function load_soss_fmi end
-function load_turing_fmi end
-function load_flux_fmi end
-function load_gen_fmi end
-function load_advanced_hmc end
-function load_chains end
-
 foreign(addr::A, args...) where A <: Address = error("(foreign) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
 
 deep(addr::A, model, args...) where A <: Address = error("(deep) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
+
+function primitive end
+include("language_extensions/blackbox.jl")
+
+function load_soss_fmi end
+include("language_extensions/soss.jl")
+
+function load_turing_fmi end
+include("language_extensions/turing.jl")
+
+function load_gen_fmi end
+include("language_extensions/gen.jl")
+
+include("language_extensions/flux.jl")
+const osnges! = one_shot_neural_gradient_estimator_step!
+const nvi! = neural_variational_inference!
+const vimges! = vimco_neural_gradient_estimator_step!
+const nvimco! = neural_geometric_vimco!
+
+function load_chains end
+include("language_extensions/mcmc_chains.jl")
+
+function load_advanced_hmc end
+include("language_extensions/advanced_hmc.jl")
+include("language_extensions/sugar.jl")
 
 # ------------ Documentation -------------- #
 

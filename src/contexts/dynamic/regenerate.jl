@@ -94,31 +94,19 @@ end
 
 # ------------ Convenience ------------ #
 
-function regenerate(ctx::RegenerateContext, cs::DynamicCallSite, new_args...)
-    ret = ctx(cs.fn, new_args...)
+function regenerate(ctx::RegenerateContext, cs::DynamicCallSite, args...)
+    ret = ctx(cs.fn, args...)
     adj_w = regenerate_projection_walk(ctx.tr, ctx.visited)
     regenerate_discard_walk!(ctx.discard, ctx.visited, ctx.tr)
-    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, new_args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, cs::DynamicCallSite) where L <: Target
-    argdiffs = NoChange()
-    ctx = Regenerate(sel, cs, argdiffs)
+    ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard(), NoChange())
     return regenerate(ctx, cs, cs.args...)
 end
 
 function regenerate(sel::L, ps::P, cs::DynamicCallSite) where {L <: Target, P <: AddressMap}
-    argdiffs = NoChange()
-    ctx = Regenerate(sel, ps, cs, argdiffs)
+    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard(), NoChange())
     return regenerate(ctx, cs, cs.args...)
-end
-
-function regenerate(sel::L, cs::DynamicCallSite, argdiffs::D, new_args...) where {L <: Target, D <: Diff}
-    ctx = Regenerate(sel, cs, argdiffs)
-    return regenerate(ctx, cs, new_args...)
-end
-
-function regenerate(sel::L, ps::P, cs::DynamicCallSite, argdiffs::D, new_args...) where {L <: Target, P <: AddressMap, D <: Diff}
-    ctx = Regenerate(sel, ps, cs, argdiffs)
-    return regenerate(ctx, cs, new_args...)
 end

@@ -8,9 +8,7 @@ function trace_retained(vcs::VectorCallSite,
                         o_len::Int, 
                         n_len::Int, 
                         args...) where {K <: AddressMap, P <: AddressMap}
-    w_adj = -sum(map(get_choices(vcs)[1 : min - 1]) do cl
-                     get_score(cl)
-                 end)
+    w_adj = 0.0
     new = get_choices(vcs)[1 : min - 1]
     new_ret = get_ret(vcs)[1 : min - 1]
 
@@ -18,9 +16,9 @@ function trace_retained(vcs::VectorCallSite,
     ss = get_sub(s, min)
     prev_cl = get_sub(vcs, min)
     if min == 1
-        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), args...)
+        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
     else
-        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), new_ret[min - 1]...)
+        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
     end
     push!(new_ret, ret)
     push!(new, u_cl)
@@ -29,15 +27,15 @@ function trace_retained(vcs::VectorCallSite,
     for i in min + 1 : n_len
         ss = get_sub(s, i)
         prev_cl = get_sub(vcs, i)
-        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), new_ret[i - 1]...)
+        ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
         push!(new_ret, ret)
         push!(new, u_cl)
         w_adj += u_w
     end
+
     return w_adj, new, new_ret
 end
 
-# TODO: finish.
 function trace_new(vcs::VectorCallSite, 
                    s::K, 
                    ps::P,
@@ -55,9 +53,9 @@ function trace_new(vcs::VectorCallSite,
         ss = get_sub(s, min)
         prev_cl = get_sub(vcs, min)
         if min == 1
-            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), args...)
+            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
         else
-            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), new_ret[min - 1]...)
+            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
         end
         push!(new_ret, ret)
         push!(new, u_cl)
@@ -67,13 +65,13 @@ function trace_new(vcs::VectorCallSite,
         for i in min + 1 : o_len
             ss = get_sub(s, i)
             prev_cl = get_sub(vcs, i)
-            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl, UndefinedChange(), new_ret[i - 1]...)
+            ret, u_cl, u_w, rd, ds = update(ss, ps, prev_cl)
             push!(new_ret, ret)
             push!(new, u_cl)
             w_adj += u_w
         end
     end
-    
+
     # Now, generate new call sites with constraints.
     for i in o_len + 1 : n_len
         ss = get_sub(s, i)
@@ -86,7 +84,6 @@ function trace_new(vcs::VectorCallSite,
     return w_adj, new, new_ret
 end
 
-# TODO: finish.
 function trace_new(vcs::VectorCallSite, 
                    s::Empty, 
                    ps::P,
@@ -111,76 +108,72 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::UpdateContext)(c::typeof(markov), 
-                                      addr::A, 
-                                      call::Function, 
-                                      len::Int,
-                                      args...) where A <: Address
-    visit!(ctx, addr)
-    vcs = get_prev(ctx, addr)
-    n_len, o_len = len, length(vcs.ret)
-    ps = get_sub(ctx.params, addr)
-    s = get_sub(ctx.target, addr)
-    min, ks = keyset(s, n_len)
-    if n_len <= o_len
-        w_adj, new, new_ret = trace_retained(vcs, s, ps, ks, min, o_len, n_len, args...)
-    else
-        w_adj, new, new_ret = trace_new(vcs, s, ps, ks, min, o_len, n_len, args...)
-    end
-    add_call!(ctx, addr, VectorCallSite{typeof(markov)}(VectorTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
-    increment!(ctx, w_adj)
-
-    return new_ret
-end
-
 @inline function (ctx::UpdateContext{C, T})(c::typeof(markov), 
                                             call::Function, 
                                             len::Int,
                                             args...) where {C <: VectorCallSite, T <: VectorTrace}
     vcs = ctx.prev
     n_len, o_len = len, length(vcs.ret)
-    ps = ctx.fixed
-    s = ctx.select
+    ps = ctx.params
+    s = ctx.target
     min, ks = keyset(s, n_len)
+    
     if n_len <= o_len
         w_adj, new, new_ret = trace_retained(vcs, s, ps, ks, min, o_len, n_len, args...)
     else
         w_adj, new, new_ret = trace_new(vcs, s, ps, ks, min, o_len, n_len, args...)
     end
 
-    # TODO: fix - allocate full vector.
-    for n in new
-        add_call!(ctx, n)
+    # Mutates the trace.
+    for (i, cl) in enumerate(new)
+        add_call!(ctx, i, cl)
     end
     increment!(ctx, w_adj)
 
     return new_ret
 end
 
+@inline function (ctx::UpdateContext)(c::typeof(markov), 
+                                      addr::A, 
+                                      call::Function, 
+                                      len::Int,
+                                      args...) where A <: Address
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
+    if has_sub(ctx.prev, addr)
+        prev = get_sub(ctx.prev, addr)
+        ret, cl, w, rd, d = update(ss, ps, prev)
+    else
+        ret, cl, w = generate(ss, ps, markov, call, len, args...)
+    end
+    add_call!(ctx, addr, cl)
+    increment!(ctx, w)
+    return ret
+end
+
 # ------------ Convenience ------------ #
 
 function update(sel::L, vcs::VectorCallSite{typeof(markov)}) where L <: AddressMap
-    argdiffs = NoChange()
-    ctx = UpdateContext(vcs, sel, argdiffs)
-    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    ctx = Update(sel, Empty(), vcs, VectorTrace(vcs.len), VectorDiscard(), NoChange())
+    ret = ctx(markov, vcs.fn, vcs.len, vcs.args[1]...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}) where {L <: AddressMap, P <: AddressMap}
-    argdiffs = NoChange()
-    ctx = UpdateContext(vcs, sel, ps, argdiffs)
-    ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    ctx = Update(sel, ps, vcs, VectorTrace(vcs.len), VectorDiscard(), NoChange())
+    ret = ctx(markov, vcs.fn, vcs.len, vcs.args[1]...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, D <: Diff}
-    ctx = UpdateContext(vcs, sel, NoChange())
-    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    ctx = Update(sel, Empty(), vcs, VectorTrace(len), VectorDiscard(), NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[1]...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, P <: AddressMap, D <: Diff}
-    ctx = UpdateContext(vcs, sel, ps, NoChange())
-    ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    ctx = Update(sel, ps, vcs, VectorTrace(len), VectorDiscard(), NoChange())
+    ret = ctx(markov, vcs.fn, len, vcs.args[1]...)
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, len), ctx.weight, UndefinedChange(), ctx.discard
 end

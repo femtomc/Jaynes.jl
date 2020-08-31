@@ -19,6 +19,15 @@ function initialize_filter(observations::K,
 end
 
 function filter_step!(observations::K,
+                      ps::Particles) where {K <: AddressMap, D <: Diff}
+    num_particles = length(ps)
+    Threads.@threads for i in 1:num_particles
+        _, ps.calls[i], uw, _, _ = update(observations, ps.calls[i])
+        ps.lws[i] += uw
+    end
+end
+
+function filter_step!(observations::K,
                       ps::Particles,
                       argdiffs::D,
                       new_args::Tuple) where {K <: AddressMap, D <: Diff}
@@ -38,6 +47,35 @@ function filter_step!(observations::K,
     Threads.@threads for i in 1:num_particles
         _, ps.calls[i], uw, _, _ = update(observations, params, ps.calls[i], argdiffs, new_args...)
         ps.lws[i] += uw
+    end
+end
+
+function filter_step!(observations::K,
+                      ps::Particles,
+                      proposal::Function,
+                      proposal_args::Tuple) where {K <: AddressMap, D <: Diff}
+    num_particles = length(ps)
+    Threads.@threads for i in 1:num_particles
+        _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
+        sel = selection(p_cl)
+        merge!(sel, observations)
+        _, ps.calls[i], u_w, _, _ = update(sel, ps.calls[i])
+        ps.lws[i] += u_w - p_w
+    end
+end
+
+function filter_step!(observations::K,
+                      params::P,
+                      ps::Particles,
+                      proposal::Function,
+                      proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap, D <: Diff}
+    num_particles = length(ps)
+    Threads.@threads for i in 1:num_particles
+        _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
+        sel = selection(p_cl)
+        merge!(sel, observations)
+        _, ps.calls[i], u_w, _, _ = update(sel, params, ps.calls[i])
+        ps.lws[i] += u_w - p_w
     end
 end
 

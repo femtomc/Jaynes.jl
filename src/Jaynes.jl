@@ -47,8 +47,8 @@ Zygote.@adjoint function literal_getproperty(x, ::Val{f}) where f
 end
 
 using DistributionsAD
-using Flux.Optimise: update!
-@reexport using Flux.Optimise
+@reexport using Flux
+import Flux: update!
 
 # Toplevel importants :)
 const Address = Union{Int, Symbol, Pair}
@@ -117,14 +117,15 @@ include("language_extensions.jl")
 include("utils.jl")
 
 # Contexts.
-export Generate, generate
-export Simulate, simulate
-export Update, update
-export Propose, propose
-export Regenerate, regenerate
-export Score, score
-export Backpropagate, get_learnable_gradients, get_choice_gradients
-export ForwardMode, get_learnable_gradient, get_choice_gradient
+export generate
+export simulate
+export update
+export propose
+export regenerate
+export score
+export get_learnable_gradients, get_choice_gradients
+export get_learnable_gradient, get_choice_gradient
+export get_deep_gradients!
 
 # Tracer language features.
 export plate, markov, cond
@@ -154,12 +155,13 @@ export exchange, ex
 export initialize_filter, filter_step!, check_ess_resample!, resample!, get_lmle, pf
 export automatic_differentiation_variational_inference, advi
 export automatic_differentiation_geometric_vimco, adgv
+export neural_variational_inference!, nvi!
+export neural_geometric_vimco!, nvimco!
 
 # Foreign model interfaces.
 export @primitive
 export @load_gen_fmi
 export @load_soss_fmi
-export @load_flux_fmi
 export @load_advanced_hmc
 export @load_chains
 export foreign, deep

@@ -17,9 +17,9 @@ function trace_retained(vcs::VectorCallSite,
     ss = get_sub(s, min)
     prev_cl = get_sub(vcs, min)
     if min == 1
-        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), args...)
+        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
     else
-        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[min - 1])
+        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
     end
     push!(new_ret, ret)
     push!(new, u_cl)
@@ -28,7 +28,7 @@ function trace_retained(vcs::VectorCallSite,
     for i in min + 1 : n_len
         ss = get_sub(s, i)
         prev_cl = get_sub(vcs, i)
-        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[i - 1]...)
+        ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
         push!(new_ret, ret)
         push!(new, u_cl)
         w_adj += get_score(u_cl)
@@ -52,9 +52,9 @@ function trace_new(vcs::VectorCallSite,
         ss = get_sub(s, min)
         prev_cl = get_sub(vcs, min)
         if min == 1
-            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), args...)
+            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
         else
-            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[min - 1])
+            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
         end
         push!(new_ret, ret)
         push!(new, u_cl)
@@ -64,7 +64,7 @@ function trace_new(vcs::VectorCallSite,
         for i in min + 1 : o_len
             ss = get_sub(s, i)
             prev_cl = get_sub(vcs, i)
-            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl, UndefinedChange(), new_ret[i - 1]...)
+            ret, u_cl, u_w, rd, ds = regenerate(ss, prev_cl)
             push!(new_ret, ret)
             push!(new, u_cl)
             w_adj += u_w
@@ -98,7 +98,7 @@ end
     else
         w_adj, new, new_ret = trace_new(vcs, s, ks, min, o_len, n_len, args...)
     end
-    add_call!(ctx, addr, VectorCallSite{typeof(markov)}(VectorTrace(new), get_score(vcs) + w_adj, call, n_len, args, new_ret))
+    add_call!(ctx, addr, VectorCallSite{typeof(markov)}(VectorTrace(new), get_score(vcs) + w_adj, call, args, new_ret, n_len))
     increment!(ctx, w_adj)
 
     return new_ret
@@ -134,24 +134,24 @@ function regenerate(sel::L, vcs::VectorCallSite{typeof(markov)}) where {L <: Tar
     argdiffs = NoChange()
     ctx = Regenerate(vcs, sel, argdiffs)
     ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}) where {L <: Target, P <: AddressMap, D <: Diff}
     argdiffs = NoChange()
     ctx = Regenerate(vcs, sel, ps, argdiffs)
     ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: Target, D <: Diff}
     ctx = Regenerate(vcs, sel, NoChange())
     ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end
 
 function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: Target, P <: AddressMap, D <: Diff}
     ctx = Regenerate(vcs, sel, ps, NoChange())
     ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
 end

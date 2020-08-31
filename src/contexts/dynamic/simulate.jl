@@ -33,26 +33,26 @@ end
 # ------------ Convenience ------------ #
 
 function simulate(fn::Function, args...)
-    ctx = Simulate()
+    ctx = Simulate(Trace(), Empty())
     ret = ctx(fn, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
 function simulate(params::P, fn::Function, args...) where P <: AddressMap
-    ctx = Simulate(params)
+    ctx = Simulate(Trace(), params)
     ret = ctx(fn, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
 function simulate(fn::typeof(rand), d::Distribution{T}) where T
-    ctx = Simulate()
+    ctx = Simulate(Trace(), Empty())
     addr = gensym()
     ret = ctx(rand, addr, d)
     return ret, get_sub(ctx.tr, addr)
 end
 
 function simulate(params::P, fn::typeof(rand), d::Distribution{T}) where {P <: AddressMap, T}
-    ctx = Simulate(params)
+    ctx = Simulate(Trace(), params)
     addr = gensym()
     ret = ctx(rand, addr, d)
     return ret, get_sub(ctx.tr, addr)

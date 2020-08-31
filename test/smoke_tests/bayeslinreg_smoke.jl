@@ -42,7 +42,7 @@ obs = target(map(1 : data_len) do i
         calls = []
         for i in 1 : n_iters
             cl, _ = mh(target([(:σ, ), (:β, )]), cl)
-            i % 30 == 0 && begin
+            i % 50 == 0 && begin
                 push!(calls, cl)
             end
         end
@@ -54,7 +54,7 @@ obs = target(map(1 : data_len) do i
         est_β = sum(map(calls) do cl
                         (cl[:β])
                     end) / length(calls)
-        @test isapprox(0.0, est_β - 3.0, atol=1e-1)
+        @test isapprox(0.0, est_β - 3.0, atol=2e-1)
     end
 
     # MH random walk kernel with proposal.

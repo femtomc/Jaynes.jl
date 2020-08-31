@@ -50,10 +50,12 @@ end
 
     @testset "Vectorized markov" begin
         ret, cl = simulate(test_markov)
+        original_score = get_score(cl)
         stored_at_y = (cl[:k, 3, :y])
         sel = target([(:k, 3, :y) => 5.0])
         ret, cl, w, retdiff, d = update(sel, cl)
         @test (cl[:k, 3, :y]) == 5.0
+        @test get_score(cl) - w ≈ original_score
     end
 end
 

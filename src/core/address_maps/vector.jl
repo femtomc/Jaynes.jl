@@ -3,6 +3,7 @@
 struct VectorMap{K} <: AddressMap{K}
     vector::Vector{AddressMap{<: K}}
     VectorMap{K}() where K = new{K}(Vector{AddressMap{K}}())
+    VectorMap{K}(len::Int) where K = new{K}(Vector{AddressMap{K}}(undef, len))
     VectorMap{K}(vector::Vector{<: AddressMap{K}}) where K = new{K}(vector)
     
     # TODO: figure out this type witchcraft.
@@ -16,10 +17,12 @@ Zygote.@adjoint VectorMap(vector) = VectorMap(vector), ret_grad -> (nothing, )
 @inline get_sub(vm::VectorMap, addr::A) where A <: Address = get(vm.vector, addr, Empty())
 @inline get_sub(vm::VectorMap, addr::Tuple{}) = Empty()
 
+@inline getindex(vm::VectorMap, addrs...) = get_value(get_sub(vm, addrs))
+
 @inline Base.isempty(vm::VectorMap) = isempty(vm.vector)
 
 function haskey(vm::VectorMap, addr)
-    addr <= length(vm.vector) && has_value(get_sub(vm, addr))
+    addr <= length(vm.vector)
 end
 
 @inline has_sub(vm::VectorMap, addr::A) where A <: Address = addr <= length(vm.vector)
@@ -30,7 +33,7 @@ end
 
 function set_sub!(vm::VectorMap{K}, addr::Int, v::AddressMap{<:K}) where K
     haskey(vm, addr) || error("(set_sub!): field $(:vector) of instance type VectorMap does not have $addr as index.")
-    insert!(vm.vector, addr, v)
+    setindex!(vm.vector, v, addr)
 end
 @inline set_sub!(vm::VectorMap{K}, addr::Tuple{A}, v::AddressMap{<: K}) where {A <: Address, K} = set_sub!(vm, addr[1], v)
 function set_sub!(vm::VectorMap{K}, addr::Tuple, v::AddressMap{<:K}) where K

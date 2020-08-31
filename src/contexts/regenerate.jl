@@ -15,40 +15,16 @@ mutable struct RegenerateContext{C <: AddressMap,
     argdiffs::Ag
 end
 
-function Regenerate(target::K, cl::C) where {K <: AddressMap, C <: CallSite}
+function Regenerate(target::K, ps, cl::C, tr, discard, ag) where {K <: AddressMap, C <: CallSite}
     RegenerateContext(cl, 
-                  typeof(cl.trace)(), 
-                  target, 
-                  0.0, 
-                  0.0, 
-                  DynamicDiscard(), 
-                  Visitor(), 
-                  Empty(), 
-                  NoChange())
-end
-
-function Regenerate(target::K, cl::C, argdiffs::Ag) where {K <: AddressMap, C <: CallSite, Ag <: Diff}
-    RegenerateContext(cl, 
-                  typeof(cl.trace)(), 
-                  target, 
-                  0.0, 
-                  0.0, 
-                  DynamicDiscard(), 
-                  Visitor(), 
-                  Empty(), 
-                  argdiffs)
-end
-
-function Regenerate(target::K, ps::P, cl::C, argdiffs::Ag) where {K <: AddressMap, P <: AddressMap, C <: CallSite, Ag <: Diff}
-    RegenerateContext(cl, 
-                  typeof(cl.trace)(), 
-                  target, 
-                  0.0, 
-                  0.0, 
-                  DynamicDiscard(), 
-                  Visitor(), 
-                  ps,
-                  argdiffs)
+                      tr,
+                      target, 
+                      0.0, 
+                      0.0, 
+                      discard,
+                      Visitor(), 
+                      Empty(), 
+                      ag)
 end
 
 # ------------ includes ------------ #

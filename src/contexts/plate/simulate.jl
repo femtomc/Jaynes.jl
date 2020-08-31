@@ -1,82 +1,70 @@
-# ------------ Choice sites ------------ #
-
 @inline function (ctx::SimulateContext)(c::typeof(plate), 
-                                        addr::A, 
                                         d::Distribution{K},
                                         len::Int) where {A <: Address, K}
-    visit!(ctx, addr)
     v_ret = Vector{eltype(d)}(undef, len)
-    v_cl = Vector{Choice{eltype(d)}}(undef, len)
-    sc = 0.0
-    for i in 1:len
-        visit!(ctx, addr => i)
+    for i in 1 : len
+        visit!(ctx, i)
         s = rand(d)
-        score = logpdf(d, s)
-        sc += score
+        add_choice!(ctx, i, logpdf(d, s), s)
         v_ret[i] = s
-        v_cl[i] = Choice(score, s)
     end
-    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cl), 
-                                                       sc, 
-                                                       d, 
-                                                       len, 
-                                                       (), 
-                                                       v_ret))
     return v_ret
 end
 
-# ------------ Call sites ------------ #
-
 @inline function (ctx::SimulateContext)(c::typeof(plate), 
-                                        addr::Address, 
                                         call::Function, 
                                         args::Vector)
-    visit!(ctx, addr)
-    ps = get_sub(ctx.params, addr)
-    sc = 0.0
+    # First index.
+    ps = get_sub(ctx.params, 1)
     len = length(args)
     ret, cl = simulate(ps, call, args[1]...)
-    sc += get_score(cl)
+    add_call!(ctx, 1, cl)
     v_ret = Vector{typeof(ret)}(undef, len)
-    v_cl = Vector{typeof(cl)}(undef, len)
     v_ret[1] = ret
-    v_cl[1] = cl
+
+    # Rest.
     for i in 2:len
+        ps = get_sub(ctx.params, i)
         ret, cl = simulate(ps, call, args[i]...)
+        add_call!(ctx, i, cl)
         v_ret[i] = ret
-        v_cl[i] = cl
-        sc += get_score(cl)
     end
-    add_call!(ctx, addr, VectorCallSite{typeof(plate)}(VectorTrace(v_cl), 
-                                                       sc, 
-                                                       call, 
-                                                       length(args), 
-                                                       args, 
-                                                       v_ret))
     return v_ret
+end
+
+@inline function (ctx::SimulateContext)(c::typeof(plate), 
+                                        addr::A,
+                                        call::Function, 
+                                        args::Vector) where A <: Address
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ret, cl = simulate(ps, plate, call, args)
+    add_call!(ctx, addr, cl)
+    return ret
 end
 
 # ------------ Convenience ------------ #
 
 function simulate(c::typeof(plate), fn::Function, args::Vector)
-    ctx = Simulate()
-    addr = gensym()
-    ret = ctx(plate, addr, fn, args)
-    return ret, get_sub(ctx.tr, addr)
+    ctx = Simulate(VectorTrace(length(args)), Empty())
+    ret = ctx(c, fn, args)
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, fn, args, ret, length(args))
 end
 
 function simulate(params::P, c::typeof(plate), fn::Function, args::Vector) where P <: AddressMap
-    addr = gensym()
-    v_ps = learnables(addr => params)
-    ctx = Simulate(v_ps)
-    ret = ctx(plate, addr, fn, args)
-    return ret, get_sub(ctx.tr, addr)
+    ctx = Simulate(VectorTrace(length(args)), params)
+    ret = ctx(c, fn, args)
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, fn, args, ret, length(args))
 end
 
-function simulate(fn::typeof(plate), d::Distribution{T}, len::Int) where T
-    ctx = Simulate()
-    addr = gensym()
-    ret = ctx(plate, addr, d, len)
-    return ret, get_sub(ctx.tr, addr)
+function simulate(c::typeof(plate), d::Distribution{T}, len::Int) where T
+    ctx = Simulate(VectorTrace(len), Empty())
+    ret = ctx(c, d, len)
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, fn, args, ret, length(args))
 end
 
+function simulate(params::P, c::typeof(plate), d::Distribution{T}, len::Int) where {P <: AddressMap, T}
+    ctx = Simulate(VectorTrace(len), params)
+    ret = ctx(c, d, len)
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, fn, args, ret, length(args))
+end
