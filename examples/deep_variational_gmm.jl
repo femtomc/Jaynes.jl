@@ -3,7 +3,6 @@ module GaussianMixtureModels
 using Random
 include("../src/Jaynes.jl")
 using .Jaynes
-Jaynes.@load_flux_fmi()
 
 # Set a random seed.
 Random.seed!(3)
@@ -43,12 +42,12 @@ x = mapreduce(c -> rand(MvNormal([μs[c], μs[c]], 1.), N), hcat, 1:2)
 end
 
 dnn1 = Chain(Dense(120, 60), Dense(60, 2))
-dnn2 = Chain(Dense(120, 30), Dense(30, 2), softmax)
+dnn2 = Chain(Dense(120, 2), softmax)
 
 var = @sugar (cl, data) -> begin
-    params <- dnn1(data)
-    μ1 ~ Normal(params[1], 1.0)
-    μ2 ~ Normal(params[2], 1.0)
+    (param1, param2) <- dnn1(data)
+    μ1 ~ Normal(param1, 1.0)
+    μ2 ~ Normal(param2, 1.0)
     w <- dnn2(data)
     k = [(:k => i) ~ Categorical(w) for i in 1 : 2 * N]
 end
