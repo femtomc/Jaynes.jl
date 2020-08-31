@@ -22,11 +22,11 @@ function automatic_differentiation_variational_inference(tg::K,
                                                          mod::Function,
                                                          args::Tuple;
                                                          opt = ADAM(0.05, (0.9, 0.8)),
-                                                         iters = 1000, 
+                                                         n_iters = 1000, 
                                                          gs_samples = 100) where {K <: AddressMap, P <: AddressMap}
     cls = Vector{CallSite}(undef, gs_samples)
-    elbows = Vector{Float64}(undef, iters)
-    Threads.@threads for i in 1 : iters
+    elbows = Vector{Float64}(undef, n_iters)
+    Threads.@threads for i in 1 : n_iters
         elbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples
@@ -35,6 +35,7 @@ function automatic_differentiation_variational_inference(tg::K,
             accumulate!(gs_est, gs)
             cls[s] = cl
         end
+        @info "ELBO est: $elbo_est"
         elbows[i] = elbo_est
         ps = update_learnables(opt, ps, gs_est)
     end
@@ -92,11 +93,11 @@ function automatic_differentiation_geometric_vimco(tg::K,
                                                    mod::Function,
                                                    args::Tuple;
                                                    opt = ADAM(0.05, (0.9, 0.8)),
-                                                   iters = 1000, 
+                                                   n_iters = 1000, 
                                                    gs_samples = 100) where {K <: AddressMap, P <: AddressMap}
     cls = Vector{CallSite}(undef, gs_samples)
-    velbows = Vector{Float64}(undef, iters)
-    Threads.@threads for i in 1 : iters
+    velbows = Vector{Float64}(undef, n_iters)
+    Threads.@threads for i in 1 : n_iters
         velbo_est = 0.0
         gs_est = Gradients()
         for s in 1 : gs_samples

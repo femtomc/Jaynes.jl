@@ -22,7 +22,7 @@ macro load_flux_fmi()
             scaler::Float64
             fixed::S
             network_params::IdDict
-            initial_params::P
+            learnables::P
             opt
         end
 
@@ -78,6 +78,11 @@ macro load_flux_fmi()
             apply_model!(ctx, ctx.network_params, model, args...)
         end
 
+        @inline function (ctx::FluxNetworkTrainContext)(fn::typeof(learnable), addr::Jaynes.Address)
+            haskey(ctx.learnables, addr) && return getindex(ctx.learnables, addr)
+            error("Parameter not provided at address $addr.")
+        end
+
         @inline function (ctx::FluxNetworkTrainContext)(call::typeof(rand), 
                                                         addr::T, 
                                                         d::Distribution{K}) where {T <: Jaynes.Address, K}
@@ -96,7 +101,7 @@ macro load_flux_fmi()
                                                         args...) where T <: Jaynes.Address
             cl = get_sub(ctx.call, addr)
             fx = get_sub(ctx.fixed, addr)
-            ps = get_sub(ctx.initial_params, addr)
+            ps = get_sub(ctx.learnables, addr)
             ret = simulate_deep_pullback(fx, ps, cl, args)
             return ret
         end
@@ -172,11 +177,11 @@ macro load_flux_fmi()
                                                mod::Function,
                                                args::Tuple;
                                                opt = ADAM(0.05, (0.9, 0.8)),
-                                               iters = 1000,
+                                               n_iters = 1000,
                                                gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
-            cls = Vector{Jaynes.CallSite}(undef, iters)
-            elbows = Vector{Float64}(undef, iters)
-            Threads.@threads for i in 1 : iters
+            cls = Vector{Jaynes.CallSite}(undef, n_iters)
+            elbows = Vector{Float64}(undef, n_iters)
+            Threads.@threads for i in 1 : n_iters
                 elbo_est = 0.0
                 gs_est = IdDict()
                 for s in 1 : gs_samples
@@ -189,6 +194,7 @@ macro load_flux_fmi()
                     cls[i] = cl
                 end
                 elbows[i] = elbo_est
+                @info "ELBO estimate: $elbo_est"
                 update_models!(opt, gs_est)
             end
             elbows, cls
@@ -200,7 +206,7 @@ macro load_flux_fmi()
                                                mod::Function,
                                                args::Tuple;
                                                opt = ADAM(0.05, (0.9, 0.8)),
-                                               iters = 1000,
+                                               n_iters = 1000,
                                                gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
             neural_variational_inference!(tg, 
                                           Jaynes.Empty(), 
@@ -209,7 +215,7 @@ macro load_flux_fmi()
                                           mod, 
                                           args; 
                                           opt = opt, 
-                                          iters = iters,
+                                          n_iters = n_iters,
                                           gs_samples = gs_samples)
         end
 
@@ -254,11 +260,11 @@ macro load_flux_fmi()
                                          mod::Function,
                                          args::Tuple;
                                          opt = ADAM(0.05, (0.9, 0.8)),
-                                         iters = 1000,
+                                         n_iters = 1000,
                                          gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
-            cls = Vector{Jaynes.CallSite}(undef, iters)
-            velbows = Vector{Float64}(undef, iters)
-            Threads.@threads for i in 1 : iters
+            cls = Vector{Jaynes.CallSite}(undef, n_iters)
+            velbows = Vector{Float64}(undef, n_iters)
+            Threads.@threads for i in 1 : n_iters
                 velbo_est = 0.0
                 gs_est = IdDict()
                 for s in 1 : gs_samples
@@ -283,7 +289,7 @@ macro load_flux_fmi()
                                          mod::Function,
                                          args::Tuple;
                                          opt = ADAM(0.05, (0.9, 0.8)),
-                                         iters = 1000,
+                                         n_iters = 1000,
                                          gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
             neural_geometric_vimco!(tg, 
                                     Jaynes.Empty(), 
@@ -293,7 +299,7 @@ macro load_flux_fmi()
                                     mod, 
                                     args; 
                                     opt = opt, 
-                                    iters = iters,
+                                    n_iters = n_iters,
                                     gs_samples = gs_samples)
         end
 
