@@ -19,10 +19,10 @@ x = mapreduce(c -> rand(MvNormal([μs[c], μs[c]], 1.), N), hcat, 1:2)
 @sugar GaussianMixtureModel(N) = begin
 
     # Draw the parameters for cluster 1.
-    μ1 ~ Normal(0.0, 1.0)
+    μ1 ~ Normal(0.0, 3.0)
 
     # Draw the parameters for cluster 2.
-    μ2 ~ Normal(0.0, 1.0)
+    μ2 ~ Normal(0.0, 3.0)
 
     μ = [μ1, μ2]
 
@@ -41,13 +41,13 @@ x = mapreduce(c -> rand(MvNormal([μs[c], μs[c]], 1.), N), hcat, 1:2)
     return k
 end
 
-dnn1 = Chain(Dense(120, 60), Dense(60, 2))
+dnn1 = Dense(120, 4)
 dnn2 = Chain(Dense(120, 2), softmax)
 
 var = @sugar (cl, data) -> begin
-    (param1, param2) <- dnn1(data)
-    μ1 ~ Normal(param1, 1.0)
-    μ2 ~ Normal(param2, 1.0)
+    (param1, param2, param3, param4) <- dnn1(data)
+    μ1 ~ Normal(param1, exp(param3))
+    μ2 ~ Normal(param2, exp(param4))
     w <- dnn2(data)
     k = [(:k => i) ~ Categorical(w) for i in 1 : 2 * N]
 end
@@ -62,9 +62,9 @@ data = collect(Iterators.flatten(x))
 elbows, cls = nvi!(obs, 
                    var, (nothing, data),
                    GaussianMixtureModel, (N, );
-                   opt = ADAM(2e-3, (0.9, 0.999)), 
-                   n_iters = 500, 
-                   gs_samples = 300)
+                   opt = ADAM(1e-3, (0.9, 0.999)), 
+                   n_iters = 100, 
+                   gs_samples = 200)
 
 #params, elbows, cls = advi(obs, 
 #                           params,
@@ -102,7 +102,7 @@ end
 
 println("Neural MCMC.")
 n_iters = 10000
-n_samples = 700
+n_samples = 500
 calls = infer(n_iters, n_samples)
 μ1 = sum(map(calls) do cl
              cl[:μ1]
