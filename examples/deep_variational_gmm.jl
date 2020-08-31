@@ -19,10 +19,10 @@ x = mapreduce(c -> rand(MvNormal([μs[c], μs[c]], 1.), N), hcat, 1:2)
 @sugar GaussianMixtureModel(N) = begin
 
     # Draw the parameters for cluster 1.
-    μ1 ~ Normal(0.0, 3.0)
+    μ1 ~ Normal(1.0, 3.0)
 
     # Draw the parameters for cluster 2.
-    μ2 ~ Normal(0.0, 3.0)
+    μ2 ~ Normal(-1.0, 3.0)
 
     μ = [μ1, μ2]
 
@@ -62,9 +62,9 @@ data = collect(Iterators.flatten(x))
 elbows, cls = nvi!(obs, 
                    var, (nothing, data),
                    GaussianMixtureModel, (N, );
-                   opt = ADAM(1e-3, (0.9, 0.999)), 
-                   n_iters = 100, 
-                   gs_samples = 200)
+                   opt = ADAM(5e-4, (0.9, 0.9)), 
+                   n_iters = 500, 
+                   gs_samples = 500)
 
 #params, elbows, cls = advi(obs, 
 #                           params,
