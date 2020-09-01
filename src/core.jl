@@ -1,6 +1,21 @@
-import Base: rand
-import Base: getindex, haskey, iterate, isempty, convert, collect, getindex, setindex!, push!, merge, merge!, get, filter, length, ndims
-import Base: +
+import Base: getindex, 
+             haskey, 
+             iterate, 
+             isempty, 
+             convert, 
+             collect, 
+             getindex, 
+             setindex!, 
+             push!, 
+             merge, 
+             merge!, 
+             get, 
+             filter, 
+             length, 
+             ndims, 
+             keys,
+             +, 
+             rand
 
 # Maps.
 include("core/address_map.jl")

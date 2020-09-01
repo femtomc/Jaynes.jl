@@ -1,17 +1,30 @@
-struct StaticMap{T, K, B} <: AddressMap{K}
-    tree::NamedTuple{T, <: K}
-    isempty::Val{B}
+struct StaticMap{T, N, K, B} <: AddressMap{K}
+    tree::NamedTuple{T, <: NTuple{N, <: AddressMap{K}}}
+    isempty::B
     function StaticMap{K}() where K
-        new{(), K, true}(NamedTuple(), Val(true))
+        new{(), 0, K, true}(NamedTuple(), Val(true))
+    end
+    function StaticMap{K}(nt::NamedTuple) where K
+        new{keys(nt), length(nt), K, Val{isempty(nt)}}(nt, Val(isempty(nt)))
     end
     function StaticMap{K}(tree::Dict{Symbol, AddressMap{K}}) where K
         nt = (; tree...)
-        new{keys(nt), K, Val{isempty(tree)}}(nt, Val(isempty(true)))
+        new{keys(nt), length(tree), K, Val{isempty(tree)}}(nt, Val(isempty(true)))
     end
 end
 StaticMap(tree::Dict{Symbol, AddressMap{K}}) where K = StaticMap{K}(tree)
+function StaticMap(k::A, v) where A <: Address
+    nt = NamedTuple{(k, )}((Value(v), ))
+    StaticMap{Value}(nt)
+end
+function StaticMap(k::A, v::S) where {A <: Address, S <: StaticMap}
+    nt = NamedTuple{(k, )}((v, ))
+    StaticMap{Value}(nt)
+end
 
-@inline shallow_iterator(sm::StaticMap) = dm.tree
+@inline keys(sm::StaticMap{T}) where T = T
+
+@inline shallow_iterator(sm::StaticMap) = zip(keys(sm.tree), values(sm.tree))
 
 @inline function get(sm::StaticMap{T, Value}, addr, fallback) where T
     haskey(sm, addr) || return fallback
@@ -31,12 +44,12 @@ end
 
 @inline haskey(sm::StaticMap, addr::A) where A <: Address = haskey(sm.tree, addr) && has_value(get_sub(sm, addr))
 
-@inline has_sub(sm::StaticMap, addr::A) where A <: Address = haskey(dm.tree, addr)
+@inline has_sub(sm::StaticMap, addr::A) where A <: Address = haskey(sm.tree, addr)
 
 function set_sub(sm::StaticMap{T, K, B}, addr::A, v::AddressMap{<: K}) where {T, K, B, A <: Address}
     d = Dict{Symbol, AddressMap{K}}(map(keys(sm.tree)) do k
-                 k => getindex(sm, k)
-             end)
+                                        k => getindex(sm, k)
+                                    end)
     d[addr] = v
     StaticMap(d)
 end
@@ -44,7 +57,7 @@ end
 function set_sub(sm::StaticMap{T, K, B}, addr::Tuple, v::AddressMap{<: K}) where {T, K, B}
     hd, tl = addr[1], addr[2 : end]
     d = Dict{Symbol, AddressMap{K}}()
-    if !haskey(dm.tree, hd)
+    if !haskey(sm.tree, hd)
         d[hd] = StaticMap{K}()
     end
     set_sub(d[hd], tl, v)
@@ -66,7 +79,7 @@ function merge(sel1::StaticMap{T, K, B1},
         tree[k], b = merge(sel1.tree[k], sel2.tree[k])
         check = check || b
     end
-    return StaticMap((; tree...)), !isempty(inter) || check
+    return StaticMap{K}((; tree...)), !isempty(inter) || check
 end
 
 merge(sm::StaticMap, ::Empty) = deepcopy(sm), false
@@ -83,14 +96,32 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::S, meta) where S 
     end
 end
 
-function static(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
-    sm = StaticMap{Any}()
-    for (k, v) in v
-        sm = set_sub(sm, k, v)
-    end
-    sm
+function static(k::A, v) where A <: Address
+    StaticMap(k, v)
 end
-
-function static(v::Pair{T, K}) where {T <: Tuple, K}
-    set_sub(StaticMap{Value}(), v[1], Value(v[2]))
+function static(k::Tuple{A}, v) where A <: Address
+    StaticMap(k[1], v)
+end
+function static(k::Tuple, v) where A <: Address
+    static(k[1], static(k[2 : end], v))
+end
+function static(v::Vector{Pair{Tuple{Symbol}, K}}) where K
+    ks = map(v) do k
+        k[1][1]
+    end
+    vs = map(v) do k
+        Value(k[2])
+    end
+    nt = NamedTuple{tuple(ks...)}(vs)
+    StaticMap{Value}(nt)
+end
+function static(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
+    if !isempty(v)
+        k, l = v[1]
+        sm = static(k, l)
+        for (k, v) in v[2 : end]
+            sm, _ = merge(sm, static(k, v))
+        end
+        return sm
+    end
 end
