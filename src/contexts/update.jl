@@ -28,6 +28,20 @@ function Update(select::K, ps::P, cl::C, tr, discard, argdiffs::Ag) where {K <: 
                   argdiffs)
 end
 
+# Future pass configurable by static address map type information.
+function extract_markov_blanket!(ir, chm) end
+function extract_markov_blanket!(ir, chm::Type{<: StaticMap})
+    println(keys(chm))
+end
+
+@dynamo function (mx::UpdateContext{C, T, K})(a...) where {C, T, K}
+    ir = IR(a...)
+    ir == nothing && return
+    extract_markov_blanket!(ir, K)
+    recur!(ir)
+    return ir
+end
+
 # ------------ includes ------------ #
 
 include("dynamic/update.jl")
