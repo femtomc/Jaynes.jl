@@ -20,6 +20,7 @@ end
     Empty()
 end
 @inline get_sub(dm::DynamicMap, addr::Tuple{}) = Empty()
+
 @inline getindex(dm::DynamicMap, addrs...) = get_value(get_sub(dm, addrs))
 
 @inline Base.isempty(dm::DynamicMap) = isempty(dm.tree)

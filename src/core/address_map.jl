@@ -233,4 +233,5 @@ end
 include("address_maps/dynamic.jl")
 include("address_maps/vector.jl")
 include("address_maps/conditional.jl")
+include("address_maps/static.jl")
 include("array_compat.jl")

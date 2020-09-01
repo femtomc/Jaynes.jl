@@ -65,6 +65,7 @@ isless(::Pair, ::Int) = false
 
 # TODO: This chunk below me is currently required to fix an unknown performance issue in Base. Don't be alarmed if this suddenly disappears in future versions.
 unwrap(gr::GlobalRef) = gr.name
+unwrap(v::Val{K}) where K = K
 unwrap(gr) = gr
 
 # Whitelist includes vectorized calls.
@@ -139,7 +140,7 @@ export construct_graph, compile_function
 export dynamic
 
 # Selections and parameters.
-export select, target, array, learnables
+export select, target, static, array, learnables
 export anywhere, intersection, union
 export compare, update_learnables, merge!, merge
 
