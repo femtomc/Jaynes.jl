@@ -52,6 +52,10 @@ using DistributionsAD
 @reexport using Flux
 import Flux: update!, flatten
 
+# Plotting.
+using UnicodePlots
+import UnicodePlots.lineplot
+
 # Toplevel importants :)
 const Address = Union{Int, Symbol, Pair}
 
@@ -173,7 +177,7 @@ export @load_chains
 export foreign, deep
 
 # Utilities.
-export display, getindex, haskey, get_score, get_ret, flatten
+export display, getindex, haskey, get_score, get_ret, flatten, lineplot
 
 # Just a little sugar.
 export @sugar

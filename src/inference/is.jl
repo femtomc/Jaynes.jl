@@ -7,8 +7,7 @@ function importance_sampling(observations::K,
     Threads.@threads for i in 1:num_samples
         _, calls[i], lws[i] = generate(observations, model, args...)
     end
-    ltw = lse(lws)
-    lnw = lws .- ltw
+    _, lnw = nw(lws)
     return Particles(calls, lws, 0.0), lnw
 end
 
@@ -22,8 +21,7 @@ function importance_sampling(observations::K,
     Threads.@threads for i in 1:num_samples
         _, calls[i], lws[i] = generate(observations, ps, model, args...)
     end
-    ltw = lse(lws)
-    lnw = lws .- ltw
+    _, lnw = nw(lws)
     return Particles(calls, lws, 0.0), lnw
 end
 
@@ -42,8 +40,7 @@ function importance_sampling(observations::K,
         _, calls[i], gw = generate(pmap, model, args...)
         lws[i] = gw - pw
     end
-    ltw = lse(lws)
-    lnw = lws .- ltw
+    _, lnw = nw(lws)
     return Particles(calls, lws, 0.0), lnw
 end
 
@@ -63,8 +60,7 @@ function importance_sampling(observations::K,
         _, calls[i], gw = generate(pmap, ps, model, args...)
         lws[i] = gw - pw
     end
-    ltw = lse(lws)
-    lnw = lws .- ltw
+    _, lnw = nw(lws)
     return Particles(calls, lws, 0.0), lnw
 end
 
@@ -84,8 +80,7 @@ function importance_sampling(observations::K,
         _, calls[i], gw = generate(pmap, model, args...)
         lws[i] = gw - pw
     end
-    ltw = lse(lws)
-    lnw = lws .- ltw
+    _, lnw = nw(lws)
     return Particles(calls, lws, 0.0), lnw
 end
 
@@ -106,7 +101,6 @@ function importance_sampling(observations::K,
         _, calls[i], gw = generate(pmap, ps, model, args...)
         lws[i] = gw - pw
     end
-    ltw = lse(lws)
-    lnw = lws .- ltw
+    _, lnw = nw(lws)
     return Particles(calls, lws, 0.0), lnw
 end

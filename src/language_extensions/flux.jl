@@ -182,16 +182,18 @@ function neural_variational_inference!(opt,
     elbo_est = 0.0
     gs_est = IdDict()
     lws = Vector{Float64}(undef, gs_samples)
+    cs = Vector{Jaynes.CallSite}(undef, gs_samples)
     for s in 1 : gs_samples
-        model_grads, lws[i], cl = osng(tg, ps, 
-                                       v_mod, v_args, 
-                                       mod, args; 
-                                       scale = 1.0 / gs_samples)
-        elbo_est += lws[i] / gs_samples
+        model_grads, lws[s], cs[s] = osnges(tg, ps, 
+                                            v_mod, v_args, 
+                                            mod, args; 
+                                            scale = 1.0 / gs_samples)
+        elbo_est += lws[s] / gs_samples
         accumulate!(gs_est, model_grads)
     end
     update_models!(opt, gs_est)
-    cl = cs[rand(Categorical(nw(lws)))]
+    _, nlw = nw(lws)
+    cl = cs[rand(Categorical(nlw))]
     elbo_est, cl
 end
 

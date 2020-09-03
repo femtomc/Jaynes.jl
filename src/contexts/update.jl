@@ -34,14 +34,6 @@ function extract_markov_blanket!(ir, chm::Type{<: StaticMap})
     println(keys(chm))
 end
 
-@dynamo function (mx::UpdateContext{C, T, K})(a...) where {C, T, K}
-    ir = IR(a...)
-    ir == nothing && return
-    extract_markov_blanket!(ir, K)
-    recur!(ir)
-    return ir
-end
-
 # ------------ includes ------------ #
 
 include("dynamic/update.jl")

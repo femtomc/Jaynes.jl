@@ -13,13 +13,6 @@ function Simulate(tr, params)
                     params)
 end
 
-@dynamo function (mx::SimulateContext)(a...)
-    ir = IR(a...)
-    ir == nothing && return
-    recur!(ir)
-    return ir
-end
-
 # ------------ includes ------------ #
 
 include("dynamic/simulate.jl")
