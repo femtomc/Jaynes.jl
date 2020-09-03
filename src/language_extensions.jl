@@ -17,9 +17,9 @@ function load_gen_fmi end
 include("language_extensions/gen.jl")
 
 include("language_extensions/flux.jl")
-const osnges! = one_shot_neural_gradient_estimator_step!
+const osnges = one_shot_neural_gradient_estimator
 const nvi! = neural_variational_inference!
-const vimges! = vimco_neural_gradient_estimator_step!
+const vimges = vimco_neural_gradient_estimator
 const nvimco! = neural_geometric_vimco!
 
 function load_chains end

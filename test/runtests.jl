@@ -30,7 +30,6 @@ println("\n________________________\n")
 
     println("Gradient learning.")
     @time @testset "Gradient learning." begin
-        include("core/backpropagation.jl")
     end
     println()
 end
@@ -51,6 +50,11 @@ println("\n________________________\n")
     println("Metropolis-Hastings.")
     @time @testset "Metropolis-Hastings." begin
         include("inference/metropolis_hastings.jl")
+    end
+    
+    println("Gradient-based inference.")
+    @time @testset "Gradient-based inference." begin
+        include("inference/gradient_based_inference.jl")
     end
     println()
 end

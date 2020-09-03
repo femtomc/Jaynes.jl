@@ -4,10 +4,10 @@ module Jaynes
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta
 using Random
-using Mjolnir
-using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
-import Mjolnir.trace
-using Mjolnir: Defaults
+#using Mjolnir
+#using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
+#import Mjolnir.trace
+#using Mjolnir: Defaults
 using MacroTools
 
 using Reexport

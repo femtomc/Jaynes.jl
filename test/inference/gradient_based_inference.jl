@@ -18,6 +18,9 @@ end
     @test params[:m] ≈ 0.0 atol = 1e-2
 end
 
+@testset "Convergence for learning - MAP 1" begin
+end
+
 function model()
     slope = rand(:slope, Normal(-1, exp(0.5)))
     intercept = rand(:intercept, Normal(1, exp(2.0)))
@@ -32,15 +35,34 @@ function var()
     intercept = rand(:intercept, Normal(intercept_mu, exp(intercept_log_std)))
 end
 
-@testset "Convergence for learning - VI 1" begin
+@testset "Convergence for learning - ADVI 1" begin
     sel = target()
-    initial_params = learnables([(:slope_mu, ) => 0.0,
-                                 (:slope_log_std, ) => 0.0,
-                                 (:intercept_mu, ) => 0.0,
-                                 (:intercept_log_std, ) => 0.0])
-    params, _, _ = advi(sel, initial_params, var, (), model, (); n_iters = 2000, opt = ADAM(0.005, (0.9, 0.999)))
+    params = learnables([(:slope_mu, ) => 0.0,
+                         (:slope_log_std, ) => 0.0,
+                         (:intercept_mu, ) => 0.0,
+                         (:intercept_log_std, ) => 0.0])
+    opt = ADAM(0.005, (0.9, 0.999))
+    for i in 1 : 500
+        params, _ = advi(opt, sel, params, var, (), model, ())
+    end
     @test params[:slope_mu] ≈ -1.0 atol = 7e-2
     @test params[:slope_log_std] ≈ 0.5 atol = 7e-2
     @test params[:intercept_mu] ≈ 1.0 atol = 7e-2
     @test params[:intercept_log_std] ≈ 2.0 atol = 7e-2
 end
+
+#@testset "Convergence for learning - geo VIMCO 1" begin
+#    sel = target()
+#    params = learnables([(:slope_mu, ) => 0.0,
+#                         (:slope_log_std, ) => 0.0,
+#                         (:intercept_mu, ) => 0.0,
+#                         (:intercept_log_std, ) => 0.0])
+#    opt = ADAM(0.005, (0.9, 0.999))
+#    for i in 1 : 500
+#        params, _ = adgv(opt, sel, params, var, (), model, ())
+#    end
+#    @test params[:slope_mu] ≈ -1.0 atol = 7e-2
+#    @test params[:slope_log_std] ≈ 0.5 atol = 7e-2
+#    @test params[:intercept_mu] ≈ 1.0 atol = 7e-2
+#    @test params[:intercept_log_std] ≈ 2.0 atol = 7e-2
+#end

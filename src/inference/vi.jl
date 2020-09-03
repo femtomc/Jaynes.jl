@@ -1,3 +1,5 @@
+# ------------ Automatic differentiation variational inference ------------ #
+
 function one_shot_gradient_estimator(tg::K,
                                      ps::P,
                                      v_mod::Function,
@@ -10,37 +12,31 @@ function one_shot_gradient_estimator(tg::K,
     _, mlw = score(cl, ps, mod, args...)
     lw = mlw - get_score(cl)
     _, gs = get_learnable_gradients(ps, cl, 1.0, lw * scale)
-    return gs, lw, cl
+    return gs, lw
 end
 
-# ------------ Automatic differentiation variational inference ------------ #
-
-function automatic_differentiation_variational_inference(tg::K,
+function automatic_differentiation_variational_inference(opt,
+                                                         tg::K,
                                                          ps::P,
                                                          v_mod::Function,
                                                          v_args::Tuple,
                                                          mod::Function,
                                                          args::Tuple;
-                                                         opt = ADAM(0.05, (0.9, 0.8)),
-                                                         n_iters = 1000, 
                                                          gs_samples = 100) where {K <: AddressMap, P <: AddressMap}
-    cls = Vector{CallSite}(undef, gs_samples)
-    elbows = Vector{Float64}(undef, n_iters)
-    Threads.@threads for i in 1 : n_iters
-        elbo_est = 0.0
-        gs_est = Gradients()
-        for s in 1 : gs_samples
-            gs, lw, cl = one_shot_gradient_estimator(tg, ps, v_mod, v_args, mod, args; scale = 1.0 / gs_samples)
-            elbo_est += lw / gs_samples
-            accumulate!(gs_est, gs)
-            cls[s] = cl
-        end
-        @info "ELBO est: $elbo_est"
-        elbows[i] = elbo_est
-        ps = update_learnables(opt, ps, gs_est)
+    elbo_est = 0.0
+    gs_est = Gradients()
+    for s in 1 : gs_samples
+        gs, lw = one_shot_gradient_estimator(tg, ps, v_mod, v_args, mod, args; scale = 1.0 / gs_samples)
+        elbo_est += lw / gs_samples
+        accumulate!(gs_est, gs)
     end
-    ps, elbows, cls
+    ps = update_learnables(opt, ps, gs_est)
+    ps, elbo_est
 end
+
+# ------------  ADVI with geometric baseline ------------ #
+
+# TODO: finish testing.
 
 function geometric_base(lws::Vector{Float64})
     est_samples = length(lws)
@@ -78,36 +74,28 @@ function vimco_gradient_estimator(tg::K,
     bs = geometric_base(lws)
     Threads.@threads for i in 1:est_samples
         ls = L - nw[i] - bs[i]
-        accumulate!(gs, get_learnable_gradients(ps, cs[i], 1.0, ls * scale)[2])
+        gs_est, _ = get_learnable_gradients(ps, cs[i], 1.0, ls * scale)
+        accumulate!(gs, gs_est)
     end
-    return gs, L, cs, nw
+    return gs, L
 end
 
-# ------------  ADVI with geometric baseline ------------ #
-
-function automatic_differentiation_geometric_vimco(tg::K,
+function automatic_differentiation_geometric_vimco(opt,
+                                                   tg::K,
                                                    ps::P,
-                                                   est_samples::Int,
                                                    v_mod::Function,
                                                    v_args::Tuple,
                                                    mod::Function,
                                                    args::Tuple;
-                                                   opt = ADAM(0.05, (0.9, 0.8)),
-                                                   n_iters = 1000, 
+                                                   est_samples = 100,
                                                    gs_samples = 100) where {K <: AddressMap, P <: AddressMap}
-    cls = Vector{CallSite}(undef, gs_samples)
-    velbows = Vector{Float64}(undef, n_iters)
-    Threads.@threads for i in 1 : n_iters
-        velbo_est = 0.0
-        gs_est = Gradients()
-        for s in 1 : gs_samples
-            gs, L, cs, nw = vimco_gradient_estimator(tg, ps, v_mod, v_args, mod, args; est_samples = est_samples, scale = 1.0 / gs_samples)
-            velbo_est += L / gs_samples
-            accumulate!(gs_est, gs)
-            cls[s] = cs[rand(Categorical(nw))]
-        end
-        velbows[i] = velbo_est
-        ps = update_learnables(opt, ps, gs_est)
+    velbo_est = 0.0
+    gs_est = Gradients()
+    for s in 1 : gs_samples
+        gs, L = vimco_gradient_estimator(tg, ps, v_mod, v_args, mod, args; est_samples = est_samples, scale = 1.0 / gs_samples)
+        velbo_est += L / gs_samples
+        accumulate!(gs_est, gs)
     end
-    ps, velbows, cls
+    ps = update_learnables(opt, ps, gs_est)
+    ps, velbo_est
 end

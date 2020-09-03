@@ -36,22 +36,20 @@ mutable struct FluxNetworkTrainContext{T <: Jaynes.CallSite,
     fixed::S
     network_params::ModelParameterStore
     initial_params::P
-    opt
 end
 
-function DeepBackpropagate(fixed, params, call::T, model_grads, opt, scaler) where T <: Jaynes.CallSite
+function DeepBackpropagate(fixed, params, call::T, model_grads, scaler) where T <: Jaynes.CallSite
     FluxNetworkTrainContext(call,
                             0.0,
                             scaler,
                             fixed,
                             model_grads,
-                            params,
-                            opt)
+                            params)
 end
 
-apply_model!(ctx, params, model, args...) = model(args...)
+apply_model(ctx, params, model, args...) = model(args...)
 
-Zygote.@adjoint function apply_model!(ctx, params, model, args...)
+Zygote.@adjoint function apply_model(ctx, params, model, args...)
     ret = model(args...)
     fn = params_grad -> begin
         _, back = Zygote.pullback((m, x) -> m(x...), model, args)
@@ -67,15 +65,15 @@ simulate_deep_pullback(fixed, params, cl::T, args) where T <: Jaynes.CallSite = 
 Zygote.@adjoint function simulate_deep_pullback(fixed, params, cl::T, args) where T <: Jaynes.CallSite
     ret = simulate_deep_pullback(fixed, params, cl, args)
     fn = ret_grad -> begin
-        arg_grads = accumulate_deep_gradients!(fixed, params, cl, ret_grad)
+        arg_grads = accumulate_deep_gradients(fixed, params, cl, ret_grad)
         (nothing, nothing, nothing, arg_grads)
     end
     ret, fn
 end
 
-function accumulate_deep_gradients!(fx, ps, cl, ret_grad, opt, scaler)
+function accumulate_deep_gradients(fx, ps, cl, ret_grad, scaler)
     fn = (args, model_grads) -> begin
-        ctx = DeepBackpropagate(fx, ps, cl, model_grads, opt, scaler)
+        ctx = DeepBackpropagate(fx, ps, cl, model_grads, scaler)
         ret = ctx(cl.fn, args...)
         (ctx.weight, ret)
     end
@@ -88,7 +86,7 @@ end
 function (ctx::FluxNetworkTrainContext)(fn::typeof(Jaynes.deep), 
                                         model,
                                         args...) where A <: Jaynes.Address
-    apply_model!(ctx, ctx.network_params, model, args...)
+    apply_model(ctx, ctx.network_params, model, args...)
 end
 
 @inline function (ctx::FluxNetworkTrainContext)(call::typeof(rand), 
@@ -114,47 +112,44 @@ end
     return ret
 end
 
-function get_deep_gradients(ps::P, cl::C, ret_grad; opt = ADAM(), scaler = 1.0) where {P <: Jaynes.AddressMap, C <: Jaynes.CallSite}
-    arg_grads, model_grads = accumulate_deep_gradients!(Jaynes.Empty(), ps, cl, ret_grad, opt, scaler)
+function get_deep_gradients(ps::P, cl::C, ret_grad; scaler = 1.0) where {P <: Jaynes.AddressMap, C <: Jaynes.CallSite}
+    arg_grads, model_grads = accumulate_deep_gradients(Jaynes.Empty(), ps, cl, ret_grad, scaler)
     return arg_grads, model_grads
 end
 
-function get_deep_gradients(cl::C, ret_grad; opt = ADAM(), scaler = 1.0) where {P <: Jaynes.AddressMap, C <: Jaynes.CallSite}
-    arg_grads, model_grads = accumulate_deep_gradients!(Jaynes.Empty(), Jaynes.Empty(), cl, ret_grad, opt, scaler)
+function get_deep_gradients(cl::C, ret_grad; scaler = 1.0) where {P <: Jaynes.AddressMap, C <: Jaynes.CallSite}
+    arg_grads, model_grads = accumulate_deep_gradients(Jaynes.Empty(), Jaynes.Empty(), cl, ret_grad, scaler)
     return arg_grads, model_grads
 end
 
-function one_shot_neural_gradient_estimator_step!(tg::K,
-                                                  ps::P,
-                                                  v_mod::Function,
-                                                  v_args::Tuple,
-                                                  mod::Function,
-                                                  args::Tuple;
-                                                  opt = ADAM(),
-                                                  scale = 1.0) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
+function one_shot_neural_gradient_estimator(tg::K,
+                                                 ps::P,
+                                                 v_mod::Function,
+                                                 v_args::Tuple,
+                                                 mod::Function,
+                                                 args::Tuple;
+                                                 scale = 1.0) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
     _, cl = simulate(ps, v_mod, v_args...)
-    merge!(cl, tg) && error("(one_shot_neural_gradient_estimator_step!): variational model proposes to addresses in observations.")
+    merge!(cl, tg) && error("(one_shot_neural_gradient_estimator): variational model proposes to addresses in observations.")
     _, mlw = score(cl, ps, mod, args...)
     lw = mlw - get_score(cl)
-    _, model_grads = get_deep_gradients(ps, cl, 1.0; opt = opt, scaler = lw * scale)
+    _, model_grads = get_deep_gradients(ps, cl, 1.0; scaler = lw * scale)
     return model_grads, lw, cl
 end
 
-function one_shot_neural_gradient_estimator_step!(tg::K,
-                                                  v_mod::Function,
-                                                  v_args::Tuple,
-                                                  mod::Function,
-                                                  args::Tuple;
-                                                  opt = ADAM(),
-                                                  scale = 1.0) where K <: Jaynes.AddressMap
-    one_shot_neural_gradient_estimator_step!(tg,
-                                             Jaynes.Empty(),
-                                             v_mod,
-                                             v_args,
-                                             mod,
-                                             args;
-                                             opt = opt,
-                                             scale = scale)
+function one_shot_neural_gradient_estimator(tg::K,
+                                            v_mod::Function,
+                                            v_args::Tuple,
+                                            mod::Function,
+                                            args::Tuple;
+                                            scale = 1.0) where K <: Jaynes.AddressMap
+    one_shot_neural_gradient_estimator(tg,
+                                       Jaynes.Empty(),
+                                       v_mod,
+                                       v_args,
+                                       mod,
+                                       args;
+                                       scale = scale)
 end
 
 function accumulate!(d1::IdDict, d2::ModelParameterStore)
@@ -176,64 +171,55 @@ function update_models!(opt, d1::IdDict)
     end
 end
 
-function neural_variational_inference!(tg::K,
+function neural_variational_inference!(opt,
+                                       tg::K,
                                        ps::P,
                                        v_mod::Function,
                                        v_args::Tuple,
                                        mod::Function,
                                        args::Tuple;
-                                       opt = ADAM(0.05, (0.9, 0.8)),
-                                       n_iters = 1000,
                                        gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
-    cls = Vector{Jaynes.CallSite}(undef, n_iters)
-    elbows = Vector{Float64}(undef, n_iters)
-    Threads.@threads for i in 1 : n_iters
-        elbo_est = 0.0
-        gs_est = IdDict()
-        for s in 1 : gs_samples
-            model_grads, lw, cl = osnges!(tg, ps, 
-                                          v_mod, v_args, 
-                                          mod, args; 
-                                          opt = opt, scale = 1.0 / gs_samples)
-            elbo_est += lw / gs_samples
-            accumulate!(gs_est, model_grads)
-            cls[i] = cl
-        end
-        @info "ELBO est: $elbo_est"
-        elbows[i] = elbo_est
-        update_models!(opt, gs_est)
+    elbo_est = 0.0
+    gs_est = IdDict()
+    lws = Vector{Float64}(undef, gs_samples)
+    for s in 1 : gs_samples
+        model_grads, lws[i], cl = osng(tg, ps, 
+                                       v_mod, v_args, 
+                                       mod, args; 
+                                       scale = 1.0 / gs_samples)
+        elbo_est += lws[i] / gs_samples
+        accumulate!(gs_est, model_grads)
     end
-    elbows, cls
+    update_models!(opt, gs_est)
+    cl = cs[rand(Categorical(nw(lws)))]
+    elbo_est, cl
 end
 
-function neural_variational_inference!(tg::K,
+function neural_variational_inference!(opt,
+                                       tg::K,
                                        v_mod::Function,
                                        v_args::Tuple,
                                        mod::Function,
                                        args::Tuple;
-                                       opt = ADAM(0.05, (0.9, 0.8)),
-                                       n_iters = 1000,
                                        gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
-    neural_variational_inference!(tg, 
+    neural_variational_inference!(opt,
+                                  tg, 
                                   Jaynes.Empty(), 
                                   v_mod, 
                                   v_args, 
                                   mod, 
                                   args; 
-                                  opt = opt, 
-                                  n_iters = n_iters,
                                   gs_samples = gs_samples)
 end
 
-function vimco_neural_gradient_estimator_step!(tg::K,
-                                               ps::P,
-                                               v_mod::Function,
-                                               v_args::Tuple,
-                                               mod::Function,
-                                               args::Tuple;
-                                               opt = ADAM(),
-                                               est_samples::Int = 100,
-                                               scale = 1.0) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
+function vimco_neural_gradient_estimator(tg::K,
+                                         ps::P,
+                                         v_mod::Function,
+                                         v_args::Tuple,
+                                         mod::Function,
+                                         args::Tuple;
+                                         est_samples::Int = 100,
+                                         scale = 1.0) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
     cs = Vector{Jaynes.CallSite}(undef, est_samples)
     lws = Vector{Float64}(undef, est_samples)
     Threads.@threads for i in 1:est_samples
@@ -249,58 +235,51 @@ function vimco_neural_gradient_estimator_step!(tg::K,
     bs = Jaynes.geometric_base(lws)
     Threads.@threads for i in 1 : est_samples
         ls = L - nw[i] - bs[i]
-        accumulate!(gs_est, get_deep_gradients(ps, cs[i], 1.0; opt = opt, scaler = ls * scale)[2])
+        accumulate!(gs_est, get_deep_gradients(ps, cs[i], 1.0; scaler = ls * scale)[2])
     end
     return gs_est, L, cs, nw
 end
 
-function neural_geometric_vimco!(tg::K,
+function neural_geometric_vimco!(opt,
+                                 tg::K,
                                  ps::P,
                                  est_samples::Int,
                                  v_mod::Function,
                                  v_args::Tuple,
                                  mod::Function,
                                  args::Tuple;
-                                 opt = ADAM(0.05, (0.9, 0.8)),
-                                 n_iters = 1000,
                                  gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
-    cls = Vector{Jaynes.CallSite}(undef, n_iters)
-    velbows = Vector{Float64}(undef, n_iters)
-    Threads.@threads for i in 1 : n_iters
-        velbo_est = 0.0
-        gs_est = IdDict()
-        for s in 1 : gs_samples
-            gs, L, cs, nw = vimges!(tg, ps, 
-                                    v_mod, v_args, 
-                                    mod, args; 
-                                    opt = opt, est_samples = est_samples, scale = 1.0 / gs_samples)
-            velbo_est += L / gs_samples
-            accumulate!(gs_est, gs)
-            cls[s] = cs[rand(Categorical(nw))]
-        end
-        velbows[i] = velbo_est
-        update_models!(opt, gs_est)
+    velbo_est = 0.0
+    gs_est = IdDict()
+    cls = Vector{Jaynes.CallSite}(undef, gs_samples)
+    for s in 1 : gs_samples
+        gs, L, cs, nw = vimges(tg, ps, 
+                               v_mod, v_args, 
+                               mod, args; 
+                               est_samples = est_samples, scale = 1.0 / gs_samples)
+        velbo_est += L / gs_samples
+        accumulate!(gs_est, gs)
+        cls[s] = cs[rand(Categorical(nw))]
     end
-    velbows, cls
+    update_models!(opt, gs_est)
+    velbo_est, cls
 end
 
-function neural_geometric_vimco!(tg::K,
+function neural_geometric_vimco!(opt,
+                                 tg::K,
                                  est_samples::Int,
                                  v_mod::Function,
                                  v_args::Tuple,
                                  mod::Function,
                                  args::Tuple;
-                                 opt = ADAM(0.05, (0.9, 0.8)),
-                                 n_iters = 1000,
                                  gs_samples = 100) where {K <: Jaynes.AddressMap, P <: Jaynes.AddressMap}
-    neural_geometric_vimco!(tg, 
+    neural_geometric_vimco!(opt,
+                            tg, 
                             Jaynes.Empty(), 
                             est_samples, 
                             v_mod, 
                             v_args, 
                             mod, 
                             args; 
-                            opt = opt, 
-                            n_iters = n_iters,
                             gs_samples = gs_samples)
 end
