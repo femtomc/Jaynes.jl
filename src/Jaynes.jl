@@ -3,9 +3,11 @@ module Jaynes
 # Yarrrr I'm a com-pirate!
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta
-#using Mjolnir
-#using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, trace
-#using Mjolnir: Defaults
+using Random
+using Mjolnir
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
+import Mjolnir.trace
+using Mjolnir: Defaults
 using MacroTools
 
 using Reexport
@@ -48,7 +50,7 @@ end
 
 using DistributionsAD
 @reexport using Flux
-import Flux: update!
+import Flux: update!, flatten
 
 # Toplevel importants :)
 const Address = Union{Int, Symbol, Pair}
@@ -95,7 +97,7 @@ function recur!(ir, to = self)
     return ir
 end
 
-# Fix for _apply_iterate.
+# Fix for _apply_iterate (used in contexts).
 function f_push!(arr::Array, t::Tuple{}) end
 f_push!(arr::Array, t::Array) = append!(arr, t)
 f_push!(arr::Array, t::Tuple) = append!(arr, t)
@@ -111,7 +113,10 @@ end
 # ------------ includes ------------ #
 
 include("core.jl")
+
 include("compiler.jl")
+export Δ, Diffed, forward
+
 include("contexts.jl")
 include("inference.jl")
 include("language_extensions.jl")
@@ -133,7 +138,7 @@ export plate, markov, cond
 export learnable, fillable, factor
 
 # Compiler.
-export NoChange, UndefinedChange, VectorDiff
+export NoChange, UndefinedChange
 export construct_graph, compile_function
 
 # Vectors to dynamic value address map.

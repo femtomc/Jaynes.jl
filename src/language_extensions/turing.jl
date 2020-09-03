@@ -6,7 +6,7 @@ macro load_turing_fmi()
         using Turing
         using Turing.Inference: tilde, dot_tilde
         
-        z# ------------ Trace ------------ #
+        # ------------ Trace ------------ #
 
         mutable struct TuringTrace{NT <: NamedTuple} <: Jaynes.Trace
             choices::NT
