@@ -69,7 +69,7 @@ function hamiltonian_monte_carlo(sel::K,
                                  L=10, eps=0.1) where {K <: Tuple, C <: CallSite}
     local u_cl = cl
     p_mod_score = get_score(u_cl)
-    val, grad = get_target_gradient(sel, u_cl)
+    val, grad = get_choice_gradient(sel, u_cl)
     d = Normal(0.0, 1.0)
     mom = rand(d)
     p_mom_score = logpdf(d, mom)
@@ -78,7 +78,7 @@ function hamiltonian_monte_carlo(sel::K,
         val += eps * mom
         sel_values = target([sel => val])
         ret, u_cl, w, _ = update(sel_values, u_cl)
-        _, grad = get_target_gradient(sel, u_cl)
+        _, grad = get_choice_gradient(sel, u_cl)
         mom += (eps / 2) * grad
     end
     n_mod_score = get_score(u_cl)
