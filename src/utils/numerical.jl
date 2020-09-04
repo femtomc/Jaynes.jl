@@ -16,8 +16,8 @@ function ess(lnw::Vector{Float64})
 end
 
 # Normalize log weights.
-function nw(lw::Vector{Float64})
-    ltw = lse(lw)
-    lnw = lw .- ltw
+function nw(lws::Vector{Float64})
+    ltw = lse(lws)
+    lnw = lws .- ltw
     return (ltw, exp.(lnw))
 end
