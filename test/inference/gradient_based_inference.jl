@@ -22,8 +22,8 @@ end
 end
 
 function model()
-    slope = rand(:slope, Normal(-1, exp(0.5)))
-    intercept = rand(:intercept, Normal(1, exp(2.0)))
+    slope = rand(:slope, Normal(-1.0, exp(0.5)))
+    intercept = rand(:intercept, Normal(1.0, exp(2.0)))
 end
 
 function var()
@@ -41,9 +41,11 @@ end
                          (:slope_log_std, ) => 0.0,
                          (:intercept_mu, ) => 0.0,
                          (:intercept_log_std, ) => 0.0])
-    opt = ADAM(0.005, (0.9, 0.999))
-    for i in 1 : 500
-        params, _ = advi(opt, sel, params, var, (), model, ())
+    opt = Momentum(0.25, 0.9)
+    for i in 1 : 1000
+        params, _ = advi(opt, sel, params, var, (), model, ();
+                         gs_samples = 100)
+        display(params)
     end
     @test params[:slope_mu] ≈ -1.0 atol = 7e-2
     @test params[:slope_log_std] ≈ 0.5 atol = 7e-2
@@ -57,9 +59,11 @@ end
 #                         (:slope_log_std, ) => 0.0,
 #                         (:intercept_mu, ) => 0.0,
 #                         (:intercept_log_std, ) => 0.0])
-#    opt = ADAM(0.005, (0.9, 0.999))
-#    for i in 1 : 500
-#        params, _ = adgv(opt, sel, params, var, (), model, ())
+#    opt = Momentum(0.3, 0.9)
+#    for i in 1 : 50
+#        params, _ = adgv(opt, sel, params, var, (), model, (); 
+#                         est_samples = 20, gs_samples = 100)
+#        display(params)
 #    end
 #    @test params[:slope_mu] ≈ -1.0 atol = 7e-2
 #    @test params[:slope_log_std] ≈ 0.5 atol = 7e-2

@@ -72,7 +72,7 @@ train = K -> begin
         display(lineplot(elbos))
     end
 end
-#train(100)
+train(100)
 
 # Neural MCMC.
 infer = (n_iters, n_samples) -> begin

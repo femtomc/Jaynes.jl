@@ -22,15 +22,15 @@ obs = target(map(1 : data_len) do i
     # Importance sampling.
     is_test = () -> begin
         n_samples = 50000
-        ps, lnw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
-        zipped = zip(ps.calls, lnw)
+        ps, nw = importance_sampling(obs, n_samples, bayesian_linear_regression, (x, ))
+        zipped = zip(ps.calls, nw)
 
         est_σ = sum(map(zipped) do (cl, w)
-                        (cl[:σ]) * exp(w)
+                        (cl[:σ]) * w
                     end)
 
         est_β = sum(map(zipped) do (cl, w)
-                        (cl[:β]) * exp(w)
+                        (cl[:β]) * w
                     end)
         @test isapprox(0.0, est_β - 3.0, atol=1e-1)
     end

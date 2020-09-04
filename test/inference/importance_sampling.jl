@@ -22,10 +22,10 @@ end
     n_traces = 5
 
     @testset "Linear Gaussian model" begin
-        ps, lnw = Jaynes.importance_sampling(observations, n_traces, LinearGaussian, (0.0, 1.0))
+        ps, nw = Jaynes.importance_sampling(observations, n_traces, LinearGaussian, (0.0, 1.0))
         @test length(ps.calls) == n_traces
         @test length(ps.lws) == n_traces
-        @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
+        @test isapprox(sum(nw), 1., atol = 1e-9)
         @test !isnan(ps.lmle)
         for call in ps.calls
             @test (call[:z]) == z
@@ -33,10 +33,10 @@ end
     end
 
     @testset "Linear Gaussian proposal" begin
-        ps, lnw = Jaynes.importance_sampling(observations, n_traces, LinearGaussian, (0.0, 1.0), LinearGaussianProposal, ())
+        ps, nw = Jaynes.importance_sampling(observations, n_traces, LinearGaussian, (0.0, 1.0), LinearGaussianProposal, ())
         @test length(ps.calls) == n_traces
         @test length(ps.lws) == n_traces
-        @test isapprox(Jaynes.lse(lnw), 0., atol = 1e-9)
+        @test isapprox(sum(nw), 1., atol = 1e-9)
         @test !isnan(ps.lmle)
         for call in ps.calls
             @test (call[:z]) == z
