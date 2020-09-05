@@ -1,65 +1,53 @@
 macro load_gen_fmi()
     @info "Loading foreign model interface to \u001b[3m\u001b[34;1mGen.jl\u001b[0m\n\n          \u001b[34;1mhttps://www.gen.dev/\n\nThis interface currently supports Gen's full feature set.\n\n\u001b[1mGen and Jaynes share exports - please qualify usage of the following context APIs:\n\u001b[0m\n \u001b[31msimulate   \u001b[0m-> \u001b[32mJaynes.simulate\n \u001b[31mgenerate   \u001b[0m-> \u001b[32mJaynes.generate\n \u001b[31mupdate     \u001b[0m-> \u001b[32mJaynes.update\n \u001b[31mregenerate \u001b[0m-> \u001b[32mJaynes.regenerate\n \u001b[31mpropose    \u001b[0m-> \u001b[32mJaynes.propose\n "
     expr = quote
-        import Jaynes: has_top, get_top, has_sub, get_sub, get_score, collect, collect!, selection, get_selection, get_ret
-        import Jaynes: simulate, propose, generate, regenerate, update, score
-        import Jaynes: apply_kernel
-        import Base.getindex
+
+        import Jaynes: simulate, propose, generate, update, regenerate, score
         
         using Gen
         import Gen: get_choices
 
-        # ------------ Trace ------------ #
-
-        mutable struct GenTrace{T <: Gen.Trace} <: Jaynes.Trace
-            tr::T
-            GenTrace(tr::T) where T = new{T}(tr)
-            GenTrace{T}() where T = new{T}()
-        end
-        has_top(cs::GenTrace, addr) where T <: Jaynes.Address = has_value(Gen.get_choices(cs), addr)
-        has_top(cs::GenTrace, addr::Tuple{T}) where T <: Jaynes.Address = has_top(cs, addr[1])
-        get_top(cs::GenTrace, addr) where T <: Jaynes.Address = get_value(Gen.get_choices(cs), addr)
-        get_top(cs::GenTrace, addr::Tuple{T}) where T <: Jaynes.Address = get_value(Gen.get_choices(cs), addr[1])
-        has_sub(cs::GenTrace, addr) = has_value(Gen.get_choices(cs), addr)
-        has_sub(cs::GenTrace, addr::Tuple{T}) where T <: Jaynes.Address = has_sub(cs, addr[1])
-        get_sub(cs::GenTrace, addr) where T <: Jaynes.Address = get_value(Gen.get_choices(cs), addr)
-        get_sub(cs::GenTrace, addr::Tuple{T}) where T <: Jaynes.Address = get_sub(cs, addr[1])
-        get_choices(tr::GenTrace) = Gen.get_choices(tr.tr)
+        # ------------ Address map ------------ #
         
+        struct GenerativeFunctionLeaf{T <: Gen.Trace} <: Leaf{GenerativeFunctionLeaf}
+            tr::T
+        end
+        
+        @inline convert(::Type{Value}, c::GenerativeFunctionLeaf) = Value(get_value(c.tr))
+        
+        const GenerativeFunctionTrace = Jaynes.SoloMap{GenerativeFunctionLeaf}
+        GenerativeFunctionTrace(gen_tr::T) where T <: Gen.Trace = GenerativeFunctionTrace(GenerativeFunctionLeaf(gen_tr))
+
         # ------------ Call site ------------ #
 
         struct GenerativeFunctionCallSite{M <: Gen.GenerativeFunction, A, K} <: Jaynes.CallSite
-            trace::GenTrace
+            map::GenerativeFunctionTrace
             score::Float64
             model::M
             args::A
             ret::K
         end
+        @inline get_model(gfcs::GenerativeFunctionCallSite) = gfcs.model
+
         @inline isempty(gfcs::GenerativeFunctionCallSite) = false
 
-        # ------------ Choice map integration ------------ #
-
-        function create_pairs(v::Vector{Pair})
-            out = []
-            for (t, l) in v
-                push!(out, (foldr(=>, t), l))
+        function projection(tr::GenerativeFunctionTrace, tg::Target)
+            weight = 0.0
+            for (k, v) in shallow_iterator(tr)
+                ss = get_sub(tg, k)
+                weight += projection(v, ss)
             end
-            out
+            weight
         end
 
-        function selection(chm::C) where C <: Gen.ChoiceMap
-            s = Jaynes.ConstrainedHierarchicalSelection()
-            for (k, v) in Gen.get_values_shallow(chm)
-                push!(s, k, v)
-            end
-            for (k, v) in Gen.get_submaps_shallow(chm)
-                sub = selection(v)
-                s.tree[k] = sub
-            end
-            s
-        end
+        @inline projection(gfcs::GenerativeFunctionCallSite, tg::Jaynes.Empty) = 0.0
+        @inline projection(gfcs::GenerativeFunctionCallSite, tg::Jaynes.SelectAll) = get_score(gfcs)
+        @inline projection(gfcs::GenerativeFunctionCallSite, tg::Target) = project(get_trace(gfcs), tg)
 
-        get_selection(tr::T) where T <: Gen.Trace = selection(Gen.get_choices(tr))
+        @inline filter(fn, gfcs::GenerativeFunctionCallSite) = filter(fn, get_trace(gfcs))
+        @inline filter(fn, addr, gfcs::GenerativeFunctionCallSite) = filter(fn, addr, get_trace(gfcs))
+
+        @inline select(gfcs::GenerativeFunctionCallSite) = select(get_trace(gfcs))
 
         # ------------ Contexts ------------ #
 
@@ -68,17 +56,17 @@ macro load_gen_fmi()
                                                gen_fn::M,
                                                args...) where {A <: Jaynes.Address, M <: Gen.GenerativeFunction}
             Jaynes.visit!(ctx, addr)
-            tr = Gen.simulate(gen_fn, args)
-            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(GenTrace(tr), Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
-            return Gen.get_retval(tr)
+            ret, cl = simulate(gen_fn, args)
+            Jaynes.add_call!(ctx, addr, cl)
+            return ret
         end
 
         # Convenience.
         function simulate(gen_fn::G, args...) where G <: Gen.GenerativeFunction
             ctx = Jaynes.Simulate()
-            addr = gensym()
-            ret = ctx(foreign, addr, gen_fn, args...)
-            return ret, get_sub(ctx.tr, addr)
+            ret = ctx(foreign, gen_fn, args...)
+            cl = GenerativeFunctionCallSite(GenerativeFunctionTrace(ctx.tr), Gen.get_score(ctx.tr), gen_fn, args, Gen.get_retval(tr))
+            return ret, cl
         end
 
         function (ctx::Jaynes.ProposeContext)(c::typeof(foreign),
@@ -86,8 +74,8 @@ macro load_gen_fmi()
                                               gen_fn::M,
                                               args...) where {A <: Jaynes.Address, M <: Gen.GenerativeFunction}
             Jaynes.visit!(ctx, addr)
-            tr, w, ret = Gen.propose(gen_fn, args, choice_map)
-            Jaynes.add_call!(ctx, addr, GenerativeFunctionCallSite(GenTrace(tr), Gen.get_score(tr), gen_fn, args, Gen.get_retval(tr)))
+            ret, cl, w = propose(gen_fn, args, choice_map)
+            Jaynes.add_call!(ctx, addr, cl)
             Jaynes.increment!(ctx, w)
             return ret
         end
@@ -95,9 +83,9 @@ macro load_gen_fmi()
         # Convenience.
         function propose(gen_fn::G, args...) where G <: Gen.GenerativeFunction
             ctx = Propose()
-            addr = gensym()
-            ret = ctx(foreign, addr, gen_fn, args...)
-            return ret, get_top(ctx.tr, addr), ctx.score
+            ret = ctx(foreign, gen_fn, args...)
+            cl = GenerativeFunctionCallSite(GenerativeFunctionTrace(ctx.tr), Gen.get_score(ctx.tr), gen_fn, args, Gen.get_retval(tr))
+            return ret, cl, ctx.score
         end
 
         function (ctx::Jaynes.GenerateContext)(c::typeof(foreign),
@@ -138,10 +126,10 @@ macro load_gen_fmi()
             Jaynes.increment!(ctx, w)
             return Gen.get_retval(new)
         end
-        
+
         function (ctx::Jaynes.UpdateContext{C})(c::typeof(foreign),
-                                             gen_fn::M,
-                                             args...) where {A <: Jaynes.Address, M <: Gen.GenerativeFunction, C <: GenerativeFunctionCallSite}
+                                                gen_fn::M,
+                                                args...) where {A <: Jaynes.Address, M <: Gen.GenerativeFunction, C <: GenerativeFunctionCallSite}
             constraints = Jaynes.dump_queries(ctx.select)
             pairs = create_pairs(constraints)
             choice_map = Gen.choicemap(pairs...)
@@ -265,7 +253,7 @@ macro load_gen_fmi()
         end
 
         # ------------ Exchange kernel ------------ #
-        
+
         apply_kernel(ker, cl::GenerativeFunctionCallSite) = ker(get_gen_trace(cl))
 
     end

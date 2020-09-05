@@ -10,6 +10,9 @@ using Random
 #using Mjolnir: Defaults
 using MacroTools
 
+# Static selektor.
+using StaticArrays
+
 using Reexport
 @reexport using Distributions
 import Distributions: logpdf

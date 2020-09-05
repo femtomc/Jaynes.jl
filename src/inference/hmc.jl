@@ -63,10 +63,10 @@ function hamiltonian_monte_carlo(sel::K,
     end
 end
 
-# ForwardDiff version of HMC for single address site changes.
-function hamiltonian_monte_carlo(sel::K, 
+# ForwardDiff version for single site address gradients.
+function hamiltonian_monte_carlo(sel::T,
                                  cl::C; 
-                                 L=10, eps=0.1) where {K <: Tuple, C <: CallSite}
+                                 L=10, eps=0.1) where {T <: Tuple, C <: CallSite}
     local u_cl = cl
     p_mod_score = get_score(u_cl)
     val, grad = get_choice_gradient(sel, u_cl)
@@ -79,6 +79,36 @@ function hamiltonian_monte_carlo(sel::K,
         sel_values = target([sel => val])
         ret, u_cl, w, _ = update(sel_values, u_cl)
         _, grad = get_choice_gradient(sel, u_cl)
+        mom += (eps / 2) * grad
+    end
+    n_mod_score = get_score(u_cl)
+    n_mom_score = logpdf(d, -mom)
+    alpha = get_score(u_cl) - p_mod_score + n_mom_score - p_mom_score
+
+    # Accept or reject.
+    if log(rand()) < alpha
+        (u_cl, true)
+    else
+        (cl, false)
+    end
+end
+
+function hamiltonian_monte_carlo(sel::T,
+                                 ps::P,
+                                 cl::C; 
+                                 L=10, eps=0.1) where {T <: Tuple, P <: AddressMap, C <: CallSite}
+    local u_cl = cl
+    p_mod_score = get_score(u_cl)
+    val, grad = get_choice_gradient(sel, u_cl)
+    d = Normal(0.0, 1.0)
+    mom = rand(d)
+    p_mom_score = logpdf(d, mom)
+    for step in 1 : L
+        mom += (eps / 2) * grad
+        val += eps * mom
+        sel_values = target([sel => val])
+        ret, u_cl, w, _ = update(sel_values, ps, u_cl)
+        _, grad = get_choice_gradient(sel, ps, u_cl)
         mom += (eps / 2) * grad
     end
     n_mod_score = get_score(u_cl)

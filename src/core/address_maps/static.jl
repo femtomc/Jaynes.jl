@@ -1,3 +1,5 @@
+# ------------ Static map ------------ #
+
 struct StaticMap{T, N, K, B} <: AddressMap{K}
     tree::NamedTuple{T, <: NTuple{N, <: AddressMap{K}}}
     isempty::B

@@ -86,7 +86,7 @@ function merge(sel1::DynamicMap{T},
     end
     return DynamicMap(tree), !isempty(inter) || check
 end
-merge(dm::DynamicMap, ::Empty) = Empty(), false
+merge(dm::DynamicMap, ::Empty) = deepcopy(dm), false
 merge(::Empty, dm::DynamicMap) = deepcopy(dm), false
 
 function merge!(sel1::DynamicMap{K},
@@ -115,7 +115,7 @@ function merge!(sel1::DynamicMap{T},
     end
     !isempty(inter) || check
 end
-merge!(dm::DynamicMap, ::Empty) = Empty(), false
+merge!(dm::DynamicMap, ::Empty) = dm, false
 merge!(::Empty, dm::DynamicMap) = dm, false
 Zygote.@adjoint merge!(a, b) = merge!(a, b), s_grad -> (nothing, nothing)
 

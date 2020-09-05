@@ -35,11 +35,13 @@ end
 abstract type BackpropagationContext <: ExecutionContext end
 
 # Learnable parameters
-mutable struct ParameterBackpropagateContext{T <: CallSite, S <: AddressMap} <: BackpropagationContext
+mutable struct ParameterBackpropagateContext{T <: CallSite, 
+                                             S <: AddressMap,
+                                             P <: AddressMap} <: BackpropagationContext
     call::T
     weight::Float64
-    fixed::S
-    initial_params::AddressMap
+    fillables::S
+    initial_params::P
     params::ParameterStore
     param_grads::Gradients
 end
@@ -81,17 +83,19 @@ function ParameterBackpropagate(call::T, sel::S, init, params, param_grads::Grad
 end
 
 # Choice sites
-mutable struct ChoiceBackpropagateContext{T <: CallSite, S <: AddressMap, K <: Target} <: BackpropagationContext
+mutable struct ChoiceBackpropagateContext{T <: CallSite, 
+                                          S <: AddressMap, 
+                                          P <: AddressMap, 
+                                          K <: Target} <: BackpropagationContext
     call::T
     weight::Float64
-    fixed::S
-    initial_params::AddressMap
-    params::ParameterStore
+    fillables::S
+    initial_params::P
     choice_grads::Gradients
     target::K
 end
 
-function ChoiceBackpropagate(call::T, init, params, choice_grads) where {T <: CallSite, K <: Target}
+function ChoiceBackpropagate(call::T, init, choice_grads) where {T <: CallSite, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
                                target(), 
@@ -101,32 +105,29 @@ function ChoiceBackpropagate(call::T, init, params, choice_grads) where {T <: Ca
                                SelectAll())
 end
 
-function ChoiceBackpropagate(call::T, fixed::S, init, params, choice_grads) where {T <: CallSite, S <: AddressMap, K <: Target}
+function ChoiceBackpropagate(call::T, fillables::S, init, choice_grads) where {T <: CallSite, S <: AddressMap, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
-                               fixed, 
+                               fillables, 
                                init, 
-                               params, 
                                choice_grads, 
                                SelectAll())
 end
 
-function ChoiceBackpropagate(call::T, init, params, choice_grads, sel::K) where {T <: CallSite, K <: Target}
+function ChoiceBackpropagate(call::T, init, choice_grads, sel::K) where {T <: CallSite, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
                                target(), 
                                init, 
-                               params, 
                                choice_grads, 
                                sel)
 end
 
-function ChoiceBackpropagate(call::T, fixed::S, init, params, choice_grads, sel::K) where {T <: CallSite, S <: AddressMap, K <: Target}
+function ChoiceBackpropagate(call::T, fillables::S, init, choice_grads, sel::K) where {T <: CallSite, S <: AddressMap, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
-                               fixed, 
+                               fillables, 
                                init, 
-                               params, 
                                choice_grads, 
                                sel)
 end
@@ -193,10 +194,10 @@ function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: AddressMap, T 
     return arg_grads, vals, choice_grads
 end
 
-function get_choice_gradients(fixed::S, ps::P, cl::T, ret_grad) where {S <: AddressMap, P <: AddressMap, T <: CallSite}
+function get_choice_gradients(fillables::S, ps::P, cl::T, ret_grad) where {S <: AddressMap, P <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
     choice_target = SelectAll()
-    arg_grads, vals, _ = choice_gradients(fixed, ps, choice_grads, choice_target, cl, ret_grad)
+    arg_grads, vals, _ = choice_gradients(fillables, ps, choice_grads, choice_target, cl, ret_grad)
     return arg_grads, vals, choice_grads
 end
 
@@ -212,7 +213,7 @@ function get_choice_gradients(sel::K, ps::P, cl::T, ret_grad) where {T <: CallSi
     return arg_grads, vals, choice_grads
 end
 
-function get_choice_gradients(sel::K, fixed::S, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, S <: AddressMap, P <: AddressMap}
+function get_choice_gradients(sel::K, fillables::S, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, S <: AddressMap, P <: AddressMap}
     choice_grads = Gradients()
     arg_grads, vals, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
     return arg_grads, vals, choice_grads
@@ -245,7 +246,6 @@ function get_learnable_gradients(sel::K, ps::P, cl::VectorCallSite, ret_grad, sc
     key = keys(param_grads.tree)[1]
     return arg_grads, param_grads[key]
 end
-
 
 # ------------ includes ------------ #
 
