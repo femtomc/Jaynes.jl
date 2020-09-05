@@ -3,7 +3,7 @@ function hamiltonian_monte_carlo(sel::K,
                                  L=10, eps=0.1) where {K <: Target, C <: CallSite}
     local u_cl = cl
     p_mod_score = get_score(u_cl)
-    _, sel_values, choice_grads = get_choice_gradients(sel, u_cl, 1.0)
+    sel_values, _, choice_grads = get_choice_gradients(sel, u_cl, 1.0)
     vals = array(sel_values, Float64)
     grads = array(choice_grads, Float64)
     d = MvNormal(length(vals), 1.0)
@@ -36,7 +36,7 @@ function hamiltonian_monte_carlo(sel::K,
                                  L=10, eps=0.1) where {K <: Target, P <: AddressMap, C <: CallSite}
     local u_cl = cl
     p_mod_score = get_score(u_cl)
-    _, sel_values, choice_grads = get_choice_gradients(sel, u_cl, 1.0)
+    sel_values, _, choice_grads = get_choice_gradients(sel, u_cl, 1.0)
     vals = array(sel_values, Float64)
     grads = array(choice_grads, Float64)
     d = MvNormal(length(vals), 1.0)

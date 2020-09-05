@@ -6,7 +6,7 @@ function maximum_a_posteriori_estimation(tg::T,
                                          τ = 0.999) where {T <: Target, C <: CallSite}
     step_size = max_ss
     while step_size > min_ss
-        _, am, gs = get_choice_gradients(tg, cl, 1.0)
+        am, _, gs = get_choice_gradients(tg, cl, 1.0)
         vals = array(am, Float64)
         grads = array(gs, Float64)
         score = get_score(cl)
@@ -31,7 +31,7 @@ function maximum_a_posteriori_estimation(tg::T,
                                          τ = 0.999) where {T <: Target, P <: AddressMap, C <: CallSite}
     step_size = max_ss
     while step_size > min_ss
-        _, am, gs = get_choice_gradients(tg, ps, cl, 1.0)
+        am, _, gs = get_choice_gradients(tg, ps, cl, 1.0)
         vals = array(am, Float64)
         grads = array(gs, Float64)
         score = get_score(cl)
