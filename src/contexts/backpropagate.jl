@@ -31,6 +31,9 @@ function +(a::Store, b::Store)
     Store(params)
 end
 
+# simulate_set_sub is really setindex!
+@inline simulate_set_sub!(am::AddressMap, addr, v) = setindex!(am.tree, param_grads, addr)
+
 # ------------ Backpropagation contexts ------------ #
 
 abstract type BackpropagationContext <: ExecutionContext end

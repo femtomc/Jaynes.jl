@@ -37,14 +37,14 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::ParameterBackpropagateContext{T, S, P})(c::typeof(rand), addr::T, call::Function, args...) where {T <: Address, S, P}
+@inline function (ctx::ParameterBackpropagateContext{T, S, P})(c::typeof(rand), addr::A, call::Function, args...) where {T, A <: Address, S, P}
     param_grads = Gradients()
-    ret = simulate_call_pullback(get_sub(ctx.fillables, addr), 
-                                 get_sub(ctx.initial_params, addr), 
-                                 param_grads, 
-                                 get_sub(ctx.call, addr), 
-                                 args)
-    set_sub!(ctx.param_grads, addr, param_grads)
+    ret = simulate_parameter_pullback(get_sub(ctx.fillables, addr), 
+                                      get_sub(ctx.initial_params, addr), 
+                                      param_grads, 
+                                      get_sub(ctx.call, addr), 
+                                      args)
+    ctx.param_grads.tree[addr] = param_grads
     return ret
 end
 
@@ -61,7 +61,7 @@ end
                                    get_sub(ctx.target, addr), 
                                    get_sub(ctx.call, addr), 
                                    args)
-    set_sub!(ctx.choice_grads, addr, choice_grads)
+    ctx.choice_grads.tree[addr] = choice_grads
     return ret
 end
 
@@ -81,7 +81,7 @@ Zygote.@adjoint function simulate_parameter_pullback(sel,
     fn = ret_grad -> begin
         arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, cl, ret_grad)
         (nothing, 
-         nothing, 
+         nothing,
          nothing, 
          nothing, 
          arg_grads)
@@ -99,6 +99,7 @@ function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::D
     _, back = Zygote.pullback(fn, cl.args, blank)
     arg_grads, ps_grad = back((1.0, ret_grad))
     acc!(param_grads, ps_grad, scaler)
+    display(param_grads)
     return arg_grads
 end
 
