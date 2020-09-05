@@ -65,6 +65,8 @@ end
 @inline set_sub!(::Leaf, args...) = error("(set_sub!): trying to set submap of an instance of Leaf type.\nThis normally happens because you've already assigned to this address, or part of the prefix of this address.")
 @inline function set_sub!(am::AddressMap{K}, addr::Tuple{}, v::AddressMap{<: K}) where {A <: Address, K} end
 
+@inline setindex!(am::AddressMap, v, a) = set_sub!(am, a, v)
+
 @inline get_sub(::Leaf, _) = Empty()
 function get_sub(am::AddressMap{K}, addr::Tuple{T})::Union{Empty, AddressMap{K}} where {K, T}
     get_sub(am, addr[1])

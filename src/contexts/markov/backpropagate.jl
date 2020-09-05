@@ -7,7 +7,7 @@
                                       param_grads, 
                                       ctx.call, 
                                       args)
-    ctx.param_grads.tree[addr] = param_grads
+    set_sub!(ctx.param_grads, addr, param_grads)
     return ret
 end
 
@@ -16,13 +16,12 @@ end
                                                       call::Function,
                                                       len::Int,
                                                       args...) where T <: Address
-    cl = get_sub(ctx.call, addr)
     param_grads = Gradients()
-    ret = simulate_parameter_pullback(ctx.initial_params, 
+    ret = simulate_parameter_pullback(get_sub(ctx.initial_params, addr),
                                       param_grads, 
-                                      ctx.call, 
+                                      get_sub(ctx.call, addr),
                                       args)
-    ctx.param_grads.tree[addr] = param_grads
+    set_sub!(ctx.param_grads, addr, param_grads)
     return ret
 end
 
@@ -36,7 +35,7 @@ end
                                    ctx.select,
                                    ctx.call, 
                                    args)
-    ctx.choice_grads.tree[addr] = choice_grads
+    set_sub!(ctx.choice_grads, addr, choice_grads)
     return ret
 end
 
@@ -45,16 +44,13 @@ end
                                                    call::Function,
                                                    len::Int,
                                                    args...) where T <: Address
-    ss = get_sub(ctx.target, addr)
-    ps = get_sub(ctx.initial_params, addr)
-    call = get_sub(ctx.call, addr)
     choice_grads = Gradients()
-    ret = simulate_choice_pullback(ps,
+    ret = simulate_choice_pullback(get_sub(ctx.initial_params, addr),
                                    choice_grads, 
-                                   ss,
-                                   call,
+                                   get_sub(ctx.target, addr),
+                                   get_sub(ctx.call, addr),
                                    args)
-    ctx.choice_grads.tree[addr] = choice_grads
+    set_sub!(ctx.choice_grads, addr, choice_grads)
     return ret
 end
 
@@ -90,11 +86,7 @@ function accumulate_learnable_gradients!(sel,
     blank = ParameterStore()
     _, back = Zygote.pullback(fn, cl.args, blank)
     arg_grads, ps_grad = back((1.0, ret_grad))
-    if !(ps_grad isa Nothing)
-        for (addr, grad) in ps_grad.params
-            push!(param_grads, addr, scaler .* grad)
-        end
-    end
+    acc!(param_grads, ps_grad)
     return arg_grads
 end
 
@@ -108,10 +100,10 @@ Zygote.@adjoint function simulate_choice_pullback(params,
                                                   args)
     ret = simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
     fn = ret_grad -> begin
-        choice_vals = Dict()
-        choice_vals[1], arg_grads, _ = choice_gradients(params, choice_grads, choice_selection, get_sub(cl, 1), ret_grad)
+        choice_vals = target()
+        choice_vals[1], arg_grads, choice_grads[1] = choice_gradients(params, choice_grads, choice_selection, get_sub(cl, 1), ret_grad)
         for i in (cl.len - 1) : -1 : 1
-            choice_vals[i], arg_grads, _ = choice_gradients(params, choice_grads, choice_selection, get_sub(cl, i), arg_grads)
+            choice_vals[i], arg_grads, choice_grads[i] = choice_gradients(params, Gradients(), choice_selection, get_sub(cl, i), arg_grads)
         end
         (nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads)
     end

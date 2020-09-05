@@ -8,17 +8,18 @@ merge(tp1::Array{Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] f
 
 # ------------ Parameter store ------------ #
 
-struct ParameterStore
+struct Store
     params::Dict{Address,Any}
-    ParameterStore() = new(Dict{Address, Any}())
-    ParameterStore(d::Dict{Address, Any}) = new(d)
+    Store() = new(Dict{Address, Any}())
+    Store(d::Dict{Address, Any}) = new(d)
 end
-haskey(ps::ParameterStore, addr) = haskey(ps.params, addr)
-setindex!(ps::ParameterStore, val, addr) = ps.params[addr] = val
+haskey(ps::Store, addr) = haskey(ps.params, addr)
+setindex!(ps::Store, val, addr) = ps.params[addr] = val
+set_sub!(ps::Store, addr, val) = setindex!(ps, val, addr)
 
-Zygote.@adjoint ParameterStore(params) = ParameterStore(params), store_grad -> (nothing,)
+Zygote.@adjoint Store(params) = Store(params), store_grad -> (nothing,)
 
-function +(a::ParameterStore, b::ParameterStore)
+function +(a::Store, b::Store)
     params = Dict{Address, Any}()
     for (k, v) in Iterators.flatten((a.params, b.params))
         if !haskey(params, k)
@@ -27,7 +28,7 @@ function +(a::ParameterStore, b::ParameterStore)
             params[k] += v
         end
     end
-    ParameterStore(params)
+    Store(params)
 end
 
 # ------------ Backpropagation contexts ------------ #
@@ -42,7 +43,7 @@ mutable struct ParameterBackpropagateContext{T <: CallSite,
     weight::Float64
     fillables::S
     initial_params::P
-    params::ParameterStore
+    params::Store
     param_grads::Gradients
 end
 
@@ -91,7 +92,7 @@ mutable struct ChoiceBackpropagateContext{T <: CallSite,
     weight::Float64
     fillables::S
     initial_params::P
-    choice_grads::Gradients
+    choice_grads
     target::K
 end
 
@@ -135,13 +136,13 @@ end
 # ------------ Learnable ------------ #
 
 read_parameter(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.params, addr)
-read_parameter(ctx::K, params::ParameterStore, addr::Address) where K <: BackpropagationContext = getindex(ctx.initial_params, addr)
+read_parameter(ctx::K, params::Store, addr::Address) where K <: BackpropagationContext = getindex(ctx.initial_params, addr)
 
 Zygote.@adjoint function read_parameter(ctx, params, addr)
     ret = read_parameter(ctx, params, addr)
     fn = param_grad -> begin
         state_grad = nothing
-        params_grad = ParameterStore(Dict{Address, Any}(addr => param_grad))
+        params_grad = Store(Dict{Address, Any}(addr => param_grad))
         (state_grad, params_grad, nothing)
     end
     return ret, fn
@@ -153,7 +154,7 @@ end
 simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: CallSite = get_ret(cl)
 
 # Grads for choices with differentiable logpdfs.
-simulate_choice_pullback(params, choice_grads, choice_target, cl::T, args) where T <: CallSite = get_ret(cl)
+simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl::T, args) where T <: CallSite = get_ret(cl)
 
 # ------------ filter! choice gradients given target ------------ #
 
@@ -181,41 +182,32 @@ end
 # ------------ get_choice_gradients ------------ #
 
 function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
-    choice_grads = Gradients()
-    choice_target = SelectAll()
-    vals, arg_grads, _ = choice_gradients(Empty(), choice_grads, choice_target, cl, ret_grad)
+    vals, arg_grads, choice_grads = choice_gradients(Empty(), Empty(), Gradients(), SelectAll(), cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: AddressMap, T <: CallSite}
-    choice_grads = Gradients()
-    choice_target = SelectAll()
-    vals, arg_grads, _ = choice_gradients(ps, choice_grads, choice_target, cl, ret_grad)
+    vals, arg_grads, choice_grads = choice_gradients(Empty(), ps, Gradients(), SelectAll(), cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(fillables::S, ps::P, cl::T, ret_grad) where {S <: AddressMap, P <: AddressMap, T <: CallSite}
-    choice_grads = Gradients()
-    choice_target = SelectAll()
-    vals, arg_grads, _ = choice_gradients(fillables, ps, choice_grads, choice_target, cl, ret_grad)
+    vals, arg_grads, choice_grads = choice_gradients(fillables, ps, Gradients(), SelectAll(), cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: Target}
-    choice_grads = Gradients()
-    vals, arg_grads, _ = choice_gradients(Empty(), choice_grads, sel, cl, ret_grad)
+    vals, arg_grads, choice_grads = choice_gradients(Empty(), Empty(), Gradients(), sel, cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(sel::K, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, P <: AddressMap}
-    choice_grads = Gradients()
-    vals, arg_grads, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
+    vals, arg_grads, choice_grads = choice_gradients(Empty(), ps, Gradients(), sel, cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(sel::K, fillables::S, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, S <: AddressMap, P <: AddressMap}
-    choice_grads = Gradients()
-    vals, arg_grads, _ = choice_gradients(ps, choice_grads, sel, cl, ret_grad)
+    vals, arg_grads, choice_grads = choice_gradients(fillables, ps, Gradients(), sel, cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
@@ -247,6 +239,14 @@ function get_learnable_gradients(sel::K, ps::P, cl::VectorCallSite, ret_grad, sc
     return arg_grads, param_grads[key]
 end
 
+# Convenience utility (used in implementations of accumulate_learnable_gradients! for each type of call site).
+function acc!(param_grads, ::Nothing, scaler) end
+function acc!(param_grads, ps_grad, scaler)
+    for (addr, grad) in ps_grad.params
+        accumulate!(param_grads, addr, scaler .* grad)
+    end
+end
+
 # ------------ includes ------------ #
 
 include("dynamic/backpropagate.jl")
@@ -263,7 +263,7 @@ mutable struct ParameterBackpropagateContext{T <: Trace} <: BackpropagationConte
     tr::T
     weight::Float64
     initial_params::AddressMap
-    params::ParameterStore
+    params::Store
     param_grads::Gradients
 end
 ```
@@ -283,7 +283,7 @@ mutable struct ChoiceBackpropagateContext{T <: Trace} <: BackpropagationContext
     tr::T
     weight::Float64
     initial_params::AddressMap
-    params::ParameterStore
+    params::Store
     param_grads::Gradients
 end
 ```
