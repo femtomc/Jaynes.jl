@@ -1,27 +1,42 @@
 @inline function (ctx::ParameterBackpropagateContext)(c::typeof(markov),
-                                                      addr::T,
                                                       call::Function,
                                                       len::Int,
                                                       args...) where T <: Address
     param_grads = Gradients()
-    ret = simulate_call_pullback(ctx.initial_params, 
-                                 param_grads, 
-                                 ctx.call, 
-                                 args)
+    ret = simulate_parameter_pullback(ctx.initial_params, 
+                                      param_grads, 
+                                      ctx.call, 
+                                      args)
     ctx.param_grads.tree[addr] = param_grads
     return ret
 end
 
 @inline function (ctx::ParameterBackpropagateContext)(c::typeof(markov),
+                                                      addr::T,
                                                       call::Function,
                                                       len::Int,
                                                       args...) where T <: Address
+    cl = get_sub(ctx.call, addr)
     param_grads = Gradients()
-    ret = simulate_call_pullback(ctx.initial_params, 
-                                 param_grads, 
-                                 ctx.call, 
-                                 args)
+    ret = simulate_parameter_pullback(ctx.initial_params, 
+                                      param_grads, 
+                                      ctx.call, 
+                                      args)
     ctx.param_grads.tree[addr] = param_grads
+    return ret
+end
+
+@inline function (ctx::ChoiceBackpropagateContext)(c::typeof(markov),
+                                                   call::Function,
+                                                   len::Int,
+                                                   args...) where T <: Address
+    choice_grads = Gradients()
+    ret = simulate_choice_pullback(ctx.initial_params,
+                                   choice_grads, 
+                                   ctx.select,
+                                   ctx.call, 
+                                   args)
+    ctx.choice_grads.tree[addr] = choice_grads
     return ret
 end
 
@@ -30,25 +45,14 @@ end
                                                    call::Function,
                                                    len::Int,
                                                    args...) where T <: Address
+    ss = get_sub(ctx.target, addr)
+    ps = get_sub(ctx.initial_params, addr)
+    call = get_sub(ctx.call, addr)
     choice_grads = Gradients()
-    ret = simulate_choice_pullback(ctx.initial_params, 
+    ret = simulate_choice_pullback(ps,
                                    choice_grads, 
-                                   get_sub(ctx.select, addr), 
-                                   ctx.call, 
-                                   args)
-    ctx.choice_grads.tree[addr] = choice_grads
-    return ret
-end
-
-@inline function (ctx::ChoiceBackpropagateContext)(c::typeof(markov),
-                                                   call::Function,
-                                                   len::Int,
-                                                   args...) where T <: Address
-    choice_grads = Gradients()
-    ret = simulate_choice_pullback(ctx.initial_params, 
-                                   choice_grads, 
-                                   get_sub(ctx.select, addr), 
-                                   ctx.call, 
+                                   ss,
+                                   call,
                                    args)
     ctx.choice_grads.tree[addr] = choice_grads
     return ret
@@ -56,7 +60,11 @@ end
 
 # ------------ Parameter gradients ------------ #
 
-Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::VectorCallSite{typeof(markov)}, args)
+Zygote.@adjoint function simulate_parameter_pullback(sel, 
+                                                     params, 
+                                                     param_grads, 
+                                                     cl::VectorCallSite{typeof(markov)}, 
+                                                     args)
     ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
         arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, get_sub(cl, cl.len), ret_grad)
@@ -68,7 +76,12 @@ Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, c
     return ret, fn
 end
 
-function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::VectorCallSite{typeof(markov)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+function accumulate_learnable_gradients!(sel, 
+                                         initial_params, 
+                                         param_grads, 
+                                         cl::VectorCallSite{typeof(markov)}, 
+                                         ret_grad, 
+                                         scaler::Float64 = 1.0) where T <: CallSite
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(markov, cl.fn, cl.len, args...)
@@ -86,3 +99,37 @@ function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::V
 end
 
 # ------------ Choice gradients ------------ #
+
+# TODO.
+Zygote.@adjoint function simulate_choice_pullback(params, 
+                                                  choice_grads, 
+                                                  choice_selection, 
+                                                  cl::VectorCallSite{typeof(markov)},
+                                                  args)
+    ret = simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
+    fn = ret_grad -> begin
+        choice_vals = Dict()
+        choice_vals[1], arg_grads, _ = choice_gradients(params, choice_grads, choice_selection, get_sub(cl, 1), ret_grad)
+        for i in (cl.len - 1) : -1 : 1
+            choice_vals[i], arg_grads, _ = choice_gradients(params, choice_grads, choice_selection, get_sub(cl, i), arg_grads)
+        end
+        (nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads)
+    end
+    return ret, fn
+end
+
+function choice_gradients(initial_params::P, 
+                          choice_grads, 
+                          choice_selection::K, 
+                          cl::VectorCallSite{typeof(markov)}, 
+                          ret_grad) where {P <: AddressMap, K <: Target}
+    fn = (args, call, sel) -> begin
+        ctx = ChoiceBackpropagate(call, sel, initial_params, choice_grads, choice_selection)
+        ret = ctx(markov, call.fn, args)
+        (ctx.weight, ret)
+    end
+    (w, r), back = Zygote.pullback(fn, cl.args, cl, selection())
+    arg_grads, grad_ref = back((1.0, ret_grad))
+    choice_vals = filter!(choice_grads, cl, grad_ref, choice_selection)
+    return arg_grads, choice_vals, choice_grads
+end

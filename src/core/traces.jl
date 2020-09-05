@@ -15,8 +15,8 @@ end
 # Special features - must be evaluated by context tracer.
 learnable(addr::A) where {A <: Address} = error("(learnable) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
 fillable(addr::A) where {A <: Address} = error("(fillable) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-plate(addr::A, args...) where A <: Address = error("(plate) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-markov(addr::A, args...) where A <: Address = error("(markov) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
+plate(addr::A, fn, v::Vector) where A <: Address = error("(plate) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
+markov(addr::A, fn, len::Int, args...) where A <: Address = error("(markov) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
 cond(addr::A, args...) where A <: Address = error("(cond) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
 factor(args...) = args
 

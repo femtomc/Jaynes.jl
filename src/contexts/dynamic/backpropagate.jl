@@ -157,7 +157,7 @@ function choice_gradients(initial_params::P,
     _, back = Zygote.pullback(fn, cl.args, cl)
     arg_grads, grad_ref = back((1.0, ret_grad))
     choice_vals = filter!(choice_grads, cl, grad_ref, choice_target)
-    return arg_grads, choice_vals, choice_grads
+    return choice_vals, arg_grads, choice_grads
 end
 
 function choice_gradients(fillables::S, 
@@ -178,5 +178,5 @@ function choice_gradients(fillables::S,
     _, back = Zygote.pullback(fn, cl.args, cl)
     arg_grads, grad_ref = back((1.0, ret_grad))
     choice_vals = filter!(choice_grads, cl, grad_ref, choice_target)
-    return arg_grads, choice_vals, choice_grads
+    return choice_vals, arg_grads, choice_grads
 end

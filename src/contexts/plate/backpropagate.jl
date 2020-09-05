@@ -51,7 +51,11 @@ end
 
 # ------------ Parameter gradients ------------ #
 
-Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, cl::VectorCallSite{typeof(plate)}, args)
+Zygote.@adjoint function simulate_parameter_pullback(sel, 
+                                                     params, 
+                                                     param_grads, 
+                                                     cl::VectorCallSite{typeof(plate)}, 
+                                                     args)
     ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
     fn = ret_grad -> begin
         arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, get_sub(cl, 1), ret_grad[1])
@@ -64,7 +68,12 @@ Zygote.@adjoint function simulate_parameter_pullback(sel, params, param_grads, c
     return ret, fn
 end
 
-function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::VectorCallSite{typeof(plate)}, ret_grad, scaler::Float64 = 1.0) where T <: CallSite
+function accumulate_learnable_gradients!(sel, 
+                                         initial_params, 
+                                         param_grads, 
+                                         cl::VectorCallSite{typeof(plate)}, 
+                                         ret_grad, 
+                                         scaler::Float64 = 1.0) where T <: CallSite
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(plate, cl.fn, args)
@@ -83,23 +92,31 @@ end
 
 # ------------ Choice gradients ------------ #
 
-Zygote.@adjoint function simulate_choice_pullback(params, choice_grads, choice_selection, cl::VectorCallSite{typeof(plate)}, args)
+Zygote.@adjoint function simulate_choice_pullback(params, 
+                                                  choice_grads, 
+                                                  choice_selection, 
+                                                  cl::VectorCallSite{typeof(plate)}, 
+                                                  args)
     ret = simulate_choice_pullback(params, choice_grads, choice_selection, cl, args)
     fn = ret_grad -> begin
         arg_grads = Vector(undef, length(args))
         choice_grads = Dict()
         choice_vals = Dict()
         for i in 1 : cl.len
-            arg_grads[i], choice_vals[i], choice_grads[i] = choice_gradients(params, choice_grads, choice_selection, get_sub(cl, 1), ret_grad[1])
+            arg_grads[i], choice_vals[i], choice_grads[i] = choice_gradients(params, choice_grads, choice_selection, get_sub(cl, i), ret_grad[i])
         end
         (nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads)
     end
     return ret, fn
 end
 
-function choice_gradients(initial_params::P, choice_grads, choice_selection::K, cl::VectorCallSite{typeof(plate)}, ret_grad) where {P <: AddressMap, K <: Target}
+function choice_gradients(initial_params::P, 
+                          choice_grads, 
+                          choice_selection::K, 
+                          cl::VectorCallSite{typeof(plate)}, 
+                          ret_grad) where {P <: AddressMap, K <: Target}
     fn = (args, call, sel) -> begin
-        ctx = ChoiceBackpropagate(call, sel, initial_params, ParameterStore(), choice_grads, choice_selection)
+        ctx = ChoiceBackpropagate(call, sel, initial_params, choice_grads, choice_selection)
         ret = ctx(plate, call.fn, args)
         (ctx.weight, ret)
     end
