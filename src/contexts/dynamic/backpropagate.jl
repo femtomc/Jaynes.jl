@@ -21,7 +21,10 @@ end
 
 @inline (ctx::ParameterBackpropagateContext)(fn::typeof(learnable), addr::Address) = read_parameter(ctx, addr)
 
-@inline (ctx::ChoiceBackpropagateContext)(fn::typeof(learnable), addr::Address) = read_parameter(ctx, addr)
+@inline function (ctx::ChoiceBackpropagateContext)(fn::typeof(learnable), addr::Address)
+    haskey(ctx.initial_params, addr) && return getindex(ctx.initial_params, addr)
+    error("(learnable): parameter not provided at address $addr.")
+end
 
 # ------------ Fillable ------------ #
 
@@ -70,7 +73,7 @@ Zygote.@adjoint function simulate_parameter_pullback(sel,
     ret = simulate_parameter_pullback(sel, params, param_grads, cl, args...)
     fn = ret_grad -> begin
         arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, cl, ret_grad)
-        (nothing, nothing, nothing, nothing, arg_grads)
+        (nothing, nothing, nothing, nothing, arg_grads...)
     end
     return ret, fn
 end
@@ -79,7 +82,7 @@ function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::D
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(cl.fn, args...)
-        (ctx.weight, ret)
+        (ctx.weight, ret...)
     end
     blank = Store()
     _, back = Zygote.pullback(fn, cl.args, blank)
@@ -108,12 +111,11 @@ function accumulate_choice_gradients!(fillables::S, initial_params::P, choice_gr
     fn = (args, choices) -> begin
         ctx = ChoiceBackpropagate(cl, fillables, initial_params, choices, choice_grads, choice_target)
         ret = ctx(cl.fn, args...)
-        (ctx.weight, ret)
+        (ctx.weight, ret...)
     end
     blank = Store()
     _, back = Zygote.pullback(fn, cl.args, blank)
     arg_grads, grad_ref = back((1.0, ret_grad...))
-    println(arg_grads)
     choice_vals = filter_acc!(choice_grads, cl, grad_ref, choice_target)
     return choice_vals, arg_grads
 end

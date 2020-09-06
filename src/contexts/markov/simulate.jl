@@ -6,15 +6,12 @@
     ps = get_sub(ctx.params, 1)
     ret, cl = simulate(ps, call, args...)
     add_call!(ctx, 1, cl)
-    v_ret = Vector{typeof(ret)}(undef, len)
-    v_ret[1] = ret
     for i in 2:len
         visit!(ctx, i)
-        ret, cl = simulate(ps, call, v_ret[i-1]...)
+        ret, cl = simulate(ps, call, ret...)
         add_call!(ctx, i, cl)
-        v_ret[i] = ret
     end
-    return v_ret
+    return ret
 end
 
 @inline function (ctx::SimulateContext)(c::typeof(markov),

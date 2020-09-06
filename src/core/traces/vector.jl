@@ -7,9 +7,9 @@ struct VectorCallSite{T, F, A, R} <: CallSite
     score::Float64
     fn::F
     args::A
-    ret::Vector{R}
+    ret::R
     len::Int
-    VectorCallSite{T}(tr, sc, fn::F, args::A, ret::Vector{R}, len) where {T, F, A, R} = new{T, F, A, R}(tr, sc, fn, args, ret, len)
+    VectorCallSite{T}(tr, sc, fn::F, args::A, ret::R, len) where {T, F, A, R} = new{T, F, A, R}(tr, sc, fn, args, ret, len)
 end
 @inline isempty(vcs::VectorCallSite) = false
 

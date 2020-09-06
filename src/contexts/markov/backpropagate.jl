@@ -79,7 +79,7 @@ function accumulate_learnable_gradients!(sel,
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(markov, cl.fn, cl.len, args...)
-        (ctx.weight, ret)
+        (ctx.weight, ret...)
     end
     blank = ParameterStore()
     _, back = Zygote.pullback(fn, cl.args, blank)
@@ -121,7 +121,7 @@ function accumulate_choice_gradients!(fillables::S,
     fn = (args, choices) -> begin
         ctx = ChoiceBackpropagate(cl, fillables, initial_params, choices, choice_grads, choice_target)
         ret = ctx(markov, call.fn, args)
-        (ctx.weight, ret)
+        (ctx.weight, ret...)
     end
     blank = Store()
     _, back = Zygote.pullback(fn, cl.args, blank)

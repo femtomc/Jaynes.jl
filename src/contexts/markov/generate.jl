@@ -7,19 +7,16 @@
     ss = get_sub(ctx.target, 1)
     ret, cl, w = generate(ss, ps, call, args...)
     add_call!(ctx, 1, cl)
-    v_ret = Vector{typeof(ret)}(undef, len)
-    v_ret[1] = ret
     increment!(ctx, w)
     for i in 2:len
         visit!(ctx, i)
         ps = get_sub(ctx.params, i)
         ss = get_sub(ctx.target, i)
-        ret, cl, w = generate(ss, ps, call, v_ret[i-1]...)
+        ret, cl, w = generate(ss, ps, call, ret...)
         add_call!(ctx, i, cl)
-        v_ret[i] = ret
         increment!(ctx, w)
     end
-    return v_ret
+    return ret
 end
 
 @inline function (ctx::GenerateContext)(c::typeof(markov), 

@@ -7,17 +7,14 @@
     ret, submap, sc = propose(ps, call, args...)
     set_sub!(ctx.map, 1, submap)
     ctx.score += sc
-    v_ret = Vector{typeof(ret)}(undef, len)
-    v_ret[1] = ret
     for i in 2:len
         visit!(ctx, i)
         ps = get_sub(ctx.params, i)
-        ret, submap, sc = propose(ps, call, v_ret[i-1]...)
+        ret, submap, sc = propose(ps, call, ret...)
         set_sub!(ctx.map, i, submap)
         ctx.score += sc
-        v_ret[i] = ret
     end
-    return v_ret
+    return ret
 end
 
 @inline function (ctx::ProposeContext)(c::typeof(markov), 
