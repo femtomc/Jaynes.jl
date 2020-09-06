@@ -99,7 +99,6 @@ function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::D
     _, back = Zygote.pullback(fn, cl.args, blank)
     arg_grads, ps_grad = back((1.0, ret_grad))
     acc!(param_grads, ps_grad, scaler)
-    display(param_grads)
     return arg_grads
 end
 
@@ -152,7 +151,7 @@ function choice_gradients(fillables::S,
         ctx = ChoiceBackpropagate(call, 
                                   fillables, 
                                   initial_params, 
-                                  Store(), 
+                                  Gradients(), 
                                   choice_target)
         ret = ctx(call.fn, args...)
         (ctx.weight, ret)
