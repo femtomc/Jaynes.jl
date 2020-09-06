@@ -77,12 +77,13 @@ end
 
 # ------------ Utilities ------------ #
 
+# TODO: re-write with new projection.
 function update_projection_walk(tr::DynamicTrace,
                                 visited::Visitor)
     weight = 0.0
     for (k, v) in shallow_iterator(tr)
         if !(k in visited)
-            weight += projection(v, SelectAll())
+            weight += projection(v, SelectAll())[1]
         end
     end
     weight

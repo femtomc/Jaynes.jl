@@ -35,8 +35,8 @@ end
 @inline ndims(v::Value{K}) where K = ndims(get_value(v))
 @inline ndims(v::Choice{K}) where K = ndims(get_value(v))
 
-@inline projection(c::Choice, tg::Empty) = 0.0
-@inline projection(c::Choice, tg::SelectAll) = c.score
+@inline projection(c::Choice, tg::Empty) = 0.0, Empty()
+@inline projection(c::Choice, tg::SelectAll) = c.score, c
 
 @inline filter(fn, l::Leaf) = Empty()
 @inline filter(fn, addr, l::Leaf) = Empty()
@@ -64,6 +64,7 @@ end
 
 @inline set_sub!(::Leaf, args...) = error("(set_sub!): trying to set submap of an instance of Leaf type.\nThis normally happens because you've already assigned to this address, or part of the prefix of this address.")
 @inline function set_sub!(am::AddressMap{K}, addr::Tuple{}, v::AddressMap{<: K}) where {A <: Address, K} end
+@inline function set_sub!(am::AddressMap{K}, addr, ::Empty) where {A <: Address, K} end
 
 @inline setindex!(am::AddressMap, v, a) = set_sub!(am, a, v)
 

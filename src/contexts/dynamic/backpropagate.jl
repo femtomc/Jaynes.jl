@@ -43,7 +43,7 @@ end
                                       get_sub(ctx.initial_params, addr), 
                                       param_grads, 
                                       get_sub(ctx.call, addr), 
-                                      args)
+                                      args...)
     ctx.param_grads.tree[addr] = param_grads
     return ret
 end
@@ -55,7 +55,7 @@ end
                                    choice_grads, 
                                    get_sub(ctx.target, addr), 
                                    get_sub(ctx.call, addr), 
-                                   args)
+                                   args...)
     ctx.choice_grads.tree[addr] = choice_grads
     return ret
 end
@@ -66,24 +66,11 @@ Zygote.@adjoint function simulate_parameter_pullback(sel,
                                                      params, 
                                                      param_grads, 
                                                      cl::DynamicCallSite, 
-                                                     args)
-    ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
+                                                     args...)
+    ret = simulate_parameter_pullback(sel, params, param_grads, cl, args...)
     fn = ret_grad -> begin
         arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, cl, ret_grad)
         (nothing, nothing, nothing, nothing, arg_grads)
-    end
-    return ret, fn
-end
-
-# Small optimization - if no parameters in call, don't pullback the call.
-Zygote.@adjoint function simulate_parameter_pullback(sel, 
-                                                     params::Empty,
-                                                     param_grads, 
-                                                     cl::DynamicCallSite, 
-                                                     args)
-    ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
-    fn = ret_grad -> begin
-        (nothing, nothing, nothing, nothing, nothing)
     end
     return ret, fn
 end
@@ -108,25 +95,11 @@ Zygote.@adjoint function simulate_choice_pullback(fillables,
                                                   choice_grads, 
                                                   choice_target, 
                                                   cl::DynamicCallSite, 
-                                                  args)
-    ret = simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl, args)
+                                                  args...)
+    ret = simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl, args...)
     fn = ret_grad -> begin
-        choice_vals, arg_grads = accumulate_choice_gradients!(fillables, params, choice_grads, choice_target, cl, ret_grad)
-        (nothing, nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads)
-    end
-    return ret, fn
-end
-
-# Small optimization - if no targets in call, don't pullback the call.
-Zygote.@adjoint function simulate_choice_pullback(fillables,
-                                                  params, 
-                                                  choice_grads, 
-                                                  choice_target::Empty,
-                                                  cl::DynamicCallSite, 
-                                                  args)
-    ret = simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl, args)
-    fn = ret_grad -> begin
-        (nothing, nothing, nothing, nothing, (nothing, nothing), nothing)
+        choice_vals, arg_grads = accumulate_choice_gradients!(fillables, params, choice_grads, choice_target, cl, ret_grad...)
+        (nothing, nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads...)
     end
     return ret, fn
 end
@@ -140,6 +113,7 @@ function accumulate_choice_gradients!(fillables::S, initial_params::P, choice_gr
     blank = Store()
     _, back = Zygote.pullback(fn, cl.args, blank)
     arg_grads, grad_ref = back((1.0, ret_grad...))
+    println(arg_grads)
     choice_vals = filter_acc!(choice_grads, cl, grad_ref, choice_target)
     return choice_vals, arg_grads
 end

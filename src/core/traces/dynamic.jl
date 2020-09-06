@@ -15,17 +15,19 @@ end
 @inline isempty(dcs::DynamicCallSite) = false
 
 function projection(tr::DynamicTrace, tg::Target)
-    weight = 0.0
+    weight, projected = 0.0, Trace()
     for (k, v) in shallow_iterator(tr)
         ss = get_sub(tg, k)
-        weight += projection(v, ss)
+        w, sub = projection(v, ss)
+        weight += w
+        set_sub!(projected, k, sub)
     end
-    weight
+    weight, projected
 end
 
-@inline projection(cs::DynamicCallSite, tg::Empty) = 0.0
-@inline projection(cs::DynamicCallSite, tg::SelectAll) = cs.score
-@inline projection(cs::DynamicCallSite, tg::Target) = projection(c.trace, tg)
+@inline projection(cs::DynamicCallSite, tg::Empty) = 0.0, Empty()
+@inline projection(cs::DynamicCallSite, tg::SelectAll) = cs.score, get_trace(cs)
+@inline projection(cs::DynamicCallSite, tg::Target) = projection(cs.trace, tg)
 
 @inline filter(fn, cs::DynamicCallSite) = filter(fn, cs.trace)
 @inline filter(fn, addr, cs::DynamicCallSite) = filter(fn, addr, cs.trace)

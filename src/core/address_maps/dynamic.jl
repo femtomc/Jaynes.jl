@@ -37,7 +37,7 @@ function set_sub!(dm::DynamicMap{K}, addr::A, v::AddressMap{<: K}) where {K, A <
         dm.tree[addr] = v
     end
 end
-function set_sub!(dm::DynamicMap{K}, addr::A, v::V) where {K, V, A <: Address}
+function set_sub!(dm::DynamicMap{K}, addr::A, v::V) where {K, V <: Union{Value, Choice}, A <: Address}
     delete!(dm.tree, addr)
     if !isempty(v)
         dm.tree[addr] = convert(K, v)

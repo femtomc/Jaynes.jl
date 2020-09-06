@@ -111,10 +111,10 @@ end
 # ------------ Simulate function calls ------------ #
 
 # Grads for learnable parameters.
-simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: CallSite = get_ret(cl)
+simulate_parameter_pullback(sel, params, param_grads, cl::T, args...) where T <: CallSite = get_ret(cl)
 
 # Grads for choices with differentiable logpdfs.
-simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl::T, args) where T <: CallSite = get_ret(cl)
+simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl::T, args...) where T <: CallSite = get_ret(cl)
 
 # ------------ get_choice_gradients ------------ #
 
@@ -190,26 +190,17 @@ function acc!(param_grads, ps_grad, scaler)
     end
 end
 
-function filter_acc!(choice_grads, cl::DynamicCallSite, grad_tr::Store, sel::K) where K <: Target
-    choices = DynamicMap{Choice}()
+function filter_acc!(choice_grads, cl, grad_tr::Store, sel::K) where K <: Target
+    _, choices = projection(cl, sel)
     for (k, v) in shallow_iterator(cl)
-        haskey(sel, k) && begin
-            set_sub!(choices, k, v)
+        k in sel && begin
             haskey(grad_tr, k) && accumulate!(choice_grads, k, grad_tr[k])
         end
     end
     return choices
 end
 
-function filter_acc!(choice_grads, cl::DynamicCallSite, grad_tr, sel::K) where K <: Target
-    choices = DynamicMap{Choice}()
-    for (k, v) in shallow_iterator(cl)
-        haskey(sel, k) && begin
-            set_sub!(choices, k, v)
-        end
-    end
-    return choices
-end
+@inline filter_acc!(choice_grads, cl, grad_tr, sel::K) where K <: Target = projection(cl, sel)[2]
 
 # ------------ includes ------------ #
 
