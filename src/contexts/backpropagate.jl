@@ -15,7 +15,6 @@ struct Store
 end
 haskey(ps::Store, addr) = haskey(ps.params, addr)
 setindex!(ps::Store, val, addr) = ps.params[addr] = val
-set_sub!(ps::Store, addr, val) = setindex!(ps, val, addr)
 
 Zygote.@adjoint Store(params) = Store(params), store_grad -> (nothing,)
 
@@ -30,9 +29,6 @@ function +(a::Store, b::Store)
     end
     Store(params)
 end
-
-# simulate_set_sub is really setindex!
-@inline simulate_set_sub!(am::AddressMap, addr, v) = setindex!(am.tree, param_grads, addr)
 
 # ------------ Backpropagation contexts ------------ #
 
@@ -95,48 +91,53 @@ mutable struct ChoiceBackpropagateContext{T <: CallSite,
     weight::Float64
     fillables::S
     initial_params::P
-    choice_grads
+    choices::Store
+    choice_grads::Gradients
     target::K
 end
 
-function ChoiceBackpropagate(call::T, init, choice_grads) where {T <: CallSite, K <: Target}
+function ChoiceBackpropagate(call::T, init, choice_store) where {T <: CallSite, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
                                target(), 
                                init, 
                                params, 
-                               choice_grads, 
+                               choice_store,
+                               Gradients(),
                                SelectAll())
 end
 
-function ChoiceBackpropagate(call::T, fillables::S, init, choice_grads) where {T <: CallSite, S <: AddressMap, K <: Target}
+function ChoiceBackpropagate(call::T, fillables::S, init, choice_store) where {T <: CallSite, S <: AddressMap, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
                                fillables, 
                                init, 
-                               choice_grads, 
+                               choice_store,
+                               Gradients(), 
                                SelectAll())
 end
 
-function ChoiceBackpropagate(call::T, init, choice_grads, sel::K) where {T <: CallSite, K <: Target}
+function ChoiceBackpropagate(call::T, init, choice_store, sel::K) where {T <: CallSite, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
                                target(), 
                                init, 
-                               choice_grads, 
+                               choice_store, 
+                               Gradients(),
                                sel)
 end
 
-function ChoiceBackpropagate(call::T, fillables::S, init, choice_grads, sel::K) where {T <: CallSite, S <: AddressMap, K <: Target}
+function ChoiceBackpropagate(call::T, fillables::S, init, choice_store, sel::K) where {T <: CallSite, S <: AddressMap, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
                                fillables, 
                                init, 
-                               choice_grads, 
+                               choice_store,
+                               Gradients(), 
                                sel)
 end
 
-# ------------ Learnable ------------ #
+# ------------ Reading parameters and choices ------------ #
 
 read_parameter(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.params, addr)
 read_parameter(ctx::K, params::Store, addr::Address) where K <: BackpropagationContext = getindex(ctx.initial_params, addr)
@@ -151,6 +152,19 @@ Zygote.@adjoint function read_parameter(ctx, params, addr)
     return ret, fn
 end
 
+read_choice(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.choices, addr)
+read_choice(ctx::K, choices::Store, addr::Address) where K <: BackpropagationContext = getindex(ctx.choices, addr)
+
+Zygote.@adjoint function read_choice(ctx, choices, addr)
+    ret = read_parameter(ctx, choices, addr)
+    fn = choice_grad -> begin
+        state_grad = nothing
+        choices_grad = Store(Dict{Address, Any}(addr => choice_grad))
+        (state_grad, choices_grad, nothing)
+    end
+    return ret, fn
+end
+
 # ------------ Parameter sites ------------ #
 
 # Grads for learnable parameters.
@@ -161,7 +175,7 @@ simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl::T, 
 
 # ------------ filter! choice gradients given target ------------ #
 
-function filter!(choice_grads, cl::DynamicCallSite, grad_tr::NamedTuple, sel::K) where K <: Target
+function filter_acc!(choice_grads, cl::DynamicCallSite, grad_tr::NamedTuple, sel::K) where K <: Target
     choices = DynamicMap{Choice}()
     for (k, v) in shallow_iterator(cl)
         haskey(sel, k) && begin
@@ -172,7 +186,7 @@ function filter!(choice_grads, cl::DynamicCallSite, grad_tr::NamedTuple, sel::K)
     return choices
 end
 
-function filter!(choice_grads, cl::DynamicCallSite, grad_tr, sel::K) where K <: Target
+function filter_acc!(choice_grads, cl::DynamicCallSite, grad_tr, sel::K) where K <: Target
     choices = DynamicMap{Choice}()
     for (k, v) in shallow_iterator(cl)
         haskey(sel, k) && begin

@@ -12,7 +12,7 @@ end
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
     haskey(ctx.target, addr) || return get_value(get_sub(ctx.call, addr))
-    s = getindex(ctx.call, addr)
+    s = read_choice(addr)
     increment!(ctx, logpdf(d, s))
     return s
 end
@@ -158,6 +158,6 @@ function choice_gradients(fillables::S,
     end
     _, back = Zygote.pullback(fn, cl.args, cl)
     arg_grads, grad_ref = back((1.0, ret_grad))
-    choice_vals = filter!(choice_grads, cl, grad_ref, choice_target)
+    choice_vals = filter_acc!(choice_grads, cl, grad_ref, choice_target)
     return choice_vals, arg_grads, choice_grads
 end
