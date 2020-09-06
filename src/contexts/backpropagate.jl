@@ -156,28 +156,28 @@ end
 
 # ------------ get_learnable_gradients ------------ #
 
-function get_learnable_gradients(ps::P, cl::DynamicCallSite, ret_grad, scaler::Float64 = 1.0) where P <: AddressMap
+function get_learnable_gradients(ps::P, cl::DynamicCallSite, ret_grad...; scaler::Float64 = 1.0) where P <: AddressMap
     param_grads = Gradients()
-    arg_grads = accumulate_learnable_gradients!(target(), ps, param_grads, cl, ret_grad, scaler)
+    arg_grads = accumulate_learnable_gradients!(target(), ps, param_grads, cl, ret_grad...; scaler = scaler)
     return arg_grads, param_grads
 end
 
-function get_learnable_gradients(sel::K, ps::P, cl::DynamicCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: AddressMap, P <: AddressMap}
+function get_learnable_gradients(sel::K, ps::P, cl::DynamicCallSite, ret_grad...; scaler::Float64 = 1.0) where {K <: AddressMap, P <: AddressMap}
     param_grads = Gradients()
-    arg_grads = accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
+    arg_grads = accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad...; scaler = scaler)
     return arg_grads, param_grads
 end
 
-function get_learnable_gradients(ps::P, cl::VectorCallSite, ret_grad, scaler::Float64 = 1.0) where P <: AddressMap
+function get_learnable_gradients(ps::P, cl::VectorCallSite, ret_grad...; scaler::Float64 = 1.0) where P <: AddressMap
     param_grads = Gradients()
-    arg_grads = accumulate_learnable_gradients!(target(), ps, param_grads, cl, ret_grad, scaler)
+    arg_grads = accumulate_learnable_gradients!(target(), ps, param_grads, cl, ret_grad...; scaler = scaler)
     key = keys(param_grads.tree)[1]
     return arg_grads, param_grads[key]
 end
 
-function get_learnable_gradients(sel::K, ps::P, cl::VectorCallSite, ret_grad, scaler::Float64 = 1.0) where {K <: AddressMap, P <: AddressMap}
+function get_learnable_gradients(sel::K, ps::P, cl::VectorCallSite, ret_grad...; scaler::Float64 = 1.0) where {K <: AddressMap, P <: AddressMap}
     param_grads = Gradients()
-    arg_grads = accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad, scaler)
+    arg_grads = accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad...; scaler = scaler)
     key = keys(param_grads.tree)[1]
     return arg_grads, param_grads[key]
 end

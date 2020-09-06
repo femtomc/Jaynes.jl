@@ -7,7 +7,7 @@ function maximum_likelihood_estimation(ps::P,
     step_size = max_ss
     while step_size > min_ss
         _, sc = score(cl, ps, get_model(cl), get_args(cl)...)
-        _, gs = get_learnable_gradients(ps, cl, 1.0)
+        _, gs = get_learnable_gradients(ps, cl, 1.0; scaler = 1.0)
         vals = array(ps, Float64)
         grads = array(gs, Float64)
         new = (vals + step_size * grads) + (step_size * randn(length(vals)))

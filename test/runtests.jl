@@ -17,6 +17,11 @@ println("\n________________________\n")
     @time @testset "Vectorized interfaces." begin
         include("core/vectorized.jl")
     end
+    
+    println("Gradients.")
+    @time @testset "Gradients." begin
+        include("core/gradients.jl")
+    end
 
     println("Black-box extensions.")
     @time @testset "Black-box extensions." begin

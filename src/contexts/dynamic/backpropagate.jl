@@ -37,7 +37,7 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::ParameterBackpropagateContext{T, S, P})(c::typeof(rand), addr::A, call::Function, args...) where {T, A <: Address, S, P}
+@inline function (ctx::ParameterBackpropagateContext)(c::typeof(rand), addr::A, call::Function, args...) where A <: Address
     param_grads = Gradients()
     ret = simulate_parameter_pullback(get_sub(ctx.fillables, addr), 
                                       get_sub(ctx.initial_params, addr), 
@@ -48,12 +48,7 @@ end
     return ret
 end
 
-@inline function (ctx::ParameterBackpropagateContext{T, S, Empty})(c::typeof(rand), addr::T, call::Function, args...) where {T <: Address, S}
-    cl = get_sub(ctx.call, addr)
-    get_ret(cl)
-end
-
-@inline function (ctx::ChoiceBackpropagateContext{T, S, P, K})(c::typeof(rand), addr::A, call::Function, args...) where {A <: Address, T, S, P, K}
+@inline function (ctx::ChoiceBackpropagateContext)(c::typeof(rand), addr::A, call::Function, args...) where A <: Address
     choice_grads = Gradients()
     ret = simulate_choice_pullback(get_sub(ctx.fillables, addr), 
                                    get_sub(ctx.initial_params, addr), 
@@ -63,11 +58,6 @@ end
                                    args)
     ctx.choice_grads.tree[addr] = choice_grads
     return ret
-end
-
-@inline function (ctx::ChoiceBackpropagateContext{T, S, P, Empty})(c::typeof(rand), addr::A, call::Function, args...) where {A <: Address, T, S, P}
-    cl = get_sub(ctx.call, addr)
-    get_ret(cl)
 end
 
 # ------------ Parameter gradients ------------ #
@@ -81,6 +71,19 @@ Zygote.@adjoint function simulate_parameter_pullback(sel,
     fn = ret_grad -> begin
         arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, cl, ret_grad)
         (nothing, nothing, nothing, nothing, arg_grads)
+    end
+    return ret, fn
+end
+
+# Small optimization - if no parameters in call, don't pullback the call.
+Zygote.@adjoint function simulate_parameter_pullback(sel, 
+                                                     params::Empty,
+                                                     param_grads, 
+                                                     cl::DynamicCallSite, 
+                                                     args)
+    ret = simulate_parameter_pullback(sel, params, param_grads, cl, args)
+    fn = ret_grad -> begin
+        (nothing, nothing, nothing, nothing, nothing)
     end
     return ret, fn
 end
@@ -110,6 +113,20 @@ Zygote.@adjoint function simulate_choice_pullback(fillables,
     fn = ret_grad -> begin
         choice_vals, arg_grads = accumulate_choice_gradients!(fillables, params, choice_grads, choice_target, cl, ret_grad)
         (nothing, nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads)
+    end
+    return ret, fn
+end
+
+# Small optimization - if no targets in call, don't pullback the call.
+Zygote.@adjoint function simulate_choice_pullback(fillables,
+                                                  params, 
+                                                  choice_grads, 
+                                                  choice_target::Empty,
+                                                  cl::DynamicCallSite, 
+                                                  args)
+    ret = simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl, args)
+    fn = ret_grad -> begin
+        (nothing, nothing, nothing, nothing, (nothing, nothing), nothing)
     end
     return ret, fn
 end

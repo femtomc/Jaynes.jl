@@ -11,7 +11,7 @@ function one_shot_gradient_estimator(tg::K,
     merge!(cl, tg) && error("(one_shot_gradient_estimator): variational model proposes to addresses in observations.")
     _, mlw = score(cl, ps, mod, args...)
     lw = mlw - get_score(cl)
-    _, gs_est = get_learnable_gradients(ps, cl, 1.0, lw * scale)
+    _, gs_est = get_learnable_gradients(ps, cl, 1.0; scaler = lw * scale)
     return gs_est, lw
 end
 
@@ -113,7 +113,7 @@ function vimco_gradient_estimator(tg::K,
     gs_est = Gradients()
     for i in 1 : n_samples
         ls = L - nw[i] - bs[i]
-        _, gs = get_learnable_gradients(ps, cs[i], 1.0, scale * ls / n_samples)
+        _, gs = get_learnable_gradients(ps, cs[i], 1.0; scaler = scale * ls / n_samples)
         accumulate!(gs_est, gs)
     end
     return gs_est, L
