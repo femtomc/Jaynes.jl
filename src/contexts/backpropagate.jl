@@ -1,4 +1,4 @@
-import Base: +, setindex!, filter!
+import Base: +, setindex!
 
 # Utility.
 merge(tp1::Tuple{}, tp2::Tuple{}) = tp1
@@ -6,7 +6,7 @@ merge(tp1::Tuple{Nothing}, tp2::Tuple{Nothing}) where T = tp1
 merge(tp1::NTuple{N, Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
 merge(tp1::Array{Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
 
-# ------------ Parameter store ------------ #
+# ------------ Gradient store ------------ #
 
 struct Store
     params::Dict{Address,Any}
@@ -15,6 +15,7 @@ struct Store
 end
 haskey(ps::Store, addr) = haskey(ps.params, addr)
 setindex!(ps::Store, val, addr) = ps.params[addr] = val
+getindex(ps::Store, addr) = ps.params[addr]
 
 Zygote.@adjoint Store(params) = Store(params), store_grad -> (nothing,)
 
@@ -46,33 +47,6 @@ mutable struct ParameterBackpropagateContext{T <: CallSite,
     param_grads::Gradients
 end
 
-function ParameterBackpropagate(call::T, init, params) where T <: CallSite
-    ParameterBackpropagateContext(call, 
-                                  0.0, 
-                                  target(), 
-                                  init, 
-                                  params, 
-                                  Gradients())
-end
-
-function ParameterBackpropagate(call::T, sel::S, init, params) where {T <: CallSite, S <: AddressMap}
-    ParameterBackpropagateContext(call, 
-                                  0.0, 
-                                  sel, 
-                                  init, 
-                                  params, 
-                                  Gradients())
-end
-
-function ParameterBackpropagate(call::T, init, params, param_grads::Gradients) where {T <: CallSite, K <: Target}
-    ParameterBackpropagateContext(call, 
-                                  0.0, 
-                                  target(), 
-                                  init, 
-                                  params, 
-                                  param_grads)
-end
-
 function ParameterBackpropagate(call::T, sel::S, init, params, param_grads::Gradients) where {T <: CallSite, S <: AddressMap, K <: Target}
     ParameterBackpropagateContext(call, 
                                   0.0, 
@@ -96,44 +70,13 @@ mutable struct ChoiceBackpropagateContext{T <: CallSite,
     target::K
 end
 
-function ChoiceBackpropagate(call::T, init, choice_store) where {T <: CallSite, K <: Target}
-    ChoiceBackpropagateContext(call, 
-                               0.0, 
-                               target(), 
-                               init, 
-                               params, 
-                               choice_store,
-                               Gradients(),
-                               SelectAll())
-end
-
-function ChoiceBackpropagate(call::T, fillables::S, init, choice_store) where {T <: CallSite, S <: AddressMap, K <: Target}
+function ChoiceBackpropagate(call::T, fillables::S, init, choice_store, choice_grads, sel::K) where {T <: CallSite, S <: AddressMap, K <: Target}
     ChoiceBackpropagateContext(call, 
                                0.0, 
                                fillables, 
                                init, 
                                choice_store,
-                               Gradients(), 
-                               SelectAll())
-end
-
-function ChoiceBackpropagate(call::T, init, choice_store, sel::K) where {T <: CallSite, K <: Target}
-    ChoiceBackpropagateContext(call, 
-                               0.0, 
-                               target(), 
-                               init, 
-                               choice_store, 
-                               Gradients(),
-                               sel)
-end
-
-function ChoiceBackpropagate(call::T, fillables::S, init, choice_store, sel::K) where {T <: CallSite, S <: AddressMap, K <: Target}
-    ChoiceBackpropagateContext(call, 
-                               0.0, 
-                               fillables, 
-                               init, 
-                               choice_store,
-                               Gradients(), 
+                               choice_grads,
                                sel)
 end
 
@@ -152,11 +95,11 @@ Zygote.@adjoint function read_parameter(ctx, params, addr)
     return ret, fn
 end
 
-read_choice(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.choices, addr)
-read_choice(ctx::K, choices::Store, addr::Address) where K <: BackpropagationContext = getindex(ctx.choices, addr)
+read_choice(ctx::K, addr::Address) where K <: BackpropagationContext = read_choice(ctx, ctx.choices, addr)
+read_choice(ctx::K, choices, addr::Address) where K <: BackpropagationContext = getindex(ctx.call, addr)
 
-Zygote.@adjoint function read_choice(ctx, choices, addr)
-    ret = read_parameter(ctx, choices, addr)
+Zygote.@adjoint function read_choice(ctx, call, addr)
+    ret = read_choice(ctx, call, addr)
     fn = choice_grad -> begin
         state_grad = nothing
         choices_grad = Store(Dict{Address, Any}(addr => choice_grad))
@@ -165,7 +108,7 @@ Zygote.@adjoint function read_choice(ctx, choices, addr)
     return ret, fn
 end
 
-# ------------ Parameter sites ------------ #
+# ------------ Simulate function calls ------------ #
 
 # Grads for learnable parameters.
 simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: CallSite = get_ret(cl)
@@ -173,58 +116,41 @@ simulate_parameter_pullback(sel, params, param_grads, cl::T, args) where T <: Ca
 # Grads for choices with differentiable logpdfs.
 simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl::T, args) where T <: CallSite = get_ret(cl)
 
-# ------------ filter! choice gradients given target ------------ #
-
-function filter_acc!(choice_grads, cl::DynamicCallSite, grad_tr::NamedTuple, sel::K) where K <: Target
-    choices = DynamicMap{Choice}()
-    for (k, v) in shallow_iterator(cl)
-        haskey(sel, k) && begin
-            set_sub!(choices, k, v)
-            haskey(grad_tr.trace.tree, k) && accumulate!(choice_grads, k, grad_tr.trace.tree[k].val)
-        end
-    end
-    return choices
-end
-
-function filter_acc!(choice_grads, cl::DynamicCallSite, grad_tr, sel::K) where K <: Target
-    choices = DynamicMap{Choice}()
-    for (k, v) in shallow_iterator(cl)
-        haskey(sel, k) && begin
-            set_sub!(choices, k, v)
-        end
-    end
-    return choices
-end
-
 # ------------ get_choice_gradients ------------ #
 
 function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
-    vals, arg_grads, choice_grads = choice_gradients(Empty(), Empty(), Gradients(), SelectAll(), cl, ret_grad)
+    choice_grads = Gradients()
+    vals, arg_grads = accumulate_choice_gradients!(Empty(), Empty(), choice_grads, SelectAll(), cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: AddressMap, T <: CallSite}
-    vals, arg_grads, choice_grads = choice_gradients(Empty(), ps, Gradients(), SelectAll(), cl, ret_grad)
+    choice_grads = Gradients()
+    vals, arg_grads = accumulate_choice_gradients!(Empty(), ps, choice_grads, SelectAll(), cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(fillables::S, ps::P, cl::T, ret_grad) where {S <: AddressMap, P <: AddressMap, T <: CallSite}
-    vals, arg_grads, choice_grads = choice_gradients(fillables, ps, Gradients(), SelectAll(), cl, ret_grad)
+    choice_grads = Gradients()
+    vals, arg_grads = accumulate_choice_gradients!(fillables, ps, choice_grads, SelectAll(), cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: Target}
-    vals, arg_grads, choice_grads = choice_gradients(Empty(), Empty(), Gradients(), sel, cl, ret_grad)
+    choice_grads = Gradients()
+    vals, arg_grads = accumulate_choice_gradients!(Empty(), Empty(), choice_grads, sel, cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(sel::K, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, P <: AddressMap}
-    vals, arg_grads, choice_grads = choice_gradients(Empty(), ps, Gradients(), sel, cl, ret_grad)
+    choice_grads = Gradients()
+    vals, arg_grads = accumulate_choice_gradients!(Empty(), ps, choice_grads, sel, cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
 function get_choice_gradients(sel::K, fillables::S, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, S <: AddressMap, P <: AddressMap}
-    vals, arg_grads, choice_grads = choice_gradients(fillables, ps, Gradients(), sel, cl, ret_grad)
+    choice_grads = Gradients()
+    vals, arg_grads = accumulate_choice_gradients!(fillables, ps, choice_grads, sel, cl, ret_grad)
     return vals, arg_grads, choice_grads
 end
 
@@ -256,12 +182,33 @@ function get_learnable_gradients(sel::K, ps::P, cl::VectorCallSite, ret_grad, sc
     return arg_grads, param_grads[key]
 end
 
-# Convenience utility (used in implementations of accumulate_learnable_gradients! for each type of call site).
+# Convenience utilities (used in implementations of accumulate_learnable_gradients! and accumulate_choice_gradients! for each type of call site).
 function acc!(param_grads, ::Nothing, scaler) end
 function acc!(param_grads, ps_grad, scaler)
     for (addr, grad) in ps_grad.params
         accumulate!(param_grads, addr, scaler .* grad)
     end
+end
+
+function filter_acc!(choice_grads, cl::DynamicCallSite, grad_tr::Store, sel::K) where K <: Target
+    choices = DynamicMap{Choice}()
+    for (k, v) in shallow_iterator(cl)
+        haskey(sel, k) && begin
+            set_sub!(choices, k, v)
+            haskey(grad_tr, k) && accumulate!(choice_grads, k, grad_tr[k])
+        end
+    end
+    return choices
+end
+
+function filter_acc!(choice_grads, cl::DynamicCallSite, grad_tr, sel::K) where K <: Target
+    choices = DynamicMap{Choice}()
+    for (k, v) in shallow_iterator(cl)
+        haskey(sel, k) && begin
+            set_sub!(choices, k, v)
+        end
+    end
+    return choices
 end
 
 # ------------ includes ------------ #
