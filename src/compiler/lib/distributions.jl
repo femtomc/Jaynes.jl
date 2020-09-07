@@ -14,7 +14,7 @@ get_support_type(d::Type{<: Distribution{T, K}}) where {T, K} = K <: Distributio
 
 @abstract DiffPrimitives rand(::Random._GLOBAL_RNG, ::Distribution{T, K}) where {T, K} = K <: Distributions.Continuous ? Float64 : Int
 
-@abstract DiffPrimitives rand(::Symbol, call::Function, args::NoChange...) = NoChange
+@abstract DiffPrimitives rand(::Symbol, call::Function, args...) = propagate(args...)
 
 # Special diff primitives.
 

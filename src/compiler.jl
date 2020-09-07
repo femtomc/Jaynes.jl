@@ -16,6 +16,7 @@ include("compiler/analysis/dependency.jl")
 include("compiler/analysis/blanket.jl")
 include("compiler/map_codegen.jl")
 include("compiler/diffs.jl")
+include("compiler/prune.jl")
 include("compiler/interface.jl")
 
 # ------------ Documentation ------------ #

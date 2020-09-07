@@ -2,9 +2,9 @@
 
 abstract type Diff end
 
-struct UndefinedChange <: Diff end
-
-struct NoChange <: Diff end
+abstract type StaticDiff <: Diff end
+struct UndefinedChange <: StaticDiff end
+struct NoChange <: StaticDiff end
 
 struct SetDiff{V} <: Diff
     added::Set{V}
@@ -33,16 +33,10 @@ struct Diffed{V, DV}
     diff::DV
 end
 
+unwrap(::Mjolnir.Node{T}) where T = T
+
 # Define the algebra for propagation of diffs.
-propagate(::NoChange, ::NoChange) = NoChange()
-propagate(::UndefinedChange, ::NoChange) = UndefinedChange()
-propagate(::NoChange, ::UndefinedChange) = UndefinedChange()
-propagate(::UndefinedChange, ::UndefinedChange) = UndefinedChange()
-propagate(a::Type{NoChange}, v::Type{NoChange}) = NoChange()
-propagate(a::Type{NoChange}, v::Type{UndefinedChange}) = UndefinedChange()
-propagate(a::Type{UndefinedChange}, v::Type{NoChange}) = UndefinedChange()
-propagate(a::Type{UndefinedChange}, v::Type{UndefinedChange}) = UndefinedChange()
-propagate(a::Type{K}, b::T) where {K, T} = propagate(K, T)
+@inline propagate(a...) = any(i -> unwrap(i) == UndefinedChange, a) ? UndefinedChange : NoChange
 
 struct DiffPrimitives end
 

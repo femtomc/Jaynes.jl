@@ -34,7 +34,7 @@ create_flip_diff(a::Type{Diffed{K, DV}}) where {K, DV} = DV
         create_flip_diff(a)
     end
     tr = _propagate(F, As...)
-    tr
+    prune!(tr)
 end
 
 pushforward(fn, args...) = fn(args...), _pushforward(fn, args...)
