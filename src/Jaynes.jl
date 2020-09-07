@@ -4,10 +4,9 @@ module Jaynes
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta
 using Random
-#using Mjolnir
-#using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
-#import Mjolnir.trace
-#using Mjolnir: Defaults
+using Mjolnir
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
+using Mjolnir: Defaults
 using MacroTools
 
 # Static selektor.
@@ -123,6 +122,7 @@ include("core.jl")
 
 include("compiler.jl")
 export Δ, Diffed, forward
+export pushforward, _pushforward
 
 include("contexts.jl")
 include("inference.jl")
