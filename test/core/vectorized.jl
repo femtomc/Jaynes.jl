@@ -38,48 +38,48 @@ end
     end
 end
 
-@testset "Update" begin
-    @testset "Vectorized plate" begin
-        ret, cl = simulate(test_plate)
-        original_score = get_score(cl)
-        stored_at_y = (cl[:k, 3, :y])
-        sel = target([(:k, 3, :y) => 5.0])
-        ret, cl, w, rd, d = update(sel, cl)
-        @test get_score(cl) - w ≈ original_score
-    end
-
-    @testset "Vectorized markov" begin
-        ret, cl = simulate(test_markov)
-        original_score = get_score(cl)
-        stored_at_y = (cl[:k, 3, :y])
-        sel = target([(:k, 3, :y) => 5.0])
-        ret, cl, w, retdiff, d = update(sel, cl)
-        @test (cl[:k, 3, :y]) == 5.0
-        @test get_score(cl) - w ≈ original_score
-    end
-end
-
-@testset "Regenerate" begin
-    @testset "Vectorized plate" begin
-        ret, cl = simulate(test_plate)
-        original_score = get_score(cl)
-        stored = cl[:k, 3, :y]
-        sel = target([(:k, 3, :y)])
-        ret, cl, w, retdiff, d = regenerate(sel, cl)
-        @test cl[:k, 3, :y] != stored
-        @test get_score(cl) - w ≈ original_score
-    end
-
-    @testset "Vectorized markov" begin
-        ret, cl = simulate(test_markov)
-        original_score = get_score(cl)
-        stored = (cl[:k, 3, :y])
-        sel = target([(:k, 3, :y)])
-        ret, cl, w, retdiff, d = regenerate(sel, cl)
-        @test (cl[:k, 3, :y]) != stored
-        @test get_score(cl) - w ≈ original_score
-    end
-end
+#@testset "Update" begin
+#    @testset "Vectorized plate" begin
+#        ret, cl = simulate(test_plate)
+#        original_score = get_score(cl)
+#        stored_at_y = (cl[:k, 3, :y])
+#        sel = target([(:k, 3, :y) => 5.0])
+#        ret, cl, w, rd, d = update(sel, cl)
+#        @test get_score(cl) - w ≈ original_score
+#    end
+#
+#    @testset "Vectorized markov" begin
+#        ret, cl = simulate(test_markov)
+#        original_score = get_score(cl)
+#        stored_at_y = (cl[:k, 3, :y])
+#        sel = target([(:k, 3, :y) => 5.0])
+#        ret, cl, w, retdiff, d = update(sel, cl)
+#        @test (cl[:k, 3, :y]) == 5.0
+#        @test get_score(cl) - w ≈ original_score
+#    end
+#end
+#
+#@testset "Regenerate" begin
+#    @testset "Vectorized plate" begin
+#        ret, cl = simulate(test_plate)
+#        original_score = get_score(cl)
+#        stored = cl[:k, 3, :y]
+#        sel = target([(:k, 3, :y)])
+#        ret, cl, w, retdiff, d = regenerate(sel, cl)
+#        @test cl[:k, 3, :y] != stored
+#        @test get_score(cl) - w ≈ original_score
+#    end
+#
+#    @testset "Vectorized markov" begin
+#        ret, cl = simulate(test_markov)
+#        original_score = get_score(cl)
+#        stored = (cl[:k, 3, :y])
+#        sel = target([(:k, 3, :y)])
+#        ret, cl, w, retdiff, d = regenerate(sel, cl)
+#        @test (cl[:k, 3, :y]) != stored
+#        @test get_score(cl) - w ≈ original_score
+#    end
+#end
 
 @testset "Propose" begin
     @testset "Vectorized plate" begin

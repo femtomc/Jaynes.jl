@@ -46,7 +46,7 @@ end
                                       get_sub(ctx.initial_params, addr), 
                                       param_grads, 
                                       get_sub(ctx.call, addr), 
-                                      args...)
+                                      args)
     ctx.param_grads.tree[addr] = param_grads
     return ret
 end
@@ -58,7 +58,7 @@ end
                                    choice_grads, 
                                    get_sub(ctx.target, addr), 
                                    get_sub(ctx.call, addr), 
-                                   args...)
+                                   args)
     ctx.choice_grads.tree[addr] = choice_grads
     return ret
 end
@@ -72,8 +72,8 @@ Zygote.@adjoint function simulate_parameter_pullback(sel,
                                                      args...)
     ret = simulate_parameter_pullback(sel, params, param_grads, cl, args...)
     fn = ret_grad -> begin
-        arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, cl, ret_grad)
-        (nothing, nothing, nothing, nothing, arg_grads...)
+        arg_grads = accumulate_learnable_gradients!(sel, params, param_grads, cl, ret_grad...)
+        (nothing, nothing, nothing, nothing, arg_grads)
     end
     return ret, fn
 end
@@ -82,7 +82,7 @@ function accumulate_learnable_gradients!(sel, initial_params, param_grads, cl::D
     fn = (args, params) -> begin
         ctx = ParameterBackpropagate(cl, sel, initial_params, params, param_grads)
         ret = ctx(cl.fn, args...)
-        (ctx.weight, ret...)
+        (ctx.weight, ret)
     end
     blank = Store()
     _, back = Zygote.pullback(fn, cl.args, blank)
@@ -102,7 +102,7 @@ Zygote.@adjoint function simulate_choice_pullback(fillables,
     ret = simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl, args...)
     fn = ret_grad -> begin
         choice_vals, arg_grads = accumulate_choice_gradients!(fillables, params, choice_grads, choice_target, cl, ret_grad...)
-        (nothing, nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads...)
+        (nothing, nothing, nothing, nothing, (choice_vals, choice_grads), arg_grads)
     end
     return ret, fn
 end
@@ -111,7 +111,7 @@ function accumulate_choice_gradients!(fillables::S, initial_params::P, choice_gr
     fn = (args, choices) -> begin
         ctx = ChoiceBackpropagate(cl, fillables, initial_params, choices, choice_grads, choice_target)
         ret = ctx(cl.fn, args...)
-        (ctx.weight, ret...)
+        (ctx.weight, ret)
     end
     blank = Store()
     _, back = Zygote.pullback(fn, cl.args, blank)

@@ -118,37 +118,37 @@ simulate_choice_pullback(fillables, params, choice_grads, choice_target, cl::T, 
 
 # ------------ get_choice_gradients ------------ #
 
-function get_choice_gradients(cl::T, ret_grad) where T <: CallSite
+function get_choice_gradients(cl::T, ret_grad...) where T <: CallSite
     choice_grads = Gradients()
     vals, arg_grads = accumulate_choice_gradients!(Empty(), Empty(), choice_grads, SelectAll(), cl, ret_grad...)
     return vals, arg_grads, choice_grads
 end
 
-function get_choice_gradients(ps::P, cl::T, ret_grad) where {P <: AddressMap, T <: CallSite}
+function get_choice_gradients(ps::P, cl::T, ret_grad...) where {P <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
     vals, arg_grads = accumulate_choice_gradients!(Empty(), ps, choice_grads, SelectAll(), cl, ret_grad...)
     return vals, arg_grads, choice_grads
 end
 
-function get_choice_gradients(fillables::S, ps::P, cl::T, ret_grad) where {S <: AddressMap, P <: AddressMap, T <: CallSite}
+function get_choice_gradients(fillables::S, ps::P, cl::T, ret_grad...) where {S <: AddressMap, P <: AddressMap, T <: CallSite}
     choice_grads = Gradients()
     vals, arg_grads = accumulate_choice_gradients!(fillables, ps, choice_grads, SelectAll(), cl, ret_grad...)
     return vals, arg_grads, choice_grads
 end
 
-function get_choice_gradients(sel::K, cl::T, ret_grad) where {T <: CallSite, K <: Target}
+function get_choice_gradients(sel::K, cl::T, ret_grad...) where {T <: CallSite, K <: Target}
     choice_grads = Gradients()
     vals, arg_grads = accumulate_choice_gradients!(Empty(), Empty(), choice_grads, sel, cl, ret_grad...)
     return vals, arg_grads, choice_grads
 end
 
-function get_choice_gradients(sel::K, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, P <: AddressMap}
+function get_choice_gradients(sel::K, ps::P, cl::T, ret_grad...) where {T <: CallSite, K <: Target, P <: AddressMap}
     choice_grads = Gradients()
     vals, arg_grads = accumulate_choice_gradients!(Empty(), ps, choice_grads, sel, cl, ret_grad...)
     return vals, arg_grads, choice_grads
 end
 
-function get_choice_gradients(sel::K, fillables::S, ps::P, cl::T, ret_grad) where {T <: CallSite, K <: Target, S <: AddressMap, P <: AddressMap}
+function get_choice_gradients(sel::K, fillables::S, ps::P, cl::T, ret_grad...) where {T <: CallSite, K <: Target, S <: AddressMap, P <: AddressMap}
     choice_grads = Gradients()
     vals, arg_grads = accumulate_choice_gradients!(fillables, ps, choice_grads, sel, cl, ret_grad...)
     return vals, arg_grads, choice_grads
