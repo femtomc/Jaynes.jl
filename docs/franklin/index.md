@@ -3,7 +3,7 @@
 
 **Jaynes.jl** (Jaynes) is a domain-specific compiler for [the generative function interface of Gen.jl](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1)[^1]. It also moonlights as a universal probabilistic programming framework.
 
-Currently supported inference algorithms (and MCMC kernels):
+Currently supported (native) inference algorithms (and MCMC kernels):
 
 * [MLE optimization for `learnable` parameters](library_api/inference/mle)
 * [MAP optimization for `Choice` sites](library_api/inference/map)
@@ -12,6 +12,8 @@ Currently supported inference algorithms (and MCMC kernels):
 * [Hamiltonian Monte Carlo](library_api/inference/hmc)
 * [Particle filtering (with and without custom proposals)](library_api/inference/pf)
 * [Variational inference (with and without baselines)](library_api/inference/vi)
+
+[Jaynes also supports integration with the inference algorithms and DSLs of Gen.jl](https://github.com/femtomc/Jaynes.jl/blob/master/src/gen_fn_interface.jl).
 
 Integration with deep networks provided by an extension module to [Flux.jl](https://github.com/FluxML/Flux.jl):
 
