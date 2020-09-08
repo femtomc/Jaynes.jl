@@ -1,5 +1,18 @@
 module Jaynes
 
+# Jaynes implements the abstract GFI from Gen.
+import Gen: Selection, ChoiceMap, Trace, GenerativeFunction
+import Gen: get_value, has_value
+import Gen: get_values_shallow
+import Gen: get_args, get_retval, get_choices, get_score, get_gen_fn, has_argument_grads, accepts_output_grad, get_params
+import Gen: select, choicemap
+import Gen: simulate, generate, project, propose, assess, update, regenerate
+import Gen: init_param!, accumulate_param_gradients!, choice_gradients
+
+# Gen diff types.
+import Gen: Diff, UnknownChange, NoChange
+import Gen: SetDiff, DictDiff, VectorDiff, IntDiff, Diffed
+
 # Yarrrr I'm a com-pirate!
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta
@@ -62,7 +75,6 @@ import UnicodePlots.lineplot
 # Toplevel importants :)
 const Address = Union{Int, Symbol, Pair}
 
-import Base.isless
 isless(::Symbol, ::Pair) = true
 isless(::Pair, ::Symbol) = false
 isless(::Int, ::Symbol) = true
@@ -119,6 +131,7 @@ end
 
 # ------------ includes ------------ #
 
+# Jaynes.
 include("core.jl")
 
 include("compiler.jl")
@@ -184,5 +197,14 @@ export display, getindex, haskey, get_score, get_ret, flatten, lineplot
 
 # Just a little sugar.
 export @sugar
+
+# Gen compat.
+import Base.display
+include("gen_fn_interface.jl")
+export @jaynes
+export JFunction, JTrace
+export init_param!, accumulate_param_gradients!, choice_gradients
+export choicemap, select
+export get_value, has_value
 
 end # module

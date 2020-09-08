@@ -66,7 +66,7 @@ end
     ss = get_sub(ctx.target, addr)
     if haskey(ctx.prev, addr)
         prev = get_prev(ctx, addr)
-        ret, cl, w, rd, d = update(ss, ps, prev, UndefinedChange(), args...)
+        ret, cl, w, rd, d = update(ss, ps, prev, UnknownChange(), args...)
     else
         ret, cl, w = generate(ss, ps, call, args...)
     end
@@ -113,7 +113,7 @@ function update(ctx::UpdateContext, cs::DynamicCallSite, args...) where D <: Dif
     ret = ctx(cs.fn, args...)
     adj_w = update_projection_walk(ctx.tr, ctx.visited)
     update_discard_walk!(ctx.discard, ctx.visited, ctx.tr)
-    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function update(sel::L, cs::DynamicCallSite) where L <: AddressMap

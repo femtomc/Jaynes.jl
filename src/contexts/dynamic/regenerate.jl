@@ -52,7 +52,7 @@ end
     ss = get_sub(ctx.target, addr)
     if has_sub(get_trace(ctx.prev), addr)
         prev_call = get_prev(ctx, addr)
-        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, UndefinedChange(), args...)
+        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, UnknownChange(), args...)
     else
         ret, cl, w = generate(ss, ps, call, args...)
     end
@@ -98,7 +98,7 @@ function regenerate(ctx::RegenerateContext, cs::DynamicCallSite, args...)
     ret = ctx(cs.fn, args...)
     adj_w = regenerate_projection_walk(ctx.tr, ctx.visited)
     regenerate_discard_walk!(ctx.discard, ctx.visited, ctx.tr)
-    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function regenerate(sel::L, cs::DynamicCallSite) where L <: Target

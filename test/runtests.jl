@@ -73,4 +73,15 @@ println("\n________________________\n")
     end
 end
 
+println("\n________________________\n")
+
+using Gen
+
+@testset "Gen compatibility" begin
+    println("Generative function interface.")
+    @time @testset "Generative function interface." begin
+        include("gen_compat/gen_fn_interface.jl")
+    end
+end
+
 end #module

@@ -157,23 +157,23 @@ end
 function update(sel::L, vcs::VectorCallSite{typeof(markov)}) where L <: AddressMap
     ctx = Update(sel, Empty(), vcs, VectorTrace(vcs.len), VectorDiscard(), NoChange())
     ret = ctx(markov, vcs.fn, vcs.len, vcs.args[1]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}) where {L <: AddressMap, P <: AddressMap}
     ctx = Update(sel, ps, vcs, VectorTrace(vcs.len), VectorDiscard(), NoChange())
     ret = ctx(markov, vcs.fn, vcs.len, vcs.args[1]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function update(sel::L, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, D <: Diff}
     ctx = Update(sel, Empty(), vcs, VectorTrace(len), VectorDiscard(), NoChange())
     ret = ctx(markov, vcs.fn, len, vcs.args[1]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, len), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, P <: AddressMap, D <: Diff}
     ctx = Update(sel, ps, vcs, VectorTrace(len), VectorDiscard(), NoChange())
     ret = ctx(markov, vcs.fn, len, vcs.args[1]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, len), ctx.weight, UnknownChange(), ctx.discard
 end

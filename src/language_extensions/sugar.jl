@@ -1,9 +1,8 @@
-distributions = [:MvNormal,
-                 :Normal,
-                 :Categorical,
-                 :Bernoulli,
-                 :Dirichlet,
-                 :InverseGamma]
+# Get all distributions in Distributions.jl
+distributions = filter(names(Distributions)) do nm
+    e = Base.eval(Distributions, nm)
+    !(e isa Module) && !(e isa Function) && e <: Distribution
+end
 
 function _sugar(expr)
     MacroTools.postwalk(expr) do s
