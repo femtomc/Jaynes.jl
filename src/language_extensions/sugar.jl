@@ -6,7 +6,7 @@ end
 function _sugar(expr)
     MacroTools.postwalk(expr) do s
         if @capture(s, val_ ~ fn_(args__))
-            if fn in distributions
+            if Symbol("Distributions.$fn") in distributions
                 if val isa QuoteNode
                     k = Expr(:call, :rand, val, Expr(:call, fn, args...))
 
