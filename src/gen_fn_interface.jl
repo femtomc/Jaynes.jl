@@ -87,7 +87,7 @@ Base.display(jtr::JTrace) = Base.display(get_trace(jtr.record))
 
 # Trace GFI methods.
 get_args(trace::JTrace) = get_args(trace.record)
-get_retval(trace::JTrace) = get_retval(trace.record)
+get_retval(trace::JTrace) = get_ret(trace.record)
 get_score(trace::JTrace) = get_score(trace.record)
 get_gen_fn(trace::JTrace) = trace.gen_fn
 
@@ -149,6 +149,16 @@ function assess(jfn::JFunction, args::Tuple, choices::JChoiceMap)
 end
 @inline assess(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = assess(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
 
+function project(jtr::JTrace, sel::JSelection)
+    w, proj = projection(get_record(jtr), unwrap(sel))
+    w
+end
+
+function project(jtr::JTrace, sel::EmptySelection)
+    w, proj = projection(get_record(jtr), Empty())
+    w
+end
+
 function propose(jfn::JFunction, args::Tuple)
     ret, chm, w = propose(get_params(jfn), 
                           jfn.fn, 
@@ -173,6 +183,55 @@ function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSe
                                    args, 
                                    arg_diffs)
     JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
+end
+
+# ------------ Combinators ------------ #
+
+function display(vtr::Gen.VectorTrace{A, K, JTrace}; show_values = true, show_types = false) where {A, K}
+    addrs = Any[]
+    chd = Dict()
+    meta = Dict()
+    for (k, v) in get_submaps_shallow(get_choices(vtr))
+        collect!((k, ), addrs, chd, v, meta)
+    end
+    println(" ___________________________________\n")
+    println("             Address Map\n")
+    if show_values
+        for a in addrs
+            if haskey(meta, a) && haskey(chd, a)
+                println(" $(meta[a]) $(a) = $(chd[a])")
+            elseif haskey(chd, a)
+                println(" $(a) = $(chd[a])")
+            else
+                println(" $(a)")
+            end
+        end
+    elseif show_types
+        for a in addrs
+            if haskey(meta, a) && haskey(chd, a)
+                println(" $(meta[a]) $(a) = $(typeof(chd[a]))")
+            elseif haskey(chd, a)
+                println(" $(a) = $(typeof(chd[a]))")
+            else
+                println(" $(a)")
+            end
+        end
+    elseif show_types && show_values
+        for a in addrs
+            if haskey(meta, a) && haskey(chd, a)
+                println(" $(meta[a]) $(a) = $(chd[a]) : $(typeof(chd[a]))")
+            elseif haskey(chd, a)
+                println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
+            else
+                println(" $(a)")
+            end
+        end
+    else
+        for a in addrs
+            println(" $(a)")
+        end
+    end
+    println(" ___________________________________\n")
 end
 
 # ------------ Gradients ------------ #
