@@ -147,6 +147,7 @@ function assess(jfn::JFunction, args::Tuple, choices::JChoiceMap)
                    args...)
     w, ret
 end
+@inline assess(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = assess(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
 
 function propose(jfn::JFunction, args::Tuple)
     ret, chm, w = propose(get_params(jfn), 

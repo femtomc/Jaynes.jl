@@ -84,6 +84,8 @@ function update_projection_walk(tr::DynamicTrace,
     for (k, v) in shallow_iterator(tr)
         if !(k in visited)
             weight += projection(v, SelectAll())[1]
+        else
+            weight += projection(v, get_sub(visited, k))[1]
         end
     end
     weight
@@ -99,8 +101,8 @@ function update_discard_walk!(d::DynamicDiscard,
                 set_sub!(d, k, v)
             else
                 sd = get_sub(d, k)
-                sd = isempty(sd) ? DynamicMap{Value}() : sd
-                discard_walk!(sd, ss, v)
+                sd = isempty(sd) ? Empty() : sd
+                update_discard_walk!(sd, ss, v)
                 set_sub!(d, k, sd)
             end
         end
@@ -112,7 +114,7 @@ end
 function update(ctx::UpdateContext, cs::DynamicCallSite, args::Tuple) where D <: Diff
     ret = ctx(cs.fn, args...)
     adj_w = update_projection_walk(ctx.tr, ctx.visited)
-    update_discard_walk!(ctx.discard, ctx.visited, ctx.tr)
+    update_discard_walk!(ctx.discard, ctx.visited, get_trace(cs))
     return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UnknownChange(), ctx.discard
 end
 

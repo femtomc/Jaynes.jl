@@ -34,9 +34,9 @@ fixed_structure_kernel(trace) = Gen.mh(trace, jprop, ())[1]
 test = () -> begin
     (y1, y2) = (1.0, 1.3)
     obs = choicemap(Pair{Tuple, Any}[(:y1, ) => y1, 
-                                  (:y2, ) => y2,
-                                  (:z, ) => false,
-                                  (:m, ) => 1.2])
+                                     (:y2, ) => y2,
+                                     (:z, ) => false,
+                                     (:m, ) => 1.2])
     trace, _ = generate(jmodel, (), obs)
     for iter=1:100
         trace = select_mh_structure_kernel(trace)
@@ -92,21 +92,26 @@ end
     end
 end
 
-split_merge_kernel(trace) = Gen.mh(trace, sm_prop, (), split_merge_involution)
+
+split_merge_kernel(trace) = Gen.mh(trace, sm_prop, (), split_merge_involution)[1]
 
 test_involution = () -> begin
-    (y1, y2) = (1.0, 1.3)
+    (y1, y2) = (1.0, 1.2)
     obs = choicemap(Pair{Tuple, Any}[(:y1, ) => y1, 
-                                  (:y2, ) => y2,
-                                  (:z, ) => false,
-                                  (:m, ) => 1.2])
+                                     (:y2, ) => y2,])
     trace, = generate(jmodel, (), obs)
+    trs = []
     for iter=1:100
         trace = split_merge_kernel(trace)
         trace = fixed_structure_kernel(trace)
+        push!(trs, trace)
     end
-    trace
+    trs
 end
-test_involution()
+trs = test_involution()
+
+display(lineplot(map(trs) do tr
+    tr[:z]
+end))
 
 end # module
