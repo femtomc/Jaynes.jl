@@ -71,8 +71,7 @@ using DistributionsAD
 import Flux: update!, flatten
 
 # Plotting.
-using UnicodePlots
-import UnicodePlots.lineplot
+using UnicodePlots: lineplot
 
 # Toplevel importants :)
 const Address = Union{Int, Symbol, Pair}

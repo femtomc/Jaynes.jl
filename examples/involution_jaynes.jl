@@ -111,7 +111,7 @@ end
 trs = test_involution()
 
 display(lineplot(map(trs) do tr
-    tr[:z]
-end))
+                     tr[:z]
+                 end))
 
 end # module
