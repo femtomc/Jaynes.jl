@@ -1,3 +1,4 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Franklin = "713c75ef-9fc9-4b05-94a9-213340da978e"
 Jaynes = "a2015381-cef8-4fe1-827c-95a77dd17ccf"

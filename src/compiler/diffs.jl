@@ -1,42 +1,15 @@
 # ------------ Diff system ------------ #
 
-abstract type Diff end
-
-abstract type StaticDiff <: Diff end
-struct UndefinedChange <: StaticDiff end
-struct NoChange <: StaticDiff end
-
-struct SetDiff{V} <: Diff
-    added::Set{V}
-    deleted::Set{V}
-end
-
-struct DictDiff{K, V} <: Diff
-    added::AbstractDict{K, V}
-    deleted::AbstractSet{K}
-    updated::AbstractDict{K, Diff}
-end
-
-struct VectorDiff <: Diff
-    new_length::Int
-    prev_length::Int
-    updated::Dict{Int,Diff} 
-    VectorDiff(nl::Int, pl::Int, updated::Dict{Int, Diff}) = new(nl, pl, updated)
-end
-
-struct IntDiff <: Diff
-    difference::Int # new - old
-end
-
-struct Diffed{V, DV}
-    val::V
-    diff::DV
-end
-
-unwrap(::Mjolnir.Node{T}) where T = T
-
 # Define the algebra for propagation of diffs.
-@inline propagate(a...) = any(i -> unwrap(i) == UndefinedChange, a) ? UndefinedChange : NoChange
+propagate(::NoChange, ::NoChange) = NoChange()
+propagate(::UnknownChange, ::NoChange) = UnknownChange()
+propagate(::NoChange, ::UnknownChange) = UnknownChange()
+propagate(::UnknownChange, ::UnknownChange) = UnknownChange()
+propagate(a::Type{NoChange}, v::Type{NoChange}) = NoChange()
+propagate(a::Type{NoChange}, v::Type{UnknownChange}) = UnknownChange()
+propagate(a::Type{UnknownChange}, v::Type{NoChange}) = UnknownChange()
+propagate(a::Type{UnknownChange}, v::Type{UnknownChange}) = UnknownChange()
+propagate(a::Type{K}, b::T) where {K, T} = propagate(K, T)
 
 struct DiffPrimitives end
 

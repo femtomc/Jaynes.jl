@@ -134,24 +134,24 @@ function regenerate(sel::L, vcs::VectorCallSite{typeof(markov)}) where {L <: Tar
     argdiffs = NoChange()
     ctx = Regenerate(vcs, sel, argdiffs)
     ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}) where {L <: Target, P <: AddressMap, D <: Diff}
     argdiffs = NoChange()
     ctx = Regenerate(vcs, sel, ps, argdiffs)
     ret = ctx(markov, vcs.fn, vcs.args[1], vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function regenerate(sel::L, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: Target, D <: Diff}
     ctx = Regenerate(vcs, sel, NoChange())
     ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(markov)}, len::Int) where {L <: Target, P <: AddressMap, D <: Diff}
     ctx = Regenerate(vcs, sel, ps, NoChange())
     ret = ctx(markov, vcs.fn, len, vcs.args[2]...)
-    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(markov)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end

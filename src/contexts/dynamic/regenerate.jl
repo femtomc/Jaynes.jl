@@ -52,7 +52,7 @@ end
     ss = get_sub(ctx.target, addr)
     if has_sub(get_trace(ctx.prev), addr)
         prev_call = get_prev(ctx, addr)
-        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, UndefinedChange(), args...)
+        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, UnknownChange(), args...)
     else
         ret, cl, w = generate(ss, ps, call, args...)
     end
@@ -94,19 +94,29 @@ end
 
 # ------------ Convenience ------------ #
 
-function regenerate(ctx::RegenerateContext, cs::DynamicCallSite, args...)
+function regenerate(ctx::RegenerateContext, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple)
     ret = ctx(cs.fn, args...)
     adj_w = regenerate_projection_walk(ctx.tr, ctx.visited)
     regenerate_discard_walk!(ctx.discard, ctx.visited, ctx.tr)
-    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function regenerate(sel::L, cs::DynamicCallSite) where L <: Target
     ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard(), NoChange())
-    return regenerate(ctx, cs, cs.args...)
+    return regenerate(ctx, cs, cs.args, ())
+end
+
+function regenerate(sel::L, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple) where L <: Target
+    ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard(), NoChange())
+    return regenerate(ctx, cs, args, argdiffs)
 end
 
 function regenerate(sel::L, ps::P, cs::DynamicCallSite) where {L <: Target, P <: AddressMap}
     ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard(), NoChange())
-    return regenerate(ctx, cs, cs.args...)
+    return regenerate(ctx, cs, cs.args, ())
+end
+
+function regenerate(sel::L, ps::P, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple) where {L <: Target, P <: AddressMap}
+    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard(), NoChange())
+    return regenerate(ctx, cs, args, argdiffs)
 end

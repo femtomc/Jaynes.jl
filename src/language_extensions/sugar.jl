@@ -1,41 +1,24 @@
-distributions = [:MvNormal,
-                 :Normal,
-                 :Categorical,
-                 :Bernoulli,
-                 :Dirichlet,
-                 :InverseGamma]
+# Get all distributions in Distributions.jl
+distributions = map(subtypes(Distribution)) do t
+    Symbol(t)
+end
 
 function _sugar(expr)
     MacroTools.postwalk(expr) do s
-        if @capture(s, val_ ~ fn_(args__))
-            if fn in distributions
-                if val isa QuoteNode
-                    k = Expr(:call, :rand, val, Expr(:call, fn, args...))
-
-                    # Matches: x = (:x => 5) ~ distribution
-                elseif val isa Expr
-                    k = Expr(:call, :rand, val, Expr(:call, fn, args...))
-
-                    # Matches: x = (:x) ~ distribution
-                else
-                    addr = QuoteNode(val)
-                    k = Expr(:(=), val, Expr(:call, :rand, addr, Expr(:call, fn, args...)))
-                end
-
+        if @capture(s, {addr_} ~ fn_(args__))
+            if Symbol("Distributions.$fn") in distributions || fn in distributions
+                k = Expr(:call, :rand, addr, Expr(:call, fn, args...))
             else
-                # Matches: x ~ fn(args...)
-                if val isa QuoteNode
-                    k = Expr(:call, :rand, val, fn, args...)
+                k = Expr(:call, :rand, addr, fn, args...)
+            end
 
-                    # Matches: x = (:x => 5) ~ fn(args...)
-                elseif val isa Expr
-                    k = Expr(:call, :rand, val, fn, args...)
-
-                    # Matches: x = (:x) ~ fn(args...)
-                else
-                    addr = QuoteNode(val)
-                    k = Expr(:(=), val, Expr(:call, :rand, addr, fn, args...))
-                end
+        elseif @capture(s, val_ ~ fn_(args__))
+            val isa Expr && error("Raw value assignment ~ for choice requires that value be a variable name (e.g. x, y, z, ...).")
+            addr = QuoteNode(val)
+            if Symbol("Distributions.$fn") in distributions || fn in distributions
+                k = Expr(:(=), val, Expr(:call, :rand, addr, Expr(:call, fn, args...)))
+            else
+                k = Expr(:(=), val, Expr(:call, :rand, addr, fn, args...))
             end
 
         elseif @capture(s, val_ <- fn_(args__))

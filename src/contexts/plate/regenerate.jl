@@ -102,11 +102,11 @@ end
 function regenerate(sel::L, vcs::VectorCallSite{typeof(plate)}) where {L <: Target, D <: Diff}
     ctx = Regenerate(sel, Empty(), vcs, VectorTrace(vcs.len), VectorDiscard(), NoChange())
     ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function regenerate(sel::L, ps::P, vcs::VectorCallSite{typeof(plate)}) where {L <: Target, P <: AddressMap, D <: Diff}
     ctx = Regenerate(sel, ps, vcs, VectorTrace(vcs.len), VectorDiscard(), NoChange())
     ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end

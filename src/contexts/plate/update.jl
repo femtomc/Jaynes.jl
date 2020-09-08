@@ -106,12 +106,12 @@ function update(sel::L, vcs::VectorCallSite{typeof(plate)}) where L <: AddressMa
     argdiffs = NoChange()
     ctx = Update(sel, Empty(), vcs, VectorTrace(vcs.len), VectorDiscard(), argdiffs)
     ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function update(sel::L, ps::P, vcs::VectorCallSite{typeof(plate)}) where {L <: AddressMap, P <: AddressMap}
     argdiffs = NoChange()
     ctx = Update(sel, ps, vcs, VectorTrace(vcs.len), VectorDiscard(), argdiffs)
     ret = ctx(plate, vcs.fn, vcs.args)
-    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UndefinedChange(), ctx.discard
+    return ret, VectorCallSite{typeof(plate)}(ctx.tr, ctx.score, vcs.fn, vcs.args, ret, vcs.len), ctx.weight, UnknownChange(), ctx.discard
 end
