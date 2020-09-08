@@ -49,8 +49,20 @@ from_array(choices::JChoiceMap, arr::Vector) = target(unwrap(choices), arr)
 display(jcm::JChoiceMap) = Jaynes.display(unwrap(jcm))
 
 choicemap(c::Vector{Pair{T, K}}) where {T <: Tuple, K} = JChoiceMap(target(c))
+function convert(::Type{DynamicMap{Value}}, chm::DynamicChoiceMap)
+    dm = DynamicMap{Value}()
+    for (k, v) in get_values_shallow(chm)
+        set_sub!(dm, k, Value(v))
+    end
+    for (k, v) in get_submaps_shallow(chm)
+        sub = convert(DynamicMap{Value}, v)
+        set_sub!(dm, k, sub)
+    end
+    dm
+end
 
-# Trace.
+# ------------ Trace ------------ #
+
 mutable struct JTrace{T, K <: CallSite} <: Trace
     gen_fn::T
     record::K
@@ -144,21 +156,22 @@ function propose(jfn::JFunction, args::Tuple)
 end
 
 function update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::JChoiceMap)
-    ret, cl, w, d, rd = update(unwrap(constraints), 
+    ret, cl, w, rd, d = update(unwrap(constraints), 
                                get_params(get_gen_fn(trace)), 
                                trace.record, 
                                args, 
                                arg_diffs)
-    JTrace(get_gen_fn(trace), cl, false), w, UnknownChange(), d
+    JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
 end
+@inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::DynamicChoiceMap) = update(trace, args, arg_diffs, JChoiceMap(convert(DynamicMap{Value}, constraints)))
 
 function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSelection)
-    ret, cl, w, d, rd = regenerate(unwrap(selection), 
+    ret, cl, w, rd, d = regenerate(unwrap(selection), 
                                    get_params(get_gen_fn(trace)), 
                                    get_record(trace), 
                                    args, 
                                    arg_diffs)
-    JTrace(get_gen_fn(trace), cl, false), w, UnknownChange(), d
+    JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
 end
 
 # ------------ Gradients ------------ #

@@ -45,7 +45,6 @@ end
     for i in 1 : 1000
         params, _ = advi(opt, sel, params, var, (), model, ();
                          gs_samples = 100)
-        display(params)
     end
     @test params[:slope_mu] ≈ -1.0 atol = 7e-2
     @test params[:slope_log_std] ≈ 0.5 atol = 7e-2

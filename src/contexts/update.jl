@@ -3,8 +3,7 @@ mutable struct UpdateContext{C <: CallSite,
                              T <: AddressMap,
                              K <: AddressMap, 
                              D <: AddressMap,
-                             P <: AddressMap, 
-                             Ag <: Diff} <: ExecutionContext
+                             P <: AddressMap} <: ExecutionContext
     prev::C
     tr::T
     target::K
@@ -13,10 +12,9 @@ mutable struct UpdateContext{C <: CallSite,
     discard::D
     visited::Visitor
     params::P
-    diff::Ag
 end
 
-function Update(select::K, ps::P, cl::C, tr, discard, argdiffs::Ag) where {K <: AddressMap, P <: AddressMap, C <: CallSite, Ag <: Diff}
+function Update(select::K, ps::P, cl::C, tr, discard) where {K <: AddressMap, P <: AddressMap, C <: CallSite}
     UpdateContext(cl, 
                   tr,
                   select, 
@@ -24,14 +22,7 @@ function Update(select::K, ps::P, cl::C, tr, discard, argdiffs::Ag) where {K <: 
                   0.0, 
                   discard,
                   Visitor(), 
-                  ps,
-                  argdiffs)
-end
-
-# Future pass configurable by static address map type information.
-function extract_markov_blanket!(ir, chm) end
-function extract_markov_blanket!(ir, chm::Type{<: StaticMap})
-    println(keys(chm))
+                  ps)
 end
 
 # ------------ includes ------------ #

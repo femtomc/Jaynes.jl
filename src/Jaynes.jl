@@ -2,8 +2,9 @@ module Jaynes
 
 # Jaynes implements the abstract GFI from Gen.
 import Gen: Selection, ChoiceMap, Trace, GenerativeFunction
+import Gen: DynamicChoiceMap
 import Gen: get_value, has_value
-import Gen: get_values_shallow
+import Gen: get_values_shallow, get_submaps_shallow
 import Gen: get_args, get_retval, get_choices, get_score, get_gen_fn, has_argument_grads, accepts_output_grad, get_params
 import Gen: select, choicemap
 import Gen: simulate, generate, project, propose, assess, update, regenerate
