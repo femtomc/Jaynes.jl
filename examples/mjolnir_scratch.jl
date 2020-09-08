@@ -2,6 +2,7 @@ module MjolnirScratch
 
 include("../src/Jaynes.jl")
 using .Jaynes
+using IRTools
 
 fn0 = q -> begin
     x = 5.0 + q
@@ -19,14 +20,26 @@ fn1 = q -> begin
     x
 end
 
-fn2 = (q, z, m) -> begin
+fn2 = (q, z, m, b) -> begin
     l = rand(:z, fn0, z)
-    l = rand(:m, fn0, q)
-    l = rand(:n, fn1, m)
-    l * 2
+    q = rand(:m, fn0, q)
+    l = rand(:n, fn1, q)
+    m = 0
+    if b
+        m = rand(:q, fn2, l) + m
+    end
+    v = l * q * m
+    if v > 10.0
+        return v
+    else
+        return l
+    end
 end
 
-tr = _pushforward(fn2, Δ(5.0, NoChange()), Δ(10.0, UndefinedChange()), Δ(10.0, NoChange()))
+tr = _pushforward(fn2, Δ(5.0, NoChange()), 
+                       Δ(10.0, ScalarDiff(5.0)), 
+                       Δ(10.0, ScalarDiff(5.0)), 
+                       Δ(true, BoolDiff(true)))
 display(tr)
 
 end # module

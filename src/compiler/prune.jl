@@ -1,6 +1,5 @@
 # This pass inserts the return value of the call before any NoChange call nodes.
 function substitute_return!(st)
-    println(st.type)
     st
 end
 
@@ -8,7 +7,7 @@ end
 function prune!(ir)
     pr = IRTools.Pipe(ir)
     for (v, st) in pr
-        st.type == UndefinedChange && continue
+        st.type == UnknownChange && continue
         pr[v] = substitute_return!(st)
     end
     IRTools.finish(pr)

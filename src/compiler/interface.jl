@@ -27,9 +27,13 @@ end
 
 _propagate(a...) = trace(DiffDefaults(), a...)
 
-create_flip_diff(a::Type{Diffed{K, DV}}) where {K, DV} = DV
+function create_flip_diff(a::Type{Diffed{K, DV}}) where {K, DV}
+    DV != NoChange && return Change
+    NoChange
+end
 
 @generated _pushforward(F, As...) = begin
+    ir = IRTools.IR(IRTools.meta(Tuple{F, As...}))
     As = map(As) do a
         create_flip_diff(a)
     end

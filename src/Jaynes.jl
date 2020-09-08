@@ -137,6 +137,8 @@ include("core.jl")
 
 include("compiler.jl")
 export Δ, Diffed, forward
+export NoChange, Change
+export ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff
 export pushforward, _pushforward
 
 include("contexts.jl")
