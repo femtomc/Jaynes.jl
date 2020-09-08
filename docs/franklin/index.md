@@ -1,7 +1,7 @@
 @def title = "E.T. Jaynes home phone"
 @def tags = ["probabilistic programming", "programmable inference"]
 
-**Jaynes.jl** (Jaynes) is a probabilistic programming framework based on a compiler interception version of [the generative function interface of Gen.jl](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1)[^1].
+**Jaynes.jl** (Jaynes) is a domain-specific compiler for [the generative function interface of Gen.jl](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1)[^1]. It also moonlights as a universal probabilistic programming framework.
 
 Currently supported inference algorithms (and MCMC kernels):
 

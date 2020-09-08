@@ -22,6 +22,7 @@ using Random
 #import Mjolnir.trace
 #using Mjolnir: Defaults
 using MacroTools
+using InteractiveUtils: subtypes
 
 # Static selektor.
 using StaticArrays

@@ -1,7 +1,6 @@
 # Get all distributions in Distributions.jl
-distributions = filter(names(Distributions)) do nm
-    e = Base.eval(Distributions, nm)
-    !(e isa Module) && !(e isa Function) && e <: Distribution
+distributions = map(subtypes(Distribution)) do t
+    Symbol(t)
 end
 
 function _sugar(expr)
