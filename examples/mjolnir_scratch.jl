@@ -40,6 +40,6 @@ tr = _pushforward(fn2, Δ(5.0, NoChange()),
                        Δ(10.0, ScalarDiff(5.0)), 
                        Δ(10.0, ScalarDiff(5.0)), 
                        Δ(true, BoolDiff(true)))
-display(tr)
+println(tr)
 
 end # module

@@ -25,6 +25,29 @@ function Update(select::K, ps::P, cl::C, tr, discard) where {K <: AddressMap, P 
                   ps)
 end
 
+@dynamo function (mx::UpdateContext)(F, As...)
+
+    # Check for primitive.
+    ir = IR(IRTools.meta(Tuple{F, As...}))
+    ir == nothing && return
+    recur!(ir)
+
+    # Diff inference.
+    As = map(As) do a
+        create_flip_diff(a)
+    end
+    tr = _propagate(F, As...)
+    recur!(tr)
+
+    # Pruning transform.
+    tr = prune(tr)
+    tr = strip_types(tr)
+    display(tr)
+
+    # Return normal IR.
+    ir
+end
+
 # ------------ includes ------------ #
 
 include("dynamic/update.jl")

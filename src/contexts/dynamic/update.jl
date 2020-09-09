@@ -108,11 +108,16 @@ end
 
 # ------------ Convenience ------------ #
 
-function update(ctx::UpdateContext, cs::DynamicCallSite, args::Tuple) where D <: Diff
+function update(ctx::UpdateContext, cs::DynamicCallSite, args::NTuple{N, Diffed}) where N
     ret = ctx(cs.fn, args...)
     adj_w = update_projection_walk(ctx.tr, ctx.visited)
     update_discard_walk!(ctx.discard, ctx.visited, get_trace(cs))
     return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UnknownChange(), ctx.discard
+end
+
+function update(cs::DynamicCallSite, args::Diffed...) where N
+    ctx = Update(Empty(), Empty(), cs, DynamicTrace(), DynamicDiscard())
+    return update(ctx, cs, args)
 end
 
 function update(sel::L, cs::DynamicCallSite) where L <: AddressMap
@@ -120,7 +125,7 @@ function update(sel::L, cs::DynamicCallSite) where L <: AddressMap
     return update(ctx, cs, cs.args)
 end
 
-function update(sel::L, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple) where L <: AddressMap
+function update(sel::L, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, N}
     ctx = Update(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
     return update(ctx, cs, args)
 end
@@ -130,7 +135,7 @@ function update(sel::L, ps::P, cs::DynamicCallSite) where {P <: AddressMap, L <:
     return update(ctx, cs, cs.args)
 end
 
-function update(sel::L, ps::P, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple) where {L <: AddressMap, P <: AddressMap}
+function update(sel::L, ps::P, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, P <: AddressMap, N}
     ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
     return update(ctx, cs, args)
 end

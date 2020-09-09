@@ -38,7 +38,9 @@ end
         create_flip_diff(a)
     end
     tr = _propagate(F, As...)
-    prune!(tr)
+    ir = prune(tr)
+    strip_types!(ir)
+    ir
 end
 
 pushforward(fn, args...) = fn(args...), _pushforward(fn, args...)
