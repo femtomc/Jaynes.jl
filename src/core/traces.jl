@@ -33,6 +33,7 @@ abstract type CallSite <: AddressMap{Choice} end
 @inline get_sub(cs::C, addr::Tuple) where C <: CallSite = get_sub(get_trace(cs), addr::Tuple)
 @inline get_score(cs::C) where C <: CallSite = cs.score
 @inline get_ret(cs::C) where C <: CallSite = cs.ret
+@inline get_value(cs::C) where C <: CallSite = get_ret(cs)
 @inline get_args(cs::C) where C <: CallSite = cs.args
 @inline get_choices(cs::C) where C <: CallSite = get_choices(get_trace(cs))
 @inline has_sub(cs::C, addr::A) where {C <: CallSite, A <: Address} = has_sub(get_trace(cs), addr)
