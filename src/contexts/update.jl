@@ -14,6 +14,15 @@ mutable struct UpdateContext{C <: CallSite,
     params::P
 end
 
+@inline function record_cache!(ctx::UpdateContext, addr)
+    visit!(ctx, addr)
+    sub = get_sub(ctx.prev, addr)
+    sc = get_score(sub)
+    ctx.score += get_score(sub)
+    set_sub!(ctx.tr, addr, sub)
+    get_value(sub)
+end
+
 function Update(select::K, ps::P, cl::C, tr, discard) where {K <: AddressMap, P <: AddressMap, C <: CallSite}
     UpdateContext(cl, 
                   tr,
@@ -30,22 +39,16 @@ end
     # Check for primitive.
     ir = IR(IRTools.meta(Tuple{F, As...}))
     ir == nothing && return
-    recur!(ir)
 
     # Diff inference.
     As = map(As) do a
         create_flip_diff(a)
     end
     tr = _propagate(F, As...)
-    recur!(tr)
 
     # Pruning transform.
-    tr = prune(tr)
-    tr = strip_types(tr)
-    display(tr)
-
-    # Return normal IR.
-    ir
+    tr = pipeline(ir.meta, tr)
+    tr
 end
 
 # ------------ includes ------------ #

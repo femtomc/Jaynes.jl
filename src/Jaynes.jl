@@ -17,7 +17,7 @@ import Gen: SetDiff, DictDiff, VectorDiff, IntDiff, Diffed
 
 # Yarrrr I'm a com-pirate!
 using IRTools
-using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta
+using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta, renumber, Pipe, finish
 using Random
 using Mjolnir
 using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
@@ -106,15 +106,16 @@ whitelist = [
             ]
 
 # Fix for specialized tracing.
-function recur!(ir, to = self)
-    for (x, st) in ir
+function recur(ir, to = self)
+    pr = Pipe(ir)
+    for (x, st) in pr
         isexpr(st.expr, :call) && begin
             ref = unwrap(st.expr.args[1])
             ref in whitelist || continue
-            ir[x] = Expr(:call, to, st.expr.args...)
+            pr[x] = Expr(:call, to, st.expr.args...)
         end
     end
-    return ir
+    finish(pr)
 end
 
 # Fix for _apply_iterate (used in contexts).
@@ -142,6 +143,8 @@ export ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff
 export pushforward, _pushforward
 
 include("contexts.jl")
+export record_cache!
+
 include("inference.jl")
 include("language_extensions.jl")
 include("utils.jl")

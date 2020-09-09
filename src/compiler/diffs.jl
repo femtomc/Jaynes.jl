@@ -20,7 +20,7 @@ function change_check(args)
     unwrapped = map(args) do a
         unwrap(a) <: Change
     end
-    all(unwrapped) && return Change
+    any(unwrapped) && return Change
     return NoChange
 end
 
