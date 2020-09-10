@@ -34,24 +34,36 @@ function Update(select::K, ps::P, cl::C, tr, discard) where {K <: AddressMap, P 
                   ps)
 end
 
-@dynamo function (mx::UpdateContext{C, T, K})(F, As...) where {C, T, K}
+# This uses a "sneaky invoke" hack to allow passage of diffs into user-defined functions whose argtypes do not allow it.
+@dynamo function (mx::UpdateContext{C, T, K})(f, ::Type{S}, args...) where {S <: Tuple, C, T, K}
 
     # Check for primitive.
-    ir = IR(IRTools.meta(Tuple{F, As...}))
+    ir = IR(f, S.parameters...)
     ir == nothing && return
 
-    # Diff inference.
-    As = map(As) do a
-        create_flip_diff(a)
+    # Equivalent to static DSL optimizations.
+    if !control_flow_check(ir)
+        
+        # Release IR normally.
+        ir = recur(ir)
+        argument!(ir, at = 2)
+        ir
+    else
+        
+        # Diff inference.
+        args = map(args) do a
+            create_flip_diff(a)
+        end
+        tr = _propagate(f, S.parameters...)
+
+        # Get choicemap keys.
+        ks = get_address_schema(K)
+
+        # Pruning transform.
+        tr = pipeline(ir.meta, tr, ks)
+        argument!(tr, at = 2)
+        tr
     end
-    tr = _propagate(F, As...)
-
-    # Get choicemap keys.
-    ks = get_address_schema(K)
-
-    # Pruning transform.
-    tr = pipeline(ir.meta, tr, ks)
-    tr
 end
 
 # ------------ includes ------------ #

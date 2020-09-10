@@ -10,7 +10,12 @@ end
 
 struct Change <: Diff end
 
+@inline tupletype(dfs::Diffed...) = Tuple{map(d -> valtype(d), dfs)...}
+
+valtype(d::Diffed{V, DV}) where {V, DV} = V
+
 # Define the algebra for propagation of diffs.
+unwrap(d::Diffed) = d.value
 unwrap(::Type{K}) where K = K
 unwrap(::Const{K}) where K = K
 unwrap(::Partial{K}) where K = K

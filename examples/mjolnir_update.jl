@@ -4,15 +4,15 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using IRTools
 
-(d::Distribution)(v::Diffed, x) = d(v.value, x)
+Distributions.Normal(v::D, x) where D <: Diffed = Normal(v.value, x)
 
-fn0 = (q, z) -> begin
+fn0 = (q::Float64, z::Float64) -> begin
     m = rand(:m, Normal(q, 1.0))
     q = rand(:q, Normal(z, 5.0))
     m + q
 end
 
-fn1 = (q, z, m) -> begin
+fn1 = (q::Float64, z::Float64, m::Float64) -> begin
     t = rand(:z, Normal(5.0, 1.0))
     n = rand(:m, Normal(z, 1.0))
     l = rand(:l, fn0, q, m)
@@ -34,18 +34,6 @@ println("Score: $(get_score(cl))")
 ret, cl, w, _ = update(cl, Δ(5.0, ScalarDiff(-5.0)), 
                            Δ(5.0, ScalarDiff(-5.0)), 
                            Δ(1.0, NoChange()))
-display(cl.trace)
-display(get_score(cl) - w)
-
-# Static choice map.
-sel = static([(:p, ) => 5.0])
-ret, cl, w, _ = update(sel, cl, Δ(5.0, ScalarDiff(-5.0)), 
-                                Δ(5.0, ScalarDiff(-5.0)), 
-                                Δ(1.0, NoChange()))
-
-@time ret, cl, w, _ = update(sel, cl, Δ(5.0, ScalarDiff(-5.0)), 
-                             Δ(5.0, ScalarDiff(-5.0)), 
-                             Δ(1.0, NoChange()))
 display(cl.trace)
 display(get_score(cl) - w)
 

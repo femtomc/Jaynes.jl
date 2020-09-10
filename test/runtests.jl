@@ -8,6 +8,12 @@ using .Jaynes
 println("\n________________________\n")
 
 @testset "Core" begin
+
+    println("Compiler.")
+    @time @testset "Compiler." begin
+        include("compiler/update.jl")
+    end
+
     println("Execution contexts.")
     @time @testset "Execution contexts." begin
         include("core/contexts.jl")

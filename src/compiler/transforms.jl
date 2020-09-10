@@ -99,12 +99,8 @@ end
 # Full pipeline.
 @inline function pipeline(meta, tr, ks)
     tr = reconstruct_ir(meta, tr)
-    display(tr)
-    println()
     reachability = flow_analysis(tr)
-    display(reachability)
     blankets = markov_blankets(reachability, ks)
-    display(blankets)
     tr = insert_cache_calls(tr)
     tr = strip_types(tr)
     tr = rand_wrapper(tr)
