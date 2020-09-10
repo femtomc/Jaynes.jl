@@ -1,11 +1,25 @@
 abstract type Analysis end
 abstract type CallAnalysis <: Analysis end
 
-struct StaticAnalysis <: CallAnalysis
+struct ReachingAnalysis <: CallAnalysis
     reach::Dict
-    sites::Vector{Variable}
+    ancestors::Dict
+    sites::Set{Variable}
     addrs::Vector{QuoteNode}
     map::Dict
+end
+
+function Base.display(ra::ReachingAnalysis)
+    println("  __________________________________\n")
+    println("             Reachability\n")
+    for x in ra.sites
+        haskey(ra.reach, x) ? println(" $x => $(ra.reach[x])") : println(" $x")
+    end
+    println("\n             Ancestors\n")
+    for x in ra.sites
+        haskey(ra.ancestors, x) ? println(" $x => $(ra.ancestors[x])") : println(" $x")
+    end
+    println("  __________________________________\n")
 end
 
 struct FallbackAnalysis <: CallAnalysis
@@ -52,27 +66,44 @@ function reaching(var::Variable, ir)
     return reach
 end
 
+function transitive_closure!(work, reach, s)
+    for (k, v) in reach
+        s in v && push!(work, k)
+    end
+end
+
 function flow_analysis(ir)
-    sites = Variable[]
+    sites = Set(Variable[])
     addrs = QuoteNode[]
     var_sym_map = Dict{Variable, QuoteNode}()
     reach = Dict{Variable, Any}()
     for (v, st) in ir
         MacroTools.postwalk(st) do e
             @capture(e, call_(sym_, args__))
-            call isa GlobalRef && call.name == :rand && begin
+            if call isa GlobalRef && call.name == :rand
                 push!(sites, v)
                 push!(addrs, sym)
                 var_sym_map[v] = sym
-                r = reaching(v, ir)
-                !isempty(r) && begin
-                    reach[v] = r
-                end
+                reach[v] = Set(reaching(v, ir))
+            else
+                push!(sites, v)
+                reach[v] = Set(reaching(v, ir))
             end
             e
         end
     end
-    return StaticAnalysis(reach, sites, addrs, var_sym_map)
+    ancestors = Dict()
+    for s in sites
+        work = Set(Variable[])
+        for (k, v) in reach
+            s in v && begin
+                push!(work, k)
+                transitive_closure!(work, reach, k)
+            end
+        end
+        ancestors[s] = work
+    end
+    return ReachingAnalysis(reach, ancestors, sites, addrs, var_sym_map)
 end
 
 function dependency(a::Analysis)

@@ -143,7 +143,7 @@ export ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff
 export pushforward, _pushforward
 
 include("contexts.jl")
-export record_cache!
+export record_cached!
 
 include("inference.jl")
 include("language_extensions.jl")

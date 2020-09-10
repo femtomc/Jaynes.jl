@@ -2,6 +2,8 @@
 
 abstract type AddressMap{K} end
 
+@inline get_address_schema(am) = ()
+
 # Leaves.
 abstract type Leaf{K} <: AddressMap{K} end
 

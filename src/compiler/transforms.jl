@@ -1,3 +1,18 @@
+# Get the IR variable corresponding to an address.
+function get_variable_by_address(ir, addr)
+    for (v, st) in ir
+        check = false
+        MacroTools.postwalk(st.expr) do ex
+            if ex isa QuoteNode && addr == ex.value
+                check = true
+            end
+            ex
+        end
+        check && return (v, true)
+    end
+    (nothing, false)
+end
+
 # Get all successors of a register.
 function get_successors(v, ir)
     children = Vector{Variable}([])
@@ -20,14 +35,55 @@ function dependencies(ir)
     d
 end
 
-@inline check_change(st) = st.type == Change
-
-# This pass is a dataflow analysis which determines what deterministic statements can be safely removed.
-function no_change_prune(ir)
-    d = dependencies(ir)
-    for v in reverse(keys(ir))
+function convert_to_blanket(dep, v)
+    ch = dep[v]
+    pars = filter(keys(dep)) do k
+        v in dep[k]
     end
-    ir
+    union(ch, pars)
+end
+
+# Compute the Markov blanket of an address specified in rand calls.
+function get_markov_blanket(ir, addr)
+    v, check = get_variable_by_address(ir, addr)
+    !check && return nothing
+    dep = dependencies(ir)
+    convert_to_blanket(dep, v)
+end
+
+function markov_blankets(ir, addrs)
+    d = Dict()
+    for k in addrs
+        d[k] = get_markov_blanket(ir, k)
+    end
+    d
+end
+
+@inline check_change(st) = st.type == Change
+@inline function check_removable(st)
+    ex = st.expr
+    ex isa Expr &&
+    ex.head == :call && 
+    (ex.args[1] isa IRTools.Inner.Self ||
+    (ex.args[1] isa GlobalRef && ex.args[1].name == :record_cached!))
+end
+
+# This pass is a dataflow analysis which determines what deterministic statements can be safely removed. It leaves rand calls and record_cached! calls alone.
+function no_change_prune(ir)
+    us = IRTools.Inner.usecounts(ir)
+    isused(x) = get(us, x, 0) > 0
+    for v in reverse(keys(ir))
+        if !isused(v) && !check_removable(ir[v])
+            if isexpr(ir[v].expr)
+                Mjolnir.effectful(Mjolnir.exprtype.((ir,), ir[v].expr.args)...) && continue
+                map(v -> v isa Variable && (us[v] -= 1), ir[v].expr.args)
+            elseif ir[v].expr isa Variable
+                us[ir[v].expr] -= 1
+            end
+            delete!(ir, v)
+        end
+    end
+    return ir
 end
 
 # This pass strips the types from all basic block arguments (and thus, branches).
@@ -62,7 +118,7 @@ end
 function substitute_get_value!(pr, v, st)
     expr = st.expr
     if expr.head == :call && expr.args[1] == rand && expr.args[2] isa QuoteNode
-        pr[v] = xcall(GlobalRef(parentmodule(@__MODULE__), :record_cache!), self, expr.args[2])
+        pr[v] = xcall(GlobalRef(parentmodule(@__MODULE__), :record_cached!), self, expr.args[2])
     end
 end
 
@@ -86,4 +142,22 @@ function reconstruct_ir(meta, tr)
 end
 
 # Full pipeline.
-pipeline(meta, tr) = tr |> tr -> (println(tr, "\n"); tr) |> insert_cache_calls |> strip_types |> rand_wrapper |> no_change_prune |> renumber |> tr -> reconstruct_ir(meta, tr) |> tr -> (println(tr); tr)
+@inline function pipeline(meta, tr, ks)
+    tr = reconstruct_ir(meta, tr)
+    blankets = markov_blankets(tr, ks)
+    flows = flow_analysis(tr)
+    println()
+    display(flows)
+    println()
+    display(blankets)
+    println()
+    display(tr)
+    println()
+    tr = insert_cache_calls(tr)
+    tr = strip_types(tr)
+    tr = rand_wrapper(tr)
+    tr = no_change_prune(tr)
+    tr = renumber(tr)
+    display(tr)
+    tr
+end

@@ -14,7 +14,7 @@ mutable struct UpdateContext{C <: CallSite,
     params::P
 end
 
-@inline function record_cache!(ctx::UpdateContext, addr)
+@inline function record_cached!(ctx::UpdateContext, addr)
     visit!(ctx, addr)
     sub = get_sub(ctx.prev, addr)
     sc = get_score(sub)
@@ -34,7 +34,7 @@ function Update(select::K, ps::P, cl::C, tr, discard) where {K <: AddressMap, P 
                   ps)
 end
 
-@dynamo function (mx::UpdateContext)(F, As...)
+@dynamo function (mx::UpdateContext{C, T, K})(F, As...) where {C, T, K}
 
     # Check for primitive.
     ir = IR(IRTools.meta(Tuple{F, As...}))
@@ -46,8 +46,11 @@ end
     end
     tr = _propagate(F, As...)
 
+    # Get choicemap keys.
+    ks = get_address_schema(K)
+
     # Pruning transform.
-    tr = pipeline(ir.meta, tr)
+    tr = pipeline(ir.meta, tr, ks)
     tr
 end
 
