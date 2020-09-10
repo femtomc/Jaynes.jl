@@ -30,6 +30,7 @@ using StaticArrays
 
 using Reexport
 @reexport using Distributions
+import Distributions: Distribution
 import Distributions: logpdf
 
 # Chainz.
