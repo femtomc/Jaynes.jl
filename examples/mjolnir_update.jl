@@ -42,6 +42,10 @@ sel = static([(:p, ) => 5.0])
 ret, cl, w, _ = update(sel, cl, Δ(5.0, ScalarDiff(-5.0)), 
                                 Δ(5.0, ScalarDiff(-5.0)), 
                                 Δ(1.0, NoChange()))
+
+@time ret, cl, w, _ = update(sel, cl, Δ(5.0, ScalarDiff(-5.0)), 
+                             Δ(5.0, ScalarDiff(-5.0)), 
+                             Δ(1.0, NoChange()))
 display(cl.trace)
 display(get_score(cl) - w)
 

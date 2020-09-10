@@ -1,60 +1,15 @@
-# Get the IR variable corresponding to an address.
-function get_variable_by_address(ir, addr)
-    for (v, st) in ir
-        check = false
-        MacroTools.postwalk(st.expr) do ex
-            if ex isa QuoteNode && addr == ex.value
-                check = true
-            end
-            ex
-        end
-        check && return (v, true)
-    end
-    (nothing, false)
-end
-
-# Get all successors of a register.
-function get_successors(v, ir)
-    children = Vector{Variable}([])
-    for (ch, st) in ir
-        check = false
-        MacroTools.postwalk(st.expr) do ex
-            ex isa Variable && v == ex && push!(children, ch)
-            ex
-        end
-    end
-    children
-end
-
-# Get variable dependency graph from IR.
-function dependencies(ir)
-    d = Dict()
-    map(keys(ir)) do v
-        d[v] = get_successors(v, ir)
-    end
-    d
-end
-
-function convert_to_blanket(dep, v)
-    ch = dep[v]
-    pars = filter(keys(dep)) do k
-        v in dep[k]
-    end
-    union(ch, pars)
-end
-
-# Compute the Markov blanket of an address specified in rand calls.
-function get_markov_blanket(ir, addr)
-    v, check = get_variable_by_address(ir, addr)
+# Compute the Markov blanket of an address specified in rand calls by using a static reachability analysis.
+function get_markov_blanket(reachability, addr)
+    addr = unwrap(addr)
+    v, check = get_variable_by_address(reachability, addr)
     !check && return nothing
-    dep = dependencies(ir)
-    convert_to_blanket(dep, v)
+    union(get_ancestors(reachability, v), get_successors(reachability, v))
 end
 
-function markov_blankets(ir, addrs)
+function markov_blankets(reachability, addrs)
     d = Dict()
     for k in addrs
-        d[k] = get_markov_blanket(ir, k)
+        d[k] = get_markov_blanket(reachability, k)
     end
     d
 end
@@ -144,20 +99,16 @@ end
 # Full pipeline.
 @inline function pipeline(meta, tr, ks)
     tr = reconstruct_ir(meta, tr)
-    blankets = markov_blankets(tr, ks)
-    flows = flow_analysis(tr)
-    println()
-    display(flows)
-    println()
-    display(blankets)
-    println()
     display(tr)
     println()
+    reachability = flow_analysis(tr)
+    display(reachability)
+    blankets = markov_blankets(reachability, ks)
+    display(blankets)
     tr = insert_cache_calls(tr)
     tr = strip_types(tr)
     tr = rand_wrapper(tr)
     tr = no_change_prune(tr)
     tr = renumber(tr)
-    display(tr)
     tr
 end

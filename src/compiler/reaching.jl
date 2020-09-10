@@ -5,12 +5,36 @@ struct ReachingAnalysis <: CallAnalysis
     reach::Dict
     ancestors::Dict
     sites::Set{Variable}
-    addrs::Vector{QuoteNode}
+    addrs::Set{Symbol}
     map::Dict
+    inv::Dict
+end
+
+@inline function get_successors(ra::ReachingAnalysis, var)
+    haskey(ra.reach, var) || return []
+    ra.reach[var]
+end
+
+@inline function get_ancestors(ra::ReachingAnalysis, var)
+    haskey(ra.ancestors, var) || return []
+    ra.ancestors[var]
+end
+
+@inline function get_variable_by_address(ra::ReachingAnalysis, addr)
+    haskey(ra.inv, addr) || return (nothing, false)
+    return (getfield(ra, :inv)[addr], true)
 end
 
 function Base.display(ra::ReachingAnalysis)
     println("  __________________________________\n")
+    println("             Addresses\n")
+    println(ra.addrs)
+    println()
+    println("             Variable to address\n")
+    display(ra.map)
+    println()
+    println("             Address to variable\n")
+    display(ra.inv)
     println("             Reachability\n")
     for x in ra.sites
         haskey(ra.reach, x) ? println(" $x => $(ra.reach[x])") : println(" $x")
@@ -68,14 +92,19 @@ end
 
 function transitive_closure!(work, reach, s)
     for (k, v) in reach
-        s in v && push!(work, k)
+        if s in v && k != s
+            push!(work, k)
+            transitive_closure!(work, reach, k)
+        end
     end
 end
 
+@inline unwrap(sym::QuoteNode) = sym.value
+
 function flow_analysis(ir)
     sites = Set(Variable[])
-    addrs = QuoteNode[]
-    var_sym_map = Dict{Variable, QuoteNode}()
+    addrs = Set(Symbol[])
+    var_addr_map = Dict{Variable, Symbol}()
     reach = Dict{Variable, Any}()
     for (v, st) in ir
         MacroTools.postwalk(st) do e
@@ -83,7 +112,12 @@ function flow_analysis(ir)
             if call isa GlobalRef && call.name == :rand
                 push!(sites, v)
                 push!(addrs, sym)
-                var_sym_map[v] = sym
+                var_addr_map[v] = sym
+                reach[v] = Set(reaching(v, ir))
+            elseif call == rand
+                push!(sites, v)
+                push!(addrs, unwrap(sym))
+                var_addr_map[v] = unwrap(sym)
                 reach[v] = Set(reaching(v, ir))
             else
                 push!(sites, v)
@@ -103,7 +137,7 @@ function flow_analysis(ir)
         end
         ancestors[s] = work
     end
-    return ReachingAnalysis(reach, ancestors, sites, addrs, var_sym_map)
+    return ReachingAnalysis(reach, ancestors, sites, addrs, var_addr_map, Dict( v => k for (k, v) in var_addr_map))
 end
 
 function dependency(a::Analysis)
@@ -119,7 +153,7 @@ function dependency(a::Analysis)
     return CallGraph(Set(addrs), map)
 end
 
-# ---- Driver ---- #
+# ------------ Driver ------------ #
 
 # Returns the dependency analysis in call graph (tree) form.
 function construct_graph!(parent, addr, call, type)
