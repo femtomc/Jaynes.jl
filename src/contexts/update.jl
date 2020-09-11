@@ -42,11 +42,12 @@ end
     ir == nothing && return
 
     # Equivalent to static DSL optimizations.
-    if !control_flow_check(ir)
+    if !control_flow_check(ir) || K <: DynamicMap
         
         # Release IR normally.
         ir = recur(ir)
         argument!(ir, at = 2)
+        ir = renumber(ir)
         ir
     else
         
@@ -60,8 +61,8 @@ end
         ks = get_address_schema(K)
 
         # Pruning transform.
-        tr = pipeline(ir.meta, tr, ks)
         argument!(tr, at = 2)
+        tr = pipeline(ir.meta, tr, ks)
         tr
     end
 end

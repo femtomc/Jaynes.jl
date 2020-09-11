@@ -29,14 +29,8 @@ display(cl.trace)
 println("Score: $(get_score(cl))")
 
 # Simple diffs.
-@time ret, cl, w, _ = update(cl, Δ(5.0, ScalarDiff(-5.0)), 
-                             Δ(5.0, ScalarDiff(-5.0)), 
-                             Δ(0.5, NoChange()))
-display(cl.trace)
-display(get_score(cl) - w)
-
-@time ret, cl, w, _ = update(cl, Δ(5.0, ScalarDiff(-5.0)), 
-                             Δ(5.0, ScalarDiff(-5.0)), 
+@time ret, cl, w, _ = update(cl, Δ(5.0, Change()),
+                             Δ(5.0, Change()),
                              Δ(0.5, NoChange()))
 display(cl.trace)
 display(get_score(cl) - w)

@@ -112,7 +112,7 @@ function update(ctx::UpdateContext, cs::DynamicCallSite, args::NTuple{N, Diffed}
     ret = ctx(cs.fn, tupletype(args...), args...)
     adj_w = update_projection_walk(ctx.tr, ctx.visited)
     update_discard_walk!(ctx.discard, ctx.visited, get_trace(cs))
-    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UnknownChange(), ctx.discard
+    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, map(a -> unwrap(a), args), ret), ctx.weight, UnknownChange(), ctx.discard
 end
 
 function update(cs::DynamicCallSite, args::Diffed...) where N

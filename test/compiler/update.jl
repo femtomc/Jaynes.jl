@@ -26,5 +26,5 @@ end
     ret, cl, w, _ = update(cl, Δ(5.0, ScalarDiff(-5.0)), 
                            Δ(5.0, ScalarDiff(-5.0)), 
                            Δ(1.0, NoChange()))
-    @test get_score(cl) - w == prev_score
+    @test get_score(cl) - w ≈ prev_score
 end
