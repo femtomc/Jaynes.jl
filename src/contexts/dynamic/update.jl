@@ -143,3 +143,11 @@ function update(sel::L, ps::P, cs::DynamicCallSite, args::Diffed...) where {L <:
     ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
     return update(ctx, cs, args)
 end
+
+function update(sel::L, ps::P, cs::DynamicCallSite, args...) where {L <: AddressMap, P <: AddressMap, N}
+    ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    args = map(args) do a
+        a isa Diffed ? a : Δ(a, NoChange())
+    end
+    return update(ctx, cs, args)
+end

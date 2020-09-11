@@ -43,29 +43,32 @@ end
 
     # Equivalent to static DSL optimizations.
     if !control_flow_check(ir) || K <: DynamicMap
-        
+
         # Release IR normally.
         ir = recur(ir)
         argument!(ir, at = 2)
         ir = renumber(ir)
-        ir
     else
-        
+
         # Diff inference.
         args = map(args) do a
             create_flip_diff(a)
         end
-        tr = _propagate(f, S.parameters...)
+        tr = _propagate(f, S.parameters, args)
 
         # Get choicemap keys.
         ks = get_address_schema(K)
 
         # Pruning transform.
         argument!(tr, at = 2)
-        tr = pipeline(ir.meta, tr, ks)
-        tr
+        ir = pipeline(ir.meta, tr, ks)
     end
+    display(ir)
+    ir
 end
+
+# Base fixes.
+(ctx::UpdateContext)(::typeof(collect), b::Base.Generator) = collect(b)
 
 # ------------ includes ------------ #
 

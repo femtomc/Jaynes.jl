@@ -6,6 +6,7 @@ function maximum_likelihood_estimation(ps::P,
                                        τ = 0.999) where {P <: AddressMap, C <: CallSite}
     step_size = max_ss
     while step_size > min_ss
+        println(step_size)
         _, sc = score(cl, ps, get_model(cl), get_args(cl)...)
         _, gs = get_learnable_gradients(ps, cl, 1.0; scaler = 1.0)
         vals = array(ps, Float64)
