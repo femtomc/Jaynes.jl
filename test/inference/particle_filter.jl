@@ -69,7 +69,7 @@ end
         push!(lmles, get_lmle(ps))
         for t=2:5
             obs = Jaynes.target([(:obs => t, :x) =>  xs[t]])
-            Jaynes.filter_step!(obs, ps, Δ(t, IntDiff(1)))
+            Jaynes.filter_step!(obs, ps, (Δ(t, IntDiff(1)), ))
             push!(lmles, get_lmle(ps))
         end
         map(enumerate(checks)) do (k, v)

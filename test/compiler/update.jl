@@ -20,7 +20,6 @@ end
 
 @testset begin "Dynamic specialization update test 1"
     ret, cl = simulate(fn1, 10.0, 10.0, 1.0)
-    display(cl.trace)
     prev_score = get_score(cl)
 
     ret, cl, w, _ = update(cl, Δ(5.0, ScalarDiff(-5.0)), 

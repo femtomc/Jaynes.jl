@@ -29,11 +29,10 @@ end
 
 function filter_step!(observations::K,
                       ps::Particles,
-                      new_args::Tuple,
-                      arg_diffs::Tuple) where {K <: AddressMap, D <: Diff}
+                      new_args::NTuple{N, Diffed}) where {K <: AddressMap, N}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
-        _, ps.calls[i], uw, _, _ = update(observations, ps.calls[i], new_args, arg_diffs)
+        _, ps.calls[i], uw, _, _ = update(observations, ps.calls[i], new_args...)
         ps.lws[i] += uw
     end
 end
@@ -41,11 +40,10 @@ end
 function filter_step!(observations::K,
                       params::P,
                       ps::Particles,
-                      new_args::Tuple,
-                      arg_diffs::Tuple) where {K <: AddressMap, P <: AddressMap, D <: Diff}
+                      new_args::NTuple{N, Diffed}) where {K <: AddressMap, P <: AddressMap, N}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
-        _, ps.calls[i], uw, _, _ = update(observations, params, ps.calls[i], new_args, arg_diffs)
+        _, ps.calls[i], uw, _, _ = update(observations, params, ps.calls[i], new_args...)
         ps.lws[i] += uw
     end
 end
@@ -81,16 +79,15 @@ end
 
 function filter_step!(observations::K,
                       ps::Particles,
-                      new_args::Tuple,
-                      arg_diffs::Tuple,
+                      new_args::NTuple{N, Diffed},
                       proposal::Function,
-                      proposal_args::Tuple) where {K <: AddressMap, D <: Diff}
+                      proposal_args::Tuple) where {K <: AddressMap, N}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
         sel = selection(p_cl)
         merge!(sel, observations)
-        _, ps.calls[i], u_w, _, _ = update(sel, ps.calls[i], new_args, arg_diffs)
+        _, ps.calls[i], u_w, _, _ = update(sel, ps.calls[i], new_args...)
         ps.lws[i] += u_w - p_w
     end
 end
@@ -98,33 +95,31 @@ end
 function filter_step!(observations::K,
                       params::P,
                       ps::Particles,
-                      new_args::Tuple,
-                      arg_diffs::Tuple,
+                      new_args::NTuple{N, Diffed},
                       proposal::Function,
-                      proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap, D <: Diff}
+                      proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap, N}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(proposal, ps.calls[i], proposal_args...)
         sel = selection(p_cl)
         merge!(sel, observations)
-        _, ps.calls[i], u_w, _, _ = update(sel, params, ps.calls[i], new_args, arg_diffs)
+        _, ps.calls[i], u_w, _, _ = update(sel, params, ps.calls[i], new_args...)
         ps.lws[i] += u_w - p_w
     end
 end
 
 function filter_step!(observations::K,
                       ps::Particles,
-                      new_args::Tuple,
-                      arg_diffs::Tuple,
+                      new_args::NTuple{N, Diffed},
                       pps::Ps,
                       proposal::Function,
-                      proposal_args::Tuple) where {K <: AddressMap, Ps <: AddressMap, D <: Diff}
+                      proposal_args::Tuple) where {K <: AddressMap, Ps <: AddressMap, N}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(pps, proposal, ps.calls[i], proposal_args...)
         sel = selection(p_cl)
         merge!(sel, observations)
-        _, ps.calls[i], u_w, _, _ = update(sel, params, ps.calls[i], new_args, arg_diffs)
+        _, ps.calls[i], u_w, _, _ = update(sel, params, ps.calls[i], new_args...)
         ps.lws[i] += u_w - p_w
     end
 end
@@ -132,17 +127,16 @@ end
 function filter_step!(observations::K,
                       params::P,
                       ps::Particles,
-                      new_args::Tuple,
-                      argdiffs::Tuple,
+                      new_args::NTuple{N, Diffed},
                       pps::Ps,
                       proposal::Function,
-                      proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap, Ps <: AddressMap, D <: Diff}
+                      proposal_args::Tuple) where {K <: AddressMap, P <: AddressMap, Ps <: AddressMap, N}
     num_particles = length(ps)
     Threads.@threads for i in 1:num_particles
         _, p_cl, p_w = propose(pps, proposal, ps.calls[i], proposal_args...)
         sel = selection(p_cl)
         merge!(sel, observations)
-        _, ps.calls[i], u_w, _, _ = update(sel, params, ps.calls[i], new_args, arg_diffs)
+        _, ps.calls[i], u_w, _, _ = update(sel, params, ps.calls[i], new_args...)
         ps.lws[i] += u_w - p_w
     end
 end
