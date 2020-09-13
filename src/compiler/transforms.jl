@@ -69,6 +69,14 @@ function rand_wrapper(ir)
     IRTools.finish(pr)
 end
 
+function check_reach(v, ks, reachability)
+    for k in ks
+        k_var, _ = get_variable_by_address(reachability, k)
+        (k_var in get_ancestors(reachability, v) || k_var == v) && return false
+    end
+    true
+end
+
 # This pass inserts the return value of the call before any NoChange call nodes.
 function substitute_get_value!(pr, v, st)
     expr = st.expr
@@ -78,14 +86,10 @@ function substitute_get_value!(pr, v, st)
 end
 
 # This pass prunes the IR of any NoChange nodes.
-function insert_cache_calls(ir)
+function insert_cache_calls(ir, ks, reachability)
     pr = IRTools.Pipe(ir)
     for (v, st) in pr
-        if st.type == Change
-            pr[v] = IRTools.Statement(st)
-        else
-            substitute_get_value!(pr, v, st)
-        end
+        st.type != Change && check_reach(v, ks, reachability) && substitute_get_value!(pr, v, st)
     end
     IRTools.finish(pr)
 end
@@ -96,12 +100,23 @@ function reconstruct_ir(meta, tr)
     ir
 end
 
+# Abstract interpretation - diff propagation inference.
+@inline function diff_inference(f, type_params, args)
+    args = map(args) do a
+        create_flip_diff(a)
+    end
+    tr = _propagate(f, type_params, args)
+    display(tr)
+    argument!(tr, at = 2)
+    tr
+end
+
 # Full pipeline.
-@inline function pipeline(meta, tr, ks)
+@inline function optimization_pipeline(meta, tr, ks)
     tr = reconstruct_ir(meta, tr)
     reachability = flow_analysis(tr)
-    blankets = markov_blankets(reachability, ks)
-    tr = insert_cache_calls(tr)
+    display(reachability)
+    tr = insert_cache_calls(tr, ks, reachability)
     tr = strip_types(tr)
     tr = rand_wrapper(tr)
     tr = no_change_prune(tr)

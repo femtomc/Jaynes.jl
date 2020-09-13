@@ -50,18 +50,11 @@ end
         ir = renumber(ir)
     else
 
-        # Diff inference.
-        args = map(args) do a
-            create_flip_diff(a)
-        end
-        tr = _propagate(f, S.parameters, args)
+        # Argument difference inference.
+        tr = diff_inference(f, S.parameters, args)
 
-        # Get choicemap keys.
-        ks = get_address_schema(K)
-
-        # Pruning transform.
-        argument!(tr, at = 2)
-        ir = pipeline(ir.meta, tr, ks)
+        # Dynamic specialization transform.
+        ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
     end
     display(ir)
     ir

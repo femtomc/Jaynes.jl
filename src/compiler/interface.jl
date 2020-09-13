@@ -5,6 +5,18 @@ DiffDefaults() = Multi(DiffPrimitives(), Mjolnir.Defaults())
 # A bunch of nice passes which clean up the IR after tracing. Other cleaning passes can be found in transforms.jl.
 partial_cleanup!(ir) = ir |> Mjolnir.inline_consts! |> Mjolnir.partials! |> Mjolnir.ssa! |> Mjolnir.prune! |> IRTools.renumber
 
+# Modified version of Mjolnir's tracecall! which falls back on the primitive rules for argdiff propagation.
+function tracecall!(tr::Mjolnir.Trace, args, Ts...)
+  tr.total += 1
+  push!(tr.stack, Ts)
+  ir = Mjolnir.getir(tr, Ts...)
+  ir == nothing && error("No IR for $(Tuple{widen.(Ts)...})")
+  ir = ir |> Mjolnir.merge_returns! |> Mjolnir.prepare_ir!
+  result = Mjolnir.trace!(tr, ir, args)
+  pop!(tr.stack)
+  return result
+end
+
 # This is a modified version of Mjolnir's trace which grabs the IR associated with the original svec of types defined by the user - but then replaces the argtypes with diff types and does type inference.
 function trace(P, f, Dfs, Ts...)
     tr = Mjolnir.Trace(P)
@@ -19,7 +31,7 @@ function trace(P, f, Dfs, Ts...)
             tr.total += 1
             Mjolnir.return!(tr.ir, push!(tr.ir, stmt(Expr(:call, args...), type = T)))
         else
-            Mjolnir.return!(tr.ir, Mjolnir.tracecall!(tr, args, Ts...))
+            Mjolnir.return!(tr.ir, tracecall!(tr, args, Ts...))
         end
         return partial_cleanup!(tr.ir)
     catch e
