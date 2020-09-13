@@ -11,7 +11,7 @@
 ] add Jaynes
 ```
 
-[`Jaynes.jl` is a (research-oriented alpha) domain-specific compiler for probabilistic programming. Jaynes uses source-to-source IR transformations and contextual dispatch to implement the core routines for modeling and inference.](https://femtomc.github.io/Jaynes.jl/)
+[`Jaynes.jl` is a (research-oriented alpha) domain-specific compiler for probabilistic programming. Jaynes uses source-to-source IR transformations and contextual dispatch to implement the generative function interface of Gen.jl.](https://femtomc.github.io/Jaynes.jl/)
 
 Lost? Find your way with the [Hitchhiker's guide to Jaynes](HITCHHIKERS_GUIDE_TO_JAYNES.md).
 
