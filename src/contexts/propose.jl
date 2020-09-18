@@ -23,8 +23,6 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/propose.jl")
-include("plate/propose.jl")
-include("markov/propose.jl")
 include("factor/propose.jl")
 
 # ------------ Documentation ------------ #
@@ -60,9 +58,6 @@ Propose() = ProposeContext(AddressMap())
 ```julia
 ret, g_cl, w = propose(fn::Function, args...)
 ret, cs, w = propose(fn::typeof(rand), d::Distribution{K}) where K
-ret, v_cl, w = propose(fn::typeof(markov), call::Function, len::Int, args...)
-ret, v_cl, w = propose(fn::typeof(plate), call::Function, args::Vector)
-ret, v_cl, w = propose(fn::typeof(plate), d::Distribution{K}, len::Int) where K
 ```
 
 `propose` provides an API to the `ProposeContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, a `RecordSite` instance specialized to the call, and the score `w`.

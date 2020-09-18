@@ -106,7 +106,6 @@ end
         create_flip_diff(a)
     end
     tr = _propagate(f, type_params, args)
-    display(tr)
     argument!(tr, at = 2)
     tr
 end
@@ -115,7 +114,6 @@ end
 @inline function optimization_pipeline(meta, tr, ks)
     tr = reconstruct_ir(meta, tr)
     reachability = flow_analysis(tr)
-    display(reachability)
     tr = insert_cache_calls(tr, ks, reachability)
     tr = strip_types(tr)
     tr = rand_wrapper(tr)

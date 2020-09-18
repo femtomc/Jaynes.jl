@@ -168,20 +168,6 @@ function get_learnable_gradients(sel::K, ps::P, cl::DynamicCallSite, ret_grad...
     return arg_grads, param_grads
 end
 
-function get_learnable_gradients(ps::P, cl::VectorCallSite, ret_grad...; scaler::Float64 = 1.0) where P <: AddressMap
-    param_grads = Gradients()
-    arg_grads = accumulate_learnable_gradients!(target(), ps, param_grads, cl, ret_grad...; scaler = scaler)
-    key = keys(param_grads.tree)[1]
-    return arg_grads, param_grads[key]
-end
-
-function get_learnable_gradients(sel::K, ps::P, cl::VectorCallSite, ret_grad...; scaler::Float64 = 1.0) where {K <: AddressMap, P <: AddressMap}
-    param_grads = Gradients()
-    arg_grads = accumulate_learnable_gradients!(sel, ps, param_grads, cl, ret_grad...; scaler = scaler)
-    key = keys(param_grads.tree)[1]
-    return arg_grads, param_grads[key]
-end
-
 # Convenience utilities (used in implementations of accumulate_learnable_gradients! and accumulate_choice_gradients! for each type of call site).
 function acc!(param_grads, ::Nothing, scaler) end
 function acc!(param_grads, ps_grad, scaler)
@@ -205,8 +191,6 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/backpropagate.jl")
-include("plate/backpropagate.jl")
-include("markov/backpropagate.jl")
 include("factor/backpropagate.jl")
 
 # ------------ Documentation ------------ #

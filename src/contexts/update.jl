@@ -56,7 +56,6 @@ end
         # Dynamic specialization transform.
         ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
     end
-    display(ir)
     ir
 end
 
@@ -66,8 +65,6 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/update.jl")
-include("plate/update.jl")
-include("markov/update.jl")
 include("factor/update.jl")
 
 # ------------ Documentation ------------ #
@@ -108,10 +105,6 @@ UpdateContext(cl::C, select::K, ps::P, argdiffs::D) where {C <: CallSite, K <: A
 ret, cl, w, retdiff, d = update(ctx::UpdateContext, cs::DynamicCallSite, args...) where D <: Diff
 ret, cl, w, retdiff, d = update(sel::L, cs::DynamicCallSite) where L <: AddressMap
 ret, cl, w, retdiff, d = update(sel::L, cs::DynamicCallSite, argdiffs::D, new_args...) where {L <: AddressMap, D <: Diff}
-ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(plate)}) where {L <: AddressMap, D <: Diff}
-ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}) where {L <: AddressMap, D <: Diff}
-ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, d::NoChange, len::Int) where {L <: AddressMap, D <: Diff}
-ret, v_cl, w, retdiff, d = update(sel::L, vcs::VectorizedCallSite{typeof(markov)}, len::Int) where {L <: AddressMap, D <: Diff}
 ```
 
 `update` provides an API to the `UpdateContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, the updated `RecordSite` instance `cl` or `v_cl`, the updated weight `w`, a `Diff` instance for the return value `retdiff`, and a structure which contains any changed (i.e. discarded) record sites `d`.

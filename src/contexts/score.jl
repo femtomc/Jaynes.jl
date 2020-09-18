@@ -30,8 +30,6 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/score.jl")
-include("plate/score.jl")
-include("markov/score.jl")
 include("factor/score.jl")
 
 # ------------ Documentation ------------ #
@@ -72,9 +70,6 @@ Score(obs::AddressMap, params) = ScoreContext(obs, params)
 ```julia
 ret, w = score(sel::L, fn::Function, args...; params = AddressMap()) where L <: AddressMap
 ret, w = score(sel::L, fn::typeof(rand), d::Distribution{K}; params = AddressMap()) where {L <: AddressMap, K}
-ret, w = score(sel::L, fn::typeof(markov), call::Function, len::Int, args...; params = AddressMap()) where L <: AddressMap
-ret, w = score(sel::L, fn::typeof(plate), call::Function, args::Vector; params = AddressMap()) where L <: AddressMap
-ret, w = score(sel::L, fn::typeof(plate), d::Distribution{K}, len::Int; params = AddressMap()) where {L <: AddressMap, K}
 ```
 
 `score` provides an API to the `ScoreContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and the likelihood weight score of the user-provided selection `sel`. The selection should satisfy the following requirement:
