@@ -139,6 +139,7 @@ function generate(jfn::JFunction, args::Tuple, chm::JChoiceMap)
                           args...)
     JTrace(jfn, cl, false), w
 end
+@inline generate(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = generate(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
 
 function assess(jfn::JFunction, args::Tuple, choices::JChoiceMap)
     ret, w = score(unwrap(choices), 
