@@ -26,8 +26,8 @@ jprop = @jaynes function fixed_structure_proposal(trace)
     end
 end
 
-select_mh_structure_kernel(trace) = Gen.mh(trace, select([(:z, )]))[1]
-fixed_structure_kernel(trace) = Gen.mh(trace, jprop, ())[1]
+select_mh_structure_kernel(trace) = mh(trace, select([(:z, )]))[1]
+fixed_structure_kernel(trace) = mh(trace, jprop, ())[1]
 
 # ------------ Simple MH ------------ #
 
@@ -93,7 +93,7 @@ end
 end
 
 
-split_merge_kernel(trace) = Gen.mh(trace, sm_prop, (), split_merge_involution)[1]
+split_merge_kernel(trace) = mh(trace, sm_prop, (), split_merge_involution)[1]
 
 test_involution = () -> begin
     (y1, y2) = (1.0, 1.2)

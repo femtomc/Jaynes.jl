@@ -1,5 +1,7 @@
 module Jaynes
 
+using Reexport
+
 # Jaynes implements the abstract GFI from Gen.
 import Gen
 import Gen: Selection, ChoiceMap, Trace, GenerativeFunction
@@ -28,7 +30,6 @@ using InteractiveUtils: subtypes
 # Static selektor.
 using StaticArrays
 
-using Reexport
 @reexport using Distributions
 import Distributions: Distribution
 import Distributions: logpdf
@@ -68,8 +69,6 @@ Zygote.@adjoint function literal_getproperty(x, ::Val{f}) where f
 end
 
 using DistributionsAD
-@reexport using Flux
-import Flux: update!, flatten
 
 # Plotting.
 using UnicodePlots: lineplot
@@ -96,14 +95,8 @@ whitelist = [
              # Base.
              :rand, :_apply_iterate, :collect,
 
-             # Specialized call sites.
-             :markov, :plate, :cond, 
-
              # Interactions with the context.
              :learnable, :fillable, :factor,
-
-             # Foreign model interfaces.
-             :foreign, :deep
             ]
 
 # Fix for specialized tracing.
@@ -161,7 +154,6 @@ export get_learnable_gradient, get_choice_gradient
 export get_deep_gradients!
 
 # Tracer language features.
-export plate, markov, cond
 export learnable, fillable, factor
 
 # Compiler.
@@ -175,21 +167,6 @@ export dynamic
 export select, target, static, array, learnables
 export anywhere, intersection, union
 export compare, update_learnables, merge!, merge
-
-# Inference.
-export maximum_likelihood_estimation, mle
-export maximum_a_posteriori_estimation, maxap
-export importance_sampling, is
-export metropolis_hastings, mh
-export hamiltonian_monte_carlo, hmc
-export elliptical_slice, es
-export piecewise_deterministic_markov_kernel, pdmk
-export exchange, ex
-export initialize_filter, filter_step!, check_ess_resample!, resample!, get_lmle, pf
-export automatic_differentiation_variational_inference, advi
-export automatic_differentiation_geometric_vimco, adgv
-export neural_variational_inference!, nvi!
-export neural_geometric_vimco!, nvimco!
 
 # Foreign model interfaces.
 export @primitive
