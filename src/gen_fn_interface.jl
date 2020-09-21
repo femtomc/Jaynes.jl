@@ -103,12 +103,14 @@ struct JFunction{N, R} <: GenerativeFunction{R, JTrace}
 end
 
 function JFunction(arg_types::NTuple{N, Type},
-                        func::Function,
-                        has_argument_grads::NTuple{N, Bool},
-                        accepts_output_grad::Bool,
-                        ::Type{R}) where {N, R}
+                   func::Function,
+                   has_argument_grads::NTuple{N, Bool},
+                   accepts_output_grad::Bool,
+                   ::Type{R}) where {N, R}
     JFunction{N, R}(func, DynamicMap{Value}(), DynamicMap{Value}(), arg_types, has_argument_grads, accepts_output_grad)
 end
+
+@inline JFunction(func::Function) = JFunction((), func, (), false, Any)
 
 function (jfn::JFunction)(args...)
     jfn.fn(args...)
@@ -262,11 +264,11 @@ macro jaynes(expr)
     if @capture(def, function decl_(args__) body__ end)
         trans = quote 
             $def
-            JFunction((), $decl, (), true, Any)
+            JFunction((), $decl, (), false, Any)
         end
     else
         trans = quote
-            JFunction((), $def, (), true, Any)
+            JFunction((), $def, (), false, Any)
         end
     end
     esc(trans)
