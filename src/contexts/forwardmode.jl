@@ -25,12 +25,6 @@ function forward(addr, params, cl::DynamicCallSite, seed)
     ret, ctx.weight
 end
 
-function forward(addr, params, cl::VectorCallSite{typeof(plate)}, seed)
-    ctx = ForwardMode(addr, params, cl, seed)
-    ret = ctx(plate, cl.fn, cl.args...)
-    ret, ctx.weight
-end
-
 mutable struct ForwardModeMarkovContext{T <: Tuple,
                                         C <: AddressMap,
                                         D,
@@ -55,12 +49,6 @@ end
 function markov_forward(addr, params, cl::C, seed, args...) where C <: CallSite
     ctx = ForwardModeMarkov(addr, params, cl, seed)
     ret = ctx(cl.fn, args...)
-    ret, ctx.weight
-end
-
-function forward(addr, params, cl::VectorCallSite{typeof(markov)}, seed)
-    ctx = ForwardModeMarkov(addr, params, cl, seed)
-    ret = ctx(markov, cl.fn, cl.len, cl.args...)
     ret, ctx.weight
 end
 
@@ -105,7 +93,6 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/forwardmode.jl")
-include("plate/forwardmode.jl")
-include("markov/forwardmode.jl")
+include("factor/forwardmode.jl")
 
 # ------------ Documentation ------------ #

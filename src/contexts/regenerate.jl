@@ -30,8 +30,6 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/regenerate.jl")
-include("plate/regenerate.jl")
-include("markov/regenerate.jl")
 include("factor/regenerate.jl")
 
 # ------------ Documentation ------------ #

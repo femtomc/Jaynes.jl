@@ -1,5 +1,7 @@
 module Jaynes
 
+using Reexport
+
 # Jaynes implements the abstract GFI from Gen.
 import Gen
 import Gen: Selection, ChoiceMap, Trace, GenerativeFunction
@@ -17,20 +19,19 @@ import Gen: SetDiff, DictDiff, VectorDiff, IntDiff, Diffed
 
 # Yarrrr I'm a com-pirate!
 using IRTools
-using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta
+using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta, renumber, Pipe, finish
 using Random
-#using Mjolnir
-#using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
-#import Mjolnir.trace
-#using Mjolnir: Defaults
+using Mjolnir
+using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
+using Mjolnir: Defaults
 using MacroTools
 using InteractiveUtils: subtypes
 
 # Static selektor.
 using StaticArrays
 
-using Reexport
 @reexport using Distributions
+import Distributions: Distribution
 import Distributions: logpdf
 
 # Chainz.
@@ -68,8 +69,6 @@ Zygote.@adjoint function literal_getproperty(x, ::Val{f}) where f
 end
 
 using DistributionsAD
-@reexport using Flux
-import Flux: update!, flatten
 
 # Plotting.
 using UnicodePlots: lineplot
@@ -96,26 +95,21 @@ whitelist = [
              # Base.
              :rand, :_apply_iterate, :collect,
 
-             # Specialized call sites.
-             :markov, :plate, :cond, 
-
              # Interactions with the context.
              :learnable, :fillable, :factor,
-
-             # Foreign model interfaces.
-             :foreign, :deep
             ]
 
 # Fix for specialized tracing.
-function recur!(ir, to = self)
-    for (x, st) in ir
+function recur(ir, to = self)
+    pr = Pipe(ir)
+    for (x, st) in pr
         isexpr(st.expr, :call) && begin
             ref = unwrap(st.expr.args[1])
             ref in whitelist || continue
-            ir[x] = Expr(:call, to, st.expr.args...)
+            pr[x] = Expr(:call, to, st.expr.args...)
         end
     end
-    return ir
+    finish(pr)
 end
 
 # Fix for _apply_iterate (used in contexts).
@@ -138,9 +132,13 @@ include("core.jl")
 
 include("compiler.jl")
 export Δ, Diffed, forward
+export NoChange, Change
+export ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff
+export pushforward, _pushforward
 
 include("contexts.jl")
-include("inference.jl")
+export record_cached!
+
 include("language_extensions.jl")
 include("utils.jl")
 
@@ -156,7 +154,6 @@ export get_learnable_gradient, get_choice_gradient
 export get_deep_gradients!
 
 # Tracer language features.
-export plate, markov, cond
 export learnable, fillable, factor
 
 # Compiler.
@@ -170,21 +167,6 @@ export dynamic
 export select, target, static, array, learnables
 export anywhere, intersection, union
 export compare, update_learnables, merge!, merge
-
-# Inference.
-export maximum_likelihood_estimation, mle
-export maximum_a_posteriori_estimation, maxap
-export importance_sampling, is
-export metropolis_hastings, mh
-export hamiltonian_monte_carlo, hmc
-export elliptical_slice, es
-export piecewise_deterministic_markov_kernel, pdmk
-export exchange, ex
-export initialize_filter, filter_step!, check_ess_resample!, resample!, get_lmle, pf
-export automatic_differentiation_variational_inference, advi
-export automatic_differentiation_geometric_vimco, adgv
-export neural_variational_inference!, nvi!
-export neural_geometric_vimco!, nvimco!
 
 # Foreign model interfaces.
 export @primitive

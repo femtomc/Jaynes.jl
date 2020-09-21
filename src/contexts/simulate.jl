@@ -16,9 +16,6 @@ end
 # ------------ includes ------------ #
 
 include("dynamic/simulate.jl")
-include("plate/simulate.jl")
-include("markov/simulate.jl")
-include("conditional/simulate.jl")
 include("factor/simulate.jl")
 
 # ------------ Documentation ------------ #
@@ -47,9 +44,6 @@ SimulateContext(params) = new{DynamicAddressMap}(AddressMap(), Visitor(), params
 ```julia
 ret, cl = simulate(fn::Function, args...; params = LearnableByAddress())
 ret, cl = simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableByAddress()) where T
-ret, v_cl = simulate(c::typeof(plate), fn::Function, args::Vector; params = LearnableByAddress()) where T
-ret, v_cl = simulate(fn::typeof(plate), d::Distribution{T}, len::Int; params = LearnableByAddress()) where T
-ret, v_cl = simulate(c::typeof(markov), fn::Function, len::Int, args...; params = LearnableByAddress())
 ```
 
 `simulate` function provides an API to the `SimulateContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and a `RecordSite` instance specialized to the call. `simulate` is used to express unconstrained generation of a probabilistic program trace, without likelihood weight recording.

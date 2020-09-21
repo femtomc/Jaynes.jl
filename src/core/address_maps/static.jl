@@ -24,7 +24,8 @@ function StaticMap(k::A, v::S) where {A <: Address, S <: StaticMap}
     StaticMap{Value}(nt)
 end
 
-@inline keys(sm::StaticMap{T}) where T = T
+@inline get_address_schema(sm::StaticMap{T, N, K, B}) where {T, N, K, B} = T
+@inline get_address_schema(sm::Type{StaticMap{T, N, K, B}}) where {T, N, K, B} = T
 
 @inline shallow_iterator(sm::StaticMap) = zip(keys(sm.tree), values(sm.tree))
 

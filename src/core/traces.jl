@@ -15,9 +15,6 @@ end
 # Special features - must be evaluated by context tracer.
 learnable(addr::A) where {A <: Address} = error("(learnable) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
 fillable(addr::A) where {A <: Address} = error("(fillable) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-plate(addr::A, fn, v::Vector) where A <: Address = error("(plate) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-markov(addr::A, fn, len::Int, args...) where A <: Address = error("(markov) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
-cond(addr::A, args...) where A <: Address = error("(cond) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
 factor(args...) = args
 
 # ------------ Call sites ------------ #
@@ -33,6 +30,7 @@ abstract type CallSite <: AddressMap{Choice} end
 @inline get_sub(cs::C, addr::Tuple) where C <: CallSite = get_sub(get_trace(cs), addr::Tuple)
 @inline get_score(cs::C) where C <: CallSite = cs.score
 @inline get_ret(cs::C) where C <: CallSite = cs.ret
+@inline get_value(cs::C) where C <: CallSite = get_ret(cs)
 @inline get_args(cs::C) where C <: CallSite = cs.args
 @inline get_choices(cs::C) where C <: CallSite = get_choices(get_trace(cs))
 @inline has_sub(cs::C, addr::A) where {C <: CallSite, A <: Address} = has_sub(get_trace(cs), addr)
@@ -65,8 +63,6 @@ end
 # ------------ includes ------------ #
 
 include("traces/dynamic.jl")
-include("traces/vector.jl")
-include("traces/conditional.jl")
 
 # ------------ Documentation ------------ #
 
@@ -145,17 +141,3 @@ end
 ```
 A record of a black-box call (e.g. no special context tracer language features). Records the `fn` and `args` for the call, as well as the `ret` return value.
 """, HierarchicalCallSite)
-
-@doc(
-"""
-```julia
-struct VectorizedCallSite{F <: Function, C <: RecordSite, J, K} <: CallSite
-    trace::VectorizedTrace{C}
-    score::Float64
-    fn::Function
-    args::J
-    ret::Vector{K}
-end
-```
-A record of a call site using the special `plate` and `markov` context tracer language features. Informs a context tracer that the call conforms to a special pattern of randomness dependency, which allows the storing of `Trace` instances sequentially in a vector.
-""", VectorizedCallSite)

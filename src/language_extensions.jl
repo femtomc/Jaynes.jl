@@ -1,32 +1,8 @@
 # ------------ includes ------------ #
 
-foreign(addr::A, args...) where A <: Address = error("(foreign) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-
-deep(addr::A, model, args...) where A <: Address = error("(deep) call with address $addr evaluated outside of the tracer.\nThis normally occurs because you're not matching the dispatch correctly.")
-
 function primitive end
 include("language_extensions/blackbox.jl")
 
-function load_soss_fmi end
-include("language_extensions/soss.jl")
-
-function load_turing_fmi end
-include("language_extensions/turing.jl")
-
-function load_gen_fmi end
-include("language_extensions/gen.jl")
-
-include("language_extensions/flux.jl")
-const osnges = one_shot_neural_gradient_estimator
-const nvi! = neural_variational_inference!
-const vimges = vimco_neural_gradient_estimator
-const nvimco! = neural_geometric_vimco!
-
-function load_chains end
-include("language_extensions/mcmc_chains.jl")
-
-function load_advanced_hmc end
-include("language_extensions/advanced_hmc.jl")
 include("language_extensions/sugar.jl")
 
 # ------------ Documentation -------------- #
@@ -68,74 +44,3 @@ The above program would summarize the trace into a single choice site for `:geo`
   __________________________________
 ```
 """, primitive)
-
-@doc(
-"""
-```julia
-foreign(addr::A, m, args...) where A <: Address
-```
-
-Activate a foreign model interface. The tracer will treat this is a specialized call site, depending on the type of `m`. Currently supports `typeof(m) <: Soss.Model` and `typeof(m) <: Gen.GenerativeFunction`.
-
-""", foreign)
-
-@doc(
-"""
-```julia
-Jaynes.@load_soss_fmi
-```
-
-`@load_soss_fmi` loads the [Soss.jl](https://github.com/cscherrer/Soss.jl) foreign model interface extension. This allows you to utilize `Soss` models in your modeling.
-
-Example:
-
-```julia
-Jaynes.@load_soss_fmi()
-
-# A Soss model.
-m = @model σ begin
-    μ ~ Normal()
-    y ~ Normal(μ, σ) |> iid(5)
-end
-
-bar = () -> begin
-    x = rand(:x, Normal(5.0, 1.0))
-    soss_ret = foreign(:foo, m, (σ = x,))
-    return soss_ret
-end
-```
-
-This interface currently supports all the inference interfaces (e.g. `simulate`, `generate`, `score`, `regenerate`, `update`, `propose`) which means that you can use any of the inference algorithms in the standard inference library.
-""", load_soss_fmi)
-
-@doc(
-"""
-```julia
-Jaynes.@load_gen_fmi
-```
-
-`@load_gen_fmi` loads the [Gen.jl](https://www.gen.dev/) foreign model interface extension. This allows you to utilize `Gen` models (in any of Gen's DSLs) in your modeling.
-
-Example:
-
-```julia
-Jaynes.@load_gen_fmi()
-
-@gen (static) function foo(z::Float64)
-    x = @trace(normal(z, 1.0), :x)
-    y = @trace(normal(x, 1.0), :y)
-    return x
-end
-
-Gen.load_generated_functions()
-
-bar = () -> begin
-    x = rand(:x, Normal(0.0, 1.0))
-    return foreign(:foo, foo, x)
-end
-
-ret, cl = Jaynes.simulate(bar)
-```
-
-This interface currently supports all the inference interfaces (e.g. `simulate`, `generate`, `score`, `regenerate`, `update`, `propose`) which means that you can use any of the inference algorithms in the standard inference library.
-""", load_gen_fmi)

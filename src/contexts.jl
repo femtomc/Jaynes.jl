@@ -25,8 +25,8 @@ end
 @dynamo function (mx::ExecutionContext)(a...)
     ir = IR(a...)
     ir == nothing && return
-    recur!(ir)
-    return ir
+    ir = recur(ir)
+    ir
 end
 
 (mx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(rand), args...) = mx(c, flatten(args)...)

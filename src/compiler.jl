@@ -12,10 +12,11 @@ end
 
 # ------------ includes ------------ #
 
-include("compiler/analysis/dependency.jl")
-include("compiler/analysis/blanket.jl")
+include("compiler/reaching.jl")
+include("compiler/address_blanket.jl")
 include("compiler/map_codegen.jl")
 include("compiler/diffs.jl")
+include("compiler/transforms.jl")
 include("compiler/interface.jl")
 
 # ------------ Documentation ------------ #

@@ -139,6 +139,7 @@ function generate(jfn::JFunction, args::Tuple, chm::JChoiceMap)
                           args...)
     JTrace(jfn, cl, false), w
 end
+@inline generate(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = generate(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
 
 function assess(jfn::JFunction, args::Tuple, choices::JChoiceMap)
     ret, w = score(unwrap(choices), 
@@ -170,8 +171,9 @@ function update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::JChoi
     ret, cl, w, rd, d = update(unwrap(constraints), 
                                get_params(get_gen_fn(trace)), 
                                trace.record, 
-                               args, 
-                               arg_diffs)
+                               map(zip(args, arg_diffs)) do (a, d)
+                                   Diffed(a, d)
+                               end...)
     JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
 end
 @inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::DynamicChoiceMap) = update(trace, args, arg_diffs, JChoiceMap(convert(DynamicMap{Value}, constraints)))

@@ -5,7 +5,7 @@ function learnable_normal(x::Float64, y::Float64)
     return q
 end
 
-@testset "Convergence for learning - MLE 1" begin
+@time @testset "Convergence for learning - MLE 1" begin
     sel = target([(:q, ) => 6.0])
     params = learnables([(:l, ) => 3.0,
                          (:m, ) => 10.0])
@@ -18,7 +18,7 @@ end
     @test params[:m] ≈ 0.0 atol = 1e-2
 end
 
-@testset "Convergence for learning - MAP 1" begin
+@time @testset "Convergence for learning - MAP 1" begin
 end
 
 function model()
@@ -35,7 +35,7 @@ function var()
     intercept = rand(:intercept, Normal(intercept_mu, exp(intercept_log_std)))
 end
 
-@testset "Convergence for learning - ADVI 1" begin
+@time @testset "Convergence for learning - ADVI 1" begin
     sel = target()
     params = learnables([(:slope_mu, ) => 0.0,
                          (:slope_log_std, ) => 0.0,

@@ -64,9 +64,9 @@ end
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)
-    if haskey(ctx.prev, addr)
+    if has_sub(ctx.prev, addr)
         prev = get_prev(ctx, addr)
-        ret, cl, w, rd, d = update(ss, ps, prev, UnknownChange(), args...)
+        ret, cl, w, rd, d = update(ss, ps, prev, args...)
     else
         ret, cl, w = generate(ss, ps, call, args...)
     end
@@ -108,29 +108,46 @@ end
 
 # ------------ Convenience ------------ #
 
-function update(ctx::UpdateContext, cs::DynamicCallSite, args::Tuple) where D <: Diff
-    ret = ctx(cs.fn, args...)
+function update(ctx::UpdateContext, cs::DynamicCallSite, args::NTuple{N, Diffed}) where N
+    ret = ctx(cs.fn, tupletype(args...), args...)
     adj_w = update_projection_walk(ctx.tr, ctx.visited)
     update_discard_walk!(ctx.discard, ctx.visited, get_trace(cs))
-    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UnknownChange(), ctx.discard
+    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, map(a -> unwrap(a), args), ret), ctx.weight, UnknownChange(), ctx.discard
+end
+
+function update(cs::DynamicCallSite, args::Diffed...) where N
+    ctx = Update(Empty(), Empty(), cs, DynamicTrace(), DynamicDiscard())
+    return update(ctx, cs, args)
 end
 
 function update(sel::L, cs::DynamicCallSite) where L <: AddressMap
     ctx = Update(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
-    return update(ctx, cs, cs.args)
+    return update(ctx, cs, map(cs.args) do a
+                      Δ(a, NoChange())
+                  end)
 end
 
-function update(sel::L, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple) where L <: AddressMap
+function update(sel::L, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, N}
     ctx = Update(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
     return update(ctx, cs, args)
 end
 
 function update(sel::L, ps::P, cs::DynamicCallSite) where {P <: AddressMap, L <: AddressMap}
     ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
-    return update(ctx, cs, cs.args)
+    return update(ctx, cs, map(cs.args) do a
+                      Δ(a, NoChange())
+                  end)
 end
 
-function update(sel::L, ps::P, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple) where {L <: AddressMap, P <: AddressMap}
+function update(sel::L, ps::P, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, P <: AddressMap, N}
     ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    return update(ctx, cs, args)
+end
+
+function update(sel::L, ps::P, cs::DynamicCallSite, args...) where {L <: AddressMap, P <: AddressMap, N}
+    ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    args = map(args) do a
+        a isa Diffed ? a : Δ(a, NoChange())
+    end
     return update(ctx, cs, args)
 end
