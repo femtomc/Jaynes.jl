@@ -6,8 +6,6 @@ The core data structures live in `/core` - these data structures encompass trace
 
 All the execution contexts live in `/contexts`.
 
-The compiler directory `/compiler` is a highly experimental part of the codebase which deals with dynamically optimizing function calls when used in contexts.
+The compiler directory `/compiler` is a highly experimental part of the codebase which deals with dynamically optimizing the execution of models when used in contexts. This is highly likely to change in highly variable ways 😸.
 
-The language extension directory `/language_extensions` handles sugar macros, defining primitive calls for the tracers, as well as interfaces across languages and within Julia PPLs.
-
-The inference directory `/inference` provides implementations of a number of standard inference building blocks - including a Metropolis-Hastings operator, importance sampling, particle filtering operators, variational inference operators, maximum likelihood and maximum a posterior optimization. Included in this directory are also a number of MCMC kernels (e.g. Hamiltonian Monte Carlo, elliptical slice, a custom piecewise deterministic Markov kernel which is a work in progress).
+The language extension directory `/language_extensions` handles sugar macros and defining primitive calls for the tracers.
