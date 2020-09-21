@@ -1,4 +1,4 @@
-module InvolutionJaynes
+module InvolutionMCMC
 
 include("../src/Jaynes.jl")
 using .Jaynes
