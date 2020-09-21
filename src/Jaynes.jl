@@ -35,9 +35,6 @@ import Distributions: Distribution
 import Distributions: logpdf
 
 # Chainz.
-using ZigZagBoomerang
-import ZigZagBoomerang: Boomerang, sparse
-export Boomerang, sparse
 using SparseArrays
 using LinearAlgebra
 import LinearAlgebra: I
@@ -48,9 +45,6 @@ export I
 using ForwardDiff
 using ForwardDiff: Dual
 import Zygote.literal_getproperty
-
-# Distances.
-@reexport using Distances
 
 # Fix for: https://github.com/FluxML/Zygote.jl/issues/717
 Zygote.@adjoint function literal_getproperty(x, ::Val{f}) where f

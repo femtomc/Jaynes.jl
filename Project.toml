@@ -4,7 +4,6 @@ authors = ["McCoy R. Becker <mccoybecker@gmail.com>"]
 version = "0.1.24"
 
 [deps]
-Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DistributionsAD = "ced4e74d-a319-5a8a-b0ac-84af2272839c"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -19,11 +18,9 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
-ZigZagBoomerang = "36347407-b186-4a6a-8c98-4f4567861712"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-Distances = "0.9"
 Distributions = "0.23"
 DistributionsAD = "0.6"
 ForwardDiff = "0.10"
@@ -33,7 +30,6 @@ MacroTools = "0.5"
 Reexport = "0.2"
 StaticArrays = "0.12"
 UnicodePlots = "1.2"
-ZigZagBoomerang = "0.5"
 Zygote = "0.5"
 julia = "1"
 

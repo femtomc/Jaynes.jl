@@ -94,10 +94,12 @@ The programmer is not expected to interact with these contexts directly. Instead
 
 (roughly, `Gen.jl` may change their interfaces, these may also change here - but the ideas behind these interfaces will remain the same)
 
-You use these high-level interface calls on your models e.g.
+If you so choose, you may use these high-level interface calls directly on your model functions e.g.
 
 ```julia
 ret, cl = simulate(some_model, args...)
 ```
 
 which takes care of constructing a `SimulateContext`, executing your model with `args...` in that context, and bundling up the return and a record of that call for you.
+
+Generically, if you're hoping to perform inference, you'll use the APIs from [Gen.jl](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1) to do that. The direct calls in `Jaynes` are used to implement these APIs.
