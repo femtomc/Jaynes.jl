@@ -42,7 +42,7 @@ end
     ir == nothing && return
 
     # Equivalent to static DSL optimizations.
-    if !control_flow_check(ir) || K <: DynamicMap
+    if K <: DynamicMap
 
         # Release IR normally.
         ir = recur(ir)
@@ -56,6 +56,7 @@ end
         # Dynamic specialization transform.
         ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
     end
+    display(ir)
     ir
 end
 

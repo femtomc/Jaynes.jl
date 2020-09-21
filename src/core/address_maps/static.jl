@@ -14,7 +14,7 @@ struct StaticMap{T, N, K, B} <: AddressMap{K}
         new{keys(nt), length(tree), K, Val{isempty(tree)}}(nt, Val(isempty(true)))
     end
 end
-StaticMap(tree::Dict{Symbol, AddressMap{K}}) where K = StaticMap{K}(tree)
+StaticMap(tree::Dict{Any, AddressMap{K}}) where K = StaticMap{K}(tree)
 function StaticMap(k::A, v) where A <: Address
     nt = NamedTuple{(k, )}((Value(v), ))
     StaticMap{Value}(nt)
@@ -128,3 +128,5 @@ function static(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
         return sm
     end
 end
+
+@inline static(dm::DynamicMap{Value}) = StaticMap(dm.tree)

@@ -61,6 +61,8 @@ function convert(::Type{DynamicMap{Value}}, chm::DynamicChoiceMap)
     dm
 end
 
+static(chm::DynamicChoiceMap) = static(convert(DynamicMap{Value}, chm))
+
 # ------------ Trace ------------ #
 
 mutable struct JTrace{T, K <: CallSite} <: Trace
@@ -180,6 +182,7 @@ function update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::JChoi
     JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
 end
 @inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::DynamicChoiceMap) = update(trace, args, arg_diffs, JChoiceMap(convert(DynamicMap{Value}, constraints)))
+@inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::StaticMap) = update(trace, args, arg_diffs, JChoiceMap(constraints))
 
 function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSelection)
     ret, cl, w, rd, d = regenerate(unwrap(selection), 
