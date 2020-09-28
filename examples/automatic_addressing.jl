@@ -4,7 +4,7 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using Random
 using IRTools
-using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta, renumber, Pipe, finish
+using IRTools: @dynamo, IR, meta, Pipe, finish
 using MacroTools
 
 mutable struct TransformationContext{T <: Jaynes.AddressMap, 
