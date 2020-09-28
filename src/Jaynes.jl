@@ -185,4 +185,11 @@ export init_param!, accumulate_param_gradients!, choice_gradients
 export choicemap, select
 export get_value, has_value
 
+# Graphical model interface.
+include("graphical_model_interface.jl")
+const λ_wave = lambda_wave
+export λ_wave, lambda_wave
+const π_wave = pi_wave
+export π_wave, pi_wave
+
 end # module
