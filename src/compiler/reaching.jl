@@ -5,9 +5,10 @@ struct ReachingAnalysis <: CallAnalysis
     reach::Dict
     ancestors::Dict
     sites::Set{Variable}
-    addrs::Set{Symbol}
+    addrs::Set{Any}
     map::Dict
     inv::Dict
+    ir::IR
 end
 
 @inline function get_successors(ra::ReachingAnalysis, var)
@@ -27,19 +28,22 @@ end
 
 function Base.display(ra::ReachingAnalysis)
     println("  __________________________________\n")
-    println("             Addresses\n")
+    println("              IR Reference\n")
+    display(ra.ir)
+    println("\n  __________________________________\n")
+    println(" Addresses\n")
     println(ra.addrs)
     println()
-    println("             Variable to address\n")
+    println(" Variable to address\n")
     display(ra.map)
     println()
-    println("             Address to variable\n")
+    println(" Address to variable\n")
     display(ra.inv)
-    println("             Reachability\n")
+    println("\n Reachability\n")
     for x in ra.sites
         haskey(ra.reach, x) ? println(" $x => $(ra.reach[x])") : println(" $x")
     end
-    println("\n             Ancestors\n")
+    println("\n Ancestors\n")
     for x in ra.sites
         haskey(ra.ancestors, x) ? println(" $x => $(ra.ancestors[x])") : println(" $x")
     end
@@ -103,14 +107,17 @@ end
 
 function flow_analysis(ir)
     sites = Set(Variable[])
-    addrs = Set(Symbol[])
-    var_addr_map = Dict{Variable, Symbol}()
+    addrs = Set(Any[])
+    var_addr_map = Dict{Variable, Any}()
     reach = Dict{Variable, Any}()
     for (v, st) in ir
         MacroTools.postwalk(st) do e
             @capture(e, call_(sym_, args__))
             if call isa GlobalRef && call.name == :rand
                 push!(sites, v)
+                if sym isa QuoteNode
+                    sym = sym.value
+                end
                 push!(addrs, sym)
                 var_addr_map[v] = sym
                 reach[v] = Set(reaching(v, ir))
@@ -137,13 +144,13 @@ function flow_analysis(ir)
         end
         ancestors[s] = work
     end
-    return ReachingAnalysis(reach, ancestors, sites, addrs, var_addr_map, Dict( v => k for (k, v) in var_addr_map))
+    return ReachingAnalysis(reach, ancestors, sites, addrs, var_addr_map, Dict( v => k for (k, v) in var_addr_map), ir)
 end
 
 function dependency(a::Analysis)
-    map = Dict{Symbol, Set{Symbol}}()
+    map = Dict{Any, Set{Any}}()
     for (k, vars) in a.reach
-        depends = Symbol[]
+        depends = Any[]
         for v in vars
             haskey(a.map, v) && push!(depends, a.map[v].value)
         end

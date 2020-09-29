@@ -4,7 +4,7 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using Random
 using IRTools
-using IRTools: @dynamo, IR, meta, Pipe, finish
+using IRTools: @dynamo, IR, meta, Pipe, finish, recurse!, self
 using MacroTools
 
 mutable struct TransformationContext{T <: Jaynes.AddressMap, 
@@ -21,10 +21,10 @@ struct TransformedCallSite{J, K} <: Jaynes.CallSite
     fn::Function
     args::J
     ret::K
-    ir
+    ref
 end
 
-@inline ir_viz(tcs::TransformedCallSite) = display(tcs.ir)
+@inline addr_viz(tcs::TransformedCallSite) = display(tcs.ref)
 
 function AutoAddressing(tr, params)
     TransformationContext(tr,
@@ -42,17 +42,47 @@ end
     !(expr.args[2] isa GlobalRef)
 end
 
-function insert_pass(ir)
-    counter = 0
+@inline check_prim(name) = name in names(Base, all = true) || name in names(Core, all = true) || name in names(Core.Intrinsics, all = true)
+
+function insert_pass(fn_name, ir)
+    counter = 1
     pr = Pipe(ir)
     for (v, st) in pr
         expr = st.expr
-        if check_rand(expr)
+        if isexpr(expr, :call) && 
+            !check_prim(Jaynes.unwrap(expr.args[1]))
+            name = expr.args[1]
             pr[v] = Expr(:call, 
                          GlobalRef(@__MODULE__, :rand), 
-                         QuoteNode(Symbol(counter)), 
+                         QuoteNode(Symbol(Jaynes.unwrap(name))),
+                         expr.args[1 : end]...)
+        elseif check_rand(expr)
+            pr[v] = Expr(:call, 
+                         GlobalRef(@__MODULE__, :rand), 
+                         counter,
                          expr.args[2 : end]...)
             counter += 1
+        end
+    end
+    ir = finish(pr)
+    ir
+end
+
+function check_for_rand_calls(ir)
+    for (v, st) in ir
+        check_rand(st.expr) && return true
+    end
+    return false
+end
+
+# Modified recurse call which avoids Base and Core.
+function recur(ir, to = self)
+    pr = Pipe(ir)
+    for (x, st) in pr
+        isexpr(st.expr, :call) && begin
+            ref = Jaynes.unwrap(st.expr.args[1])
+            !(ref in Jaynes.whitelist) && check_prim(ref) && continue
+            pr[x] = Expr(:call, to, st.expr.args...)
         end
     end
     finish(pr)
@@ -61,8 +91,9 @@ end
 @dynamo function (mx::TransformationContext)(a...)
     ir = IR(a...)
     ir == nothing && return
-    ir = insert_pass(ir)
-    ir = Jaynes.recur(ir)
+    check_for_rand_calls(ir) || return ir
+    ir = insert_pass(a[1], ir)
+    ir = recur(ir)
     ir
 end
 
@@ -75,11 +106,22 @@ end
     return s
 end
 
+@inline function (ctx::TransformationContext)(c::typeof(rand),
+                                              addr::T,
+                                              call::Function,
+                                              args...) where T <: Jaynes.Address
+    Jaynes.visit!(ctx, addr)
+    ret, cl = auto_simulate(call, args...)
+    Jaynes.add_call!(ctx, addr, cl)
+    return ret
+end
+
+
 function viz_transform(fn, args...)
     tt = typeof((fn, args...))
     ir = IR(meta(tt))
-    ir = insert_pass(ir)
-    ir
+    ir = insert_pass(fn, ir)
+    Jaynes.flow_analysis(ir)
 end
 
 function auto_simulate(fn::Function, args...)
@@ -90,14 +132,29 @@ end
 
 # ------------ Examples ------------ #
 
-model = () -> begin
-    x = rand(Normal(0.0, 1.0))
+foo = N -> begin
+    x = 0
+    for i in 1 : N
+        x += rand(Normal(0.0, 1.0))
+    end
     y = rand(Normal(x, 1.0))
     y
 end
 
-ret, cl = auto_simulate(model)
+baz = () -> begin
+    x = rand(Normal(0.0, 1.0))
+    y = rand(Normal(x, 1.0))
+end
+
+bar = () -> begin
+    x = rand(Normal(0.0, 1.0))
+    y = rand(Normal(x, 1.0))
+    baz()
+end
+
+@time auto_simulate(bar)
+@time ret, cl = auto_simulate(bar)
 display(cl.trace)
-ir_viz(cl)
+#addr_viz(cl)
 
 end # module

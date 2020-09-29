@@ -87,7 +87,7 @@ function shallow_iterator(::AddressMap{K}) where K end
 @inline isempty(::Choice) = false
 @inline isempty(::SelectAll) = false
 @inline isempty(am::AddressMap) = all(shallow_iterator(am)) do (_, v)
-    iempty(v)
+    isempty(v)
 end
 
 @inline has_value(am::AddressMap, addr) = has_value(get_sub(am, addr))

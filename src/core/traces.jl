@@ -3,14 +3,9 @@
 Base.iterate(s::Symbol) = s
 
 # Special calls with fallbacks.
-function rand(addr::A, d::Distribution{T}) where {A <: Address, T}
-    @info "(rand) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell a context tracer to recurse into a call site (wrap it with rand)."
-    return rand(d)
-end
-function rand(addr::A, fn::Function, args...) where A <: Address
-    @info "(rand) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell a context tracer to recurse into a call site (wrap it with rand)."
-    return fn(args...)
-end
+@inline rand(addr::A, d::Distribution{T}) where {A <: Address, T} = rand(d)
+@inline rand(addr::A, fn::Function, args...) where A <: Address = fn(args...)
+@inline rand(addr::A, fn, args...) where A <: Address = fn(args...)
 
 # Special features - must be evaluated by context tracer.
 learnable(addr::A) where {A <: Address} = error("(learnable) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
