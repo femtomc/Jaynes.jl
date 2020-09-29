@@ -4,7 +4,7 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using Random
 using IRTools
-using IRTools: @dynamo, IR, meta, Pipe, finish, recurse!, self
+using IRTools: @dynamo, IR, meta, Pipe, finish, recurse!, self, blocks
 using MacroTools
 
 mutable struct TransformationContext{T <: Jaynes.AddressMap, 
@@ -46,6 +46,7 @@ end
 
 function insert_pass(fn_name, ir)
     counter = 1
+    num_blocks = length(blocks(ir))
     pr = Pipe(ir)
     for (v, st) in pr
         expr = st.expr
@@ -132,18 +133,10 @@ end
 
 # ------------ Examples ------------ #
 
-foo = N -> begin
-    x = 0
-    for i in 1 : N
-        x += rand(Normal(0.0, 1.0))
-    end
-    y = rand(Normal(x, 1.0))
-    y
-end
-
 baz = () -> begin
     x = rand(Normal(0.0, 1.0))
     y = rand(Normal(x, 1.0))
+    y
 end
 
 bar = () -> begin
@@ -152,8 +145,18 @@ bar = () -> begin
     baz()
 end
 
-@time auto_simulate(bar)
-@time ret, cl = auto_simulate(bar)
+foo = () -> begin
+    if rand(Normal(3.0, 1.0)) > 3.0
+        y = rand(Normal(0.0, 1.0))
+    else
+        y = rand(Normal(5.0, 1.0))
+    end
+    q = rand(Normal(y, 5.0))
+    y + q + baz()
+end
+
+@time auto_simulate(foo)
+@time ret, cl = auto_simulate(foo)
 display(cl.trace)
 #addr_viz(cl)
 
