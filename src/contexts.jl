@@ -22,20 +22,6 @@ function add_call!(ctx::T, addr, cs::C) where {T <: ExecutionContext, C <: CallS
     set_sub!(ctx.tr, addr, cs)
 end
 
-@dynamo function (mx::ExecutionContext)(a...)
-    ir = IR(a...)
-    ir == nothing && return
-    ir = recur(ir)
-    ir
-end
-
-(mx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(rand), args...) = mx(c, flatten(args)...)
-function (mx::ExecutionContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        mx(generator.f, i)
-    end
-end
-
 # ------------ includes ------------ #
 
 # Generating traces and scoring them according to models.

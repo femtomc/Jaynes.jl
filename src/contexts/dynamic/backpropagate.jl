@@ -1,6 +1,6 @@
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::ParameterBackpropagateContext)(call::typeof(rand), 
+@inline function (ctx::ParameterBackpropagateContext)(call::typeof(trace), 
                                                       addr::T, 
                                                       d::Distribution{K}) where {T <: Address, K}
     s = getindex(ctx.call, addr)
@@ -8,7 +8,7 @@
     return s
 end
 
-@inline function (ctx::ChoiceBackpropagateContext)(call::typeof(rand), 
+@inline function (ctx::ChoiceBackpropagateContext)(call::typeof(trace), 
                                                    addr::T, 
                                                    d::Distribution{K}) where {T <: Address, K}
     haskey(ctx.target, addr) || return get_value(get_sub(ctx.call, addr))
@@ -40,7 +40,7 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::ParameterBackpropagateContext)(c::typeof(rand), addr::A, call::Function, args...) where A <: Address
+@inline function (ctx::ParameterBackpropagateContext)(c::typeof(trace), addr::A, call::Function, args...) where A <: Address
     param_grads = Gradients()
     ret = simulate_parameter_pullback(get_sub(ctx.fillables, addr), 
                                       get_sub(ctx.initial_params, addr), 
@@ -51,7 +51,7 @@ end
     return ret
 end
 
-@inline function (ctx::ChoiceBackpropagateContext)(c::typeof(rand), addr::A, call::Function, args...) where A <: Address
+@inline function (ctx::ChoiceBackpropagateContext)(c::typeof(trace), addr::A, call::Function, args...) where A <: Address
     choice_grads = Gradients()
     ret = simulate_choice_pullback(get_sub(ctx.fillables, addr), 
                                    get_sub(ctx.initial_params, addr), 

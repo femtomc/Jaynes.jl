@@ -20,6 +20,21 @@ function Propose(tr, params)
                    params)
 end
 
+# Go go dynamo!
+@dynamo function (px::ProposeContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    transform!(ir)
+    ir = recur(ir)
+    ir
+end
+(px::ProposeContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = px(c, flatten(args)...)
+function (px::ProposeContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        px(generator.f, i)
+    end
+end
+
 # ------------ includes ------------ #
 
 include("dynamic/propose.jl")

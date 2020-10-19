@@ -35,6 +35,21 @@ end
 
 abstract type BackpropagationContext <: ExecutionContext end
 
+# Go go dynamo!
+@dynamo function (bx::BackpropagationContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    ir = recur(ir)
+    transform!(ir)
+    ir
+end
+(bx::BackpropagationContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = bx(c, flatten(args)...)
+function (bx::BackpropagationContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        bx(generator.f, i)
+    end
+end
+
 # Learnable parameters
 mutable struct ParameterBackpropagateContext{T <: CallSite, 
                                              S <: AddressMap,

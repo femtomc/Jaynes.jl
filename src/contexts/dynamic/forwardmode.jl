@@ -1,6 +1,6 @@
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::ForwardModeContext)(call::typeof(rand), 
+@inline function (ctx::ForwardModeContext)(call::typeof(trace), 
                                            addr::A, 
                                            d::Distribution{K}) where {A <: Address, K}
     visit!(ctx, addr)
@@ -26,7 +26,7 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::ForwardModeContext)(c::typeof(rand),
+@inline function (ctx::ForwardModeContext)(c::typeof(trace),
                                            addr::A,
                                            call::Function,
                                            args...) where A <: Address

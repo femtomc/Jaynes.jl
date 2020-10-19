@@ -1,6 +1,6 @@
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::UpdateContext)(call::typeof(rand), 
+@inline function (ctx::UpdateContext)(call::typeof(trace), 
                                       addr::T, 
                                       d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
@@ -57,7 +57,7 @@ end
 
 # ------------ Black box call sites ------------ #
 
-@inline function (ctx::UpdateContext)(c::typeof(rand),
+@inline function (ctx::UpdateContext)(c::typeof(trace),
                                       addr::T,
                                       call::Function,
                                       args...) where {T <: Address, D <: Diff}

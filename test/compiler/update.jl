@@ -1,20 +1,20 @@
 fn0 = (q, z) -> begin
-    m = rand(:m, Normal(q, 1.0))
-    q = rand(:q, Normal(z, 5.0))
+    m = trace(:m, Normal(q, 1.0))
+    q = trace(:q, Normal(z, 5.0))
     m + q
 end
 
 fn1 = (q, z, m) -> begin
-    t = rand(:z, Normal(5.0, 1.0))
-    n = rand(:m, Normal(z, 1.0))
-    l = rand(:l, fn0, q, m)
+    t = trace(:z, Normal(5.0, 1.0))
+    n = trace(:m, Normal(z, 1.0))
+    l = trace(:l, fn0, q, m)
     if l > 5.0
-        rand(:q, Normal(1.0, 5.0))
+        trace(:q, Normal(1.0, 5.0))
     else
-        rand(:q, Normal(5.0, 3.0))
+        trace(:q, Normal(5.0, 3.0))
     end
-    p = rand(:p, Normal(z, 3.0))
-    t = rand(:t, Normal(p, 5.0))
+    p = trace(:p, Normal(z, 3.0))
+    t = trace(:t, Normal(p, 5.0))
     l + n
 end
 

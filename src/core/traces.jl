@@ -3,14 +3,9 @@
 Base.iterate(s::Symbol) = s
 
 # Special calls with fallbacks.
-function rand(addr::A, d::Distribution{T}) where {A <: Address, T}
-    @info "(rand) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell a context tracer to recurse into a call site (wrap it with rand)."
-    return rand(d)
-end
-function rand(addr::A, fn::Function, args...) where A <: Address
-    @info "(rand) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly, or you've forgotten to tell a context tracer to recurse into a call site (wrap it with rand)."
-    return fn(args...)
-end
+@inline trace(addr::A, d::Distribution{T}) where {A <: Address, T} = rand(d)
+@inline trace(addr::A, fn::Function, args...) where A <: Address = fn(args...)
+@inline trace(addr::A, fn, args...) where A <: Address = fn(args...)
 
 # Special features - must be evaluated by context tracer.
 learnable(addr::A) where {A <: Address} = error("(learnable) call with address $addr evaluated outside of a context tracer.\nThis normally occurs because you're not matching dispatch correctly.")
@@ -69,12 +64,12 @@ include("traces/dynamic.jl")
 @doc(
 """
 ```julia
-rand(addr::A, d::Distribution{T}) where {A <: Address, T}
-rand(addr::A, fn::Function, args...) where A <: Address
+trace(addr::A, d::Distribution{T}) where {A <: Address, T}
+trace(addr::A, fn::Function, args...) where A <: Address
 ```
 
-A `rand` call with a first argument which is a subtype of `Address` informs the context context tracers that this call should be intercepted and recorded. If the call includes a distribution as final argument, a context tracer will create a `ChoiceSite` representation and reason about the call accordingly. If the call includes a function and a set of arguments, a context tracer will create a `HierarchicalCallSite` representation and recurse into the call.
-""", rand)
+A `trace` call with a first argument which is a subtype of `Address` informs the context context tracers that this call should be intercepted and recorded. If the call includes a distribution as final argument, a context tracer will create a `ChoiceSite` representation and reason about the call accordingly. If the call includes a function and a set of arguments, a context tracer will create a `HierarchicalCallSite` representation and recurse into the call.
+""", trace)
 
 @doc(
 """
@@ -84,7 +79,7 @@ struct ChoiceSite{T} <: RecordSite
     val::T
 end
 ```
-A record of a random sample at an addressed `rand` call with a `Distribution` instance. Keeps the value of the random sample and the `logpdf` score.
+A record of a random sample at an addressed `trace` call with a `Distribution` instance. Keeps the value of the random sample and the `logpdf` score.
 """, ChoiceSite)
 
 @doc(

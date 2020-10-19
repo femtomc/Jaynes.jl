@@ -27,6 +27,21 @@ function Score(obs::AddressMap, params)
                  params)
 end
 
+@dynamo function (sx::ScoreContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    transform!(ir)
+    ir = recur(ir)
+    ir
+end
+(sx::ScoreContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = sx(c, flatten(args)...)
+function (sx::ScoreContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        sx(generator.f, i)
+    end
+end
+
+
 # ------------ includes ------------ #
 
 include("dynamic/score.jl")

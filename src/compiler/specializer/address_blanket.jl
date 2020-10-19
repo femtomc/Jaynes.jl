@@ -4,7 +4,7 @@ function direct_deps!(reach::Vector{Variable}, p, var, ir)
             if var in st.expr.args
                 push!(reach, v)
                 if st.expr.head == :call &&
-                    st.expr.args[1] isa GlobalRef && st.expr.args[1].name == :rand
+                    st.expr.args[1] isa GlobalRef && st.expr.args[1].name == :trace
                     # blocked
                 else
                     direct_deps!(reach, p, v, ir)
@@ -33,7 +33,7 @@ function direct_dep_analysis(ir)
     for (v, st) in ir
         Jaynes.MacroTools.postwalk(st) do e
             Jaynes.@capture(e, call_(sym_, args__))
-            call isa GlobalRef && call.name == :rand && begin
+            call isa GlobalRef && call.name == :trace && begin
                 push!(sites, v)
                 push!(addrs, sym)
                 var_sym_map[v] = sym

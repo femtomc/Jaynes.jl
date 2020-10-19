@@ -4,14 +4,14 @@ macro primitive(ex)
     expr = quote
         $ex
 
-        @inline function (ctx::Jaynes.SimulateContext)(call::typeof(rand), addr::Jaynes.Address, $argname::$name, args...)
+        @inline function (ctx::Jaynes.SimulateContext)(call::typeof(trace), addr::Jaynes.Address, $argname::$name, args...)
             Jaynes.visit!(ctx.visited, addr)
             s = $argname(args...)
             Jaynes.add_choice!(ctx, addr, logpdf($argname, args..., s), s)
             return s
         end
 
-        function (ctx::Jaynes.GenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
+        function (ctx::Jaynes.GenerateContext)(call::typeof(trace), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             Jaynes.visit!(ctx.visited, addr)
             if Jaynes.haskey(ctx.target, addr)
                 s = Jaynes.getindex(ctx.target, addr)
@@ -26,7 +26,7 @@ macro primitive(ex)
             return s
         end
 
-        @inline function (ctx::Jaynes.ProposeContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
+        @inline function (ctx::Jaynes.ProposeContext)(call::typeof(trace), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             s = $argname(args...)
             score = logpdf($argname, args..., s)
             Jaynes.add_choice!(ctx, addr, score, s)
@@ -34,7 +34,7 @@ macro primitive(ex)
             return s
         end
 
-        @inline function (ctx::Jaynes.RegenerateContext)(call::typeof(rand), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
+        @inline function (ctx::Jaynes.RegenerateContext)(call::typeof(trace), addr::T, $argname::$name, args...) where {T <: Jaynes.Address, K}
             Jaynes.visit!(ctx, addr)
             in_prev_chm = Jaynes.has_value(Jaynes.get_trace(ctx.prev), addr)
             in_sel = Jaynes.haskey(ctx.target, addr)
@@ -58,7 +58,7 @@ macro primitive(ex)
             return ret
         end
 
-        @inline function (ctx::Jaynes.UpdateContext)(call::typeof(rand), 
+        @inline function (ctx::Jaynes.UpdateContext)(call::typeof(trace), 
                                                      addr::T, 
                                                      $argname::$name,
                                                      args...) where {T <: Jaynes.Address, K}
@@ -91,7 +91,7 @@ macro primitive(ex)
         end
 
 
-        @inline function (ctx::Jaynes.ScoreContext)(call::typeof(rand), 
+        @inline function (ctx::Jaynes.ScoreContext)(call::typeof(trace), 
                                                     addr::T, 
                                                     $argname::$name, 
                                                     args...) where {T <: Jaynes.Address, K}
@@ -102,7 +102,7 @@ macro primitive(ex)
 
         end
 
-        @inline function (ctx::Jaynes.ParameterBackpropagateContext)(call::typeof(rand), 
+        @inline function (ctx::Jaynes.ParameterBackpropagateContext)(call::typeof(trace), 
                                                                      addr::T, 
                                                                      $argname::$name,
                                                                      args...) where {T <: Jaynes.Address, K}
@@ -115,7 +115,7 @@ macro primitive(ex)
             return s
         end
 
-        @inline function (ctx::Jaynes.ChoiceBackpropagateContext)(call::typeof(rand), 
+        @inline function (ctx::Jaynes.ChoiceBackpropagateContext)(call::typeof(trace), 
                                                                   addr::T, 
                                                                   $argname::$name, 
                                                                   args...) where {T <: Jaynes.Address, K}

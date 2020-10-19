@@ -13,6 +13,20 @@ function Simulate(tr, params)
                     params)
 end
 
+@dynamo function (sx::SimulateContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    transform!(ir)
+    ir = recur(ir)
+    ir
+end
+(sx::SimulateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = sx(c, flatten(args)...)
+function (sx::SimulateContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        sx(generator.f, i)
+    end
+end
+
 # ------------ includes ------------ #
 
 include("dynamic/simulate.jl")
@@ -43,7 +57,7 @@ SimulateContext(params) = new{DynamicAddressMap}(AddressMap(), Visitor(), params
 """
 ```julia
 ret, cl = simulate(fn::Function, args...; params = LearnableByAddress())
-ret, cl = simulate(fn::typeof(rand), d::Distribution{T}; params = LearnableByAddress()) where T
+ret, cl = simulate(fn::typeof(trace), d::Distribution{T}; params = LearnableByAddress()) where T
 ```
 
 `simulate` function provides an API to the `SimulateContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and a `RecordSite` instance specialized to the call. `simulate` is used to express unconstrained generation of a probabilistic program trace, without likelihood weight recording.

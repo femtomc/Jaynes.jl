@@ -1,6 +1,6 @@
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::ProposeContext)(call::typeof(rand), 
+@inline function (ctx::ProposeContext)(call::typeof(trace), 
                                        addr::T, 
                                        d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
@@ -27,7 +27,7 @@ end
 
 # ------------ Black box call sites ------------ #
 
-@inline function (ctx::ProposeContext)(c::typeof(rand),
+@inline function (ctx::ProposeContext)(c::typeof(trace),
                                        addr::T,
                                        call::Function,
                                        args...) where T <: Address
@@ -52,7 +52,7 @@ function propose(params, fn::Function, args...)
     return ret, ctx.map, ctx.score
 end
 
-function propose(fn::typeof(rand), d::Distribution{K}) where K
+function propose(fn::typeof(trace), d::Distribution{K}) where K
     ctx = Propose()
     addr = gensym()
     ret = ctx(fn, addr, d)

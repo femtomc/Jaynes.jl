@@ -2,19 +2,19 @@
 
 fn1 = () -> begin
     m = learnable(:m)
-    q = rand(:q, Normal(m, 3.0))
+    q = trace(:q, Normal(m, 3.0))
     q
 end
 
 fn2 = () -> begin
-    q = rand(:q, Normal(1.0, 3.0))
+    q = trace(:q, Normal(1.0, 3.0))
     q
 end
 
 grad_test_model = () -> begin
     N = 10
-    q = rand(:fn1, fn1)
-    z = rand(:fn2, fn2)
+    q = trace(:fn1, fn1)
+    z = trace(:fn2, fn2)
     z + q
 end
 
@@ -34,5 +34,3 @@ end
     vals, pgs = get_learnable_gradients(params, cl, 1.0)
     @test haskey(pgs, (:fn1, :m))
 end
-
-# ------------ Vectorized gradients ------------ #

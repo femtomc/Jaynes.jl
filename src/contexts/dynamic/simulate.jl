@@ -1,6 +1,6 @@
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::SimulateContext)(call::typeof(rand), 
+@inline function (ctx::SimulateContext)(call::typeof(trace), 
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
     visit!(ctx.visited, addr)
@@ -19,7 +19,7 @@ end
 
 # ------------ Black box call sites ------------ #
 
-@inline function (ctx::SimulateContext)(c::typeof(rand),
+@inline function (ctx::SimulateContext)(c::typeof(trace),
                                         addr::T,
                                         call::Function,
                                         args...) where T <: Address
@@ -44,17 +44,17 @@ function simulate(params::P, fn::Function, args...) where P <: AddressMap
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
 end
 
-function simulate(fn::typeof(rand), d::Distribution{T}) where T
+function simulate(fn::typeof(trace), d::Distribution{T}) where T
     ctx = Simulate(Trace(), Empty())
     addr = gensym()
-    ret = ctx(rand, addr, d)
+    ret = ctx(trace, addr, d)
     return ret, get_sub(ctx.tr, addr)
 end
 
-function simulate(params::P, fn::typeof(rand), d::Distribution{T}) where {P <: AddressMap, T}
+function simulate(params::P, fn::typeof(trace), d::Distribution{T}) where {P <: AddressMap, T}
     ctx = Simulate(Trace(), params)
     addr = gensym()
-    ret = ctx(rand, addr, d)
+    ret = ctx(trace, addr, d)
     return ret, get_sub(ctx.tr, addr)
 end
 

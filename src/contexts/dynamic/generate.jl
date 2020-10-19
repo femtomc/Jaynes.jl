@@ -1,6 +1,6 @@
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::GenerateContext)(call::typeof(rand), 
+@inline function (ctx::GenerateContext)(call::typeof(trace), 
                                         addr::T, 
                                         d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
@@ -33,7 +33,7 @@ end
 
 # ------------ Black box call sites ------------ #
 
-@inline function (ctx::GenerateContext)(c::typeof(rand),
+@inline function (ctx::GenerateContext)(c::typeof(trace),
                                         addr::T,
                                         call::Function,
                                         args...) where T <: Address
@@ -60,7 +60,7 @@ function generate(target::L, params, fn::Function, args...) where L <: AddressMa
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
-function generate(target::L, fn::typeof(rand), d::Distribution{K}) where {L <: AddressMap, K}
+function generate(target::L, fn::typeof(trace), d::Distribution{K}) where {L <: AddressMap, K}
     ctx = Generate(target)
     addr = gensym()
     ret = ctx(fn, addr, d)

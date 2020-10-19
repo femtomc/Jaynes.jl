@@ -40,6 +40,7 @@ end
     # Check for primitive.
     ir = IR(f, S.parameters...)
     ir == nothing && return
+    #transform!(ir)
 
     # Equivalent to static DSL optimizations.
     if K <: DynamicMap
@@ -56,12 +57,13 @@ end
         # Dynamic specialization transform.
         ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
     end
-    display(ir)
     ir
 end
 
 # Base fixes.
 (ctx::UpdateContext)(::typeof(collect), b::Base.Generator) = collect(b)
+(ctx::UpdateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = sx(c, flatten(args)...)
+
 
 # ------------ includes ------------ #
 

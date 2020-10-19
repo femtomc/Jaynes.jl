@@ -1,6 +1,6 @@
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::ScoreContext)(call::typeof(rand), 
+@inline function (ctx::ScoreContext)(call::typeof(trace), 
                                      addr::A, 
                                      d::Distribution{K}) where {A <: Address, K}
     visit!(ctx, addr)
@@ -27,7 +27,7 @@ end
 
 # ------------ Call sites ------------ #
 
-@inline function (ctx::ScoreContext)(c::typeof(rand),
+@inline function (ctx::ScoreContext)(c::typeof(trace),
                                      addr::A,
                                      call::Function,
                                      args...) where A <: Address
@@ -57,7 +57,7 @@ function score(sel::L, params, fn::Function, args...) where L <: AddressMap
     return ret, ctx.weight
 end
 
-function score(sel::L, fn::typeof(rand), d::Distribution{K}) where {L <: AddressMap, K}
+function score(sel::L, fn::typeof(trace), d::Distribution{K}) where {L <: AddressMap, K}
     ctx = Score(sel)
     addr = gensym()
     ret = ctx(fn, addr, d)
