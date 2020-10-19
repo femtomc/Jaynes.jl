@@ -6,6 +6,6 @@ The core data structures live in `/core` - these data structures encompass trace
 
 All the execution contexts live in `/contexts`.
 
-The compiler directory `/compiler` is a highly experimental part of the codebase which deals with dynamically optimizing the execution of models when used in contexts. This is highly likely to change in highly variable ways 😸.
+The compiler directory `/compiler` is a highly experimental part of the codebase which deals with dynamically optimizing the execution of models when used in contexts. This is highly likely to change in highly variable ways 😸. Compiler also deals with other experimental parts of the system - like compiling generic stochastic simulators to probabilistic programs.
 
 The language extension directory `/language_extensions` handles sugar macros and defining primitive calls for the tracers.
