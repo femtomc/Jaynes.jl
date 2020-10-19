@@ -27,6 +27,20 @@ function Regenerate(target::K, ps, cl::C, tr, discard, ag) where {K <: AddressMa
                       ag)
 end
 
+@dynamo function (rx::RegenerateContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    transform!(ir)
+    ir = recur(ir)
+    ir
+end
+(rx::RegenerateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = rx(c, flatten(args)...)
+function (rx::RegenerateContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        rx(generator.f, i)
+    end
+end
+
 # ------------ includes ------------ #
 
 include("dynamic/regenerate.jl")

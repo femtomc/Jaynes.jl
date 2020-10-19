@@ -1,5 +1,5 @@
 # Geometric.
-geo(p::Float64) = rand(:flip, Bernoulli(p)) ? 0 : 1 + rand(:geo, geo, p)
+geo(p::Float64) = trace(:flip, Bernoulli(p)) ? 0 : 1 + trace(:geo, geo, p)
 
 @testset "Trace" begin
     ret, cl = simulate(geo, 0.5)

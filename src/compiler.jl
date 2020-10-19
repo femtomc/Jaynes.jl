@@ -12,11 +12,16 @@ end
 
 # ------------ includes ------------ #
 
-include("compiler/reaching.jl")
-include("compiler/address_blanket.jl")
-include("compiler/map_codegen.jl")
-include("compiler/diffs.jl")
-include("compiler/transforms.jl")
-include("compiler/interface.jl")
+# Partial evaluation/specialization
+include("compiler/specializer/reaching.jl")
+include("compiler/specializer/address_blanket.jl")
+include("compiler/specializer/map_codegen.jl")
+include("compiler/specializer/diffs.jl")
+include("compiler/specializer/transforms.jl")
+include("compiler/specializer/interface.jl")
+
+# Jaynesizer converts stochastic functions into PPs
+include("compiler/jaynesizer/utils.jl")
+include("compiler/jaynesizer/transform.jl")
 
 # ------------ Documentation ------------ #

@@ -1,6 +1,6 @@
 # ------------ Choice sites ------------ #
 
-@inline function (ctx::RegenerateContext)(call::typeof(rand), 
+@inline function (ctx::RegenerateContext)(call::typeof(trace), 
                                           addr::T, 
                                           d::Distribution{K}) where {T <: Address, K}
     visit!(ctx, addr)
@@ -43,7 +43,7 @@ end
 
 # ------------ Black box call sites ------------ #
 
-@inline function (ctx::RegenerateContext)(c::typeof(rand),
+@inline function (ctx::RegenerateContext)(c::typeof(trace),
                                           addr::T,
                                           call::Function,
                                           args...) where T <: Address

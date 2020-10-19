@@ -1,25 +1,25 @@
 function AnywhereLevelTwo()
-    x = rand(:x, Normal(0.0, 1.0))
-    rand(:loop, AnywhereInLoop)
+    x = trace(:x, Normal(0.0, 1.0))
+    trace(:loop, AnywhereInLoop)
     return x
 end
 
 function AnywhereLevelOne()
-    x = rand(:x, Normal(0.0, 1.0))
-    y = rand(:y, AnywhereLevelTwo)
+    x = trace(:x, Normal(0.0, 1.0))
+    y = trace(:y, AnywhereLevelTwo)
     return x
 end
 
 function AnywhereTopLevel()
-    x = rand(:x, Normal(0.0, 1.0))
-    y = rand(:y, AnywhereLevelOne)
+    x = trace(:x, Normal(0.0, 1.0))
+    y = trace(:y, AnywhereLevelOne)
     return x
 end
 
 function AnywhereInLoop()
-    x = rand(:q, Normal(0.0, 1.0))
+    x = trace(:q, Normal(0.0, 1.0))
     for i in 1:50
-        z = rand(:q => i, Normal(0.0, 1.0))
+        z = trace(:q => i, Normal(0.0, 1.0))
     end
 end
 

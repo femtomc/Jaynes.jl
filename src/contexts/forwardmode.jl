@@ -19,36 +19,24 @@ function ForwardMode(addr, params, cl, weight)
     ForwardModeContext(addr, cl, weight, Visitor(), params)
 end
 
+# Go go dynamo!
+@dynamo function (fx::ForwardModeContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    transform!(ir)
+    ir = recur(ir)
+    ir
+end
+(fx::ForwardModeContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = fx(c, flatten(args)...)
+function (fx::ForwardModeContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        fx(generator.f, i)
+    end
+end
+
 function forward(addr, params, cl::DynamicCallSite, seed)
     ctx = ForwardMode(addr, params, cl, seed)
     ret = ctx(cl.fn, cl.args...)
-    ret, ctx.weight
-end
-
-mutable struct ForwardModeMarkovContext{T <: Tuple,
-                                        C <: AddressMap,
-                                        D,
-                                        P <: AddressMap} <: ExecutionContext
-    target::T
-    map::C
-    weight::D
-    visited::Visitor
-    params::P
-    args
-    ForwardModeMarkovContext(t::T, m::C, w::D, v, p::P) where {T, C, D, P} = new{T, C, D, P}(t, m, w, v, p)
-end
-
-function ForwardModeMarkov(addr, cl, weight)
-    ForwardModeMarkovContext(addr, cl, weight, Visitor(), Empty())
-end
-
-function ForwardModeMarkov(addr, params, cl, weight)
-    ForwardModeMarkovContext(addr, cl, weight, Visitor(), params)
-end
-
-function markov_forward(addr, params, cl::C, seed, args...) where C <: CallSite
-    ctx = ForwardModeMarkov(addr, params, cl, seed)
-    ret = ctx(cl.fn, args...)
     ret, ctx.weight
 end
 

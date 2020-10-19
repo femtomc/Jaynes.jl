@@ -18,7 +18,7 @@ function tracecall!(tr::Mjolnir.Trace, args, Ts...)
 end
 
 # This is a modified version of Mjolnir's trace which grabs the IR associated with the original svec of types defined by the user - but then replaces the argtypes with diff types and does type inference.
-function trace(P, f, Dfs, Ts...)
+function mtrace(P, f, Dfs, Ts...)
     tr = Mjolnir.Trace(P)
     try
         argnames = [argument!(tr.ir, T) for T in (f, Dfs...)]
@@ -40,7 +40,7 @@ function trace(P, f, Dfs, Ts...)
 end
 
 # Convenient - run trace with DiffDefaults primitives.
-_propagate(f, args, Dfs) = trace(DiffDefaults(), f, Dfs, args...)
+_propagate(f, args, Dfs) = mtrace(DiffDefaults(), f, Dfs, args...)
 
 function create_flip_diff(a::Type{Diffed{K, DV}}) where {K, DV}
     DV != NoChange && return Change

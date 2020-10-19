@@ -18,13 +18,13 @@ import Gen: Diff, UnknownChange, NoChange
 import Gen: SetDiff, DictDiff, VectorDiff, IntDiff, Diffed
 
 # Yarrrr I'm a com-pirate!
+using MacroTools
 using IRTools
-using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta, renumber, Pipe, finish
+using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta, renumber, Pipe, finish, blocks, predecessors, dominators, block, successors, Block, block!, branches, Branch, branch!
 using Random
 using Mjolnir
 using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
 using Mjolnir: Defaults
-using MacroTools
 using InteractiveUtils: subtypes
 
 # Static selektor.
@@ -87,7 +87,7 @@ unwrap(gr) = gr
 # Whitelist includes vectorized calls.
 whitelist = [
              # Base.
-             :rand, :_apply_iterate, :collect,
+             :trace, :_apply_iterate, :collect,
 
              # Interactions with the context.
              :learnable, :fillable, :factor,
@@ -123,6 +123,7 @@ end
 
 # Jaynes.
 include("core.jl")
+export trace
 
 include("compiler.jl")
 export Δ, Diffed, forward
@@ -145,7 +146,6 @@ export regenerate
 export score
 export get_learnable_gradients, get_choice_gradients
 export get_learnable_gradient, get_choice_gradient
-export get_deep_gradients!
 
 # Tracer language features.
 export learnable, fillable, factor
@@ -164,9 +164,6 @@ export compare, update_learnables, merge!, merge
 
 # Foreign model interfaces.
 export @primitive
-export @load_gen_fmi
-export @load_soss_fmi
-export @load_advanced_hmc
 export @load_chains
 export foreign, deep
 

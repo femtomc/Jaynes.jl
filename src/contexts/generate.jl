@@ -36,6 +36,21 @@ function Generate(tr::AddressMap, target::AddressMap, params::AddressMap)
                     params)
 end
 
+# Go go dynamo!
+@dynamo function (gx::GenerateContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    transform!(ir)
+    ir = recur(ir)
+    ir
+end
+(gx::GenerateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = gx(c, flatten(args)...)
+function (gx::GenerateContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        gx(generator.f, i)
+    end
+end
+
 # ------------ includes ------------ #
 
 include("dynamic/generate.jl")
