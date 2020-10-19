@@ -34,12 +34,6 @@ using StaticArrays
 import Distributions: Distribution
 import Distributions: logpdf
 
-# Chainz.
-using SparseArrays
-using LinearAlgebra
-import LinearAlgebra: I
-export I
-
 # Differentiable.
 @reexport using Zygote
 using ForwardDiff
