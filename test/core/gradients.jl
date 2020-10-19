@@ -34,5 +34,3 @@ end
     vals, pgs = get_learnable_gradients(params, cl, 1.0)
     @test haskey(pgs, (:fn1, :m))
 end
-
-# ------------ Vectorized gradients ------------ #

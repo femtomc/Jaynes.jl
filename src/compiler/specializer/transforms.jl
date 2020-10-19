@@ -23,7 +23,7 @@ end
     (ex.args[1] isa GlobalRef && ex.args[1].name == :record_cached!))
 end
 
-# This pass is a dataflow analysis which determines what deterministic statements can be safely removed. It leaves rand calls and record_cached! calls alone.
+# This pass is a dataflow analysis which determines what deterministic statements can be safely removed. It leaves trace calls and record_cached! calls alone.
 function no_change_prune(ir)
     us = IRTools.Inner.usecounts(ir)
     isused(x) = get(us, x, 0) > 0
@@ -57,13 +57,13 @@ function strip_types(ir)
     new
 end
 
-# This pass wraps rand calls.
-function rand_wrapper(ir)
+# This pass wraps trace calls.
+function trace_wrapper(ir)
     pr = IRTools.Pipe(ir)
     for (v, st) in pr
         expr = st.expr
-        if expr.head == :call && expr.args[1] == rand && expr.args[2] isa QuoteNode
-            pr[v] = xcall(self, GlobalRef(parentmodule(@__MODULE__), :rand), expr.args[2 : end]...)
+        if expr.head == :call && expr.args[1] == trace && expr.args[2] isa QuoteNode
+            pr[v] = xcall(self, GlobalRef(parentmodule(@__MODULE__), :trace), expr.args[2 : end]...)
         end
     end
     IRTools.finish(pr)
@@ -80,7 +80,7 @@ end
 # This pass inserts the return value of the call before any NoChange call nodes.
 function substitute_get_value!(pr, v, st)
     expr = st.expr
-    if expr.head == :call && expr.args[1] == rand && expr.args[2] isa QuoteNode
+    if expr.head == :call && expr.args[1] == trace && expr.args[2] isa QuoteNode
         pr[v] = xcall(GlobalRef(parentmodule(@__MODULE__), :record_cached!), self, expr.args[2])
     end
 end
@@ -116,7 +116,7 @@ end
     reachability = flow_analysis(tr)
     tr = insert_cache_calls(tr, ks, reachability)
     tr = strip_types(tr)
-    tr = rand_wrapper(tr)
+    tr = trace_wrapper(tr)
     tr = no_change_prune(tr)
     tr = renumber(tr)
     tr
