@@ -5,7 +5,7 @@ get_choices(dt::DynamicTrace) = dt.tree
 struct DynamicCallSite{J, K} <: CallSite
     trace::DynamicTrace
     score::Float64
-    fn::Function
+    fn
     args::J
     ret::K
 end

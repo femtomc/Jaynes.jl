@@ -62,7 +62,7 @@ end
 unpack_tuple(ir, v::Variable) = haskey(ir, v) ?
 unpack_tuple(ir, ir[v].expr) : nothing
 unpack_tuple(ir, e) = iscall(e, GlobalRef(Core, :tuple)) ?
-e.args[2:end] : error("Expected tuple, got $e.")
+e.args[2:end] : iscall(e, GlobalRef(Base, :getindex)) ? e : error("Expected tuple, got $e.")
 
 "Unpack arguments, special casing `Core._apply` and `Core._apply_iterate`."
 function unpack_args(ir, args, calltype)
@@ -82,6 +82,8 @@ function istraced(ir, fn::GlobalRef, recurse::Bool)
         if isdefined(m, fn.name) && getfield(m, fn.name) == val return false end
     end
     if val isa Type && val <: Sampleable return false end # Filter distributions
+    val isa DataType && return false
+    val isa UnionAll && return false
     return true
 end
 istraced(ir, fn::Function, recurse::Bool) = # Handle injected functions

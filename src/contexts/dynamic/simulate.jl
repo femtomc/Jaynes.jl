@@ -11,7 +11,7 @@ end
 
 # ------------ Learnable ------------ #
 
-@inline function (ctx::SimulateContext)(fn::typeof(learnable), addr::T) where T <: Address
+@inline function (ctx::SimulateContext)(model::typeof(learnable), addr::T) where T <: Address
     visit!(ctx, addr)
     haskey(ctx.params, addr) && return getindex(ctx.params, addr)
     error("Parameter not provided at address $addr.")
@@ -32,26 +32,26 @@ end
 
 # ------------ Convenience ------------ #
 
-function simulate(fn::Function, args...)
+function simulate(model::Function, args...)
     ctx = Simulate(Trace(), Empty())
-    ret = ctx(fn, args...)
-    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
+    ret = ctx(model, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
 end
 
-function simulate(params::P, fn::Function, args...) where P <: AddressMap
+function simulate(params::P, model::Function, args...) where P <: AddressMap
     ctx = Simulate(Trace(), params)
-    ret = ctx(fn, args...)
-    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret)
+    ret = ctx(model, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
 end
 
-function simulate(fn::typeof(trace), d::Distribution{T}) where T
+function simulate(model::typeof(trace), d::Distribution{T}) where T
     ctx = Simulate(Trace(), Empty())
     addr = gensym()
     ret = ctx(trace, addr, d)
     return ret, get_sub(ctx.tr, addr)
 end
 
-function simulate(params::P, fn::typeof(trace), d::Distribution{T}) where {P <: AddressMap, T}
+function simulate(params::P, model::typeof(trace), d::Distribution{T}) where {P <: AddressMap, T}
     ctx = Simulate(Trace(), params)
     addr = gensym()
     ret = ctx(trace, addr, d)

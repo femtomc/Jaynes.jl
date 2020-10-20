@@ -2,6 +2,7 @@ module AutoAddressing2
 
 include("../src/Jaynes.jl")
 using .Jaynes
+using Gen
 
 # Simple test.
 foo = () -> begin
@@ -30,7 +31,19 @@ foo = () -> begin
     rand(Bernoulli(0.5)) ? bar() : rand(Normal(10.0, 3.0))
 end
 
+# Structures.
+struct Baz
+    x::Float64
+end
+foo = () -> begin
+    Baz(rand(Normal(10.0, 3.0)))
+end
+
 ret, cl = simulate(foo)
+display(cl.trace)
+
+# Batsh*t insane.
+ret, cl = simulate(simulate, foo)
 display(cl.trace)
 
 end # module
