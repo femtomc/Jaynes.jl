@@ -15,7 +15,7 @@ jfunc = @jaynes function change_point_model(N::Int)
 end
 
 # Sample trace.
-tr = simulate(jfunc, (5, ))
+tr = simulate(jfunc, (50, ))
 display(tr)
 
 # ------------ Gibbs ------------ #
@@ -29,18 +29,14 @@ end
 # ------------ Inference ------------ #
 
 infer = () -> begin
-    obs = target([(:x => 1, ) => 1,
-                  (:x => 2, ) => 2,
-                  (:x => 3, ) => 3,
-                  (:x => 4, ) => 12,
-                  (:x => 5, ) => 10])
+    obs = target([i <= 30 ? (:x => i, ) => rand(Poisson(3)) : (:x => i, ) => rand(Poisson(7)) for i in 1 : 50])
 
     # Sample trace.
-    tr, w = generate(jfunc, (5, ), obs)
+    tr, w = generate(jfunc, (50, ), obs)
     display(tr)
 
     trs = Trace[]
-    for i in 1 : 2000
+    for i in 1 : 4000
         tr, _ = gibbs_kernel(tr)
         i % 50 == 0 && push!(trs, tr)
     end
@@ -49,9 +45,10 @@ infer = () -> begin
     λ₁_est, λ₂_est, n_est = zip(map(trs) do tr
                                     (tr[:λ₁], tr[:λ₂], tr[:n])
                                 end...)
-    println("est: $((sum(λ₁_est) / 50.0, 
-                     sum(λ₂_est) / 50.0,
-                     sum(n_est) / 50.0))")
+    len = length(λ₁_est)
+    println("est: $((sum(λ₁_est) / len,
+                     sum(λ₂_est) / len,
+                     sum(n_est) / len))")
 
 end
 infer()
