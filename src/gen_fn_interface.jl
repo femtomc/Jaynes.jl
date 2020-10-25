@@ -61,6 +61,19 @@ function convert(::Type{DynamicMap{Value}}, chm::DynamicChoiceMap)
     dm
 end
 
+function convert(::Type{DynamicMap{Select}}, sel::Gen.DynamicSelection)
+    dm = DynamicMap{Select}()
+    for (k, v) in Gen.get_subselections(sel)
+        if v isa Gen.AllSelection
+            set_sub!(dm, k, SelectAll())
+        else
+            sub = convert(DynamicMap{Select}, v)
+            set_sub!(dm, k, sub)
+        end
+    end
+    dm
+end
+
 static(chm::DynamicChoiceMap) = static(convert(DynamicMap{Value}, chm))
 
 # ------------ Trace ------------ #
@@ -192,6 +205,7 @@ function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSe
                                    arg_diffs)
     JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
 end
+@inline regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::Gen.DynamicSelection) = regenerate(trace, args, arg_diffs, JSelection(convert(DynamicMap{Select}, selection)))
 
 # ------------ Combinators ------------ #
 

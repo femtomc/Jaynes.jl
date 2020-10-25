@@ -1,4 +1,4 @@
-module AutoAddressing2
+module AutoAddressing
 
 include("../src/Jaynes.jl")
 using .Jaynes
