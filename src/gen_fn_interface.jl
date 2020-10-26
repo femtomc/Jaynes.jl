@@ -137,15 +137,27 @@ end
 
 @inline (jfn::JFunction)(args...) = jfn.fn(args...)
 
-has_argument_grads(jfn::JFunction) = jfn.has_argument_grads
-get_params(jfn::JFunction) = jfn.params
+@inline has_argument_grads(jfn::JFunction) = jfn.has_argument_grads
+
+@inline get_params(jfn::JFunction) = jfn.params
+
 init_param!(jfn, addr, val) = set_sub!(jfn.params, addr, Value(val))
 init_param!(jfn, v::Vector{Pair{T, K}}) where {T <: Tuple, K} = begin
     for (addr, val) in v
         init_param!(jfn, addr, val)
     end
 end
-get_analysis(jfn::JFunction) = jfn.reachability
+
+@inline get_analysis(jfn::JFunction) = jfn.reachability
+
+@inline get_ir(jfn::JFunction) = jfn.ir
+
+function generate_graph_ir(jfunc::JFunction)
+    ssa_ir = get_ir(jfunc)
+    flow = get_analysis(jfunc)
+    graph_ir = graph_walk(ssa_ir, flow)
+    graph_ir
+end
 
 # ------------ Model GFI interface ------------ #
 

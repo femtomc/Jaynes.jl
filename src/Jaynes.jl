@@ -124,6 +124,7 @@ export Δ, Diffed, forward
 export NoChange, Change
 export ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff
 export pushforward, _pushforward
+export generate_graph_ir
 
 include("contexts.jl")
 export record_cached!
@@ -156,10 +157,12 @@ export select, target, static, array, learnables
 export anywhere, intersection, union
 export compare, update_learnables, merge!, merge
 
+# Distribution combinators.
+include("distribution_combinators.jl")
+export Mixture, Product
+
 # Foreign model interfaces.
 export @primitive
-export @load_chains
-export foreign, deep
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret, flatten, lineplot
@@ -173,7 +176,7 @@ include("gen_fn_interface.jl")
 
 export @jaynes
 export JFunction, JTrace
-export get_analysis
+export get_analysis, get_ir
 export init_param!, accumulate_param_gradients!, choice_gradients
 export choicemap, select
 export get_value, has_value

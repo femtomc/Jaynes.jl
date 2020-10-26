@@ -2,6 +2,8 @@
 distributions = map(subtypes(Distribution)) do t
     Symbol(t)
 end
+push!(distributions, :Mixture)
+push!(distributions, :Product)
 
 function _sugar(expr)
     MacroTools.postwalk(expr) do s
