@@ -64,7 +64,6 @@ end
 (ctx::UpdateContext)(::typeof(collect), b::Base.Generator) = collect(b)
 (ctx::UpdateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = sx(c, flatten(args)...)
 
-
 # ------------ includes ------------ #
 
 include("dynamic/update.jl")

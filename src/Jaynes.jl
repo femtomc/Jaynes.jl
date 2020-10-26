@@ -170,8 +170,10 @@ export @sugar
 # Gen compat.
 import Base.display
 include("gen_fn_interface.jl")
+
 export @jaynes
 export JFunction, JTrace
+export get_analysis
 export init_param!, accumulate_param_gradients!, choice_gradients
 export choicemap, select
 export get_value, has_value

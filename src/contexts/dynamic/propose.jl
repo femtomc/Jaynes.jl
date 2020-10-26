@@ -38,6 +38,17 @@ end
     return ret
 end
 
+@inline function (ctx::ProposeContext)(c::typeof(trace),
+                                       addr::T,
+                                       call::G,
+                                       args...) where {G <: GenerativeFunction, T <: Address}
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ret, submap, w = propose(ps, call.fn, args...)
+    set_sub!(ctx.map, addr, submap)
+    return ret
+end
+
 # ------------ Convenience ------------ #
 
 function propose(fn::Function, args...)

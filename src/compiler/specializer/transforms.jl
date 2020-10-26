@@ -1,15 +1,15 @@
-# Compute the Markov blanket of an address specified in rand calls by using a static reachability analysis.
-function get_markov_blanket(reachability, addr)
+# Compute the Markov blanket of an address specified in rand calls by using a static flow analysis.
+function get_markov_blanket(flow, addr)
     addr = unwrap(addr)
-    v, check = get_variable_by_address(reachability, addr)
+    v, check = get_variable_by_address(flow, addr)
     !check && return nothing
-    union(get_ancestors(reachability, v), get_successors(reachability, v))
+    union(get_ancestors(flow, v), get_successors(flow, v))
 end
 
-function markov_blankets(reachability, addrs)
+function markov_blankets(flow, addrs)
     d = Dict()
     for k in addrs
-        d[k] = get_markov_blanket(reachability, k)
+        d[k] = get_markov_blanket(flow, k)
     end
     d
 end
@@ -69,10 +69,10 @@ function trace_wrapper(ir)
     IRTools.finish(pr)
 end
 
-function check_reach(v, ks, reachability)
+function check_reach(v, ks, flow)
     for k in ks
-        k_var, _ = get_variable_by_address(reachability, k)
-        (k_var in get_ancestors(reachability, v) || k_var == v) && return false
+        k_var, _ = get_variable_by_address(flow, k)
+        (k_var in get_ancestors(flow, v) || k_var == v) && return false
     end
     true
 end
@@ -86,10 +86,10 @@ function substitute_get_value!(pr, v, st)
 end
 
 # This pass prunes the IR of any NoChange nodes.
-function insert_cache_calls(ir, ks, reachability)
+function insert_cache_calls(ir, ks, flow)
     pr = IRTools.Pipe(ir)
     for (v, st) in pr
-        st.type != Change && check_reach(v, ks, reachability) && substitute_get_value!(pr, v, st)
+        st.type != Change && check_reach(v, ks, flow) && substitute_get_value!(pr, v, st)
     end
     IRTools.finish(pr)
 end
@@ -113,8 +113,8 @@ end
 # Full pipeline.
 @inline function optimization_pipeline(meta, tr, ks)
     tr = reconstruct_ir(meta, tr)
-    reachability = flow_analysis(tr)
-    tr = insert_cache_calls(tr, ks, reachability)
+    flow = flow_analysis(tr)
+    tr = insert_cache_calls(tr, ks, flow)
     tr = strip_types(tr)
     tr = trace_wrapper(tr)
     tr = no_change_prune(tr)

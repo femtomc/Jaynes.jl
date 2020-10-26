@@ -3,7 +3,7 @@ const DynamicTrace = DynamicMap{Choice}
 get_choices(dt::DynamicTrace) = dt.tree
 
 struct DynamicCallSite{J, K} <: CallSite
-    trace::DynamicTrace
+    trace
     score::Float64
     fn
     args::J

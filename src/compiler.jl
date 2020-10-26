@@ -1,14 +1,13 @@
-function lower_to_ir(call, type...)
-    sig = Tuple{typeof(call), type...}
+function lower_to_ir(call, argtypes...)
+    sig = length(argtypes) == 1 && argtypes[1] == Tuple{} ? begin
+        Tuple{typeof(call)}
+    end : Tuple{typeof(call), argtypes...}
     m = meta(sig)
     ir = IR(m)
     return ir
 end
 
-function control_flow_check(ir)
-    length(ir.blocks) > 1 && return false
-    return true
-end
+@inline control_flow_check(ir) = !(length(ir.blocks) > 1)
 
 # ------------ includes ------------ #
 

@@ -1,56 +1,53 @@
 abstract type Analysis end
-abstract type CallAnalysis <: Analysis end
-
-struct ReachingAnalysis <: CallAnalysis
+struct FlowAnalysis <: Analysis
     reach::Dict
     ancestors::Dict
     sites::Set{Variable}
     addrs::Set{Any}
     map::Dict
     inv::Dict
+    loops
     ir::IR
 end
 
-@inline function get_successors(ra::ReachingAnalysis, var)
+@inline function get_successors(ra::FlowAnalysis, var)
     haskey(ra.reach, var) || return []
     ra.reach[var]
 end
 
-@inline function get_ancestors(ra::ReachingAnalysis, var)
+@inline function get_ancestors(ra::FlowAnalysis, var)
     haskey(ra.ancestors, var) || return []
     ra.ancestors[var]
 end
 
-@inline function get_variable_by_address(ra::ReachingAnalysis, addr)
+@inline function get_variable_by_address(ra::FlowAnalysis, addr)
     haskey(ra.inv, addr) || return (nothing, false)
     return (getfield(ra, :inv)[addr], true)
 end
 
-function Base.display(ra::ReachingAnalysis)
-    println("  __________________________________\n")
+function Base.display(ra::FlowAnalysis)
+    println(" __________________________________\n")
     println("              IR Reference\n")
     display(ra.ir)
-    println("\n  __________________________________\n")
-    println(" Addresses\n")
+    println("\n ------------ Loops ------------\n")
+    display(ra.loops)
+    println("\n ------------ Addresses ------------\n")
     println(ra.addrs)
     println()
-    println(" Variable to address\n")
+    println(" ------------ Variable to address ------------\n")
     display(ra.map)
     println()
-    println(" Address to variable\n")
+    println(" ------------ Address to variable ------------\n")
     display(ra.inv)
-    println("\n Reachability\n")
+    println("\n ------------ Reachability ------------\n")
     for x in ra.sites
         haskey(ra.reach, x) ? println(" $x => $(ra.reach[x])") : println(" $x")
     end
-    println("\n Ancestors\n")
+    println("\n ------------ Ancestors ------------\n")
     for x in ra.sites
         haskey(ra.ancestors, x) ? println(" $x => $(ra.ancestors[x])") : println(" $x")
     end
-    println("  __________________________________\n")
-end
-
-struct FallbackAnalysis <: CallAnalysis
+    println(" __________________________________\n")
 end
 
 mutable struct CallGraph <: Analysis
@@ -113,7 +110,7 @@ function flow_analysis(ir)
     for (v, st) in ir
         MacroTools.postwalk(st) do e
             @capture(e, call_(sym_, args__))
-            if call isa GlobalRef && call.name == :rand
+            if call isa GlobalRef && call.name == :trace
                 push!(sites, v)
                 if sym isa QuoteNode
                     sym = sym.value
@@ -121,7 +118,7 @@ function flow_analysis(ir)
                 push!(addrs, sym)
                 var_addr_map[v] = sym
                 reach[v] = Set(reaching(v, ir))
-            elseif call == rand
+            elseif call == trace
                 push!(sites, v)
                 push!(addrs, unwrap(sym))
                 var_addr_map[v] = unwrap(sym)
@@ -144,7 +141,7 @@ function flow_analysis(ir)
         end
         ancestors[s] = work
     end
-    return ReachingAnalysis(reach, ancestors, sites, addrs, var_addr_map, Dict( v => k for (k, v) in var_addr_map), ir)
+    return FlowAnalysis(reach, ancestors, sites, addrs, var_addr_map, Dict( v => k for (k, v) in var_addr_map), detectloops(ir), ir)
 end
 
 function dependency(a::Analysis)

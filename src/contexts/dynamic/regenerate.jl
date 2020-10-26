@@ -61,6 +61,24 @@ end
     return ret
 end
 
+@inline function (ctx::RegenerateContext)(c::typeof(trace),
+                                          addr::T,
+                                          call::G,
+                                          args...) where {G <: GenerativeFunction, T <: Address}
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
+    if has_sub(get_trace(ctx.prev), addr)
+        prev_call = get_prev(ctx, addr)
+        ret, cl, w, retdiff, d = regenerate(ss, ps, prev_call, UnknownChange(), args...)
+    else
+        ret, cl, w = generate(ss, ps, call.fn, args...)
+    end
+    add_call!(ctx, addr, cl)
+    increment!(ctx, w)
+    return ret
+end
+
 # ------------ Utilities ------------ #
 
 function regenerate_projection_walk(tr::DynamicTrace,

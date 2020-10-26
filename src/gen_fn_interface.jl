@@ -115,6 +115,8 @@ struct JFunction{N, R} <: GenerativeFunction{R, JTrace}
     arg_types::NTuple{N, Type}
     has_argument_grads::NTuple{N, Bool}
     accepts_output_grad::Bool
+    ir::IR
+    reachability::FlowAnalysis
 end
 
 function JFunction(func::Function,
@@ -122,14 +124,18 @@ function JFunction(func::Function,
                    has_argument_grads::NTuple{N, Bool},
                    accepts_output_grad::Bool,
                    ::Type{R}) where {N, R}
-    JFunction{N, R}(func, DynamicMap{Value}(), DynamicMap{Value}(), arg_types, has_argument_grads, accepts_output_grad)
+    ir = lower_to_ir(func, arg_types...)
+    JFunction{N, R}(func, 
+                    DynamicMap{Value}(), 
+                    DynamicMap{Value}(), 
+                    arg_types, 
+                    has_argument_grads, 
+                    accepts_output_grad,
+                    ir,
+                    flow_analysis(ir))
 end
 
-@inline JFunction(func::Function) = JFunction(func, (), (), false, Any)
-
-function (jfn::JFunction)(args...)
-    jfn.fn(args...)
-end
+@inline (jfn::JFunction)(args...) = jfn.fn(args...)
 
 has_argument_grads(jfn::JFunction) = jfn.has_argument_grads
 get_params(jfn::JFunction) = jfn.params
@@ -139,6 +145,7 @@ init_param!(jfn, v::Vector{Pair{T, K}}) where {T <: Tuple, K} = begin
         init_param!(jfn, addr, val)
     end
 end
+get_analysis(jfn::JFunction) = jfn.reachability
 
 # ------------ Model GFI interface ------------ #
 
@@ -280,14 +287,46 @@ end
 macro jaynes(expr)
     def = _sugar(expr)
     if @capture(def, function decl_(args__) body__ end)
+        argtypes = map(args) do a
+            if a isa Expr 
+                a.head == :(::) ? eval(a.args[2]) : Any
+            else
+                Any
+            end
+        end
         trans = quote 
             $def
-            JFunction($decl, (), (), false, Any)
+            JFunction($decl, 
+                      tuple($argtypes...), 
+                      tuple([false for _ in $argtypes]...), 
+                      false, 
+                      Any)
+        end
+    elseif @capture(def, () -> body__)
+        trans = quote
+            JFunction($def, 
+                      (Tuple{}, ),
+                      (false, ),
+                      false, 
+                      Any)
+        end
+    elseif @capture(def, (args__) -> body__)
+        argtypes = map(args) do a
+            if a isa Expr 
+                a.head == :(::) ? eval(a.args[2]) : Any
+            else
+                Any
+            end
+        end
+        trans = quote
+            JFunction($def, 
+                      tuple($argtypes...), 
+                      tuple([false for _ in $argtypes]...), 
+                      false, 
+                      Any)
         end
     else
-        trans = quote
-            JFunction($def, (), (), false, Any)
-        end
+        error("ParseError (@jaynes): function must be in valid long form or valid anonymous form.")
     end
     esc(trans)
 end

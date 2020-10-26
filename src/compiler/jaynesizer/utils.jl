@@ -49,7 +49,6 @@ struct NaturalLoop
 end
 
 function Base.display(nl::NaturalLoop)
-    println("--- Natural loop ---")
     println(" Header : $(nl.header)")
     println(" Blocks : $(nl.body)")
     println(" Latch : $(nl.latch)")

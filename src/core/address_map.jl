@@ -169,6 +169,11 @@ function collect!(par::T, addrs::Vector, chd::Dict, v::SelectAll, meta) where T 
     push!(addrs, par)
 end
 
+function collect!(par::T, addrs::Vector, chd::Dict, tr, meta) where T <: Tuple
+    tr = convert(DynamicMap{Value}, tr)
+    collect!(par, addrs, chd, tr, meta)
+end
+
 function collect(am::M) where M <: AddressMap
     addrs = Any[]
     chd = Dict()

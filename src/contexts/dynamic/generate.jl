@@ -46,6 +46,21 @@ end
     return ret
 end
 
+@inline function (ctx::GenerateContext)(c::typeof(trace),
+                                        addr::T,
+                                        call::G,
+                                        args...) where {G <: GenerativeFunction,
+                                                        T <: Address}
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
+    tr, w = generate(call, args, ss)
+    ret = get_retval(tr)
+    add_call!(ctx, addr, DynamicCallSite(get_choices(tr), get_score(tr), get_gen_fn(tr), get_args(tr), ret))
+    increment!(ctx, w)
+    return ret
+end
+
 # ------------ Convenience ------------ #
 
 function generate(target::L, fn::Function, args...) where L <: AddressMap

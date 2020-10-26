@@ -30,6 +30,18 @@ end
     return ret
 end
 
+@inline function (ctx::SimulateContext)(c::typeof(trace),
+                                        addr::T,
+                                        call::G,
+                                        args...) where {G <: GenerativeFunction,
+                                                        T <: Address}
+    visit!(ctx, addr)
+    tr = simulate(call, args)
+    ret = get_retval(tr)
+    add_call!(ctx, addr, DynamicCallSite(get_choices(tr), get_score(tr), get_gen_fn(tr), get_args(tr), ret))
+    ret
+end
+
 # ------------ Convenience ------------ #
 
 function simulate(model::Function, args...)

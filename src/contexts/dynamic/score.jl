@@ -39,6 +39,19 @@ end
     return ret
 end
 
+@inline function (ctx::ScoreContext)(c::typeof(trace),
+                                     addr::A,
+                                     call::G,
+                                     args...) where {G <: GenerativeFunction,
+                                                     A <: Address}
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
+    ret, w = score(ss, ps, call.fn, args...) 
+    increment!(ctx, w)
+    return ret
+end
+
 # ------------ Convenience ------------ #
 
 function score(sel::L, fn::Function, args...) where L <: AddressMap

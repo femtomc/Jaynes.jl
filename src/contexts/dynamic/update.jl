@@ -75,6 +75,25 @@ end
     return ret
 end
 
+@inline function (ctx::UpdateContext)(c::typeof(trace),
+                                      addr::T,
+                                      call::G,
+                                      args...) where {G <: GenerativeFunction,
+                                                      T <: Address}
+    visit!(ctx, addr)
+    ps = get_sub(ctx.params, addr)
+    ss = get_sub(ctx.target, addr)
+    if has_sub(ctx.prev, addr)
+        prev = get_prev(ctx, addr)
+        ret, cl, w, rd, d = update(ss, ps, prev, args...)
+    else
+        ret, cl, w = generate(ss, ps, call.fn, args...)
+    end
+    add_call!(ctx, addr, cl)
+    increment!(ctx, w)
+    return ret
+end
+
 # ------------ Utilities ------------ #
 
 # TODO: re-write with new projection.
