@@ -6,16 +6,8 @@ using Gen
 
 jmodel = @jaynes function burglary_model()
     burglary ~ Bernoulli(0.01)
-    if burglary
-        disabled ~ Bernoulli(0.1)
-    else
-        disabled = false
-    end
-    if !disabled
-        alarm ~ Bernoulli(burglary ? 0.94 : 0.01)
-    else
-        alarm = false
-    end
+    burglary ? disabled ~ Bernoulli(0.1) : disabled = false
+    !disabled ? alarm ~ Bernoulli(burglary ? 0.94 : 0.01) : alarm = false
     call ~ Bernoulli(alarm ? 0.70 : 0.05)
     return nothing
 end
