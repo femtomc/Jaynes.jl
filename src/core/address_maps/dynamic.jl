@@ -119,6 +119,7 @@ merge!(dm::DynamicMap, ::Empty) = dm, false
 merge!(::Empty, dm::DynamicMap) = dm, false
 Zygote.@adjoint merge!(a, b) = merge!(a, b), s_grad -> (nothing, nothing)
 
+# Used for pretty printing.
 function collect!(par::T, addrs::Vector{Any}, chd::Dict{Any, Any}, tr::D, meta) where {T <: Tuple, D <: DynamicMap}
     iterate(tr) do (k, v)
         collect!((par..., k), addrs, chd, v, meta)
@@ -130,6 +131,7 @@ function collect!(addrs::Vector{Any}, chd::Dict{Any, Any}, tr::D, meta) where D 
     end
 end
 
+# Utility constructor.
 @inline target() = DynamicMap{Value}()
 function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
     tg = DynamicMap{Value}()
@@ -170,11 +172,20 @@ function filter(fn, par, dm::DynamicMap{K}) where K
     new
 end
 
-# Select.
+# ------------ Conversion to Selection ------------ #
+
 function select(dm::DynamicMap{K}) where K
     new = DynamicTarget()
     for (k, v) in shallow_iterator(dm)
         set_sub!(new, k, select(v))
     end
     new
+end
+
+# ------------ Convert from Dict ------------ #
+
+@inline function convert(::Type{DynamicMap{Value}}, d::Dict{Symbol, V}) where V
+    target(map(collect(d)) do (k, v)
+               (k, ) => v
+           end)
 end

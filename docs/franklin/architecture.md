@@ -1,6 +1,8 @@
 @def title = "Implementation architecture"
 
-Jaynes is organized around a central [IRTools](https://github.com/FluxML/IRTools.jl) [dynamo](https://fluxml.ai/IRTools.jl/latest/dynamo/):
+> This section assumes some level of understanding of [Julia](https://julialang.org/) as well as the [various](https://docs.julialang.org/en/v1/manual/metaprogramming/#Generated-functions) [flavors](https://github.com/jrevels/Cassette.jl) of [staged programming](https://fluxml.ai/IRTools.jl/latest/dynamo/) in Julia.
+
+Jaynes implements [the generative function interface](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1) for arbitrary Julia functions. To enable these capability for normal Julia functions, Jaynes is organized around a central [IRTools](https://github.com/FluxML/IRTools.jl) [dynamo](https://fluxml.ai/IRTools.jl/latest/dynamo/):
 
 ```julia
 @dynamo function (mx::ExecutionContext)(a...)
@@ -46,7 +48,7 @@ end
 
 so we see that the tracer is only allowed to look at certain calls, and uses a few fixes for some common issues. This drastically improves the performance over a "heavyweight" tracer which looks at everything. For the use case of probabilistic programming [implemented in this style](http://proceedings.mlr.press/v15/wingate11a/wingate11a.pdf), it's perfectly acceptable.
 
-There are a number of inheritors for `ExecutionContext`
+There are a number of inheritors for `ExecutionContext` - each generative function interface method gets a context (note: `assess` goes to `score`)
 
 ```
 GenerateContext
@@ -59,7 +61,7 @@ ChoiceBackpropagateContext
 ParameterBackpropagateContext
 ```
 
-each of which has a set of special dispatch definition which allows the dynamo to dispatch on `rand` calls with user-provided addressing. As an example, here's the interception dispatch inside the `GenerateContext` (which we just examined in the last section):
+Each context has a special dispatch definition which allows the dynamo which defines the context to dispatch on `rand` calls with user-provided addressing. As an example, here's the interception dispatch inside the `GenerateContext` (which we just examined in the last section):
 
 ```julia
 @inline function (ctx::GenerateContext)(call::typeof(rand), 
