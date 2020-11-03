@@ -40,6 +40,7 @@ infer = () -> begin
         tr, _ = gibbs_kernel(tr)
         i % 50 == 0 && push!(trs, tr)
     end
+    display(tr)
 
     # Posterior est.
     λ₁_est, λ₂_est, n_est = zip(map(trs) do tr

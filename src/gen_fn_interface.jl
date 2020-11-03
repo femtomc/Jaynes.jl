@@ -219,13 +219,15 @@ end
 
 function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSelection)
     ret, cl, w, rd, d = regenerate(unwrap(selection), 
-                                   get_params(get_gen_fn(trace)), 
-                                   get_record(trace), 
-                                   args, 
-                                   arg_diffs)
+                               get_params(get_gen_fn(trace)), 
+                               trace.record, 
+                               map(zip(args, arg_diffs)) do (a, d)
+                                   Diffed(a, d)
+                               end...)
     JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
 end
 @inline regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::Gen.DynamicSelection) = regenerate(trace, args, arg_diffs, JSelection(convert(DynamicMap{Select}, selection)))
+@inline regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::StaticMap) = regenerate(trace, args, arg_diffs, JSelection(selection))
 
 # ------------ Gradients ------------ #
 

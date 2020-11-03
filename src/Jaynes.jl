@@ -2,6 +2,11 @@ module Jaynes
 
 using Reexport
 
+import Base.display
+import Base: getindex, haskey, iterate, isempty, convert, collect, getindex, setindex!, push!, merge, merge!, get, filter, length, ndims, keys, +, rand, size
+import Base: isless
+import Base: Pair
+
 # Jaynes implements the abstract GFI from Gen.
 import Gen
 import Gen: Selection, ChoiceMap, Trace, GenerativeFunction
@@ -64,6 +69,7 @@ using UnicodePlots: lineplot
 # Toplevel importants :)
 const Address = Union{Int, Symbol, Pair}
 
+# This is primarily used when mapping choice maps to arrays.
 isless(::Symbol, ::Pair) = true
 isless(::Pair, ::Symbol) = false
 isless(::Int, ::Symbol) = true
@@ -166,7 +172,6 @@ export @sugar
 export @primitive
 
 # Gen compat.
-import Base.display
 include("gen_fn_interface.jl")
 
 export @jaynes

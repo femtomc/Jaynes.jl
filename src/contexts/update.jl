@@ -64,8 +64,26 @@ end
 end
 
 # Base fixes.
-(ctx::UpdateContext)(::typeof(collect), b::Base.Generator) = collect(b)
-(ctx::UpdateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = sx(c, flatten(args)...)
+function (sx::UpdateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...)
+    flt = flatten(args)
+    addr, rest = flt[1], flt[2 : end]
+    ret, cl = update(rest...)
+    add_call!(sx, addr, cl)
+    ret
+end
+
+function (sx::UpdateContext)(::typeof(Base.collect), generator::Base.Generator)
+    map(generator.iter) do i
+        δ = Δ(i, NoChange())
+        sx(generator.f, tupletype(δ), δ)
+    end
+end
+
+function update(e::E, args...) where E <: ExecutionContext
+    ctx = Update(Trace(), Empty())
+    ret = ctx(e, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, e, args, ret)
+end
 
 # ------------ includes ------------ #
 
