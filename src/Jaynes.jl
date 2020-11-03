@@ -182,6 +182,9 @@ export choicemap, select
 export get_value, has_value
 export get_params_grads
 
+constrain(v::Vector{Pair{T, K}}) where {T <: Tuple, K} = JChoiceMap(target(v))
+export constrain
+
 # Utilities.
 export display, getindex, haskey, get_score, get_ret, flatten, lineplot
 
