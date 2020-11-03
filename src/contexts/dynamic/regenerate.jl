@@ -112,29 +112,41 @@ end
 
 # ------------ Convenience ------------ #
 
-function regenerate(ctx::RegenerateContext, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple)
-    ret = ctx(cs.fn, args...)
+function regenerate(ctx::RegenerateContext, cs::DynamicCallSite, args::NTuple{N, Diffed}) where N
+    ret = ctx(cs.fn, tupletype(args...), args...)
     adj_w = regenerate_projection_walk(ctx.tr, ctx.visited)
-    regenerate_discard_walk!(ctx.discard, ctx.visited, ctx.tr)
-    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, args, ret), ctx.weight, UnknownChange(), ctx.discard
+    regenerate_discard_walk!(ctx.discard, ctx.visited, get_trace(cs))
+    return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, map(a -> unwrap(a), args), ret), ctx.weight, UnknownChange(), ctx.discard
 end
 
-function regenerate(sel::L, cs::DynamicCallSite) where L <: Target
-    ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard(), NoChange())
-    return regenerate(ctx, cs, cs.args, ())
+function regenerate(sel::L, cs::DynamicCallSite) where L <: AddressMap
+    ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
+    return regenerate(ctx, cs, map(cs.args) do a
+                      Δ(a, NoChange())
+                  end)
 end
 
-function regenerate(sel::L, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple) where L <: Target
-    ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard(), NoChange())
-    return regenerate(ctx, cs, args, argdiffs)
+function regenerate(sel::L, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, N}
+    ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
+    return regenerate(ctx, cs, args)
 end
 
-function regenerate(sel::L, ps::P, cs::DynamicCallSite) where {L <: Target, P <: AddressMap}
-    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard(), NoChange())
-    return regenerate(ctx, cs, cs.args, ())
+function regenerate(sel::L, ps::P, cs::DynamicCallSite) where {P <: AddressMap, L <: AddressMap}
+    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    return regenerate(ctx, cs, map(cs.args) do a
+                      Δ(a, NoChange())
+                  end)
 end
 
-function regenerate(sel::L, ps::P, cs::DynamicCallSite, args::Tuple, argdiffs::Tuple) where {L <: Target, P <: AddressMap}
-    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard(), NoChange())
-    return regenerate(ctx, cs, args, argdiffs)
+function regenerate(sel::L, ps::P, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, P <: AddressMap, N}
+    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    return regenerate(ctx, cs, args)
+end
+
+function regenerate(sel::L, ps::P, cs::DynamicCallSite, args...) where {L <: AddressMap, P <: AddressMap, N}
+    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    args = map(args) do a
+        a isa Diffed ? a : Δ(a, NoChange())
+    end
+    return regenerate(ctx, cs, args)
 end

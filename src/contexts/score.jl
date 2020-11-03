@@ -30,7 +30,7 @@ end
 @dynamo function (sx::ScoreContext)(a...)
     ir = IR(a...)
     ir == nothing && return
-    transform!(ir)
+    jaynesize_transform!(ir)
     ir = recur(ir)
     ir
 end
@@ -40,7 +40,6 @@ function (sx::ScoreContext)(::typeof(Base.collect), generator::Base.Generator)
         sx(generator.f, i)
     end
 end
-
 
 # ------------ includes ------------ #
 

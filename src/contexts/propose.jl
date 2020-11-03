@@ -24,7 +24,7 @@ end
 @dynamo function (px::ProposeContext)(a...)
     ir = IR(a...)
     ir == nothing && return
-    transform!(ir)
+    jaynesize_transform!(ir)
     ir = recur(ir)
     ir
 end

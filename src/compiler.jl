@@ -21,7 +21,7 @@ include("compiler/specializer/interface.jl")
 
 # Jaynesizer converts stochastic functions into PPs
 include("compiler/jaynesizer/utils.jl")
-include("compiler/jaynesizer/transform.jl")
+include("compiler/jaynesizer/jaynesize_transform.jl")
 
 # Graph IR is a compiler to a graphical representation of a program - for use in codegen of VE, BP, junction tree, etc.
 include("compiler/graph_ir/ir.jl")

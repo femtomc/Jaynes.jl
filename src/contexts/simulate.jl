@@ -16,7 +16,7 @@ end
 @dynamo function (sx::SimulateContext)(a...)
     ir = IR(a...)
     ir == nothing && return
-    transform!(ir)
+    jaynesize_transform!(ir)
     ir = recur(ir)
     ir
 end

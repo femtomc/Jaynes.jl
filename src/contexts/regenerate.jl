@@ -2,8 +2,7 @@ mutable struct RegenerateContext{C <: AddressMap,
                                  T <: AddressMap, 
                                  K <: AddressMap,
                                  D <: AddressMap,
-                                 P <: AddressMap,
-                                 Ag <: Diff} <: ExecutionContext
+                                 P <: AddressMap} <: ExecutionContext
     prev::C
     tr::T
     target::K
@@ -12,10 +11,18 @@ mutable struct RegenerateContext{C <: AddressMap,
     discard::D
     visited::Visitor
     params::P
-    argdiffs::Ag
 end
 
-function Regenerate(target::K, ps, cl::C, tr, discard, ag) where {K <: AddressMap, C <: CallSite}
+@inline function record_cached!(ctx::RegenerateContext, addr)
+    visit!(ctx, addr)
+    sub = get_sub(ctx.prev, addr)
+    sc = get_score(sub)
+    ctx.score += get_score(sub)
+    set_sub!(ctx.tr, addr, sub)
+    get_value(sub)
+end
+
+function Regenerate(target::K, ps, cl::C, tr, discard) where {K <: AddressMap, C <: CallSite}
     RegenerateContext(cl, 
                       tr,
                       target, 
@@ -23,23 +30,41 @@ function Regenerate(target::K, ps, cl::C, tr, discard, ag) where {K <: AddressMa
                       0.0, 
                       discard,
                       Visitor(), 
-                      Empty(), 
-                      ag)
+                      Empty())
 end
 
-@dynamo function (rx::RegenerateContext)(a...)
-    ir = IR(a...)
+# This uses a "sneaky invoke" hack to allow passage of diffs into user-defined functions whose argtypes do not allow it.
+@dynamo function (mx::RegenerateContext{C, T, K})(f, ::Type{S}, args...) where {S <: Tuple, C, T, K}
+
+    # Check for primitive.
+    ir = IR(f, S.parameters...)
     ir == nothing && return
-    transform!(ir)
-    ir = recur(ir)
+
+    # Equivalent to static DSL optimizations.
+    if K <: DynamicMap
+
+        # Release IR normally.
+        jaynesize_transform!(ir)
+        ir = recur(ir)
+        argument!(ir, at = 2)
+        ir = renumber(ir)
+    else
+
+        # Argument difference inference.
+        tr = diff_inference(f, S.parameters, args)
+
+        # Dynamic specialization transform.
+        ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
+       
+        # Automatic addressing transform.
+        jaynesize_transform!(ir)
+    end
     ir
 end
-(rx::RegenerateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = rx(c, flatten(args)...)
-function (rx::RegenerateContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        rx(generator.f, i)
-    end
-end
+
+# Base fixes.
+(ctx::UpdateContext)(::typeof(collect), b::Base.Generator) = collect(b)
+(ctx::UpdateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = sx(c, flatten(args)...)
 
 # ------------ includes ------------ #
 

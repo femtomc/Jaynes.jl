@@ -40,7 +40,7 @@ abstract type BackpropagationContext <: ExecutionContext end
     ir = IR(a...)
     ir == nothing && return
     ir = recur(ir)
-    transform!(ir)
+    jaynesize_transform!(ir)
     ir
 end
 (bx::BackpropagationContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = bx(c, flatten(args)...)

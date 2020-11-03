@@ -40,12 +40,12 @@ end
     # Check for primitive.
     ir = IR(f, S.parameters...)
     ir == nothing && return
-    #transform!(ir)
 
     # Equivalent to static DSL optimizations.
     if K <: DynamicMap
 
         # Release IR normally.
+        jaynesize_transform!(ir)
         ir = recur(ir)
         argument!(ir, at = 2)
         ir = renumber(ir)
@@ -56,6 +56,9 @@ end
 
         # Dynamic specialization transform.
         ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
+       
+        # Automatic addressing transform.
+        jaynesize_transform!(ir)
     end
     ir
 end
