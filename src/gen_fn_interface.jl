@@ -262,8 +262,7 @@ end
 
 # ------------ Convenience macro ------------ #
 
-macro jaynes(expr)
-    def = _sugar(expr)
+function _jaynes(def)
 
     # Matches longdef function definitions.
     if @capture(def, function decl_(args__) body__ end)
@@ -283,7 +282,7 @@ macro jaynes(expr)
                       Any)
         end
 
-    # Matches thunks.
+        # Matches thunks.
     elseif @capture(def, () -> body__)
         trans = quote
             JFunction($def, 
@@ -293,13 +292,17 @@ macro jaynes(expr)
                       Any)
         end
 
-    # Matches lambdas with formals.
+        # Matches lambdas with formals.
     elseif @capture(def, (args_) -> body__)
-        argtypes = map(args.args) do a
-            if a isa Expr 
-                a.head == :(::) ? eval(a.args[2]) : Any
-            else
-                Any
+        if args isa Symbol
+            argtypes = [Any]
+        else
+            argtypes = map(args.args) do a
+                if a isa Expr 
+                    a.head == :(::) ? eval(a.args[2]) : Any
+                else
+                    Any
+                end
             end
         end
         trans = quote
@@ -310,12 +313,34 @@ macro jaynes(expr)
                       Any)
         end
     else
-        error("ParseError (@jaynes): function must be in valid long form or valid anonymous form.")
+        error("ParseError (@jaynes): requires a longdef function definition or an anonymous function definition.")
     end
+
+    trans
+end
+
+macro jaynes(expr)
+    def = _sugar(expr)
+    trans = _jaynes(def)
     esc(trans)
 end
 
 # ------------ Utilities ------------ #
+
+function display(jfunc::JFunction; show_all = false)
+    println(" ___________________________________\n")
+    println("             JFunction\n")
+    println(" fn : $(jfunc.fn)")
+    println(" arg_types : $(jfunc.arg_types)")
+    println(" has_argument_grads : $(jfunc.has_argument_grads)")
+    println(" accepts_output_grad : $(jfunc.accepts_output_grad)")
+    if show_all
+        println(" ___________________________________\n")
+        display(get_analysis(jfunc))
+    else
+        println(" ___________________________________\n")
+    end
+end
 
 function display(vtr::Gen.VectorTrace{A, K, JTrace}; show_values = true, show_types = false) where {A, K}
     addrs = Any[]

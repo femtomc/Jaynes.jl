@@ -13,6 +13,8 @@ model = @jaynes (a₀, μ₀, λ₀, N) -> begin
 end
 init_param!(model, (:b₀, ), 5.0)
 
+display(model; show_all = true)
+
 tr = simulate(model, (0.5, 3.0, 0.5, 50))
 accumulate_param_gradients!(tr)
 display(get_params_grads(model))

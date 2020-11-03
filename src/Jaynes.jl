@@ -161,14 +161,9 @@ export compare, update_learnables, merge!, merge
 include("distribution_combinators.jl")
 export Mixture, Product
 
-# Foreign model interfaces.
-export @primitive
-
-# Utilities.
-export display, getindex, haskey, get_score, get_ret, flatten, lineplot
-
 # Just a little sugar.
 export @sugar
+export @primitive
 
 # Gen compat.
 import Base.display
@@ -181,5 +176,8 @@ export init_param!, accumulate_param_gradients!, choice_gradients
 export choicemap, select
 export get_value, has_value
 export get_params_grads
+
+# Utilities.
+export display, getindex, haskey, get_score, get_ret, flatten, lineplot
 
 end # module
