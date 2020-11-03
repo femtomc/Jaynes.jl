@@ -1,4 +1,4 @@
-module VariationalInference
+module ParameterGradients
 
 include("../src/Jaynes.jl")
 using .Jaynes

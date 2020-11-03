@@ -4,12 +4,13 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using Gen
 
-model = @jaynes (a₀, b₀, μ₀, λ₀, N) -> begin
+model = @jaynes (a₀::Float64, b₀::Float64, μ₀::Float64, λ₀::Float64, N::Int) -> begin
     τ ~ Gamma(a₀, b₀)
-    μ ~ Normal(μ₀, 1 / (λ₀τ))
+    μ ~ Normal(μ₀, 1 / (λ₀ * τ))
     x = [{:x => i} ~ Normal(μ, 1 / τ) for i in 1 : N]
     x
 end
+display(model)
 
 # Factorized approximation.
 variational_family = @jaynes () -> begin
