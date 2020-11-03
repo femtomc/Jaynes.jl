@@ -140,6 +140,7 @@ end
 @inline has_argument_grads(jfn::JFunction) = jfn.has_argument_grads
 
 @inline get_params(jfn::JFunction) = jfn.params
+@inline get_params_grads(jfn::JFunction) = jfn.params_grads
 
 init_param!(jfn, addr, val) = set_sub!(jfn.params, addr, Value(val))
 init_param!(jfn, v::Vector{Pair{T, K}}) where {T <: Tuple, K} = begin
@@ -226,7 +227,95 @@ function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSe
 end
 @inline regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::Gen.DynamicSelection) = regenerate(trace, args, arg_diffs, JSelection(convert(DynamicMap{Select}, selection)))
 
-# ------------ Combinators ------------ #
+# ------------ Gradients ------------ #
+
+function choice_gradients(tr::JTrace, 
+                          selection::JSelection = JSelection(SelectAll()), 
+                          retgrad = nothing)
+    vals, as, cgs = get_choice_gradients(unwrap(selection), 
+                                         get_params(get_gen_fn(tr)), 
+                                         get_record(tr), 
+                                         retgrad)
+    as, vals, cgs
+end
+
+function accumulate_param_gradients!(tr::JTrace, retgrad = (nothing, ), scale_factor = 1.0)
+    gen_fn = get_gen_fn(tr)
+    ps = get_params(gen_fn)
+    ps isa Empty && return
+    as, pgs = get_learnable_gradients(ps, get_record(tr), retgrad...; scaler = scale_factor)
+    accumulate!(gen_fn.params_grads, pgs)
+end
+
+# ------------ Optimization ------------ #
+
+function init_update_state(conf::Gen.FixedStepGradientDescent,
+                           gen_fn::JFunction, 
+                           param_list::Vector{T}) where T <: Tuple
+    Gen.FixedStepGradientDescentBuiltinDSLState(conf.step_size, gen_fn, param_list)
+end
+function init_update_state(conf::Gen.GradientDescent,
+                           gen_fn::JFunction, 
+                           param_list::Vector{T}) where T <: Tuple
+    Gen.GradientDescentBuiltinDSLState(conf.step_size_init, conf.step_size_beta, gen_fn, param_list, 1)
+end
+
+# ------------ Convenience macro ------------ #
+
+macro jaynes(expr)
+    def = _sugar(expr)
+
+    # Matches longdef function definitions.
+    if @capture(def, function decl_(args__) body__ end)
+        argtypes = map(args) do a
+            if a isa Expr 
+                a.head == :(::) ? eval(a.args[2]) : Any
+            else
+                Any
+            end
+        end
+        trans = quote 
+            $def
+            JFunction($decl, 
+                      tuple($argtypes...), 
+                      tuple([false for _ in $argtypes]...), 
+                      false, 
+                      Any)
+        end
+
+    # Matches thunks.
+    elseif @capture(def, () -> body__)
+        trans = quote
+            JFunction($def, 
+                      (Tuple{}, ),
+                      (false, ),
+                      false, 
+                      Any)
+        end
+
+    # Matches lambdas with formals.
+    elseif @capture(def, (args_) -> body__)
+        argtypes = map(args.args) do a
+            if a isa Expr 
+                a.head == :(::) ? eval(a.args[2]) : Any
+            else
+                Any
+            end
+        end
+        trans = quote
+            JFunction($def, 
+                      tuple($argtypes...), 
+                      tuple([false for _ in $argtypes]...), 
+                      false, 
+                      Any)
+        end
+    else
+        error("ParseError (@jaynes): function must be in valid long form or valid anonymous form.")
+    end
+    esc(trans)
+end
+
+# ------------ Utilities ------------ #
 
 function display(vtr::Gen.VectorTrace{A, K, JTrace}; show_values = true, show_types = false) where {A, K}
     addrs = Any[]
@@ -273,72 +362,4 @@ function display(vtr::Gen.VectorTrace{A, K, JTrace}; show_values = true, show_ty
         end
     end
     println(" ___________________________________\n")
-end
-
-# ------------ Gradients ------------ #
-
-function choice_gradients(tr::JTrace, 
-                          selection::JSelection = JSelection(SelectAll()), 
-                          retgrad = nothing)
-    vals, as, cgs = get_choice_gradients(unwrap(selection), 
-                                         get_params(get_gen_fn(tr)), 
-                                         get_record(tr), 
-                                         retgrad)
-    as, vals, cgs
-end
-
-function accumulate_param_gradients!(tr::JTrace, retgrad = nothing, scale_factor = 1.0)
-    gen_fn = get_gen_fn(tr)
-    ps = get_params(gen_fn)
-    as, pgs = get_learnable_gradients(ps, get_record(tr), retgrad...; scaler = scale_factor)
-    accumulate!(gen_fn.params_grads, pgs)
-end
-
-# ------------ Convenience macro ------------ #
-
-macro jaynes(expr)
-    def = _sugar(expr)
-    if @capture(def, function decl_(args__) body__ end)
-        argtypes = map(args) do a
-            if a isa Expr 
-                a.head == :(::) ? eval(a.args[2]) : Any
-            else
-                Any
-            end
-        end
-        trans = quote 
-            $def
-            JFunction($decl, 
-                      tuple($argtypes...), 
-                      tuple([false for _ in $argtypes]...), 
-                      false, 
-                      Any)
-        end
-    elseif @capture(def, () -> body__)
-        trans = quote
-            JFunction($def, 
-                      (Tuple{}, ),
-                      (false, ),
-                      false, 
-                      Any)
-        end
-    elseif @capture(def, (args__) -> body__)
-        argtypes = map(args) do a
-            if a isa Expr 
-                a.head == :(::) ? eval(a.args[2]) : Any
-            else
-                Any
-            end
-        end
-        trans = quote
-            JFunction($def, 
-                      tuple($argtypes...), 
-                      tuple([false for _ in $argtypes]...), 
-                      false, 
-                      Any)
-        end
-    else
-        error("ParseError (@jaynes): function must be in valid long form or valid anonymous form.")
-    end
-    esc(trans)
 end
