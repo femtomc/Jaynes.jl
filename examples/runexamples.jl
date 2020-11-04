@@ -1,7 +1,9 @@
 module Examples
 
+blacklist = ["runexamples.jl", "trace_translation.jl"]
+
 for p in readdir("examples"; join=false)
-   p != "runexamples.jl" && include(p)
+    !(p in blacklist) && include(p)
 end
 
 end # module
