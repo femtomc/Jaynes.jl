@@ -16,7 +16,7 @@ import Gen: get_values_shallow, get_submaps_shallow
 import Gen: get_args, get_retval, get_choices, get_score, get_gen_fn, has_argument_grads, accepts_output_grad, get_params
 import Gen: select, choicemap
 import Gen: simulate, generate, project, propose, assess, update, regenerate
-import Gen: init_param!, accumulate_param_gradients!, choice_gradients, init_update_state
+import Gen: init_param!, accumulate_param_gradients!, choice_gradients, init_update_state, apply_update!
 
 # Gen diff types.
 import Gen: Diff, UnknownChange, NoChange

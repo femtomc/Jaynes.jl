@@ -1,6 +1,5 @@
-const randprims = Set([
-    rand, randn, randexp, randperm, shuffle, sample
-])
+const randprims = Set([rand, randn, randexp, randperm, shuffle, sample])
+const blacklist = Set([Core.apply_type])
 const primnames = Set(Symbol(fn) for fn in randprims)
 
 """
@@ -31,7 +30,8 @@ function jaynesize_transform!(ir::IR, options::Options=DefaultOptions())
         !isexpr(stmt.expr, :call) && continue
         fn, args, calltype = unpack_call(stmt.expr)
         (unwrap(fn) == :trace || 
-         unwrap(fn) == :learnable || 
+         unwrap(fn) == :learnable ||
+         fn isa Variable ||
          !istraced(ir, fn, recurse)) && continue
         # Generate address name from function name and arguments
         addr = genaddr(ir, fn, unpack_args(ir, args, calltype))
@@ -86,10 +86,13 @@ function istraced(ir, fn::GlobalRef, recurse::Bool)
     val isa UnionAll && return false
     return true
 end
-istraced(ir, fn::Function, recurse::Bool) = # Handle injected functions
-fn in randprims || recurse
+function istraced(ir, fn::Function, recurse::Bool) # Handle injected functions
+    !(fn in blacklist) && (fn in randprims || recurse)
+end
+
 istraced(ir, fn::Variable, recurse::Bool) = # Handle IR variables
 !haskey(ir, fn) || istraced(ir, ir[fn].expr, recurse)
+
 istraced(ir, fn::Expr, recurse::Bool) = # Handle keyword functions
 iscall(fn, GlobalRef(Core, :kwfunc)) ?
 istraced(ir, fn.args[2], recurse) : true

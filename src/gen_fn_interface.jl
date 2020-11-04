@@ -78,13 +78,16 @@ static(chm::DynamicChoiceMap) = static(convert(DynamicMap{Value}, chm))
 
 # ------------ Trace ------------ #
 
-mutable struct JTrace{T, K <: CallSite} <: Trace
-    gen_fn::T
-    record::K
+mutable struct JTrace{A, R} <: Trace
+    chm::JChoiceMap
+    score::Float64
+    jfn::GenerativeFunction
+    args::A
+    ret::R
     isempty::Bool
 end
 
-@inline get_record(trace::JTrace) = trace.record
+@inline get_record(trace::JTrace) = trace.chm
 @inline set_retval!(trace::JTrace, retval) = (trace.retval = retval)
 @inline has_choice(trace::JTrace, addr) = haskey(trace.record, addr) && is_choice(get_sub(trace.record, addr))
 @inline has_value(trace::JTrace, addr) = has_value(get_record(trace), addr)
@@ -96,22 +99,22 @@ function get_choice(trace::JTrace, addr)
     ch
 end
 
-get_choices(trace::JTrace) = get_trace(trace.record)
+get_choices(trace::JTrace) = get_record(trace)
 
 Base.display(jtr::JTrace) = Base.display(get_trace(jtr.record))
 
 # Trace GFI methods.
-get_args(trace::JTrace) = get_args(trace.record)
-get_retval(trace::JTrace) = get_ret(trace.record)
-get_score(trace::JTrace) = get_score(trace.record)
-get_gen_fn(trace::JTrace) = trace.gen_fn
+get_args(trace::JTrace) = trace.args
+get_retval(trace::JTrace) = trace.ret
+get_score(trace::JTrace) = trace.score
+get_gen_fn(trace::JTrace) = trace.jfn
 
 # ------------ Generative function ------------ #
 
 struct JFunction{N, R} <: GenerativeFunction{R, JTrace}
     fn::Function
     params::DynamicMap{Value}
-    params_grads::DynamicMap{Value}
+    params_grad::DynamicMap{Value}
     arg_types::NTuple{N, Type}
     has_argument_grads::NTuple{N, Bool}
     accepts_output_grad::Bool
@@ -136,11 +139,14 @@ function JFunction(func::Function,
 end
 
 @inline (jfn::JFunction)(args...) = jfn.fn(args...)
-
 @inline has_argument_grads(jfn::JFunction) = jfn.has_argument_grads
-
 @inline get_params(jfn::JFunction) = jfn.params
-@inline get_params_grads(jfn::JFunction) = jfn.params_grads
+@inline get_param(jfn::JFunction, name) = getindex(jfn.params, name)
+@inline set_param!(jfn::JFunction, name, v) = set_sub!(jfn.params, name, Value(v))
+@inline get_params_grad(jfn::JFunction) = jfn.params_grad
+@inline get_param_grad(jfn::JFunction, name) = getindex(jfn.params_grad, name)
+@inline zero_param_grad!(jfn::JFunction, name) = set_sub!(jfn.params_grad, name, Value(zero(jfn.params[name])))
+@inline set_param_grad!(jfn::JFunction, name::Symbol, v) = set_sub!(jfn.params_grad, name, Value(v))
 
 init_param!(jfn, addr, val) = set_sub!(jfn.params, addr, Value(val))
 init_param!(jfn, v::Vector{Pair{T, K}}) where {T <: Tuple, K} = begin
@@ -153,9 +159,9 @@ end
 
 @inline get_ir(jfn::JFunction) = jfn.ir
 
-function generate_graph_ir(jfunc::JFunction)
-    ssa_ir = get_ir(jfunc)
-    flow = get_analysis(jfunc)
+function generate_graph_ir(jfn::JFunction)
+    ssa_ir = get_ir(jfn)
+    flow = get_analysis(jfn)
     graph_ir = graph_walk(ssa_ir, flow)
     graph_ir
 end
@@ -166,7 +172,7 @@ function simulate(jfn::JFunction, args::Tuple)
     ret, cl = simulate(get_params(jfn), 
                        jfn.fn, 
                        args...)
-    JTrace(jfn, cl, false)
+    JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false)
 end
 
 function generate(jfn::JFunction, args::Tuple, chm::JChoiceMap)
@@ -174,7 +180,7 @@ function generate(jfn::JFunction, args::Tuple, chm::JChoiceMap)
                           get_params(jfn), 
                           jfn.fn, 
                           args...)
-    JTrace(jfn, cl, false), w
+    JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false), w
 end
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = generate(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicMap) = generate(jfn, args, JChoiceMap(choices))
@@ -212,7 +218,7 @@ function update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::JChoi
                                map(zip(args, arg_diffs)) do (a, d)
                                    Diffed(a, d)
                                end...)
-    JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
+    JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false), w, rd, JChoiceMap(d)
 end
 @inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::DynamicChoiceMap) = update(trace, args, arg_diffs, JChoiceMap(convert(DynamicMap{Value}, constraints)))
 @inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::StaticMap) = update(trace, args, arg_diffs, JChoiceMap(constraints))
@@ -224,7 +230,7 @@ function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSe
                                map(zip(args, arg_diffs)) do (a, d)
                                    Diffed(a, d)
                                end...)
-    JTrace(get_gen_fn(trace), cl, false), w, rd, JChoiceMap(d)
+    JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false), w, rd, JChoiceMap(d)
 end
 @inline regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::Gen.DynamicSelection) = regenerate(trace, args, arg_diffs, JSelection(convert(DynamicMap{Select}, selection)))
 @inline regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::StaticMap) = regenerate(trace, args, arg_diffs, JSelection(selection))
@@ -241,25 +247,69 @@ function choice_gradients(tr::JTrace,
     as, vals, cgs
 end
 
-function accumulate_param_gradients!(tr::JTrace, retgrad = (nothing, ), scale_factor = 1.0)
+function get_learnable_gradients(ps::P, tr::JTrace, ret_grad...; scaler::Float64 = 1.0) where P <: AddressMap
+    param_grads = Gradients()
+    cl = DynamicCallSite(get_record(tr), get_score(tr), get_gen_fn(tr).fn, get_args(tr), get_retval(tr)) 
+    arg_grads = accumulate_learnable_gradients!(target(), ps, param_grads, cl, ret_grad...; scaler = scaler)
+    return arg_grads, param_grads
+end
+
+function accumulate_param_gradients!(tr::JTrace, retgrad = nothing, scale_factor = 1.0)
     gen_fn = get_gen_fn(tr)
     ps = get_params(gen_fn)
     ps isa Empty && return
-    as, pgs = get_learnable_gradients(ps, get_record(tr), retgrad...; scaler = scale_factor)
-    accumulate!(gen_fn.params_grads, pgs)
+    as, pgs = get_learnable_gradients(ps, tr, retgrad; scaler = scale_factor)
+    accumulate!(gen_fn.params_grad, pgs)
 end
 
 # ------------ Optimization ------------ #
 
-function init_update_state(conf::Gen.FixedStepGradientDescent,
-                           gen_fn::JFunction, 
-                           param_list::Vector{T}) where T <: Tuple
-    Gen.FixedStepGradientDescentBuiltinDSLState(conf.step_size, gen_fn, param_list)
+# Fixed step size gradient descent.
+mutable struct FixedStepGradientDescentJState
+    step_size::Float64
+    jfn::JFunction
+    param_list::Vector
 end
-function init_update_state(conf::Gen.GradientDescent,
-                           gen_fn::JFunction, 
+
+function init_update_state(conf::Gen.FixedStepGradientDescent,
+                           jfn::JFunction, 
                            param_list::Vector{T}) where T <: Tuple
-    Gen.GradientDescentBuiltinDSLState(conf.step_size_init, conf.step_size_beta, gen_fn, param_list, 1)
+    FixedStepGradientDescentJState(conf.step_size, jfn, param_list)
+end
+
+function apply_update!(state::FixedStepGradientDescentJState)
+    for param_name in state.param_list
+        value = get_param(state.jfn, param_name)
+        grad = get_param_grad(state.jfn, param_name)
+        set_param!(state.jfn, param_name, value + grad * state.step_size)
+        zero_param_grad!(state.jfn, param_name)
+    end
+end
+
+# Gradient descent.
+mutable struct GradientDescentJState
+    step_size_init::Float64
+    step_size_beta::Float64
+    jfn::JFunction
+    param_list::Vector
+    t::Int
+end
+
+function init_update_state(conf::Gen.GradientDescent,
+                           jfn::JFunction, 
+                           param_list::Vector{T}) where T <: Tuple
+    GradientDescentJState(conf.step_size_init, conf.step_size_beta, jfn, param_list, 1)
+end
+
+function apply_update!(state::GradientDescentJState)
+    step_size = state.step_size_init * (state.step_size_beta + 1) / (state.step_size_beta + state.t)
+    for param_name in state.param_list
+        value = get_param(state.jfn, param_name)
+        grad = get_param_grad(state.jfn, param_name)
+        set_param!(state.jfn, param_name, value + grad * step_size)
+        zero_param_grad!(state.jfn, param_name)
+    end
+    state.t += 1
 end
 
 # ------------ Convenience macro ------------ #
@@ -329,16 +379,16 @@ end
 
 # ------------ Utilities ------------ #
 
-function display(jfunc::JFunction; show_all = false)
+function display(jfn::JFunction; show_all = false)
     println(" ___________________________________\n")
     println("             JFunction\n")
-    println(" fn : $(jfunc.fn)")
-    println(" arg_types : $(jfunc.arg_types)")
-    println(" has_argument_grads : $(jfunc.has_argument_grads)")
-    println(" accepts_output_grad : $(jfunc.accepts_output_grad)")
+    println(" fn : $(jfn.fn)")
+    println(" arg_types : $(jfn.arg_types)")
+    println(" has_argument_grads : $(jfn.has_argument_grads)")
+    println(" accepts_output_grad : $(jfn.accepts_output_grad)")
     if show_all
         println(" ___________________________________\n")
-        display(get_analysis(jfunc))
+        display(get_analysis(jfn))
     else
         println(" ___________________________________\n")
     end
