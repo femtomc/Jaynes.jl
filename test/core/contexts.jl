@@ -74,6 +74,6 @@ end
 
 @testset "Score" begin
     sel = target([(:x, ) => 5.0, (:y, ) => 10.0])
-    ret, sc = score(sel, LinearGaussian, 0.5, 3.0)
+    ret, sc = assess(sel, LinearGaussian, 0.5, 3.0)
     @test sc != 0.0
 end

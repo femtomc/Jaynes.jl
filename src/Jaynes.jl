@@ -138,15 +138,9 @@ export record_cached!
 include("language_extensions.jl")
 include("utils.jl")
 
-# Contexts.
-export generate
-export simulate
-export update
-export propose
-export regenerate
-export score
-export get_learnable_gradients, get_choice_gradients
-export get_learnable_gradient, get_choice_gradient
+# Just a little sugar.
+export @sugar
+export @primitive
 
 # Tracer language features.
 export learnable, fillable, factor
@@ -167,10 +161,6 @@ export compare, update_learnables, merge!, merge
 include("distribution_combinators.jl")
 export Mixture, Product
 
-# Just a little sugar.
-export @sugar
-export @primitive
-
 # Gen compat.
 include("gen_fn_interface.jl")
 
@@ -181,6 +171,16 @@ export init_param!, accumulate_param_gradients!, choice_gradients
 export choicemap, select
 export get_value, has_value
 export get_params_grads
+
+# Contexts.
+export generate
+export simulate
+export update
+export propose
+export regenerate
+export assess
+export get_learnable_gradients, get_choice_gradients
+export get_learnable_gradient, get_choice_gradient
 
 constrain(v::Vector{Pair{T, K}}) where {T <: Tuple, K} = JChoiceMap(target(v))
 export constrain
