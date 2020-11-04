@@ -91,11 +91,11 @@ macro primitive(ex)
         end
 
 
-        @inline function (ctx::Jaynes.ScoreContext)(call::typeof(trace), 
-                                                    addr::T, 
-                                                    $argname::$name, 
-                                                    args...) where {T <: Jaynes.Address, K}
-            Jaynes.haskey(ctx.target, addr) || error("ScoreError: constrained target must provide constraints for all possible addresses in trace. Missing at address $addr.")
+        @inline function (ctx::Jaynes.AssessContext)(call::typeof(trace), 
+                                                     addr::T, 
+                                                     $argname::$name, 
+                                                     args...) where {T <: Jaynes.Address, K}
+            Jaynes.haskey(ctx.target, addr) || error("AssessError: constrained target must provide constraints for all possible addresses in trace. Missing at address $addr.")
             val = Jaynes.getindex(ctx.target, addr)
             Jaynes.increment!(ctx, logpdf($argname, args..., val))
             return val

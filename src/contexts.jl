@@ -28,7 +28,7 @@ end
 include("contexts/generate.jl")
 include("contexts/simulate.jl")
 include("contexts/propose.jl")
-include("contexts/score.jl")
+include("contexts/assess.jl")
 
 # Used to adjust the score when branches need to be pruned.
 function adjust_to_intersection(am::T, visited::V) where {T <: AddressMap, V <: Visitor}

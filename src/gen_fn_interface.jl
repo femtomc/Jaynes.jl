@@ -180,7 +180,7 @@ end
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicMap) = generate(jfn, args, JChoiceMap(choices))
 
 function assess(jfn::JFunction, args::Tuple, choices::JChoiceMap)
-    ret, w = score(unwrap(choices), 
+    ret, w = assess(unwrap(choices), 
                    get_params(jfn), 
                    jfn.fn, 
                    args...)

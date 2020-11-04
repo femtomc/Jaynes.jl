@@ -17,17 +17,17 @@ jmodel = @jaynes function model()
     {:y2} ~ Normal(m2, 0.1)
 end
 
-jprop = @jaynes function fixed_structure_proposal(trace)
-    if trace[:z] == true
-        {:m1} ~ Normal(trace[:m1], 0.1)
-        {:m2} ~ Normal(trace[:m2], 0.1)
+jprop = @jaynes function fixed_structure_proposal(tr)
+    if tr[:z] == true
+        {:m1} ~ Normal(tr[:m1], 0.1)
+        {:m2} ~ Normal(tr[:m2], 0.1)
     else
-        {:m} ~ Normal(trace[:m], 0.1)
+        {:m} ~ Normal(tr[:m], 0.1)
     end
 end
 
-select_mh_structure_kernel(trace) = mh(trace, select([(:z, )]))[1]
-fixed_structure_kernel(trace) = mh(trace, jprop, ())[1]
+select_mh_structure_kernel(tr) = mh(tr, select([(:z, )]))[1]
+fixed_structure_kernel(tr) = mh(tr, jprop, ())[1]
 
 # ------------ Simple MH ------------ #
 
@@ -37,10 +37,10 @@ test = () -> begin
                                      (:y2, ) => y2,
                                      (:z, ) => false,
                                      (:m, ) => 1.2])
-    trace, _ = generate(jmodel, (), obs)
+    tr, _ = generate(jmodel, (), obs)
     for iter=1:100
-        trace = select_mh_structure_kernel(trace)
-        trace = fixed_structure_kernel(trace)
+        tr = select_mh_structure_kernel(tr)
+        tr = fixed_structure_kernel(tr)
     end
 end
 test()
@@ -59,8 +59,8 @@ function split_mean(m, dof)
     (m1, m2)
 end
 
-sm_prop = @jaynes function split_merge_proposal(trace)
-    if trace[:z]
+sm_prop = @jaynes function split_merge_proposal(tr)
+    if tr[:z]
         # currently two segments, switch to one
     else
         # currently one segment, switch to two
@@ -93,18 +93,18 @@ end
 end
 
 
-split_merge_kernel(trace) = mh(trace, sm_prop, (), split_merge_involution)[1]
+split_merge_kernel(tr) = mh(tr, sm_prop, (), split_merge_involution)[1]
 
 test_involution = () -> begin
     (y1, y2) = (1.0, 1.2)
     obs = choicemap(Pair{Tuple, Any}[(:y1, ) => y1, 
                                      (:y2, ) => y2,])
-    trace, = generate(jmodel, (), obs)
+    tr, = generate(jmodel, (), obs)
     trs = []
-    for iter=1:100
-        trace = split_merge_kernel(trace)
-        trace = fixed_structure_kernel(trace)
-        push!(trs, trace)
+    for iter=1:300
+        tr = split_merge_kernel(tr)
+        tr = fixed_structure_kernel(tr)
+        push!(trs, tr)
     end
     trs
 end
