@@ -1,7 +1,7 @@
 module Examples
 
 for p in readdir("examples"; join=false)
-    include(p)
+   p != "runexamples.jl" && include(p)
 end
 
 end # module
