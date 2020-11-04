@@ -170,7 +170,7 @@ export get_analysis, get_ir
 export init_param!, accumulate_param_gradients!, choice_gradients
 export choicemap, select
 export get_value, has_value
-export get_params_grads
+export get_params_grad
 
 # Contexts.
 export generate

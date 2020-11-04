@@ -101,7 +101,7 @@ end
 
 get_choices(trace::JTrace) = get_record(trace)
 
-Base.display(jtr::JTrace) = Base.display(get_trace(jtr.record))
+Base.display(jtr::JTrace) = Base.display(get_record(jtr))
 
 # Trace GFI methods.
 get_args(trace::JTrace) = trace.args
@@ -187,9 +187,9 @@ end
 
 function assess(jfn::JFunction, args::Tuple, choices::JChoiceMap)
     ret, w = assess(unwrap(choices), 
-                   get_params(jfn), 
-                   jfn.fn, 
-                   args...)
+                    get_params(jfn), 
+                    jfn.fn, 
+                    args...)
     w, ret
 end
 @inline assess(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = assess(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
@@ -214,23 +214,31 @@ end
 function update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::JChoiceMap)
     ret, cl, w, rd, d = update(unwrap(constraints), 
                                get_params(get_gen_fn(trace)), 
-                               trace.record, 
+                               DynamicCallSite(unwrap(get_record(trace)),
+                                               get_score(trace), 
+                                               get_gen_fn(trace).fn, 
+                                               get_args(trace), 
+                                               get_retval(trace)),
                                map(zip(args, arg_diffs)) do (a, d)
                                    Diffed(a, d)
                                end...)
-    JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false), w, rd, JChoiceMap(d)
+    JTrace(get_trace(cl) |> JChoiceMap, cl.score, get_gen_fn(trace), args, ret, false), w, rd, JChoiceMap(d)
 end
 @inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::DynamicChoiceMap) = update(trace, args, arg_diffs, JChoiceMap(convert(DynamicMap{Value}, constraints)))
 @inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::StaticMap) = update(trace, args, arg_diffs, JChoiceMap(constraints))
 
 function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSelection)
     ret, cl, w, rd, d = regenerate(unwrap(selection), 
-                               get_params(get_gen_fn(trace)), 
-                               trace.record, 
-                               map(zip(args, arg_diffs)) do (a, d)
-                                   Diffed(a, d)
-                               end...)
-    JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false), w, rd, JChoiceMap(d)
+                                   get_params(get_gen_fn(trace)), 
+                                   DynamicCallSite(unwrap(get_record(trace)),
+                                                   get_score(trace), 
+                                                   get_gen_fn(trace).fn, 
+                                                   get_args(trace), 
+                                                   get_retval(trace)),
+                                   map(zip(args, arg_diffs)) do (a, d)
+                                       Diffed(a, d)
+                                   end...)
+    JTrace(get_trace(cl) |> JChoiceMap, cl.score, get_gen_fn(trace), args, ret, false), w, rd, JChoiceMap(d)
 end
 @inline regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::Gen.DynamicSelection) = regenerate(trace, args, arg_diffs, JSelection(convert(DynamicMap{Select}, selection)))
 @inline regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::StaticMap) = regenerate(trace, args, arg_diffs, JSelection(selection))

@@ -15,6 +15,6 @@ init_param!(model, (:b₀, ), 5.0)
 
 tr = simulate(model, (0.5, 3.0, 0.5, 50))
 accumulate_param_gradients!(tr)
-display(get_params_grads(model))
+display(get_params_grad(model))
 
 end # module
