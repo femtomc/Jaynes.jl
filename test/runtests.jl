@@ -51,7 +51,4 @@ using Gen
     end
 end
 
-println("Running examples for coverage...")
-include("runexamples.jl")
-
 end #module
