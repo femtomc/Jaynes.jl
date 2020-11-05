@@ -29,18 +29,16 @@ end
 # ------------ Inference ------------ #
 
 infer = () -> begin
-    obs = target([i <= 30 ? (:x => i, ) => rand(Poisson(3)) : (:x => i, ) => rand(Poisson(7)) for i in 1 : 50])
+    obs = constrain([i <= 30 ? (:x => i, ) => rand(Poisson(3)) : (:x => i, ) => rand(Poisson(7)) for i in 1 : 50])
 
     # Sample trace.
     tr, w = generate(jfunc, (50, ), obs)
-    display(tr)
 
     trs = Trace[]
-    for i in 1 : 4000
+    for i in 1 : 5000
         tr, _ = gibbs_kernel(tr)
         i % 50 == 0 && push!(trs, tr)
     end
-    display(tr)
 
     # Posterior est.
     λ₁_est, λ₂_est, n_est = zip(map(trs) do tr
@@ -53,5 +51,6 @@ infer = () -> begin
 
 end
 infer()
+@time infer()
 
 end # module
