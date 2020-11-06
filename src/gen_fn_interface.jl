@@ -30,6 +30,7 @@ unwrap(jcm::JChoiceMap) = jcm.chm
 has_value(choices::JChoiceMap, addr) = has_value(unwrap(choices), addr)
 get_value(choices::JChoiceMap, addr) = getindex(unwrap(choices), addr)
 get_submap(choices::JChoiceMap, addr) = get_sub(unwrap(choices), addr)
+projection(choices::JChoiceMap, sel) = projection(unwrap(choices), sel)
 
 # TODO: fix.
 function get_values_shallow(choices::JChoiceMap)

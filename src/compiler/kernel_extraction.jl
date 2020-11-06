@@ -6,14 +6,16 @@ struct KernelHint <: ProgramStructureHint
 end
 function Base.display(kh::KernelHint)
     if isempty(kh.loops)
-        println("(KernelHint): Compiler detected no kernels in your model code.")
+        println("\u001b[33m(KernelHint): Compiler detected no kernels in your model code.\u001b[0m")
     else
-        println("(KernelHint): Compiler detected the following kernels in your model code.")
+        println("\u001b[33m(KernelHint): Compiler detected the following kernels in your model code.\u001b[0m")
+        println("________________________\n")
         for l in kh.loops
             for b in kh.mapped_ir[l]
                 display(b)
             end
         end
+        println("________________________\n")
         println("\u001b[32mRecommendation: extract kernels into a Fold combinator for easier analysis and optimization.")
     end
 end
