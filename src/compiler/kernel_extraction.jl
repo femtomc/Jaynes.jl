@@ -14,7 +14,7 @@ function Base.display(kh::KernelHint)
                 display(b)
             end
         end
-        println("Recommendation: extract kernels into a Fold combinator for easier analysis and optimization.")
+        println("\u001b[32mRecommendation: extract kernels into a Fold combinator for easier analysis and optimization.")
     end
 end
 

@@ -443,9 +443,8 @@ end
 
 macro jaynes(expr, flag)
     def = _sugar(expr)
-    println(flag)
     if flag == :check
-        trans = _jaynes(false, true, def)
+        trans = _jaynes(true, false, def)
     elseif flag == :hints
         trans = _jaynes(false, true, def)
     end
