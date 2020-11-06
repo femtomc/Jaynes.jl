@@ -138,7 +138,8 @@ function JFunction(func::Function,
     end
 
     if static_checks
-        check_duplicate_symbols(ir)
+        errs = Exception[]
+        push!(errs, check_duplicate_symbols(ir))
         tr = infer_support_types(typeof(func), arg_types...)
         tr isa Missing && return JFunction{N, R, Missing}(func, 
                                                           DynamicMap{Value}(), 
@@ -149,7 +150,15 @@ function JFunction(func::Function,
                                                           ir,
                                                           flow_analysis(ir),
                                                           missing)
-        check_branch_support(tr)
+        push!(errs, check_branch_support(tr))
+        any(map(errs) do err
+            if isempty(err.violations)
+                false
+            else
+                Base.showerror(stdout, err)
+                true
+            end
+        end) && error("SupportError found.")
         try
             tt = trace_type(tr)
             JFunction{N, R, typeof(tt)}(func, 

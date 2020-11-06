@@ -7,21 +7,21 @@ struct MeasureMismatch <: SupportException
     violations::Set{Symbol}
 end
 function Base.showerror(io::IO, e::MeasureMismatch)
-    println("(SupportException) Base measure mismatch.")
+    println("\u001b[31m(SupportException):\u001b[0m Base measure mismatch.")
     for (k, v) in e.types
-        println(io, "$k => $(map(l -> pretty(l), v))")
+        println(io, " $k => $(map(l -> pretty(l), v))")
     end
-    println(io, "Violations: $(e.violations)")
-    print(io, "\u001b[32mFix: ensure that base measures match for addresses shared across branches in your model.")
+    println(io, " Violations: $(e.violations)")
+    println(io, "\u001b[32mFix: ensure that base measures match for addresses shared across branches in your model.\u001b[0m")
 end
 
 struct DuplicateAddresses <: SupportException
     violations::Set{Symbol}
 end
 function Base.showerror(io::IO, e::DuplicateAddresses)
-    println("(SupportException) Duplicate addresses in same block.")
-    println(io, "Violations: $(e.violations)")
-    print(io, "\u001b[32mFix: ensure that all addresses in any straight line block are unique.")
+    println("\u001b[31m(SupportException):\u001b[0m Duplicate addresses in same block.")
+    println(io, " Violations: $(e.violations)")
+    println(io, "\u001b[32mFix: ensure that all addresses in any straight line block are unique.\u001b[0m")
 end
 
 # Checks for duplicate symbols - passes if addresses are in different blocks.
@@ -44,7 +44,7 @@ function check_duplicate_symbols(ir)
             addr in addresses[r] ? push!(de.violations, addr) : push!(addresses[r], addr)
         end
     end
-    isempty(de.violations) || throw(de)
+    de
 end
 
 # Checks that addresses across blocks share the same base measure. 
@@ -65,5 +65,5 @@ function check_branch_support(tr)
             push!(se.violations, addr)
         end
     end
-    isempty(se.violations) || throw(se)
+    se
 end
