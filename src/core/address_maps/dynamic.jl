@@ -134,16 +134,16 @@ end
 # Utility constructor.
 @inline target() = DynamicMap{Value}()
 function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
-    check = false
-    for (k, _) in v
-        if length(k) == 1 && k[1] isa Symbol
-            check = true
-        end
-    end
-    check && begin
-        @info "Converting to static choice map."
-        return static(v)
-    end
+    #check = false
+    #for (k, _) in v
+    #    if length(k) == 1 && k[1] isa Symbol
+    #        check = true
+    #    end
+    #end
+    #check && begin
+    #    @info "Converting to static choice map."
+    #    return static(v)
+    #end
     tg = DynamicMap{Value}()
     for (k, v) in v
         set_sub!(tg, k, Value(v))
@@ -152,10 +152,10 @@ function target(v::Vector{Pair{T, K}}) where {T <: Tuple, K}
 end
 function target(v::Pair{T, K}) where {T <: Tuple, K}
     k, _ = v
-    length(k) == 1 && k[1] isa Symbol && begin
-        @info "Converting to static choice map."
-        return static(v)
-    end
+    #length(k) == 1 && k[1] isa Symbol && begin
+    #    @info "Converting to static choice map."
+    #    return static(v)
+    #end
     tg = DynamicMap{Value}()
     set_sub!(tg, v[1], Value(v[2]))
     tg
