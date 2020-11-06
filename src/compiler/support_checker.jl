@@ -1,5 +1,17 @@
 # ------------ Common support errors, checked statically. ------------ #
 
+struct SupportException <: Exception
+    types::Dict
+    violations::Set{Symbol}
+end
+function Base.showerror(io::IO, e::SupportException)
+    println("SupportException.")
+    for (k, v) in e.types
+        println(io, "$k => $v")
+    end
+    print(io, "Violations: $(e.violations)")
+end
+
 # Checks for duplicate symbols - passes if addresses are in different blocks.
 # Expects untyped IR.
 function check_duplicate_symbols(ir)
@@ -33,11 +45,11 @@ function check_branch_support(tr)
         addr = st.expr.args[2].value
         haskey(types, addr) ? push!(types[addr], supertype(st.type)) : types[addr] = Any[supertype(st.type)]
     end
-    for (v, k) in types
-        foldr(==, k) || begin
-            println("SupportError: base measure mismatch at address $v. Derived support information:")
-            display(types)
-            error("SupportError.")
+    se = SupportException(types, Set{Symbol}([]))
+    for (addr, supports) in types
+        foldr(==, supports) || begin
+            push!(se.violations, addr)
         end
     end
+    isempty(se.violations) || throw(se)
 end
