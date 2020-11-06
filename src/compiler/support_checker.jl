@@ -34,7 +34,7 @@ function check_duplicate_symbols(ir)
     for (v, st) in ir
         st.expr isa Expr || continue
         st.expr.head == :call || continue
-        unwrap(st.expr.args[1]) == :rand || continue
+        unwrap(st.expr.args[1]) == :trace || continue
         st.expr.args[2] isa QuoteNode || continue
         addr = st.expr.args[2].value
         relevant = filter(blks) do blk
@@ -54,7 +54,7 @@ function check_branch_support(tr)
     for (v, st) in tr
         st.expr isa Expr || continue
         st.expr.head == :call || continue
-        st.expr.args[1] == rand || continue
+        st.expr.args[1] == trace || continue
         st.expr.args[2] isa QuoteNode || continue
         addr = st.expr.args[2].value
         haskey(types, addr) ? push!(types[addr], supertype(st.type)) : types[addr] = Any[supertype(st.type)]

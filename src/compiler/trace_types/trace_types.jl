@@ -2,20 +2,23 @@ struct TracePrimitives end
 
 # Support types.
 abstract type SupportType end
+
 abstract type BaseLebesgue <: SupportType end
 pretty(::Type{BaseLebesgue}) = :lebesgue
+
 abstract type BaseCounting <: SupportType end
 pretty(::Type{BaseCounting}) = :counting
 
 struct Reals <: BaseLebesgue end
 struct PositiveReals <: BaseLebesgue end
+
 struct Integers <: BaseCounting end
 struct Discrete{N} <: BaseCounting end
 
 TraceDefaults() = Multi(TracePrimitives(), Mjolnir.Defaults())
 
-@abstract TracePrimitives rand(::Symbol, ::Normal) = Reals
-@abstract TracePrimitives rand(::Symbol, ::Bernoulli) = Discrete{2}
+@abstract TracePrimitives trace(::Symbol, ::Normal) = Reals
+@abstract TracePrimitives trace(::Symbol, ::Bernoulli) = Discrete{2}
 
 # Inferred record type is just a NamedTuple.
 const TraceType = NamedTuple

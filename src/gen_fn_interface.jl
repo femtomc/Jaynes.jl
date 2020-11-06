@@ -128,8 +128,14 @@ function JFunction(func::Function,
                    has_argument_grads::NTuple{N, Bool},
                    accepts_output_grad::Bool,
                    ::Type{R};
-                   static_checks = false) where {N, R}
+                   static_checks = false,
+                   hints = false) where {N, R}
     ir = lower_to_ir(func, arg_types...)
+    if hints
+        kh = detect_kernels(ir)
+        display(kh)
+    end
+
     if static_checks
         check_duplicate_symbols(ir)
         tr = infer_support_types(typeof(func), arg_types...)
@@ -364,7 +370,7 @@ end
 
 # ------------ Convenience macro ------------ #
 
-function _jaynes(check, def)
+function _jaynes(check, hints, def)
 
     # Matches longdef function definitions.
     if @capture(def, function decl_(args__) body__ end)
@@ -382,7 +388,8 @@ function _jaynes(check, def)
                       tuple([false for _ in $argtypes]...), 
                       false, 
                       Any;
-                      static_checks = $check)
+                      static_checks = $check,
+                      hints = $hints)
         end
 
         # Matches thunks.
@@ -393,7 +400,8 @@ function _jaynes(check, def)
                       (false, ),
                       false, 
                       Any;
-                      static_checks = $check)
+                      static_checks = $check,
+                      hints = $hints)
         end
 
         # Matches lambdas with formals.
@@ -417,7 +425,8 @@ function _jaynes(check, def)
                       tuple([false for _ in $argtypes]...), 
                       false, 
                       Any;
-                      static_checks = $check)
+                      static_checks = $check,
+                      hints = $hints)
         end
     else
         error("ParseError (@jaynes): requires a longdef function definition or an anonymous function definition.")
@@ -428,13 +437,18 @@ end
 
 macro jaynes(expr)
     def = _sugar(expr)
-    trans = _jaynes(false, def)
+    trans = _jaynes(false, false, def)
     esc(trans)
 end
 
-macro jaynes(check, expr)
+macro jaynes(expr, flag)
     def = _sugar(expr)
-    check == :check ? trans = _jaynes(true, def) : trans = _jaynes(false, def)
+    println(flag)
+    if flag == :check
+        trans = _jaynes(false, true, def)
+    elseif flag == :hints
+        trans = _jaynes(false, true, def)
+    end
     esc(trans)
 end
 

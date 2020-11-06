@@ -11,18 +11,25 @@ end
 
 # ------------ includes ------------ #
 
+# Generic.
+include("compiler/utils.jl")
+include("compiler/loop_detection.jl")
+include("compiler/reaching.jl")
+include("compiler/address_blanket.jl")
+include("compiler/hints.jl")
+
+# Kernel detection.
+include("compiler/kernel_extraction.jl")
+
 # Support error checker.
 include("compiler/support_checker.jl")
 
 # Partial evaluation/specialization
-include("compiler/reaching.jl")
-include("compiler/address_blanket.jl")
 include("compiler/specializer/diffs.jl")
 include("compiler/specializer/transforms.jl")
 include("compiler/specializer/interface.jl")
 
 # Jaynesizer converts stochastic functions into PPs
-include("compiler/jaynesizer/utils.jl")
 include("compiler/jaynesizer/jaynesize_transform.jl")
 
 # Trace types system
