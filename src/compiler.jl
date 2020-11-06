@@ -11,10 +11,12 @@ end
 
 # ------------ includes ------------ #
 
+# Support error checker.
+include("compiler/support_checker.jl")
+
 # Partial evaluation/specialization
-include("compiler/specializer/reaching.jl")
-include("compiler/specializer/address_blanket.jl")
-include("compiler/specializer/map_codegen.jl")
+include("compiler/reaching.jl")
+include("compiler/address_blanket.jl")
 include("compiler/specializer/diffs.jl")
 include("compiler/specializer/transforms.jl")
 include("compiler/specializer/interface.jl")
@@ -22,5 +24,8 @@ include("compiler/specializer/interface.jl")
 # Jaynesizer converts stochastic functions into PPs
 include("compiler/jaynesizer/utils.jl")
 include("compiler/jaynesizer/jaynesize_transform.jl")
+
+# Trace types system
+include("compiler/trace_types/trace_types.jl")
 
 # ------------ Documentation ------------ #

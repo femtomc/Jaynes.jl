@@ -131,6 +131,7 @@ export NoChange, Change
 export ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff
 export pushforward, _pushforward
 export generate_graph_ir
+export TraceDefaults
 
 include("contexts.jl")
 export record_cached!

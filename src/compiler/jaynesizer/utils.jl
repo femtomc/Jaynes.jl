@@ -48,6 +48,9 @@ struct NaturalLoop
     backedges::Set{Int} # All blocks in CFG with backedges to the header
 end
 
+Base.haskey(nl::NaturalLoop, v::Int) = v in nl.body
+Base.haskey(nl::NaturalLoop, v::Variable) = haskey(nl, v.id)
+
 function Base.display(nl::NaturalLoop)
     println(" Header : $(nl.header)")
     println(" Blocks : $(nl.body)")

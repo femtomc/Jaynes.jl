@@ -111,7 +111,7 @@ get_gen_fn(trace::JTrace) = trace.jfn
 
 # ------------ Generative function ------------ #
 
-struct JFunction{N, R} <: GenerativeFunction{R, JTrace}
+struct JFunction{N, R, T} <: GenerativeFunction{R, JTrace}
     fn::Function
     params::DynamicMap{Value}
     params_grad::DynamicMap{Value}
@@ -120,22 +120,64 @@ struct JFunction{N, R} <: GenerativeFunction{R, JTrace}
     accepts_output_grad::Bool
     ir::IR
     reachability::FlowAnalysis
+    trace_type::T
 end
 
 function JFunction(func::Function,
                    arg_types::NTuple{N, Type},
                    has_argument_grads::NTuple{N, Bool},
                    accepts_output_grad::Bool,
-                   ::Type{R}) where {N, R}
+                   ::Type{R};
+                   static_checks = false) where {N, R}
     ir = lower_to_ir(func, arg_types...)
-    JFunction{N, R}(func, 
-                    DynamicMap{Value}(), 
-                    DynamicMap{Value}(), 
-                    arg_types, 
-                    has_argument_grads, 
-                    accepts_output_grad,
-                    ir,
-                    flow_analysis(ir))
+    if static_checks
+        check_duplicate_symbols(ir)
+        tr = infer_support_types(typeof(func), arg_types...)
+        tr isa Missing && return JFunction{N, R, Missing}(func, 
+                                                          DynamicMap{Value}(), 
+                                                          DynamicMap{Value}(), 
+                                                          arg_types, 
+                                                          has_argument_grads, 
+                                                          accepts_output_grad,
+                                                          ir,
+                                                          flow_analysis(ir),
+                                                          missing)
+        check_branch_support(tr)
+        try
+            tt = trace_type(tr)
+            JFunction{N, R, typeof(tt)}(func, 
+                                        DynamicMap{Value}(), 
+                                        DynamicMap{Value}(), 
+                                        arg_types, 
+                                        has_argument_grads, 
+                                        accepts_output_grad,
+                                        ir,
+                                        flow_analysis(ir),
+                                        tt)
+        catch e
+            @info "Failed to compute trace type. Caught:\n$e.\n\nProceeding to compile with missing trace type."
+            tt = missing
+            JFunction{N, R, typeof(tt)}(func, 
+                                        DynamicMap{Value}(), 
+                                        DynamicMap{Value}(), 
+                                        arg_types, 
+                                        has_argument_grads, 
+                                        accepts_output_grad,
+                                        ir,
+                                        flow_analysis(ir),
+                                        tt)
+        end
+    else
+        JFunction{N, R, Missing}(func, 
+                                    DynamicMap{Value}(), 
+                                    DynamicMap{Value}(), 
+                                    arg_types, 
+                                    has_argument_grads, 
+                                    accepts_output_grad,
+                                    ir,
+                                    flow_analysis(ir),
+                                    missing)
+    end
 end
 
 @inline (jfn::JFunction)(args...) = jfn.fn(args...)
@@ -322,7 +364,7 @@ end
 
 # ------------ Convenience macro ------------ #
 
-function _jaynes(def)
+function _jaynes(check, def)
 
     # Matches longdef function definitions.
     if @capture(def, function decl_(args__) body__ end)
@@ -339,23 +381,27 @@ function _jaynes(def)
                       tuple($argtypes...), 
                       tuple([false for _ in $argtypes]...), 
                       false, 
-                      Any)
+                      Any;
+                      static_checks = $check)
         end
 
         # Matches thunks.
     elseif @capture(def, () -> body__)
         trans = quote
             JFunction($def, 
-                      (Tuple{}, ),
-                      (false, ),
-                      false, 
-                      Any)
+            (Tuple{}, ),
+            (false, ),
+            false, 
+            Any;
+            static_checks = $check)
         end
 
         # Matches lambdas with formals.
     elseif @capture(def, (args_) -> body__)
         if args isa Symbol
             argtypes = [Any]
+        elseif args.head == :(::)
+            argtypes = [eval(args.args[2])]
         else
             argtypes = map(args.args) do a
                 if a isa Expr 
@@ -367,84 +413,91 @@ function _jaynes(def)
         end
         trans = quote
             JFunction($def, 
-                      tuple($argtypes...), 
-                      tuple([false for _ in $argtypes]...), 
-                      false, 
-                      Any)
-        end
-    else
-        error("ParseError (@jaynes): requires a longdef function definition or an anonymous function definition.")
-    end
-
-    trans
-end
-
-macro jaynes(expr)
-    def = _sugar(expr)
-    trans = _jaynes(def)
-    esc(trans)
-end
-
-# ------------ Utilities ------------ #
-
-function display(jfn::JFunction; show_all = false)
-    println(" ___________________________________\n")
-    println("             JFunction\n")
-    println(" fn : $(jfn.fn)")
-    println(" arg_types : $(jfn.arg_types)")
-    println(" has_argument_grads : $(jfn.has_argument_grads)")
-    println(" accepts_output_grad : $(jfn.accepts_output_grad)")
-    if show_all
-        println(" ___________________________________\n")
-        display(get_analysis(jfn))
-    else
-        println(" ___________________________________\n")
-    end
-end
-
-function display(vtr::Gen.VectorTrace{A, K, JTrace}; show_values = true, show_types = false) where {A, K}
-    addrs = Any[]
-    chd = Dict()
-    meta = Dict()
-    for (k, v) in get_submaps_shallow(get_choices(vtr))
-        collect!((k, ), addrs, chd, v, meta)
-    end
-    println(" ___________________________________\n")
-    println("             Address Map\n")
-    if show_values
-        for a in addrs
-            if haskey(meta, a) && haskey(chd, a)
-                println(" $(meta[a]) $(a) = $(chd[a])")
-            elseif haskey(chd, a)
-                println(" $(a) = $(chd[a])")
-            else
-                println(" $(a)")
+            tuple($argtypes...), 
+            tuple([false for _ in $argtypes]...), 
+                false, 
+                Any;
+                static_checks = $check)
             end
-        end
-    elseif show_types
-        for a in addrs
-            if haskey(meta, a) && haskey(chd, a)
-                println(" $(meta[a]) $(a) = $(typeof(chd[a]))")
-            elseif haskey(chd, a)
-                println(" $(a) = $(typeof(chd[a]))")
-            else
-                println(" $(a)")
+        else
+            error("ParseError (@jaynes): requires a longdef function definition or an anonymous function definition.")
+                end
+
+                trans
             end
-        end
-    elseif show_types && show_values
-        for a in addrs
-            if haskey(meta, a) && haskey(chd, a)
-                println(" $(meta[a]) $(a) = $(chd[a]) : $(typeof(chd[a]))")
-            elseif haskey(chd, a)
-                println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
-            else
-                println(" $(a)")
+
+            macro jaynes(expr)
+                def = _sugar(expr)
+                trans = _jaynes(false, def)
+                esc(trans)
             end
-        end
-    else
-        for a in addrs
-            println(" $(a)")
-        end
-    end
-    println(" ___________________________________\n")
-end
+
+            macro jaynes(check, expr)
+                def = _sugar(expr)
+                check == :check ? trans = _jaynes(true, def) : trans = _jaynes(false, def)
+                esc(trans)
+            end
+
+            # ------------ Utilities ------------ #
+
+            function display(jfn::JFunction; show_all = false)
+                println(" ___________________________________\n")
+                println("             JFunction\n")
+                println(" fn : $(jfn.fn)")
+                println(" arg_types : $(jfn.arg_types)")
+                println(" has_argument_grads : $(jfn.has_argument_grads)")
+                println(" accepts_output_grad : $(jfn.accepts_output_grad)")
+                if show_all
+                    println(" ___________________________________\n")
+                    display(get_analysis(jfn))
+                else
+                    println(" ___________________________________\n")
+                end
+            end
+
+            function display(vtr::Gen.VectorTrace{A, K, JTrace}; show_values = true, show_types = false) where {A, K}
+                addrs = Any[]
+                chd = Dict()
+                meta = Dict()
+                for (k, v) in get_submaps_shallow(get_choices(vtr))
+                    collect!((k, ), addrs, chd, v, meta)
+                end
+                println(" ___________________________________\n")
+                println("             Address Map\n")
+                if show_values
+                    for a in addrs
+                        if haskey(meta, a) && haskey(chd, a)
+                            println(" $(meta[a]) $(a) = $(chd[a])")
+                        elseif haskey(chd, a)
+                            println(" $(a) = $(chd[a])")
+                        else
+                            println(" $(a)")
+                        end
+                    end
+                elseif show_types
+                    for a in addrs
+                        if haskey(meta, a) && haskey(chd, a)
+                            println(" $(meta[a]) $(a) = $(typeof(chd[a]))")
+                        elseif haskey(chd, a)
+                            println(" $(a) = $(typeof(chd[a]))")
+                        else
+                            println(" $(a)")
+                        end
+                    end
+                elseif show_types && show_values
+                    for a in addrs
+                        if haskey(meta, a) && haskey(chd, a)
+                            println(" $(meta[a]) $(a) = $(chd[a]) : $(typeof(chd[a]))")
+                        elseif haskey(chd, a)
+                            println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
+                        else
+                            println(" $(a)")
+                        end
+                    end
+                else
+                    for a in addrs
+                        println(" $(a)")
+                    end
+                end
+                println(" ___________________________________\n")
+            end
