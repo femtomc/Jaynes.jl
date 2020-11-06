@@ -3,7 +3,9 @@ struct TracePrimitives end
 # Support types.
 abstract type SupportType end
 abstract type BaseLebesgue <: SupportType end
+pretty(::Type{BaseLebesgue}) = :lebesgue
 abstract type BaseCounting <: SupportType end
+pretty(::Type{BaseCounting}) = :counting
 
 struct Reals <: BaseLebesgue end
 struct PositiveReals <: BaseLebesgue end
