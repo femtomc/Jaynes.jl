@@ -1,3 +1,5 @@
+@def title = "Optimizations"
+
 > This is preliminary work! This system is designed to be exploratory in the direction of optimizing probabilistic programs (especially universal ones). Thus, this page will likely evolve over time.
 
 As a research system, the goal of Jaynes is to facilitate the exploration of specialization for inference operations used in inference algorithms. Jaynes implements the generative function interface - but it does so by implementing each interface as staged programming pipeline. For interface methods which operate as lightweight tracing on top of normal program execution (e.g. `simulate`, `generate`, `assess`, and `propose`) - this staging is not yet utilized (although it's certainly possible there are useful optimization for these methods).

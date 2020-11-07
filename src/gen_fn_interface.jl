@@ -93,6 +93,7 @@ end
 @inline has_choice(trace::JTrace, addr) = haskey(trace.record, addr) && is_choice(get_sub(trace.record, addr))
 @inline has_value(trace::JTrace, addr) = has_value(get_record(trace), addr)
 @inline get_value(trace::JTrace, addr) = getindex(get_record(trace), addr)
+@inline filter(fn::Function, tr::JTrace) = JChoiceMap(filter(fn, unwrap(get_record(tr))))
 
 function get_choice(trace::JTrace, addr)
     ch = get_sub(trace.record, addr)

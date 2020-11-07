@@ -23,10 +23,20 @@ init_param!(variational_family, [(:α, ) => 1.0, (:β, ) => 1.0,
 
 # Black box variational inference.
 N = 100
-observations = constrain([(:x => i, ) => rand(Normal(3.0, 0.3)) for i in 1 : N])
+observations = begin
+    a₀ = 0.5
+    b₀ = 1.0
+    μ₀ = 0.0
+    λ₀ = 3.0
+    tr = simulate(model, (a₀, b₀, μ₀, λ₀, N))
+    filter(k -> k[1] isa Pair, tr)
+end
+display(observations)
+
 update = ParamUpdate(GradientDescent(1e-4, 100), 
                      variational_family => [(:α, ), (:β, ), (:μp, ), (:logσ, )])
 
-@time elbo_estimate, traces, elbo_history = black_box_vi!(model, (0.5, 1.0, 0.0, 3.0, N), observations, variational_family, (), update; iters = 100, verbose = true)
+@time elbo_estimate, traces, elbo_history = black_box_vi!(model, (0.5, 1.0, 0.0, 3.0, N), observations, variational_family, (), update; iters = 1000, verbose = true)
+display(get_params(variational_family))
 
 end # module
