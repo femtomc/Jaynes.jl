@@ -1,11 +1,15 @@
+# Lift a value and a diff instance to a wrapped Diffed instance.
 const Δ = (v, d) -> Diffed(v, d)
 
+# Context for Mjolnir tracing.
 DiffDefaults() = Multi(DiffPrimitives(), Mjolnir.Defaults())
 
-# A bunch of nice passes which clean up the IR after tracing. Other cleaning passes can be found in transforms.jl.
+# A bunch of nice passes which clean up the IR after tracing. 
+# Other cleaning passes can be found in transforms.jl.
+# This function _does not_ remove dead code (because this interferes with inference semantics).
 partial_cleanup!(ir) = ir |> Mjolnir.inline_consts! |> Mjolnir.partials! |> Mjolnir.ssa! |> Mjolnir.prune! |> IRTools.renumber
 
-# Modified version of Mjolnir's tracecall! which falls back on the primitive rules for argdiff propagation.
+# TODO: Modified version of Mjolnir's tracecall! which falls back on the primitive rules for argdiff propagation.
 function tracecall!(tr::Mjolnir.Trace, args, Ts...)
   tr.total += 1
   push!(tr.stack, Ts)
@@ -39,15 +43,16 @@ function swap_trace(P, f, Dfs, Ts...)
     end
 end
 
-# Convenient - run trace with DiffDefaults primitives.
+# Convenience - run trace with DiffDefaults primitives.
 _propagate(f, args, Dfs) = swap_trace(DiffDefaults(), f, Dfs, args...)
 
+# Lift a runtime diff type to the simple indicator Change/NoChange types.
 function create_flip_diff(a::Type{Diffed{K, DV}}) where {K, DV}
     DV != NoChange && return Change
     NoChange
 end
 
-# These are not currently used at generated function expansion time.
+# These are not currently used at generated function expansion time - but are useful for testing.
 @generated _pushforward(F, As...) = begin
     ir = IRTools.IR(IRTools.meta(Tuple{F, As...}))
     As = map(As) do a
@@ -58,5 +63,4 @@ end
     strip_types!(ir)
     ir
 end
-
 pushforward(fn, args...) = fn(args...), _pushforward(fn, args...)
