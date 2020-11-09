@@ -1,4 +1,4 @@
-module RecursiveTraceTypes
+module HierarchicalTraceTypes
 
 include("../src/Jaynes.jl")
 using .Jaynes
