@@ -129,12 +129,17 @@ function support_checker(func, arg_types...)
             end
         end) && error("SupportError found.")
     !(tr isa Missing) && begin
-        try
-            return trace_type(tr)
-        catch e
-            @info "Failed to compute trace type. Caught:\n$e.\n\nProceeding to compile with missing trace type."
+        if !control_flow_check(tr)
+            @info "Detected control flow in model IR. Static trace typing requires that control flow be extracted into combinators."
             return missing
+        else
+            try
+                return trace_type(tr)
+            catch e
+                @info "Failed to compute trace type. Caught:\n$e.\n\nProceeding to compile with missing trace type."
+                return missing
+            end
         end
+        return missing
     end
-    return missing
 end

@@ -31,12 +31,12 @@ pretty(::Type{BaseLebesgue}) = :lebesgue
 abstract type BaseCounting <: SupportType end
 pretty(::Type{BaseCounting}) = :counting
 
-struct Reals <: BaseLebesgue end
-Base.:(<<)(::Type{Reals}, ::Type{Reals}) = true
+struct Reals{N} <: BaseLebesgue end
+Base.:(<<)(::Type{Reals{N}}, ::Type{Reals{N}}) where N = true
 Base.:(<<)(::Type{Reals}, a) = false
 
-struct PositiveReals <: BaseLebesgue end
-Base.:(<<)(::Type{PositiveReals}, ::Type{PositiveReals}) = true
+struct PositiveReals{N} <: BaseLebesgue end
+Base.:(<<)(::Type{PositiveReals{N}}, ::Type{PositiveReals{N}}) where N = true
 Base.:(<<)(::Type{PositiveReals}, a) = false
 
 struct Integers <: BaseCounting end
