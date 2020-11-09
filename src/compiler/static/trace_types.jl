@@ -46,6 +46,11 @@ Base.:(<<)(::Type{Integers}, a) = false
 
 struct Discrete{N} <: BaseCounting end
 
+struct List{N} <: SupportType
+    tt::N
+end
+List{N}() where N = List{N}(N())
+
 # Inferred record type is just a NamedTuple.
 const TraceType = NamedTuple
 

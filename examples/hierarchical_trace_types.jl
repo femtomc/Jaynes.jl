@@ -25,6 +25,7 @@ model4 = @jaynes (x::Float64) -> begin
     q
 end (check)
 
+println(model3 << model4)
 println(model4 << model4)
 
 end # module
