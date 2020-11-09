@@ -132,69 +132,21 @@ function JFunction(func::Function,
                    ::Type{R};
                    static_checks = false,
                    hints = false) where {N, R}
+    hints && begin
+        detect_kernels(func, arg_types...)
+        detect_dynamic_addresses(func, arg_types...)
+    end
+    static_checks ? tt = support_checker(func, arg_types...) : tt = missing
     ir = lower_to_ir(func, arg_types...)
-    if hints
-        kh = detect_kernels(ir)
-        display(kh)
-    end
-
-    if static_checks
-        errs = Exception[]
-        push!(errs, check_duplicate_symbols(ir))
-        tr = infer_support_types(typeof(func), arg_types...)
-        tr isa Missing && return JFunction{N, R, Missing}(func, 
-                                                          DynamicMap{Value}(), 
-                                                          DynamicMap{Value}(), 
-                                                          arg_types, 
-                                                          has_argument_grads, 
-                                                          accepts_output_grad,
-                                                          ir,
-                                                          flow_analysis(ir),
-                                                          missing)
-        push!(errs, check_branch_support(tr))
-        any(map(errs) do err
-            if isempty(err.violations)
-                false
-            else
-                Base.showerror(stdout, err)
-                true
-            end
-        end) && error("SupportError found.")
-        try
-            tt = trace_type(tr)
-            JFunction{N, R, typeof(tt)}(func, 
-                                        DynamicMap{Value}(), 
-                                        DynamicMap{Value}(), 
-                                        arg_types, 
-                                        has_argument_grads, 
-                                        accepts_output_grad,
-                                        ir,
-                                        flow_analysis(ir),
-                                        tt)
-        catch e
-            @info "Failed to compute trace type. Caught:\n$e.\n\nProceeding to compile with missing trace type."
-            tt = missing
-            JFunction{N, R, typeof(tt)}(func, 
-                                        DynamicMap{Value}(), 
-                                        DynamicMap{Value}(), 
-                                        arg_types, 
-                                        has_argument_grads, 
-                                        accepts_output_grad,
-                                        ir,
-                                        flow_analysis(ir),
-                                        tt)
-        end
-    else
-        JFunction{N, R, Missing}(func, 
-                                 DynamicMap{Value}(), 
-                                 DynamicMap{Value}(), 
-                                 arg_types, 
-                                 has_argument_grads, 
-                                 accepts_output_grad,
-                                 ir,
-                                 flow_analysis(ir),
-                                 missing)
-    end
+    return JFunction{N, R, typeof(tt)}(func, 
+                                       DynamicMap{Value}(), 
+                                       DynamicMap{Value}(), 
+                                       arg_types, 
+                                       has_argument_grads, 
+                                       accepts_output_grad,
+                                       ir,
+                                       flow_analysis(ir),
+                                       tt)
 end
 
 @inline (jfn::JFunction)(args...) = jfn.fn(args...)
@@ -454,7 +406,12 @@ end
 
 macro jaynes(expr, flag)
     def = _sugar(expr)
-    if flag == :check
+    options = [:check, :hints]
+    if flag isa Expr && flag.head == :tuple
+        trans = _jaynes(map(options) do o
+            o in flag.args
+        end..., def)
+    elseif flag == :check
         trans = _jaynes(true, false, def)
     elseif flag == :hints
         trans = _jaynes(false, true, def)

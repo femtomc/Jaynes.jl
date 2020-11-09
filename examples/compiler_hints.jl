@@ -9,7 +9,7 @@ naive_model = @jaynes function baz(x::Int)
     for i in 1 : x
         y += {:y => i} ~ Normal(0.0, 1.0)
     end
-end (hints)
+end (check, hints)
 
 ker_model = @jaynes function ker(i::Int, y::Float64)
     y += {:y} ~ Normal(0.0, 1.0)

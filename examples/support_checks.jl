@@ -9,8 +9,8 @@ end
 
 model2 = @jaynes function bar(x::Int)
     y ~ Normal(0.0, 1.0)
-    y ~ Bernoulli(0.5)
-    x > 10 ? y ~ Normal(0.0, 1.0) : y ~ Bernoulli(0.3)
-end (check)
+    y ~ Normal(0.5, 1.0)
+    x > 10 ? y ~ Normal(0.0, 1.0) : y ~ Normal(0.3, 3.0)
+end (check, hints)
 
 end # module

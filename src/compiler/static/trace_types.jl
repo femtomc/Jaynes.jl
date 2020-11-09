@@ -45,9 +45,3 @@ function trace_type(tr)
     end
     NamedTuple{tuple(keys...)}(types)
 end
-
-#function display(nt::NamedTuple)
-#    for (k, v) in zip(keys(nt), values(nt))
-#        println(k => v)
-#    end
-#end
