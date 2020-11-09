@@ -45,10 +45,15 @@ function check_branch_support(tr)
         st.expr.args[1] == trace || continue
         st.expr.args[2] isa QuoteNode || continue
         addr = st.expr.args[2].value
-        haskey(types, addr) ? push!(types[addr], supertype(st.type)) : types[addr] = Any[supertype(st.type)]
+        if haskey(types, addr)
+            st.type isa NamedTuple ? push!(types[addr], st.type) : push!(types[addr], supertype(st.type))
+        else
+            st.type isa NamedTuple ? Any[st.type] : Any[supertype(st.type)]
+        end
     end
     se = MeasureMismatch(types, Set{Symbol}([]))
     for (addr, supports) in types
+        length(supports) == 1 && continue
         foldr(==, supports) || begin
             push!(se.violations, addr)
         end
@@ -113,7 +118,7 @@ function support_checker(func, arg_types...)
     errs = Exception[]
     paths = get_control_flow_paths(ir)
     push!(errs, check_duplicate_symbols(ir, paths))
-    tr = infer_support_types(typeof(func), arg_types...)
+    tr = infer_support_types(func, arg_types...)
     tr isa Missing || push!(errs, check_branch_support(tr))
     any(map(errs) do err
             if isempty(err.violations)

@@ -20,7 +20,7 @@ comb = Unfold(ker_model)
 model3 = @jaynes function baz(x::Int)
     y = 0.0
     y ~ comb(x, y)
-end (hints)
+end (check, hints)
 
 tr = simulate(model3, (5, ))
 

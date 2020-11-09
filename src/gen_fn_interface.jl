@@ -113,7 +113,7 @@ get_gen_fn(trace::JTrace) = trace.jfn
 
 # ------------ Generative function ------------ #
 
-struct JFunction{N, R, T} <: GenerativeFunction{R, JTrace}
+struct JFunction{N, R, T} <: TypedGenerativeFunction{N, R, JTrace, T}
     fn::Function
     params::DynamicMap{Value}
     params_grad::DynamicMap{Value}
@@ -176,6 +176,8 @@ function generate_graph_ir(jfn::JFunction)
     graph_ir = graph_walk(ssa_ir, flow)
     graph_ir
 end
+
+@inline get_trace_type(jfn::JFunction{N, R, T}) where {N, R, T} = jfn.trace_type
 
 # ------------ Model GFI interface ------------ #
 
@@ -421,11 +423,12 @@ end
 
 # ------------ Utilities ------------ #
 
-function display(jfn::JFunction; show_all = false)
+function display(jfn::JFunction{N, R, T}; show_all = false) where {N, R, T}
     println(" ___________________________________\n")
     println("             JFunction\n")
     println(" fn : $(jfn.fn)")
     println(" arg_types : $(jfn.arg_types)")
+    println(" trace_type: $(T)")
     println(" has_argument_grads : $(jfn.has_argument_grads)")
     println(" accepts_output_grad : $(jfn.accepts_output_grad)")
     if show_all

@@ -119,9 +119,11 @@ function flatten(t::Tuple)
     return arr
 end
 
+# Jaynes introduces a new type of generative function.
+abstract type TypedGenerativeFunction{N, R, Tr, T} <: GenerativeFunction{R, Tr} end
+
 # ------------ includes ------------ #
 
-# Jaynes.
 include("core.jl")
 export trace
 
@@ -185,6 +187,9 @@ export get_learnable_gradient, get_choice_gradient
 
 constrain(v::Vector{Pair{T, K}}) where {T <: Tuple, K} = JChoiceMap(target(v))
 export constrain
+
+# Typing rules.
+include("typing_rules.jl")
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret, flatten, lineplot

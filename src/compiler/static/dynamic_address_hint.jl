@@ -53,4 +53,4 @@ function detect_dynamic_addresses(func, arg_types...)
     display(detect_dynamic_addresses(ir))
 end
 
-@inline dynamic_address_check(ir) = detect_dynamic_addresses(ir)
+@inline dynamic_address_check(ir) = !isempty(detect_dynamic_addresses(ir))
