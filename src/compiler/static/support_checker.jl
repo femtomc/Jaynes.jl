@@ -77,7 +77,7 @@ function Base.showerror(io::IO, e::DuplicateAddresses)
     println(io, "\u001b[32mFix: ensure that all addresses in any execution path through the program are unique.\u001b[0m")
 end
 
-# Checks for duplicate symbols - passes if addresses are in different blocks.
+# Checks for duplicate symbols along each flow of control path.
 # Expects untyped IR.
 function check_duplicate_symbols(ir, paths)
     keys = Set{Symbol}([])
