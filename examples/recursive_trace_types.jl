@@ -14,9 +14,17 @@ end (check)
 model3 = @jaynes (x::Float64) -> begin
     y ~ model2(x)
     z ~ model1(x)
-    q ~ model2(x)
+    q ~ model2(z)
     q
 end (check)
-display(model3)
+
+model4 = @jaynes (x::Float64) -> begin
+    y ~ model3(x)
+    z ~ model2(x)
+    q ~ model3(z)
+    q
+end (check)
+
+println(model4 << model4)
 
 end # module

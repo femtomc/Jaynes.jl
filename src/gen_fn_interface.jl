@@ -177,7 +177,9 @@ function generate_graph_ir(jfn::JFunction)
     graph_ir
 end
 
-@inline get_trace_type(jfn::JFunction{N, R, T}) where {N, R, T} = jfn.trace_type
+@inline get_trace_type(jfn::JFunction{N, R, T}) where {N, R, T} = T
+
+@inline Base.:(<<)(jfn1::JFunction{N1, R1, T1}, jfn2::JFunction{N2, R2, T2}) where {N1, N2, R1, R2, T1, T2} = T1 << T2
 
 # ------------ Model GFI interface ------------ #
 
@@ -411,8 +413,8 @@ macro jaynes(expr, flag)
     options = [:check, :hints]
     if flag isa Expr && flag.head == :tuple
         trans = _jaynes(map(options) do o
-            o in flag.args
-        end..., def)
+                            o in flag.args
+                        end..., def)
     elseif flag == :check
         trans = _jaynes(true, false, def)
     elseif flag == :hints

@@ -139,7 +139,6 @@ include("contexts.jl")
 export record_cached!
 
 include("language_extensions.jl")
-include("utils.jl")
 
 # Just a little sugar.
 export @sugar
@@ -159,10 +158,6 @@ export dynamic
 export select, target, static, array, learnables
 export anywhere, intersection, union
 export compare, update_learnables, merge!, merge
-
-# Distribution combinators.
-include("distribution_combinators.jl")
-export Mixture, Product
 
 # Gen compat.
 include("gen_fn_interface.jl")

@@ -17,28 +17,6 @@ function tracecall!(tr::Mjolnir.Trace, args, Ts...)
   return result
 end
 
-function trace_with_partial_cleanup(P, Ts...)
-    tr = Mjolnir.Trace(P)
-    try
-        argnames = [argument!(tr.ir, T) for T in Ts]
-        for (T, x) in zip(Ts, argnames)
-            T isa Union{Mjolnir.Partial, Mjolnir.Shape} && Mjolnir.node!(tr, T, x)
-        end
-        args = [T isa Const ? T.value : arg for (T, arg) in zip(Ts, argnames)]
-        args, Ts = Mjolnir.replacement(P, args, Ts)
-        if (T = Mjolnir.partial(tr.primitives, Ts...)) != nothing
-            tr.total += 1
-            Mjolnir.return!(tr.ir, push!(tr.ir, stmt(Expr(:call, args...), type = T)))
-        else
-            Mjolnir.return!(tr.ir, tracecall!(tr, args, Ts...))
-        end
-        # @info "$(tr.total) functions traced."
-        return partial_cleanup!(tr.ir)
-    catch e
-        throw(Mjolnir.TraceError(e, tr.stack))
-    end
-end
-
 # This is a modified version of Mjolnir's trace which grabs the IR associated with the original svec of types defined by the user - but then replaces the argtypes with diff types and does type inference.
 function swap_trace(P, f, Dfs, Ts...)
     tr = Mjolnir.Trace(P)
