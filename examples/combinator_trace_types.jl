@@ -12,10 +12,10 @@ model1 = @jaynes (i::Int, x::Float64) -> begin
     end
     z
 end (check)
-unfold = Gen.Unfold(model1)
+uc = Gen.Unfold(model1)
 
 model2 = @jaynes (i::Int, x::Float64) -> begin
-    y ~ unfold(i, x)
+    y ~ uc(i, x)
 end (check)
 display(model2)
 

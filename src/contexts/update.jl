@@ -42,7 +42,7 @@ end
     ir == nothing && return
 
     # Equivalent to static DSL optimizations.
-    if K <: DynamicMap
+    if K <: DynamicMap || !control_flow_check(ir)
 
         # Release IR normally.
         jaynesize_transform!(ir)
