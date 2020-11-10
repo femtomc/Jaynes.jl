@@ -74,13 +74,6 @@ end
     error("Parameter not provided at address $addr.")
 end
 
-# ------------ Fillable ------------ #
-
-@inline function (ctx::ForwardModeContext)(fn::typeof(fillable), addr::Address)
-    haskey(ctx.target, addr) && return getindex(ctx.target, addr)
-    error("(fillable): parameter not provided at address $addr.")
-end
-
 # ------------ Call sites ------------ #
 
 @inline function (ctx::ForwardModeContext)(c::typeof(trace),

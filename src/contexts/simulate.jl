@@ -8,11 +8,11 @@ mutable struct SimulateContext{J <: CompilationOptions,
     SimulateContext{J}(tr::T, score::Float64, visited::Visitor, params::P) where {J, T, P} = new{J, T, P}(tr, score, visited, params)
 end
 
-function Simulate(tr, params)
-    SimulateContext{DefaultPipeline}(tr,
-                                     0.0, 
-                                     Visitor(), 
-                                     params)
+function Simulate(opt::J, tr::T, params) where {J, T}
+    SimulateContext{J}(tr,
+                       0.0, 
+                       Visitor(), 
+                       params)
 end
 
 # ------------ Dynamos ------------ #
@@ -93,14 +93,20 @@ end
 
 # ------------ Convenience ------------ #
 
-function simulate(model::Function, args...)
-    ctx = Simulate(Trace(), Empty())
+function simulate(opt::J, params::P, model::Function, args...) where {J <: CompilationOptions, P <: AddressMap}
+    ctx = Simulate(opt, Trace(), params)
     ret = ctx(model, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
 end
 
 function simulate(params::P, model::Function, args...) where P <: AddressMap
-    ctx = Simulate(Trace(), params)
+    ctx = Simulate(DefaultPipeline(), Trace(), params)
+    ret = ctx(model, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
+end
+
+function simulate(model::Function, args...)
+    ctx = Simulate(DefaultPipeline(), Trace(), Empty())
     ret = ctx(model, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
 end

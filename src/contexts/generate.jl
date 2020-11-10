@@ -13,13 +13,13 @@ mutable struct GenerateContext{J <: CompilationOptions,
     GenerateContext{J}(tr::T, target::K, weight::Float64, score::Float64, visited::Visitor, params::P) where {J, T, K, P} = new{J, T, K, P}(tr, target, weight, score, visited, params)
 end
 
-function Generate(tr::AddressMap, target::AddressMap, params::AddressMap)
-    GenerateContext{DefaultPipeline}(tr, 
-                                     target,
-                                     0.0,
-                                     0.0,
-                                     Visitor(),
-                                     params)
+function Generate(::J, tr::AddressMap, target::AddressMap, params::AddressMap) where J <: CompilationOptions
+    GenerateContext{J}(tr, 
+                       target,
+                       0.0,
+                       0.0,
+                       Visitor(),
+                       params)
 end
 
 # ------------ Dynamo ------------ #
@@ -65,13 +65,6 @@ end
     error("(learnable): parameter not provided at address $addr.")
 end
 
-# ------------ Fillable ------------ #
-
-@inline function (ctx::GenerateContext)(fn::typeof(fillable), addr::Address)
-    haskey(ctx.target, addr) && return getindex(ctx.target, addr)
-    error("(fillable): parameter not provided at address $addr.")
-end
-
 # ------------ Black box call sites ------------ #
 
 @inline function (ctx::GenerateContext)(c::typeof(trace),
@@ -104,14 +97,20 @@ end
 
 # ------------ Convenience ------------ #
 
-function generate(target::L, fn::Function, args...) where L <: AddressMap
-    ctx = Generate(DynamicTrace(), target, Empty())
+function generate(opt::J, target::L, params, fn::Function, args...) where {J <: CompilationOptions, L <: AddressMap}
+    ctx = Generate(opt, DynamicTrace(), target, params)
     ret = ctx(fn, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 function generate(target::L, params, fn::Function, args...) where L <: AddressMap
-    ctx = Generate(DynamicTrace(), target, params)
+    ctx = Generate(DefaultPipeline(), DynamicTrace(), target, params)
+    ret = ctx(fn, args...)
+    return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
+end
+
+function generate(target::L, fn::Function, args...) where L <: AddressMap
+    ctx = Generate(DefaultPipeline(), DynamicTrace(), target, Empty())
     ret = ctx(fn, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end

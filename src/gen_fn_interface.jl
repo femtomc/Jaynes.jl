@@ -119,7 +119,7 @@ get_gen_fn(trace::JTrace) = trace.jfn
 
 # ------------ Generative function ------------ #
 
-struct JFunction{N, R, T} <: TypedGenerativeFunction{N, R, JTrace, T}
+struct JFunction{C <: CompilationOptions, N, R, T} <: TypedGenerativeFunction{N, R, JTrace, T}
     fn::Function
     params::DynamicMap{Value}
     params_grad::DynamicMap{Value}
@@ -144,15 +144,15 @@ function JFunction(func::Function,
     end
     static_checks ? tt = support_checker(func, arg_types...) : tt = missing
     ir = lower_to_ir(func, arg_types...)
-    return JFunction{N, R, typeof(tt)}(func, 
-                                       DynamicMap{Value}(), 
-                                       DynamicMap{Value}(), 
-                                       arg_types, 
-                                       has_argument_grads, 
-                                       accepts_output_grad,
-                                       ir,
-                                       flow_analysis(ir),
-                                       tt)
+    return JFunction{DefaultPipeline, N, R, typeof(tt)}(func, 
+                                                        DynamicMap{Value}(), 
+                                                        DynamicMap{Value}(), 
+                                                        arg_types, 
+                                                        has_argument_grads, 
+                                                        accepts_output_grad,
+                                                        ir,
+                                                        flow_analysis(ir),
+                                                        tt)
 end
 
 @inline (jfn::JFunction)(args...) = jfn.fn(args...)
@@ -185,20 +185,24 @@ function generate_graph_ir(jfn::JFunction)
 end
 
 @inline get_trace_type(jfn::JFunction{N, R, T}) where {N, R, T} = T
+@inline get_opt_type(::JFunction{C}) where C = C
 
+# Typed JFunction instances have a defined notion of AC (absolute continuity).
 @inline Base.:(<<)(jfn1::JFunction{N1, R1, T1}, jfn2::JFunction{N2, R2, T2}) where {N1, N2, R1, R2, T1, T2} = T1 << T2
 
 # ------------ Model GFI interface ------------ #
 
-function simulate(jfn::JFunction, args::Tuple)
-    ret, cl = simulate(get_params(jfn), 
+function simulate(jfn::JFunction{C}, args::Tuple) where C
+    ret, cl = simulate(C(),
+                       get_params(jfn), 
                        jfn.fn, 
                        args...)
     JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false)
 end
 
-function generate(jfn::JFunction, args::Tuple, chm::JChoiceMap)
-    ret, cl, w = generate(unwrap(chm), 
+function generate(jfn::JFunction{C}, args::Tuple, chm::JChoiceMap) where C
+    ret, cl, w = generate(C(),
+                          unwrap(chm), 
                           get_params(jfn), 
                           jfn.fn, 
                           args...)
@@ -207,8 +211,9 @@ end
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = generate(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicMap) = generate(jfn, args, JChoiceMap(choices))
 
-function assess(jfn::JFunction, args::Tuple, choices::JChoiceMap)
-    ret, w = assess(unwrap(choices), 
+function assess(jfn::JFunction{C}, args::Tuple, choices::JChoiceMap) where C
+    ret, w = assess(C(),
+                    unwrap(choices), 
                     get_params(jfn), 
                     jfn.fn, 
                     args...)
@@ -234,7 +239,8 @@ function propose(jfn::JFunction, args::Tuple)
 end
 
 function update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::JChoiceMap)
-    ret, cl, w, rd, d = update(unwrap(constraints), 
+    ret, cl, w, rd, d = update(get_opt_type(get_gen_fn(trace))(),
+                               unwrap(constraints), 
                                get_params(get_gen_fn(trace)), 
                                DynamicCallSite(unwrap(get_record(trace)),
                                                get_score(trace), 
@@ -250,7 +256,8 @@ end
 @inline update(trace::JTrace, args::Tuple, arg_diffs::Tuple, constraints::StaticMap) = update(trace, args, arg_diffs, JChoiceMap(constraints))
 
 function regenerate(trace::JTrace, args::Tuple, arg_diffs::Tuple, selection::JSelection)
-    ret, cl, w, rd, d = regenerate(unwrap(selection), 
+    ret, cl, w, rd, d = regenerate(get_opt_type(get_gen_fn(trace))(),
+                                   unwrap(selection), 
                                    get_params(get_gen_fn(trace)), 
                                    DynamicCallSite(unwrap(get_record(trace)),
                                                    get_score(trace), 
@@ -432,7 +439,7 @@ end
 
 # ------------ Utilities ------------ #
 
-function display(jfn::JFunction{N, R, T}; show_all = false) where {N, R, T}
+function display(jfn::JFunction{C, N, R, T}; show_all = false) where {C, N, R, T}
     println(" ___________________________________\n")
     println("             JFunction\n")
     println(" fn : $(jfn.fn)")
@@ -440,6 +447,7 @@ function display(jfn::JFunction{N, R, T}; show_all = false) where {N, R, T}
     println(" trace_type: $(T)")
     println(" has_argument_grads : $(jfn.has_argument_grads)")
     println(" accepts_output_grad : $(jfn.accepts_output_grad)")
+    println("\ncompilation options: $C")
     if show_all
         println(" ___________________________________\n")
         display(get_analysis(jfn))

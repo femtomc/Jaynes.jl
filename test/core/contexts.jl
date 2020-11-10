@@ -32,7 +32,7 @@ end
     stored_at_x = (cl[:x])
     stored_at_y = (cl[:y])
     sel = target([(:x,) => 5.0])
-    ret, cl, w, retdiff, d = update(sel, cl)
+    ret, cl, w, retdiff, d = update(sel, cl, Δ(0.5, NoChange()), Δ(3.0, NoChange()))
     @test score ≈ get_score(cl) - w
     score = get_score(cl)
     # Discard should be original :x
@@ -40,7 +40,7 @@ end
     # New should be equal to constraint.
     @test (cl[:x]) == 5.0
     sel = target([(:y,) => 10.0])
-    ret, cl, w, retdiff, d = update(sel, cl)
+    ret, cl, w, retdiff, d = update(sel, cl, Δ(0.5, NoChange()), Δ(3.0, NoChange()))
     @test score ≈ get_score(cl) - w
     @test (d[:y]) == stored_at_y
     @test (cl[:x]) == 5.0
@@ -53,7 +53,7 @@ end
     stored_at_x = (cl[:x])
     stored_at_y = (cl[:y])
     sel = target([(:x, )])
-    ret, cl, w, retdiff, d = regenerate(sel, cl)
+    ret, cl, w, retdiff, d = regenerate(sel, cl, Δ(0.5, NoChange()), Δ(3.0, NoChange()))
     @test score ≈ get_score(cl) - w
     score = get_score(cl)
     # Discard should be original :x
@@ -61,7 +61,7 @@ end
     # New should not be equal to original.
     @test (cl[:x]) != stored_at_x
     sel = target([(:y, )])
-    ret, cl, w, retdiff, d = regenerate(sel, cl)
+    ret, cl, w, retdiff, d = regenerate(sel, cl, Δ(0.5, NoChange()), Δ(3.0, NoChange()))
     @test score ≈ get_score(cl) - w
     @test (d[:y]) == stored_at_y
 end

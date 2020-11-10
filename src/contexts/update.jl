@@ -27,15 +27,15 @@ end
     get_value(sub)
 end
 
-function Update(select::K, ps::P, cl::C, tr, discard) where {K <: AddressMap, P <: AddressMap, C <: CallSite}
-    UpdateContext{DefaultPipeline}(cl, 
-                                   tr,
-                                   select, 
-                                   0.0, 
-                                   0.0, 
-                                   discard,
-                                   Visitor(), 
-                                   ps)
+function Update(::J, select::K, ps::P, cl::CL, tr, discard) where {J <: CompilationOptions, K <: AddressMap, P <: AddressMap, CL <: CallSite}
+    UpdateContext{J}(cl, 
+                     tr,
+                     select, 
+                     0.0, 
+                     0.0, 
+                     discard,
+                     Visitor(), 
+                     ps)
 end
 
 # ------------ Dynamos ------------ #
@@ -142,13 +142,6 @@ end
     error("(learnable): parameter not provided at address $addr.")
 end
 
-# ------------ Fillable ------------ #
-
-@inline function (ctx::UpdateContext)(fn::typeof(fillable), addr::Address)
-    has_sub(ctx.target, addr) && return get_sub(ctx.target, addr)
-    error("(fillable): parameter not provided at address $addr.")
-end
-
 # ------------ Black box call sites ------------ #
 
 @inline function (ctx::UpdateContext)(c::typeof(trace),
@@ -229,37 +222,34 @@ function update(ctx::UpdateContext, cs::DynamicCallSite, args::NTuple{N, Diffed}
     return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, map(a -> unwrap(a), args), ret), ctx.weight, UnknownChange(), ctx.discard
 end
 
-function update(cs::DynamicCallSite, args::Diffed...) where N
-    ctx = Update(Empty(), Empty(), cs, DynamicTrace(), DynamicDiscard())
+# Explicitly parametrize the compilation pipeline.
+function update(opt::J, sel::L, ps::P, cs::DynamicCallSite, args::Diffed...) where {J <: CompilationOptions, L <: AddressMap, P <: AddressMap, N}
+    ctx = Update(opt, sel, ps, cs, DynamicTrace(), DynamicDiscard())
     return update(ctx, cs, args)
 end
 
-function update(sel::L, cs::DynamicCallSite) where L <: AddressMap
-    ctx = Update(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
-    return update(ctx, cs, map(cs.args) do a
-                      Δ(a, NoChange())
-                  end)
-end
-
-function update(sel::L, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, N}
-    ctx = Update(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
-    return update(ctx, cs, args)
-end
-
-function update(sel::L, ps::P, cs::DynamicCallSite) where {P <: AddressMap, L <: AddressMap}
-    ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
-    return update(ctx, cs, map(cs.args) do a
-                      Δ(a, NoChange())
-                  end)
-end
-
-function update(sel::L, ps::P, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, P <: AddressMap, N}
-    ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+# Explicitly parametrize the compilation pipeline.
+function update(opt::J, sel::L, ps::P, cs::DynamicCallSite, args...) where {J <: CompilationOptions, L <: AddressMap, P <: AddressMap, N}
+    ctx = Update(opt, sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    args = map(args) do a
+        a isa Diffed ? a : Δ(a, NoChange())
+    end
     return update(ctx, cs, args)
 end
 
 function update(sel::L, ps::P, cs::DynamicCallSite, args...) where {L <: AddressMap, P <: AddressMap, N}
-    ctx = Update(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    ctx = Update(DefaultPipeline(), sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    args = map(args) do a
+        a isa Diffed ? a : Δ(a, NoChange())
+    end
+    return update(ctx, cs, args)
+end
+
+function update(sel::L, cs::DynamicCallSite, args...) where L <: AddressMap
+    ctx = Update(DefaultPipeline(), sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
+    if isempty(args)
+        args = get_args(cs)
+    end
     args = map(args) do a
         a isa Diffed ? a : Δ(a, NoChange())
     end

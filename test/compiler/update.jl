@@ -22,7 +22,8 @@ end
     ret, cl = simulate(fn1, 10.0, 10.0, 1.0)
     prev_score = get_score(cl)
 
-    ret, cl, w, _ = update(cl, Δ(5.0, ScalarDiff(-5.0)), 
+    ret, cl, w, _ = update(Jaynes.Empty(), cl, 
+                           Δ(5.0, ScalarDiff(-5.0)), 
                            Δ(5.0, ScalarDiff(-5.0)), 
                            Δ(1.0, NoChange()))
     @test get_score(cl) - w ≈ prev_score

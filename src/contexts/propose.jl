@@ -10,11 +10,11 @@ mutable struct ProposeContext{J <: CompilationOptions,
     ProposeContext{J}(tr::T, score::Float64, visited::Visitor, params::P) where {J, T, P} = new{J, T, P}(tr, score, visited, params)
 end
 
-function Propose(tr, params)
-    ProposeContext{DefaultPipeline}(tr, 
-                                    0.0, 
-                                    Visitor(), 
-                                    params)
+function Propose(opt::J, tr, params) where J
+    ProposeContext{J}(tr, 
+                      0.0, 
+                      Visitor(), 
+                      params)
 end
 
 # ------------ Dynamo ------------ #
@@ -69,13 +69,6 @@ end
     error("Parameter not provided at address $addr.")
 end
 
-# ------------ Fillable ------------ #
-
-@inline function (ctx::ProposeContext)(fn::typeof(fillable), addr::Address)
-    has_sub(ctx.select, addr) && return get_sub(ctx.select, addr)
-    error("(fillable): parameter not provided at address $addr.")
-end
-
 # ------------ Black box call sites ------------ #
 
 @inline function (ctx::ProposeContext)(c::typeof(trace),
@@ -102,14 +95,20 @@ end
 
 # ------------ Convenience ------------ #
 
-function propose(fn::Function, args...)
-    ctx = Propose(DynamicMap{Value}(), Empty())
+function propose(opt::J, params, fn::Function, args...) where J <: CompilationOptions
+    ctx = Propose(opt, DynamicMap{Value}(), params)
     ret = ctx(fn, args...)
     return ret, ctx.map, ctx.score
 end
 
-function propose(params, fn::Function, args...)
-    ctx = Propose(DynamicMap{Value}(), params)
+function propose(params, fn::Function, args...) where J <: CompilationOptions
+    ctx = Propose(DefaultPipeline(), DynamicMap{Value}(), params)
+    ret = ctx(fn, args...)
+    return ret, ctx.map, ctx.score
+end
+
+function propose(fn::Function, args...) where J <: CompilationOptions
+    ctx = Propose(DefaultPipeline(), DynamicMap{Value}(), Empty())
     ret = ctx(fn, args...)
     return ret, ctx.map, ctx.score
 end

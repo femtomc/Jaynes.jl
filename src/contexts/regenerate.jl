@@ -27,15 +27,15 @@ end
     get_value(sub)
 end
 
-function Regenerate(target::K, ps, cl::C, tr, discard) where {K <: AddressMap, C <: CallSite}
-    RegenerateContext{DefaultPipeline}(cl, 
-                                       tr,
-                                       target, 
-                                       0.0, 
-                                       0.0, 
-                                       discard,
-                                       Visitor(), 
-                                       Empty())
+function Regenerate(::J, target::K, ps, cl::C, tr, discard) where {J <: CompilationOptions, K <: AddressMap, C <: CallSite}
+    RegenerateContext{J}(cl, 
+                         tr,
+                         target, 
+                         0.0, 
+                         0.0, 
+                         discard,
+                         Visitor(), 
+                         Empty())
 end
 
 # ------------ Dynamos ------------ #
@@ -128,14 +128,7 @@ end
     error("(learnable): parameter not provided at address $addr.")
 end
 
-# ------------ Fillable ------------ #
-
-@inline function (ctx::RegenerateContext)(fn::typeof(fillable), addr::Address)
-    haskey(ctx.target, addr) && return getindex(ctx.target, addr)
-    error("(fillable): parameter not provided at address $addr.")
-end
-
-# ------------ Black box call sites ------------ #
+# ------------ Call sites ------------ #
 
 @inline function (ctx::RegenerateContext)(c::typeof(trace),
                                           addr::T,
@@ -213,32 +206,31 @@ function regenerate(ctx::RegenerateContext, cs::DynamicCallSite, args::NTuple{N,
     return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, map(a -> unwrap(a), args), ret), ctx.weight, UnknownChange(), ctx.discard
 end
 
-function regenerate(sel::L, cs::DynamicCallSite) where L <: AddressMap
-    ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
-    return regenerate(ctx, cs, map(cs.args) do a
-                          Δ(a, NoChange())
-                      end)
-end
-
-function regenerate(sel::L, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, N}
-    ctx = Regenerate(sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
+# Explicitly parametrize the compilation pipeline.
+function regenerate(opt::J, sel::L, ps::P, cs::DynamicCallSite, args::Diffed...) where {J <: CompilationOptions, L <: AddressMap, P <: AddressMap}
+    ctx = Regenerate(opt, sel, ps, cs, DynamicTrace(), DynamicDiscard())
     return regenerate(ctx, cs, args)
 end
 
-function regenerate(sel::L, ps::P, cs::DynamicCallSite) where {P <: AddressMap, L <: AddressMap}
-    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard())
-    return regenerate(ctx, cs, map(cs.args) do a
-                          Δ(a, NoChange())
-                      end)
-end
-
-function regenerate(sel::L, ps::P, cs::DynamicCallSite, args::Diffed...) where {L <: AddressMap, P <: AddressMap, N}
-    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+# Explicitly parametrize the compilation pipeline.
+function regenerate(opt::J, sel::L, ps::P, cs::DynamicCallSite, args...) where {J <: CompilationOptions, L <: AddressMap, P <: AddressMap}
+    ctx = Regenerate(opt, sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    args = map(args) do a
+        a isa Diffed ? a : Δ(a, NoChange())
+    end
     return regenerate(ctx, cs, args)
 end
 
-function regenerate(sel::L, ps::P, cs::DynamicCallSite, args...) where {L <: AddressMap, P <: AddressMap, N}
-    ctx = Regenerate(sel, ps, cs, DynamicTrace(), DynamicDiscard())
+function regenerate(sel::L, ps::P, cs::DynamicCallSite, args...) where {L <: AddressMap, P <: AddressMap}
+    ctx = Regenerate(DefaultPipeline(), sel, ps, cs, DynamicTrace(), DynamicDiscard())
+    args = map(args) do a
+        a isa Diffed ? a : Δ(a, NoChange())
+    end
+    return regenerate(ctx, cs, args)
+end
+
+function regenerate(sel::L, cs::DynamicCallSite, args...) where L <: AddressMap
+    ctx = Regenerate(DefaultPipeline(), sel, Empty(), cs, DynamicTrace(), DynamicDiscard())
     args = map(args) do a
         a isa Diffed ? a : Δ(a, NoChange())
     end
