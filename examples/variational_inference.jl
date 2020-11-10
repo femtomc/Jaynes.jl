@@ -33,7 +33,7 @@ observations = begin
 end
 display(observations)
 
-update = ParamUpdate(GradientDescent(1e-4, 100), 
+update = ParamUpdate(GradientDescent(1e-5, 100), 
                      variational_family => [(:α, ), (:β, ), (:μp, ), (:logσ, )])
 
 @time elbo_estimate, traces, elbo_history = black_box_vi!(model, (0.5, 1.0, 0.0, 3.0, N), observations, variational_family, (), update; iters = 1000, verbose = true)

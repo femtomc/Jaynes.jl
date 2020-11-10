@@ -10,5 +10,8 @@
 @abstract TracePrimitives trace(::Symbol, jfn::JFunction{N, R, T}, args...) where {N, R, T} = get_trace_type(jfn.value)
 
 # Combinators.
-@abstract TracePrimitives trace(::Symbol, u::Gen.Unfold, args...) = List{get_trace_type(u.value.kernel)}
+@abstract TracePrimitives function trace(::Symbol, u::Gen.Unfold, args...)
+    tt = get_trace_type(u.value.kernel)
+    List{tt}
+end
 @abstract TracePrimitives trace(::Symbol, u::Gen.Map, args...) = List{get_trace_type(u.value.kernel)}

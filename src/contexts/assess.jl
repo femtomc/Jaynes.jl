@@ -8,11 +8,11 @@ mutable struct AssessContext{J <: CompilationOptions,
     AssessContext{J}(target::M, weight::Float64, visited::Visitor, params::P) where {J, M, P} = new{J, M, P}(target, weight, visited, params)
 end
 
-function Assess(obs::AddressMap, params)
-    AssessContext{DefaultPipeline}(obs, 
-                                   0.0, 
-                                   Visitor(),
-                                   params)
+function Assess(opt::J, obs::AddressMap, params) where J
+    AssessContext{J}(obs, 
+                     0.0, 
+                     Visitor(),
+                     params)
 end
 
 @dynamo function (sx::AssessContext)(a...)
@@ -85,8 +85,8 @@ end
 
 # ------------ Convenience ------------ #
 
-function assess(sel::L, fn::Function, args...) where L <: AddressMap
-    ctx = Assess(sel, Empty())
+function assess(opt::J, sel::L, params, fn::Function, args...) where {J <: CompilationOptions, L <: AddressMap}
+    ctx = Assess(opt, sel, params)
     ret = ctx(fn, args...)
     b, missed = compare(sel, ctx.visited)
     b || error("AssessError: did not visit all constraints in target.\nDid not visit: $(missed).")
@@ -94,7 +94,7 @@ function assess(sel::L, fn::Function, args...) where L <: AddressMap
 end
 
 function assess(sel::L, params, fn::Function, args...) where L <: AddressMap
-    ctx = Assess(sel, params)
+    ctx = Assess(DefaultPipeline(), sel, params)
     ret = ctx(fn, args...)
     b, missed = compare(sel, ctx.visited)
     b || error("AssessError: did not visit all constraints in target.\nDid not visit: $(missed).")

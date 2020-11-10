@@ -184,7 +184,7 @@ function generate_graph_ir(jfn::JFunction)
     graph_ir
 end
 
-@inline get_trace_type(jfn::JFunction{N, R, T}) where {N, R, T} = T
+@inline get_trace_type(jfn::JFunction{C, N, R, T}) where {C, N, R, T} = T
 @inline get_opt_type(::JFunction{C}) where C = C
 
 # Typed JFunction instances have a defined notion of AC (absolute continuity).

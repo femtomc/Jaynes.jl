@@ -94,19 +94,19 @@ end
 # ------------ Convenience ------------ #
 
 function simulate(opt::J, params::P, model::Function, args...) where {J <: CompilationOptions, P <: AddressMap}
-    ctx = Simulate(opt, Trace(), params)
+    ctx = Simulate(opt, DynamicTrace(), params)
     ret = ctx(model, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
 end
 
 function simulate(params::P, model::Function, args...) where P <: AddressMap
-    ctx = Simulate(DefaultPipeline(), Trace(), params)
+    ctx = Simulate(DefaultPipeline(), DynamicTrace(), params)
     ret = ctx(model, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
 end
 
 function simulate(model::Function, args...)
-    ctx = Simulate(DefaultPipeline(), Trace(), Empty())
+    ctx = Simulate(DefaultPipeline(), DynamicTrace(), Empty())
     ret = ctx(model, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
 end
