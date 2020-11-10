@@ -52,7 +52,7 @@ end
     else
 
         # Argument difference inference.
-        tr = diff_inference(f, S.parameters, args)
+        tr = diff_inference(f, S.parameters, args...)
 
         # Dynamic specialization transform.
         ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
@@ -215,9 +215,10 @@ end
 # ------------ Convenience ------------ #
 
 function update(ctx::UpdateContext, cs::DynamicCallSite, args::NTuple{N, Diffed}) where N
-    ret = ctx(cs.fn, tupletype(args...), args...)
+    cs.fn isa GenerativeFunction ? func = get_fn(cs.fn) : func = cs.fn
+    ret = ctx(func, tupletype(args...), args...)
     adj_w = update_projection_walk(ctx.tr, ctx.visited)
-    update_discard_walk!(ctx.discard, ctx.visited, get_trace(cs))
+    update_discard_walk!(ctx.discard, ctx.visited, unwrap(get_trace(cs)))
     return ret, DynamicCallSite(ctx.tr, ctx.score - adj_w, cs.fn, map(a -> unwrap(a), args), ret), ctx.weight, UnknownChange(), ctx.discard
 end
 

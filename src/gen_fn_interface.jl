@@ -30,6 +30,7 @@ unwrap(jcm::JChoiceMap) = jcm.chm
 has_value(choices::JChoiceMap, addr) = has_value(unwrap(choices), addr)
 get_value(choices::JChoiceMap, addr) = getindex(unwrap(choices), addr)
 get_submap(choices::JChoiceMap, addr) = get_sub(unwrap(choices), addr)
+get_sub(choices::JChoiceMap, addr) = get_sub(unwrap(choices), addr)
 projection(choices::JChoiceMap, sel) = projection(unwrap(choices), sel)
 
 # TODO: fix.
@@ -50,6 +51,9 @@ from_array(choices::JChoiceMap, arr::Vector) = target(unwrap(choices), arr)
 display(jcm::JChoiceMap) = Jaynes.display(unwrap(jcm))
 
 choicemap(c::Vector{Pair{T, K}}) where {T <: Tuple, K} = JChoiceMap(target(c))
+
+@inline collect!(par::T, addrs::Vector, chd::Dict, chm::JChoiceMap, meta) where T <: Tuple = collect!(par, addrs, chd, unwrap(chm), meta)
+
 function convert(::Type{DynamicMap{Value}}, chm::DynamicChoiceMap)
     dm = DynamicMap{Value}()
     for (k, v) in get_values_shallow(chm)
@@ -61,6 +65,8 @@ function convert(::Type{DynamicMap{Value}}, chm::DynamicChoiceMap)
     end
     dm
 end
+
+@inline convert(::Type{DynamicMap{Value}}, d::JChoiceMap) = convert(DynamicMap{Value}, unwrap(d))
 
 function convert(::Type{DynamicMap{Select}}, sel::Gen.DynamicSelection)
     dm = DynamicMap{Select}()
@@ -150,6 +156,7 @@ function JFunction(func::Function,
 end
 
 @inline (jfn::JFunction)(args...) = jfn.fn(args...)
+@inline get_fn(jfn::JFunction) = jfn.fn
 @inline has_argument_grads(jfn::JFunction) = jfn.has_argument_grads
 @inline get_params(jfn::JFunction) = jfn.params
 @inline get_param(jfn::JFunction, name) = getindex(jfn.params, name)
