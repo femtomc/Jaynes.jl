@@ -1,5 +1,7 @@
-# TODO: specialize to different call sites.
-mutable struct UpdateContext{C <: CallSite, 
+# ------------ Update compilation context ------------ #
+
+mutable struct UpdateContext{J <: CompilationOptions,
+                             C <: CallSite, 
                              T <: AddressMap,
                              K <: AddressMap, 
                              D <: AddressMap,
@@ -12,8 +14,10 @@ mutable struct UpdateContext{C <: CallSite,
     discard::D
     visited::Visitor
     params::P
+    UpdateContext{J}(cl::C, tr::T, target::K, weight, score, discard::D, vs::Visitor, params::P) where {J, C, T, K, D, P} = new{J, C, T, K, D, P}(cl, tr, target, weight, score, discard, vs, params)
 end
 
+# Used during specialization for caching sites which don't need to be re-visited.
 @inline function record_cached!(ctx::UpdateContext, addr)
     visit!(ctx, addr)
     sub = get_sub(ctx.prev, addr)
@@ -24,28 +28,31 @@ end
 end
 
 function Update(select::K, ps::P, cl::C, tr, discard) where {K <: AddressMap, P <: AddressMap, C <: CallSite}
-    UpdateContext(cl, 
-                  tr,
-                  select, 
-                  0.0, 
-                  0.0, 
-                  discard,
-                  Visitor(), 
-                  ps)
+    UpdateContext{DefaultPipeline}(cl, 
+                                   tr,
+                                   select, 
+                                   0.0, 
+                                   0.0, 
+                                   discard,
+                                   Visitor(), 
+                                   ps)
 end
 
+# ------------ Dynamos ------------ #
+
 # This uses a "sneaky invoke" hack to allow passage of diffs into user-defined functions whose argtypes do not allow it.
-@dynamo function (mx::UpdateContext{C, T, K})(f, ::Type{S}, args...) where {S <: Tuple, C, T, K}
+@dynamo function (mx::UpdateContext{J, C, T, K})(f, ::Type{S}, args...) where {J, S <: Tuple, C, T, K}
 
     # Check for primitive.
     ir = IR(f, S.parameters...)
     ir == nothing && return
+    opt = extract_options(J)
 
     # Equivalent to static DSL optimizations.
-    if K <: DynamicMap || !control_flow_check(ir)
+    if K <: DynamicMap || !control_flow_check(ir) || opt.Spec == :off
 
         # Release IR normally.
-        jaynesize_transform!(ir)
+        opt.AA == :on && jaynesize_transform!(ir)
         ir = recur(ir)
         argument!(ir, at = 2)
         ir = renumber(ir)
@@ -56,9 +63,9 @@ end
 
         # Dynamic specialization transform.
         ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
-       
+
         # Automatic addressing transform.
-        jaynesize_transform!(ir)
+        opt.AA == :on && jaynesize_transform!(ir)
     end
     ir
 end

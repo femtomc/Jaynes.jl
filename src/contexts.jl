@@ -1,3 +1,5 @@
+# ------------ Executions contexts ------------ #
+
 abstract type ExecutionContext end
 
 # These are "soft" interfaces, not all of these methods apply to every subtype of ExecutionContext.
@@ -21,6 +23,16 @@ function add_call!(ctx::T, addr, cs::C) where {T <: ExecutionContext, C <: CallS
     ctx.score += get_score(cs)
     set_sub!(ctx.tr, addr, cs)
 end
+
+# ----------- Control compiler passes with options ------------ #
+
+struct CompilationOptions{AA, Spec} end
+
+const DefaultPipeline= CompilationOptions{:off, :off}
+const SpecializePipeline = CompilationOptions{:off, :on}
+const AutomaticAddressingPipeline = CompilationOptions{:on, :off}
+
+extract_options(::Type{CompilationOptions{AA, Spec}}) where {AA, Spec} = (AA = AA, Spec = Spec)
 
 # ------------ includes ------------ #
 

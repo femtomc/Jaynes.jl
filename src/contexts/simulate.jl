@@ -1,26 +1,32 @@
-mutable struct SimulateContext{T <: AddressMap, 
+mutable struct SimulateContext{J <: CompilationOptions,
+                               T <: AddressMap, 
                                P <: AddressMap} <: ExecutionContext
     tr::T
     score::Float64
     visited::Visitor
     params::P
+    SimulateContext{J}(tr::T, score::Float64, visited::Visitor, params::P) where {J, T, P} = new{J, T, P}(tr, score, visited, params)
 end
 
 function Simulate(tr, params)
-    SimulateContext(tr,
-                    0.0, 
-                    Visitor(), 
-                    params)
+    SimulateContext{DefaultPipeline}(tr,
+                                     0.0, 
+                                     Visitor(), 
+                                     params)
 end
 
-@dynamo function (sx::SimulateContext)(a...)
+# ------------ Dynamos ------------ #
+
+@dynamo function (sx::SimulateContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    jaynesize_transform!(ir)
+    opt = extract_options(J)
+    opt.AA == :on && jaynesize_transform!(ir)
     ir = recur(ir)
     ir
 end
 
+# Fixes for Base.
 function (sx::SimulateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...)
     flt = flatten(args)
     addr, rest = flt[1], flt[2 : end]
@@ -99,20 +105,6 @@ function simulate(params::P, model::Function, args...) where P <: AddressMap
     return ret, DynamicCallSite(ctx.tr, ctx.score, model, args, ret)
 end
 
-function simulate(model::typeof(trace), d::Distribution{T}) where T
-    ctx = Simulate(Trace(), Empty())
-    addr = gensym()
-    ret = ctx(trace, addr, d)
-    return ret, get_sub(ctx.tr, addr)
-end
-
-function simulate(params::P, model::typeof(trace), d::Distribution{T}) where {P <: AddressMap, T}
-    ctx = Simulate(Trace(), params)
-    addr = gensym()
-    ret = ctx(trace, addr, d)
-    return ret, get_sub(ctx.tr, addr)
-end
-
 # ------------ Documentation ------------ #
 
 @doc(
@@ -143,4 +135,3 @@ ret, cl = simulate(fn::typeof(trace), d::Distribution{T}; params = LearnableByAd
 
 `simulate` function provides an API to the `SimulateContext` execution context. You can use this function on any of the matching signatures above - it will return the return value `ret`, and a `RecordSite` instance specialized to the call. `simulate` is used to express unconstrained generation of a probabilistic program trace, without likelihood weight recording.
 """, simulate)
-

@@ -1,30 +1,18 @@
-mutable struct AssessContext{M <: AddressMap,
-                            P <: AddressMap} <: ExecutionContext
+mutable struct AssessContext{J <: CompilationOptions,
+                             M <: AddressMap,
+                             P <: AddressMap} <: ExecutionContext
     target::M
     weight::Float64
     visited::Visitor
     params::P
-end
-
-function Assess(obs::Vector)
-    AssessContext(target(obs),
-                 0.0,
-                 Visitor(),
-                 Empty())
-end
-
-function Assess(obs::AddressMap)
-    AssessContext(obs, 
-                 0.0, 
-                 Visitor(), 
-                 Empty())
+    AssessContext{J}(target::M, weight::Float64, visited::Visitor, params::P) where {J, M, P} = new{J, M, P}(target, weight, visited, params)
 end
 
 function Assess(obs::AddressMap, params)
-    AssessContext(obs, 
-                 0.0, 
-                 Visitor(),
-                 params)
+    AssessContext{DefaultPipeline}(obs, 
+                                   0.0, 
+                                   Visitor(),
+                                   params)
 end
 
 @dynamo function (sx::AssessContext)(a...)
@@ -44,8 +32,8 @@ end
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::AssessContext)(call::typeof(trace), 
-                                     addr::A, 
-                                     d::Distribution{K}) where {A <: Address, K}
+                                      addr::A, 
+                                      d::Distribution{K}) where {A <: Address, K}
     visit!(ctx, addr)
     haskey(ctx.target, addr) || error("AssessError: constrained target must provide constraints for all possible addresses in trace. Missing at address $addr.")
     val = getindex(ctx.target, addr)
@@ -71,9 +59,9 @@ end
 # ------------ Call sites ------------ #
 
 @inline function (ctx::AssessContext)(c::typeof(trace),
-                                     addr::A,
-                                     call::Function,
-                                     args...) where A <: Address
+                                      addr::A,
+                                      call::Function,
+                                      args...) where A <: Address
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)
@@ -83,10 +71,10 @@ end
 end
 
 @inline function (ctx::AssessContext)(c::typeof(trace),
-                                     addr::A,
-                                     call::G,
-                                     args...) where {G <: GenerativeFunction,
-                                                     A <: Address}
+                                      addr::A,
+                                      call::G,
+                                      args...) where {G <: GenerativeFunction,
+                                                      A <: Address}
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)
@@ -98,7 +86,7 @@ end
 # ------------ Convenience ------------ #
 
 function assess(sel::L, fn::Function, args...) where L <: AddressMap
-    ctx = Assess(sel)
+    ctx = Assess(sel, Empty())
     ret = ctx(fn, args...)
     b, missed = compare(sel, ctx.visited)
     b || error("AssessError: did not visit all constraints in target.\nDid not visit: $(missed).")
@@ -108,15 +96,6 @@ end
 function assess(sel::L, params, fn::Function, args...) where L <: AddressMap
     ctx = Assess(sel, params)
     ret = ctx(fn, args...)
-    b, missed = compare(sel, ctx.visited)
-    b || error("AssessError: did not visit all constraints in target.\nDid not visit: $(missed).")
-    return ret, ctx.weight
-end
-
-function assess(sel::L, fn::typeof(trace), d::Distribution{K}) where {L <: AddressMap, K}
-    ctx = Assess(sel)
-    addr = gensym()
-    ret = ctx(fn, addr, d)
     b, missed = compare(sel, ctx.visited)
     b || error("AssessError: did not visit all constraints in target.\nDid not visit: $(missed).")
     return ret, ctx.weight

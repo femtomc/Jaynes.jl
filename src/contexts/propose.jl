@@ -1,32 +1,29 @@
-# ------------ Context ------------ #
+# ------------ Propose compilation context ------------ #
 
-mutable struct ProposeContext{T <: AddressMap, 
+mutable struct ProposeContext{J <: CompilationOptions,
+                              T <: AddressMap, 
                               P <: AddressMap} <: ExecutionContext
     map::T
     score::Float64
     visited::Visitor
     params::P
-end
-
-function Propose(tr)
-    ProposeContext(tr, 
-                   0.0, 
-                   Visitor(), 
-                   Empty())
+    ProposeContext{J}(tr::T, score::Float64, visited::Visitor, params::P) where {J, T, P} = new{J, T, P}(tr, score, visited, params)
 end
 
 function Propose(tr, params)
-    ProposeContext(tr, 
-                   0.0, 
-                   Visitor(), 
-                   params)
+    ProposeContext{DefaultPipeline}(tr, 
+                                    0.0, 
+                                    Visitor(), 
+                                    params)
 end
 
-# Go go dynamo!
-@dynamo function (px::ProposeContext)(a...)
+# ------------ Dynamo ------------ #
+
+@dynamo function (px::ProposeContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    jaynesize_transform!(ir)
+    opt = extract_options(J)
+    opt.AA == :on && jaynesize_transform!(ir)
     ir = recur(ir)
     ir
 end
@@ -115,13 +112,6 @@ function propose(params, fn::Function, args...)
     ctx = Propose(DynamicMap{Value}(), params)
     ret = ctx(fn, args...)
     return ret, ctx.map, ctx.score
-end
-
-function propose(fn::typeof(trace), d::Distribution{K}) where K
-    ctx = Propose()
-    addr = gensym()
-    ret = ctx(fn, addr, d)
-    return ret, get_sub(ctx.map, addr), ctx.score
 end
 
 # ------------ Documentation ------------ #

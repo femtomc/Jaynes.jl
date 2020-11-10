@@ -31,16 +31,19 @@ end
 
 # ------------ Backpropagation contexts ------------ #
 
-abstract type BackpropagationContext <: ExecutionContext end
+abstract type BackpropagationContext{J} <: ExecutionContext end
 
 # Go go dynamo!
-@dynamo function (bx::BackpropagationContext)(a...)
+@dynamo function (bx::BackpropagationContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
+    opt = extract_options(J)
+    opt.AA == :on && jaynesize_transform!(ir)
     ir = recur(ir)
-    jaynesize_transform!(ir)
     ir
 end
+
+# Base fixes.
 (bx::BackpropagationContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = bx(c, flatten(args)...)
 function (bx::BackpropagationContext)(::typeof(Base.collect), generator::Base.Generator)
     map(generator.iter) do i
@@ -49,31 +52,34 @@ function (bx::BackpropagationContext)(::typeof(Base.collect), generator::Base.Ge
 end
 
 # Learnable parameters
-mutable struct ParameterBackpropagateContext{T <: CallSite, 
+mutable struct ParameterBackpropagateContext{J <: CompilationOptions,
+                                             T <: CallSite, 
                                              S <: AddressMap,
-                                             P <: AddressMap} <: BackpropagationContext
+                                             P <: AddressMap} <: BackpropagationContext{J}
     call::T
     weight::Float64
     fillables::S
     initial_params::P
     params::Store
     param_grads::Gradients
+    ParameterBackpropagateContext{J}(call::T, weight::Float64, fillables::S, initial_params::P, params::Store, param_grads::Gradients) where {J, T, S, P} = new{J, T, S, P}(call, weight, fillables, initial_params, params, param_grads)
 end
 
 function ParameterBackpropagate(call::T, sel::S, init, params, param_grads::Gradients) where {T <: CallSite, S <: AddressMap, K <: Target}
-    ParameterBackpropagateContext(call, 
-                                  0.0, 
-                                  sel, 
-                                  init, 
-                                  params, 
-                                  param_grads)
+    ParameterBackpropagateContext{DefaultPipeline}(call, 
+                                                  0.0, 
+                                                  sel, 
+                                                  init, 
+                                                  params, 
+                                                  param_grads)
 end
 
 # Choice sites
-mutable struct ChoiceBackpropagateContext{T <: CallSite, 
+mutable struct ChoiceBackpropagateContext{J <: CompilationOptions,
+                                          T <: CallSite, 
                                           S <: AddressMap, 
                                           P <: AddressMap, 
-                                          K <: Target} <: BackpropagationContext
+                                          K <: Target} <: BackpropagationContext{J}
     call::T
     weight::Float64
     fillables::S
@@ -81,16 +87,17 @@ mutable struct ChoiceBackpropagateContext{T <: CallSite,
     choices::Store
     choice_grads::Gradients
     target::K
+    ChoiceBackpropagateContext{J}(call::T, weight::Float64, fillables::S, initial_params::P, choices::Store, choice_grads::Gradients, target::K) where {J, T, S, P, K} = new{J, T, S, P, K}(call, weight, fillables, initial_params, choices, choice_grads, target)
 end
 
 function ChoiceBackpropagate(call::T, fillables::S, init, choice_store, choice_grads, sel::K) where {T <: CallSite, S <: AddressMap, K <: Target}
-    ChoiceBackpropagateContext(call, 
-                               0.0, 
-                               fillables, 
-                               init, 
-                               choice_store,
-                               choice_grads,
-                               sel)
+    ChoiceBackpropagateContext{DefaultPipeline}(call, 
+                                                0.0, 
+                                                fillables, 
+                                                init, 
+                                                choice_store,
+                                                choice_grads,
+                                                sel)
 end
 
 # ------------ Reading parameters and choices ------------ #

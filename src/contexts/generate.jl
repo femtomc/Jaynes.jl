@@ -1,6 +1,7 @@
 # ------------ Context ------------ #
 
-mutable struct GenerateContext{T <: AddressMap, 
+mutable struct GenerateContext{J <: CompilationOptions,
+                               T <: AddressMap, 
                                K <: AddressMap, 
                                P <: AddressMap} <: ExecutionContext
     tr::T
@@ -9,40 +10,25 @@ mutable struct GenerateContext{T <: AddressMap,
     score::Float64
     visited::Visitor
     params::P
-end
-
-function Generate(target::AddressMap)
-    GenerateContext(DynamicTrace(), 
-                    target, 
-                    0.0,
-                    0.0,
-                    Visitor(),
-                    Empty())
-end
-
-function Generate(target::AddressMap, params)
-    GenerateContext(DynamicTrace(), 
-                    target, 
-                    0.0,
-                    0.0,
-                    Visitor(),
-                    params)
+    GenerateContext{J}(tr::T, target::K, weight::Float64, score::Float64, visited::Visitor, params::P) where {J, T, K, P} = new{J, T, K, P}(tr, target, weight, score, visited, params)
 end
 
 function Generate(tr::AddressMap, target::AddressMap, params::AddressMap)
-    GenerateContext(tr, 
-                    target,
-                    0.0,
-                    0.0,
-                    Visitor(),
-                    params)
+    GenerateContext{DefaultPipeline}(tr, 
+                                     target,
+                                     0.0,
+                                     0.0,
+                                     Visitor(),
+                                     params)
 end
 
-# Go go dynamo!
-@dynamo function (gx::GenerateContext)(a...)
+# ------------ Dynamo ------------ #
+
+@dynamo function (gx::GenerateContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    jaynesize_transform!(ir)
+    opt = extract_options(J)
+    opt.AA == :on && jaynesize_transform!(ir)
     ir = recur(ir)
     ir
 end
@@ -52,6 +38,7 @@ function (gx::GenerateContext)(::typeof(Base.collect), generator::Base.Generator
         gx(generator.f, i)
     end
 end
+
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::GenerateContext)(call::typeof(trace), 
@@ -118,22 +105,15 @@ end
 # ------------ Convenience ------------ #
 
 function generate(target::L, fn::Function, args...) where L <: AddressMap
-    ctx = Generate(target)
+    ctx = Generate(DynamicTrace(), target, Empty())
     ret = ctx(fn, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
 end
 
 function generate(target::L, params, fn::Function, args...) where L <: AddressMap
-    ctx = Generate(target, params)
+    ctx = Generate(DynamicTrace(), target, params)
     ret = ctx(fn, args...)
     return ret, DynamicCallSite(ctx.tr, ctx.score, fn, args, ret), ctx.weight
-end
-
-function generate(target::L, fn::typeof(trace), d::Distribution{K}) where {L <: AddressMap, K}
-    ctx = Generate(target)
-    addr = gensym()
-    ret = ctx(fn, addr, d)
-    return ret, get_sub(ctx.tr, addr), ctx.weight
 end
 
 # ------------ Documentation ------------ #
