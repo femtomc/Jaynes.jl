@@ -1,3 +1,4 @@
+# This is a generic glue function.
 @inline unwrap(gr) = gr
 @inline unwrap(gr::GlobalRef) = gr.name
 @inline unwrap(v::Val{K}) where K = K
