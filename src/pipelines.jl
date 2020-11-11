@@ -1,4 +1,4 @@
-# ------------ Executions contexts ------------ #
+# ------------ Executions pipelines ------------ #
 
 abstract type ExecutionContext end
 
@@ -26,21 +26,27 @@ end
 
 # ----------- Control compiler passes with options ------------ #
 
-struct CompilationOptions{AA, Spec} end
+abstract type CompilationOptions end
 
-const DefaultPipeline= CompilationOptions{:off, :off}
-const SpecializePipeline = CompilationOptions{:off, :on}
-const AutomaticAddressingPipeline = CompilationOptions{:on, :off}
+struct DefaultCompilationOptions{Spec, AA} <: CompilationOptions end
 
-extract_options(::Type{CompilationOptions{AA, Spec}}) where {AA, Spec} = (AA = AA, Spec = Spec)
+const DefaultPipeline= DefaultCompilationOptions{:off, :off}
+const SpecializerPipeline = DefaultCompilationOptions{:off, :on}
+const AutomaticAddressingPipeline = DefaultCompilationOptions{:on, :off}
+
+extract_options(::Type{DefaultCompilationOptions{AA, Spec}}) where {AA, Spec} = (AA = AA, Spec = Spec)
 
 # ------------ includes ------------ #
 
+include("pipelines/gradient_store.jl")
+include("pipelines/contexts.jl")
+include("pipelines/pipelines.jl")
+
 # Generating traces and scoring them according to models.
-include("contexts/generate.jl")
-include("contexts/simulate.jl")
-include("contexts/propose.jl")
-include("contexts/assess.jl")
+include("pipelines/gfi/generate.jl")
+include("pipelines/gfi/simulate.jl")
+include("pipelines/gfi/propose.jl")
+include("pipelines/gfi/assess.jl")
 
 # Used to adjust the score when branches need to be pruned.
 function adjust_to_intersection(am::T, visited::V) where {T <: AddressMap, V <: Visitor}
@@ -53,9 +59,9 @@ function adjust_to_intersection(am::T, visited::V) where {T <: AddressMap, V <: 
     adj_w
 end
 
-include("contexts/update.jl")
-include("contexts/regenerate.jl")
+include("pipelines/gfi/update.jl")
+include("pipelines/gfi/regenerate.jl")
 
 # Gradients.
-include("contexts/backpropagate.jl")
-include("contexts/forwardmode.jl")
+include("pipelines/gfi/backpropagate.jl")
+include("pipelines/gfi/forwardmode.jl")

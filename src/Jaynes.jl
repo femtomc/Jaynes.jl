@@ -135,7 +135,7 @@ export pushforward, _pushforward
 export generate_graph_ir
 export TraceDefaults
 
-include("contexts.jl")
+include("pipelines.jl")
 export record_cached!
 
 include("language_extensions.jl")

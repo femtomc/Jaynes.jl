@@ -1,28 +1,9 @@
-mutable struct SimulateContext{J <: CompilationOptions,
-                               T <: AddressMap, 
-                               P <: AddressMap} <: ExecutionContext
-    tr::T
-    score::Float64
-    visited::Visitor
-    params::P
-    SimulateContext{J}(tr::T, score::Float64, visited::Visitor, params::P) where {J, T, P} = new{J, T, P}(tr, score, visited, params)
-end
-
-function Simulate(opt::J, tr::T, params) where {J, T}
-    SimulateContext{J}(tr,
-                       0.0, 
-                       Visitor(), 
-                       params)
-end
-
-# ------------ Dynamos ------------ #
+# ------------ Staging ------------ #
 
 @dynamo function (sx::SimulateContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
-    ir = recur(ir)
+    ir = pipeline(ir, SimulateContext{J})
     ir
 end
 

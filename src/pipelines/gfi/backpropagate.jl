@@ -1,45 +1,9 @@
-# Utility.
-merge(tp1::Tuple{}, tp2::Tuple{}) = tp1
-merge(tp1::Tuple{Nothing}, tp2::Tuple{Nothing}) where T = tp1
-merge(tp1::NTuple{N, Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
-merge(tp1::Array{Float64}, tp2::NTuple{N, Float64}) where N = [tp1[i] + tp2[i] for i in 1 : N]
+# ------------ Staging ------------ #
 
-# ------------ Gradient store ------------ #
-
-struct Store
-    params::Dict{Address,Any}
-    Store() = new(Dict{Address, Any}())
-    Store(d::Dict{Address, Any}) = new(d)
-end
-haskey(ps::Store, addr) = haskey(ps.params, addr)
-setindex!(ps::Store, val, addr) = ps.params[addr] = val
-getindex(ps::Store, addr) = ps.params[addr]
-
-Zygote.@adjoint Store(params) = Store(params), store_grad -> (nothing,)
-
-function +(a::Store, b::Store)
-    params = Dict{Address, Any}()
-    for (k, v) in Iterators.flatten((a.params, b.params))
-        if !haskey(params, k)
-            params[k] = v
-        else
-            params[k] += v
-        end
-    end
-    Store(params)
-end
-
-# ------------ Backpropagation contexts ------------ #
-
-abstract type BackpropagationContext{J} <: ExecutionContext end
-
-# Go go dynamo!
 @dynamo function (bx::BackpropagationContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
-    ir = recur(ir)
+    ir = pipeline(ir, BackpropagationContext{J})
     ir
 end
 
@@ -49,55 +13,6 @@ function (bx::BackpropagationContext)(::typeof(Base.collect), generator::Base.Ge
     map(generator.iter) do i
         bx(generator.f, i)
     end
-end
-
-# Learnable parameters
-mutable struct ParameterBackpropagateContext{J <: CompilationOptions,
-                                             T <: CallSite, 
-                                             S <: AddressMap,
-                                             P <: AddressMap} <: BackpropagationContext{J}
-    call::T
-    weight::Float64
-    fillables::S
-    initial_params::P
-    params::Store
-    param_grads::Gradients
-    ParameterBackpropagateContext{J}(call::T, weight::Float64, fillables::S, initial_params::P, params::Store, param_grads::Gradients) where {J, T, S, P} = new{J, T, S, P}(call, weight, fillables, initial_params, params, param_grads)
-end
-
-function ParameterBackpropagate(call::T, sel::S, init, params, param_grads::Gradients) where {T <: CallSite, S <: AddressMap, K <: Target}
-    ParameterBackpropagateContext{DefaultPipeline}(call, 
-                                                  0.0, 
-                                                  sel, 
-                                                  init, 
-                                                  params, 
-                                                  param_grads)
-end
-
-# Choice sites
-mutable struct ChoiceBackpropagateContext{J <: CompilationOptions,
-                                          T <: CallSite, 
-                                          S <: AddressMap, 
-                                          P <: AddressMap, 
-                                          K <: Target} <: BackpropagationContext{J}
-    call::T
-    weight::Float64
-    fillables::S
-    initial_params::P
-    choices::Store
-    choice_grads::Gradients
-    target::K
-    ChoiceBackpropagateContext{J}(call::T, weight::Float64, fillables::S, initial_params::P, choices::Store, choice_grads::Gradients, target::K) where {J, T, S, P, K} = new{J, T, S, P, K}(call, weight, fillables, initial_params, choices, choice_grads, target)
-end
-
-function ChoiceBackpropagate(call::T, fillables::S, init, choice_store, choice_grads, sel::K) where {T <: CallSite, S <: AddressMap, K <: Target}
-    ChoiceBackpropagateContext{DefaultPipeline}(call, 
-                                                0.0, 
-                                                fillables, 
-                                                init, 
-                                                choice_store,
-                                                choice_grads,
-                                                sel)
 end
 
 # ------------ Reading parameters and choices ------------ #

@@ -1,27 +1,13 @@
-mutable struct AssessContext{J <: CompilationOptions,
-                             M <: AddressMap,
-                             P <: AddressMap} <: ExecutionContext
-    target::M
-    weight::Float64
-    visited::Visitor
-    params::P
-    AssessContext{J}(target::M, weight::Float64, visited::Visitor, params::P) where {J, M, P} = new{J, M, P}(target, weight, visited, params)
-end
+# ------------ Staging ------------ #
 
-function Assess(opt::J, obs::AddressMap, params) where J
-    AssessContext{J}(obs, 
-                     0.0, 
-                     Visitor(),
-                     params)
-end
-
-@dynamo function (sx::AssessContext)(a...)
+@dynamo function (sx::AssessContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    jaynesize_transform!(ir)
-    ir = recur(ir)
+    ir = pipeline(ir, AssessContext{J})
     ir
 end
+
+# Base fixes.
 (sx::AssessContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = sx(c, flatten(args)...)
 function (sx::AssessContext)(::typeof(Base.collect), generator::Base.Generator)
     map(generator.iter) do i

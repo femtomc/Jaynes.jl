@@ -1,37 +1,12 @@
-# ------------ Context ------------ #
-
-mutable struct GenerateContext{J <: CompilationOptions,
-                               T <: AddressMap, 
-                               K <: AddressMap, 
-                               P <: AddressMap} <: ExecutionContext
-    tr::T
-    target::K
-    weight::Float64
-    score::Float64
-    visited::Visitor
-    params::P
-    GenerateContext{J}(tr::T, target::K, weight::Float64, score::Float64, visited::Visitor, params::P) where {J, T, K, P} = new{J, T, K, P}(tr, target, weight, score, visited, params)
-end
-
-function Generate(::J, tr::AddressMap, target::AddressMap, params::AddressMap) where J <: CompilationOptions
-    GenerateContext{J}(tr, 
-                       target,
-                       0.0,
-                       0.0,
-                       Visitor(),
-                       params)
-end
-
-# ------------ Dynamo ------------ #
+# ------------ Staging ------------ #
 
 @dynamo function (gx::GenerateContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
-    ir = recur(ir)
+    ir = pipeline(ir, GenerateContext{J})
     ir
 end
+
 (gx::GenerateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = gx(c, flatten(args)...)
 function (gx::GenerateContext)(::typeof(Base.collect), generator::Base.Generator)
     map(generator.iter) do i

@@ -1,4 +1,4 @@
-# ------------ DSL implementation for Jaynes ------------ #
+# ------------ GFI interface implementations for Jaynes ------------ #
 
 # Utilities.
 is_choice(::Choice) = true
@@ -156,7 +156,6 @@ function JFunction(func::Function,
 end
 
 @inline (jfn::JFunction)(args...) = jfn.fn(args...)
-@inline get_fn(jfn::JFunction) = jfn.fn
 @inline has_argument_grads(jfn::JFunction) = jfn.has_argument_grads
 @inline get_params(jfn::JFunction) = jfn.params
 @inline get_param(jfn::JFunction, name) = getindex(jfn.params, name)
@@ -173,17 +172,10 @@ init_param!(jfn, v::Vector{Pair{T, K}}) where {T <: Tuple, K} = begin
     end
 end
 
+# Jaynes extensions.
+@inline get_fn(jfn::JFunction) = jfn.fn
 @inline get_analysis(jfn::JFunction) = jfn.reachability
-
 @inline get_ir(jfn::JFunction) = jfn.ir
-
-function generate_graph_ir(jfn::JFunction)
-    ssa_ir = get_ir(jfn)
-    flow = get_analysis(jfn)
-    graph_ir = graph_walk(ssa_ir, flow)
-    graph_ir
-end
-
 @inline get_trace_type(jfn::JFunction{C, N, R, T}) where {C, N, R, T} = T
 @inline get_opt_type(::JFunction{C}) where C = C
 
@@ -221,6 +213,7 @@ function assess(jfn::JFunction{C}, args::Tuple, choices::JChoiceMap) where C
 end
 @inline assess(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = assess(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
 
+# TODO: must accept any inheritor of Selection.
 function project(jtr::JTrace, sel::JSelection)
     w, proj = projection(get_record(jtr), unwrap(sel))
     w
@@ -349,94 +342,6 @@ function apply_update!(state::GradientDescentJState)
     state.t += 1
 end
 
-# ------------ Convenience macro ------------ #
-
-function _jaynes(check, hints, def)
-
-    # Matches longdef function definitions.
-    if @capture(def, function decl_(args__) body__ end)
-        argtypes = map(args) do a
-            if a isa Expr 
-                a.head == :(::) ? eval(a.args[2]) : Any
-            else
-                Any
-            end
-        end
-        trans = quote 
-            $def
-            JFunction($decl, 
-                      tuple($argtypes...), 
-                      tuple([false for _ in $argtypes]...), 
-                      false, 
-                      Any;
-                      static_checks = $check,
-                      hints = $hints)
-        end
-
-        # Matches thunks.
-    elseif @capture(def, () -> body__)
-        trans = quote
-            JFunction($def, 
-                      (Tuple{}, ),
-                      (false, ),
-                      false, 
-                      Any;
-                      static_checks = $check,
-                      hints = $hints)
-        end
-
-        # Matches lambdas with formals.
-    elseif @capture(def, (args_) -> body__)
-        if args isa Symbol
-            argtypes = [Any]
-        elseif args.head == :(::)
-            argtypes = [eval(args.args[2])]
-        else
-            argtypes = map(args.args) do a
-                if a isa Expr 
-                    a.head == :(::) ? eval(a.args[2]) : Any
-                else
-                    Any
-                end
-            end
-        end
-        trans = quote
-            JFunction($def, 
-                      tuple($argtypes...), 
-                      tuple([false for _ in $argtypes]...), 
-                      false, 
-                      Any;
-                      static_checks = $check,
-                      hints = $hints)
-        end
-    else
-        error("ParseError (@jaynes): requires a longdef function definition or an anonymous function definition.")
-    end
-
-    trans
-end
-
-macro jaynes(expr)
-    def = _sugar(expr)
-    trans = _jaynes(false, false, def)
-    esc(trans)
-end
-
-macro jaynes(expr, flag)
-    def = _sugar(expr)
-    options = [:check, :hints]
-    if flag isa Expr && flag.head == :tuple
-        trans = _jaynes(map(options) do o
-                            o in flag.args
-                        end..., def)
-    elseif flag == :check
-        trans = _jaynes(true, false, def)
-    elseif flag == :hints
-        trans = _jaynes(false, true, def)
-    end
-    esc(trans)
-end
-
 # ------------ Utilities ------------ #
 
 function display(jfn::JFunction{C, N, R, T}; show_all = false) where {C, N, R, T}
@@ -454,51 +359,4 @@ function display(jfn::JFunction{C, N, R, T}; show_all = false) where {C, N, R, T
     else
         println(" ___________________________________\n")
     end
-end
-
-function display(vtr::Gen.VectorTrace{A, K, JTrace}; show_values = true, show_types = false) where {A, K}
-    addrs = Any[]
-    chd = Dict()
-    meta = Dict()
-    for (k, v) in get_submaps_shallow(get_choices(vtr))
-        collect!((k, ), addrs, chd, v, meta)
-    end
-    println(" ___________________________________\n")
-    println("             Address Map\n")
-    if show_values
-        for a in addrs
-            if haskey(meta, a) && haskey(chd, a)
-                println(" $(meta[a]) $(a) = $(chd[a])")
-            elseif haskey(chd, a)
-                println(" $(a) = $(chd[a])")
-            else
-                println(" $(a)")
-            end
-        end
-    elseif show_types
-        for a in addrs
-            if haskey(meta, a) && haskey(chd, a)
-                println(" $(meta[a]) $(a) = $(typeof(chd[a]))")
-            elseif haskey(chd, a)
-                println(" $(a) = $(typeof(chd[a]))")
-            else
-                println(" $(a)")
-            end
-        end
-    elseif show_types && show_values
-        for a in addrs
-            if haskey(meta, a) && haskey(chd, a)
-                println(" $(meta[a]) $(a) = $(chd[a]) : $(typeof(chd[a]))")
-            elseif haskey(chd, a)
-                println(" $(a) = $(chd[a]) : $(typeof(chd[a]))")
-            else
-                println(" $(a)")
-            end
-        end
-    else
-        for a in addrs
-            println(" $(a)")
-        end
-    end
-    println(" ___________________________________\n")
 end

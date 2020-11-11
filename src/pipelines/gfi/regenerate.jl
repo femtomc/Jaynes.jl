@@ -1,72 +1,10 @@
-# ------------ Regenerate compilation context ------------ #
-
-mutable struct RegenerateContext{J <: CompilationOptions,
-                                 C <: AddressMap,
-                                 T <: AddressMap, 
-                                 K <: AddressMap,
-                                 D <: AddressMap,
-                                 P <: AddressMap} <: ExecutionContext
-    prev::C
-    tr::T
-    target::K
-    weight::Float64
-    score::Float64
-    discard::D
-    visited::Visitor
-    params::P
-    RegenerateContext{J}(cl::C, tr::T, target::K, weight::Float64, score::Float64, discard::D, visited::Visitor, params::P) where {J, C, T, K, D, P} = new{J, C, T, K, D, P}(cl, tr, target, weight, score, discard, visited, params)
-end
-
-# Used during specialization for caching sites which don't need to be re-visited.
-@inline function record_cached!(ctx::RegenerateContext, addr)
-    visit!(ctx, addr)
-    sub = get_sub(ctx.prev, addr)
-    sc = get_score(sub)
-    ctx.score += get_score(sub)
-    set_sub!(ctx.tr, addr, sub)
-    get_value(sub)
-end
-
-function Regenerate(::J, target::K, ps, cl::C, tr, discard) where {J <: CompilationOptions, K <: AddressMap, C <: CallSite}
-    RegenerateContext{J}(cl, 
-                         tr,
-                         target, 
-                         0.0, 
-                         0.0, 
-                         discard,
-                         Visitor(), 
-                         Empty())
-end
-
-# ------------ Dynamos ------------ #
+# ------------ Staging ------------ #
 
 # This uses a "sneaky invoke" hack to allow passage of diffs into user-defined functions whose argtypes do not allow it.
 @dynamo function (mx::RegenerateContext{J, C, T, K})(f, ::Type{S}, args...) where {J, S <: Tuple, C, T, K}
-
-    # Check for primitive.
     ir = IR(f, S.parameters...)
     ir == nothing && return
-    opt = extract_options(J)
-
-    # Equivalent to static DSL optimizations.
-    if K <: DynamicMap || !control_flow_check(ir) || opt.Spec == :off
-
-        # Release IR normally.
-        opt.AA == :on && jaynesize_transform!(ir)
-        ir = recur(ir)
-        argument!(ir, at = 2)
-        ir = renumber(ir)
-    else
-
-        # Argument difference inference.
-        tr = diff_inference(f, S.parameters, args)
-
-        # Dynamic specialization transform.
-        ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
-
-        # Automatic addressing transform.
-        opt.AA == :on && jaynesize_transform!(ir)
-    end
+    ir = pipeline(ir, RegenerateContext{J}, K)
     ir
 end
 

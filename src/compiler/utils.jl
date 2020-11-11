@@ -1,6 +1,17 @@
-# Type handling
+# Lower a function signature directly to IR.
+function lower_to_ir(call, argtypes...)
+    sig = length(argtypes) == 1 && argtypes[1] == Tuple{} ? begin
+        Tuple{typeof(call)}
+    end : Tuple{typeof(call), argtypes...}
+    m = meta(sig)
+    ir = IR(m)
+    return ir
+end
 
-"Returns the signature of the matching method, specializing types as necessary."
+# Check for control flow in IR - if multiple basic blocks, transfer of control is present.
+@inline control_flow_check(ir) = !(length(ir.blocks) > 1)
+
+# Returns the signature of the matching method, specializing types as necessary.
 function signature(fn_type::Type, arg_types::Type...)
     meta = IRTools.meta(Tuple{fn_type, arg_types...})
     if isnothing(meta) return nothing end
@@ -16,7 +27,7 @@ function signature(fn_type::Type, arg_types::Type...)
     return sig_types
 end
 
-"Unwraps UnionAll types, returning the innermost body with a list of TypeVars."
+# Unwraps UnionAll types, returning the innermost body with a list of TypeVars.
 function unparameterize(@nospecialize(T::Type))
     vars = TypeVar[]
     while T isa UnionAll
@@ -26,7 +37,7 @@ function unparameterize(@nospecialize(T::Type))
     return T, vars
 end
 
-"Rewraps parametric types with the provided TypeVars."
+# Rewraps parametric types with the provided TypeVars.
 function reparameterize(@nospecialize(T::Type), vars::Vector{TypeVar})
     if T isa UnionAll
         T, origvars = unparameterize(T)
@@ -38,4 +49,3 @@ function reparameterize(@nospecialize(T::Type), vars::Vector{TypeVar})
     end
     return T
 end
-

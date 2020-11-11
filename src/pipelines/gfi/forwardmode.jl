@@ -1,34 +1,9 @@
-# ------------ Context ------------ #
+# ------------ Staging ------------ #
 
-# Support for forward mode automatic differentiation.
-mutable struct ForwardModeContext{J <: CompilationOptions,
-                                  T <: Tuple,
-                                  C <: AddressMap,
-                                  D,
-                                  P <: AddressMap} <: ExecutionContext
-    target::T
-    map::C
-    weight::D
-    visited::Visitor
-    params::P
-    ForwardModeContext{J}(target::T, map::C, weight::D, visited::Visitor, params::P) where {J, T, C, D, P} = new{J, T, C, D, P}(target, map, weight, visited, params)
-end
-
-function ForwardMode(addr, params, cl, weight)
-    ForwardModeContext{DefaultPipeline}(addr, 
-                                        cl, 
-                                        weight, 
-                                        Visitor(), 
-                                        params)
-end
-
-# Go go dynamo!
 @dynamo function (fx::ForwardModeContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
-    ir = recur(ir)
+    ir = pipeline(ir, ForwardModeContext{J})
     ir
 end
 
