@@ -41,27 +41,13 @@ extract_options(::Type{DefaultCompilationOptions{AA, Spec}}) where {AA, Spec} = 
 include("pipelines/gradient_store.jl")
 include("pipelines/contexts.jl")
 include("pipelines/pipelines.jl")
-
-# Generating traces and scoring them according to models.
 include("pipelines/gfi/generate.jl")
 include("pipelines/gfi/simulate.jl")
 include("pipelines/gfi/propose.jl")
 include("pipelines/gfi/assess.jl")
-
-# Used to adjust the score when branches need to be pruned.
-function adjust_to_intersection(am::T, visited::V) where {T <: AddressMap, V <: Visitor}
-    adj_w = 0.0
-    for (k, v) in get_iter(am)
-        haskey(visited, k) || begin
-            adj_w += get_score(v)
-        end
-    end
-    adj_w
-end
-
 include("pipelines/gfi/update.jl")
 include("pipelines/gfi/regenerate.jl")
-
-# Gradients.
 include("pipelines/gfi/backpropagate.jl")
 include("pipelines/gfi/forwardmode.jl")
+
+# ------------ Documentation ------------ #
