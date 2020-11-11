@@ -1,4 +1,5 @@
 abstract type Analysis end
+
 struct FlowAnalysis <: Analysis
     reach::Dict
     ancestors::Dict
@@ -99,8 +100,6 @@ function transitive_closure!(work, reach, s)
         end
     end
 end
-
-@inline unwrap(sym::QuoteNode) = sym.value
 
 function flow_analysis(ir)
     sites = Set(Variable[])

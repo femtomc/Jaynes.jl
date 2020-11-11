@@ -20,7 +20,7 @@ Options(recurse::Bool, useslots::Bool, naming::Symbol) =
 unpack(::Options{R, U, S}) where {R, U, S} = (R, U, S)
 
 "Transform the IR by wrapping sub-calls in `trace`(@ref)."
-function jaynesize_transform!(ir::IR, options::Options=DefaultOptions())
+function automatic_addressing_transform!(ir::IR, options::Options=DefaultOptions())
     recurse, useslots, naming = unpack(options)
     # Modify arguments
     #optarg = argument!(ir; at=1) # Add argument for options

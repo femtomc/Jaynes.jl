@@ -18,7 +18,7 @@ include("compiler/specializer/diffs.jl")
 include("compiler/specializer/transforms.jl")
 include("compiler/specializer/interface.jl")
 
-# Jaynesizer converts stochastic functions into PPs
-include("compiler/jaynesizer/jaynesize_transform.jl")
+# Automatic addressing converts stochastic functions into PPs
+include("compiler/automatic_addressing/automatic_addressing_transform.jl")
 
 # ------------ Documentation ------------ #

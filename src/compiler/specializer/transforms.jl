@@ -43,7 +43,7 @@ end
 
 # This pass strips the types from all basic block arguments (and thus, branches).
 function strip_types(ir)
-    pr = IRTools.Pipe(ir)
+    pr = Pipe(ir)
     for (v, st) in pr
         pr[v] = IRTools.Statement(st, type = Any)
     end
@@ -59,7 +59,7 @@ end
 
 # This pass wraps trace calls.
 function trace_wrapper(ir)
-    pr = IRTools.Pipe(ir)
+    pr = Pipe(ir)
     for (v, st) in pr
         expr = st.expr
         if expr.head == :call && expr.args[1] == trace && expr.args[2] isa QuoteNode
@@ -87,7 +87,7 @@ end
 
 # This pass prunes the IR of any NoChange nodes.
 function insert_cache_calls(ir, ks, flow)
-    pr = IRTools.Pipe(ir)
+    pr = Pipe(ir)
     for (v, st) in pr
         st.type != Change && check_reach(v, ks, flow) && substitute_get_value!(pr, v, st)
     end

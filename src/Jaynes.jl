@@ -66,7 +66,8 @@ using DistributionsAD
 # Plotting.
 using UnicodePlots: lineplot
 
-# Toplevel importants :)
+# ------------ Toplevel importants ------------ #
+
 const Address = Union{Int, Symbol, Pair}
 
 # This is primarily used when mapping choice maps to arrays.
@@ -77,12 +78,9 @@ isless(::Symbol, ::Int) = false
 isless(::Int, ::Pair) = true
 isless(::Pair, ::Int) = false
 
-# ------------ Com-pirate fixes ------------ #
+include("unwrap.jl")
 
-# TODO: This chunk below me is currently required to fix an unknown performance issue in Base. Don't be alarmed if this suddenly disappears in future versions.
-unwrap(gr::GlobalRef) = gr.name
-unwrap(v::Val{K}) where K = K
-unwrap(gr) = gr
+# ------------ Com-pirate fixes ------------ #
 
 # Whitelist includes vectorized calls.
 whitelist = [

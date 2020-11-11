@@ -2,7 +2,7 @@
 
 function pipeline(ir, ::Type{AssessContext{J}}) where J <: DefaultCompilationOptions
     opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
+    opt.AA == :on && automatic_addressing_transform!(ir)
     ir = recur(ir)
     ir
 end
@@ -16,7 +16,7 @@ function pipeline(ir, ::Type{UpdateContext{J}}, ::Type{K}) where {J <: DefaultCo
     if K <: DynamicMap || !control_flow_check(ir) || opt.Spec == :off
 
         # Release IR normally.
-        opt.AA == :on && jaynesize_transform!(ir)
+        opt.AA == :on && automatic_addressing_transform!(ir)
         ir = recur(ir)
         argument!(ir, at = 2) # Must include for "sneaky invoke" trick.
         ir = renumber(ir)
@@ -29,7 +29,7 @@ function pipeline(ir, ::Type{UpdateContext{J}}, ::Type{K}) where {J <: DefaultCo
         ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
 
         # Automatic addressing transform.
-        opt.AA == :on && jaynesize_transform!(ir)
+        opt.AA == :on && automatic_addressing_transform!(ir)
     end
     ir
 end
@@ -43,7 +43,7 @@ function pipeline(ir, ::Type{RegenerateContext{J}}, ::Type{K}) where {J <: Defau
     if K <: DynamicMap || !control_flow_check(ir) || opt.Spec == :off
 
         # Release IR normally.
-        opt.AA == :on && jaynesize_transform!(ir)
+        opt.AA == :on && automatic_addressing_transform!(ir)
         ir = recur(ir)
         argument!(ir, at = 2) # Must include for "sneaky invoke" trick.
         ir = renumber(ir)
@@ -56,42 +56,42 @@ function pipeline(ir, ::Type{RegenerateContext{J}}, ::Type{K}) where {J <: Defau
         ir = optimization_pipeline(ir.meta, tr, get_address_schema(K))
 
         # Automatic addressing transform.
-        opt.AA == :on && jaynesize_transform!(ir)
+        opt.AA == :on && automatic_addressing_transform!(ir)
     end
     ir
 end
 
 function pipeline(ir, ::Type{GenerateContext{J}}) where J <: DefaultCompilationOptions
     opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
+    opt.AA == :on && automatic_addressing_transform!(ir)
     ir = recur(ir)
     ir
 end
 
 function pipeline(ir, ::Type{SimulateContext{J}}) where J <: DefaultCompilationOptions
     opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
+    opt.AA == :on && automatic_addressing_transform!(ir)
     ir = recur(ir)
     ir
 end
 
 function pipeline(ir, ::Type{ProposeContext{J}}) where J <: DefaultCompilationOptions
     opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
+    opt.AA == :on && automatic_addressing_transform!(ir)
     ir = recur(ir)
     ir
 end
 
 function pipeline(ir, ::Type{ForwardModeContext{J}}) where J <: DefaultCompilationOptions
     opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
+    opt.AA == :on && automatic_addressing_transform!(ir)
     ir = recur(ir)
     ir
 end
 
 function pipeline(ir, ::Type{BackpropagationContext{J}}) where J
     opt = extract_options(J)
-    opt.AA == :on && jaynesize_transform!(ir)
+    opt.AA == :on && automatic_addressing_transform!(ir)
     ir = recur(ir)
     ir
 end
