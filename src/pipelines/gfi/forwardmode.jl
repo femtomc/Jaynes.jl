@@ -3,7 +3,7 @@
 @dynamo function (fx::ForwardModeContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    ir = pipeline(ir, ForwardModeContext{J})
+    ir = staged_pipeline(ir, ForwardModeContext{J})
     ir
 end
 

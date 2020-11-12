@@ -131,28 +131,22 @@ struct JFunction{C <: CompilationOptions, N, R, T} <: TypedGenerativeFunction{N,
     trace_type::T
 end
 
-function JFunction(func::Function,
+function JFunction(opt::J,
+                   func::Function,
                    arg_types::NTuple{N, Type},
                    has_argument_grads::NTuple{N, Bool},
                    accepts_output_grad::Bool,
-                   ::Type{R};
-                   static_checks = false,
-                   hints = false) where {N, R}
-    hints && begin
-        detect_kernels(func, arg_types...)
-        detect_dynamic_addresses(func, arg_types...)
-    end
-    static_checks ? tt = support_checker(func, arg_types...) : tt = missing
-    ir = lower_to_ir(func, arg_types...)
-    return JFunction{DefaultPipeline, N, R, typeof(tt)}(func, 
-                                                        DynamicMap{Value}(), 
-                                                        DynamicMap{Value}(), 
-                                                        arg_types, 
-                                                        has_argument_grads, 
-                                                        accepts_output_grad,
-                                                        ir,
-                                                        flow_analysis(ir),
-                                                        tt)
+                   ::Type{R}) where {J <: CompilationOptions, N, R}
+    (tt, ir) = instantiation_pipeline(func, arg_types, R, opt)
+    return JFunction{J, N, R, typeof(tt)}(func, 
+                                          DynamicMap{Value}(), 
+                                          DynamicMap{Value}(), 
+                                          arg_types, 
+                                          has_argument_grads, 
+                                          accepts_output_grad,
+                                          ir,
+                                          flow_analysis(ir),
+                                          tt)
 end
 
 @inline (jfn::JFunction)(args...) = jfn.fn(args...)
@@ -352,7 +346,7 @@ function display(jfn::JFunction{C, N, R, T}; show_all = false) where {C, N, R, T
     println(" trace_type: $(T)")
     println(" has_argument_grads : $(jfn.has_argument_grads)")
     println(" accepts_output_grad : $(jfn.accepts_output_grad)")
-    println("\ncompilation options: $C")
+    println("\n compilation options: $C")
     if show_all
         println(" ___________________________________\n")
         display(get_analysis(jfn))

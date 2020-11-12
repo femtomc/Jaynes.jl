@@ -28,19 +28,19 @@ end
 
 abstract type CompilationOptions end
 
-struct DefaultCompilationOptions{Spec, AA} <: CompilationOptions end
+struct DefaultCompilationOptions{H, S, Sp, AA} <: CompilationOptions end
 
-const DefaultPipeline= DefaultCompilationOptions{:off, :off}
-const SpecializerPipeline = DefaultCompilationOptions{:off, :on}
-const AutomaticAddressingPipeline = DefaultCompilationOptions{:on, :off}
+const DefaultPipeline= DefaultCompilationOptions{true, true, false, false}
+const SpecializerPipeline = DefaultCompilationOptions{true, true, true, false}
+const AutomaticAddressingPipeline = DefaultCompilationOptions{true, true, false, true}
 
-extract_options(::Type{DefaultCompilationOptions{AA, Spec}}) where {AA, Spec} = (AA = AA, Spec = Spec)
+extract_options(::Type{DefaultCompilationOptions{H, S, Sp, AA}}) where {H, S, Sp, AA} = (H = H, S = S, Sp = Sp, AA = AA)
 
 # ------------ includes ------------ #
 
 include("pipelines/gradient_store.jl")
 include("pipelines/contexts.jl")
-include("pipelines/pipelines.jl")
+include("pipelines/default_pipeline.jl")
 include("pipelines/gfi/generate.jl")
 include("pipelines/gfi/simulate.jl")
 include("pipelines/gfi/propose.jl")

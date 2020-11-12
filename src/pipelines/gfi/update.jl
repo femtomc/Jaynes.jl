@@ -4,7 +4,7 @@
 @dynamo function (mx::UpdateContext{J, C, T, K})(f, ::Type{S}, args...) where {J, S <: Tuple, C, T, K}
     ir = IR(f, S.parameters...)
     ir == nothing && return
-    ir = pipeline(ir, UpdateContext{J}, K)
+    ir = staged_pipeline(ir, UpdateContext{J}, K)
     ir
 end
 

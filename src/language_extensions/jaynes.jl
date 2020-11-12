@@ -1,4 +1,4 @@
-function _jaynes(check, hints, def)
+function _jaynes(def, opt)
 
     # Matches longdef function definitions.
     if @capture(def, function decl_(args__) body__ end)
@@ -11,25 +11,23 @@ function _jaynes(check, hints, def)
         end
         trans = quote 
             $def
-            JFunction($decl, 
+            JFunction($opt(),
+                      $decl, 
                       tuple($argtypes...), 
                       tuple([false for _ in $argtypes]...), 
                       false, 
-                      Any;
-                      static_checks = $check,
-                      hints = $hints)
+                      Any)
         end
 
         # Matches thunks.
     elseif @capture(def, () -> body__)
         trans = quote
-            JFunction($def, 
+            JFunction($opt(),
+                      $def, 
                       (Tuple{}, ),
                       (false, ),
                       false, 
-                      Any;
-                      static_checks = $check,
-                      hints = $hints)
+                      Any)
         end
 
         # Matches lambdas with formals.
@@ -48,13 +46,12 @@ function _jaynes(check, hints, def)
             end
         end
         trans = quote
-            JFunction($def, 
+            JFunction($opt(),
+                      $def, 
                       tuple($argtypes...), 
                       tuple([false for _ in $argtypes]...), 
                       false, 
-                      Any;
-                      static_checks = $check,
-                      hints = $hints)
+                      Any)
         end
     else
         error("ParseError (@jaynes): requires a longdef function definition or an anonymous function definition.")
@@ -63,23 +60,14 @@ function _jaynes(check, hints, def)
     trans
 end
 
-macro jaynes(expr)
+macro jaynes(expr, opt)
     def = _sugar(expr)
-    trans = _jaynes(false, false, def)
+    trans = _jaynes(def, opt)
     esc(trans)
 end
 
-macro jaynes(expr, flag)
+macro jaynes(expr)
     def = _sugar(expr)
-    options = [:check, :hints]
-    if flag isa Expr && flag.head == :tuple
-        trans = _jaynes(map(options) do o
-                            o in flag.args
-                        end..., def)
-    elseif flag == :check
-        trans = _jaynes(true, false, def)
-    elseif flag == :hints
-        trans = _jaynes(false, true, def)
-    end
+    trans = _jaynes(def, :DefaultPipeline)
     esc(trans)
 end

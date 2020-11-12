@@ -3,7 +3,7 @@
 @dynamo function (sx::SimulateContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    ir = pipeline(ir, SimulateContext{J})
+    ir = staged_pipeline(ir, SimulateContext{J})
     ir
 end
 

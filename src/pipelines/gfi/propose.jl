@@ -3,7 +3,7 @@
 @dynamo function (px::ProposeContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    ir = pipeline(ir, ProposeContext{J})
+    ir = staged_pipeline(ir, ProposeContext{J})
     ir
 end
 

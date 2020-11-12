@@ -134,12 +134,10 @@ export generate_graph_ir
 export TraceDefaults
 
 include("pipelines.jl")
+export DefaultPipeline, SpecializerPipeline, AutomaticAddressingPipeline
 export record_cached!
 
 include("language_extensions.jl")
-
-# Just a little sugar.
-export @sugar
 export @primitive
 
 # Tracer language features.

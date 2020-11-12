@@ -8,13 +8,15 @@ model1 = @jaynes (i::Int, x::Float64) -> begin
     y ~ Normal(x, 1.0)
     z ~ Normal(y, 3.0)
     z
-end (check)
+end (DefaultPipeline)
 display(model1)
 uc = Gen.Unfold(model1)
 
 model2 = @jaynes (i::Int, x::Float64) -> begin
     y ~ uc(i, x)
-end (check)
+end (DefaultPipeline)
 display(model2)
+
+tr = simulate(model2, (10, 5.0))
 
 end # module

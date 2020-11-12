@@ -3,7 +3,7 @@
 @dynamo function (sx::AssessContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    ir = pipeline(ir, AssessContext{J})
+    ir = staged_pipeline(ir, AssessContext{J})
     ir
 end
 

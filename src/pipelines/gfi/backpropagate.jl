@@ -3,7 +3,7 @@
 @dynamo function (bx::BackpropagationContext{J})(a...) where J
     ir = IR(a...)
     ir == nothing && return
-    ir = pipeline(ir, BackpropagationContext{J})
+    ir = staged_pipeline(ir, BackpropagationContext{J})
     ir
 end
 
