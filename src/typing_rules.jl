@@ -11,6 +11,7 @@ abst(::typeof(learnable), ::Symbol) = Any
 
 # Calls to trace.
 abst(::typeof(trace), ::Symbol, ::Type{DiscreteUniform}) = Integers{1}
+abst(::typeof(trace), ::Symbol, ::Type{Uniform}) = Reals{1}
 abst(::typeof(trace), ::Symbol, ::Type{Gamma}) = PositiveReals{1}
 abst(::typeof(trace), ::Symbol, ::Type{Normal}) = Reals{1}
 abst(::typeof(trace), ::Symbol, ::Type{Bernoulli}) = Discrete{2}
