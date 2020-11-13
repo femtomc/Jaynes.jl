@@ -10,14 +10,14 @@ jmodel = @jaynes function burglary_model()
     !disabled ? alarm ~ Bernoulli(burglary ? 0.94 : 0.01) : alarm = false
     call ~ Bernoulli(alarm ? 0.70 : 0.05)
     return nothing
-end
+end (DefaultPipeline)
 
 # Inference.
 chm = choicemap((:call, true))
 trs, lnws, lmle = importance_sampling(jmodel, (), chm, 5000)
 est = sum(map(zip(lnws, trs)) do (lnw, tr)
-    (tr[:burglary] ? 1 : 0) * exp(lnw)
-end)
+              (tr[:burglary] ? 1 : 0) * exp(lnw)
+          end)
 println(est)
 
 end # module

@@ -25,7 +25,7 @@ import Gen: SetDiff, DictDiff, VectorDiff, IntDiff, Diffed
 # Yarrrr I'm a com-pirate!
 using MacroTools
 using IRTools
-using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta, renumber, Pipe, finish, blocks, predecessors, dominators, block, successors, Block, block!, branches, Branch, branch!, CFG
+using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta, renumber, Pipe, finish, blocks, predecessors, dominators, block, successors, Block, block!, branches, Branch, branch!, CFG, stmt
 using Random
 using Mjolnir
 using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
@@ -132,6 +132,7 @@ export ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff
 export pushforward, _pushforward
 export generate_graph_ir
 export TraceDefaults
+export prepare_ir!, infer!
 
 include("pipelines.jl")
 export DefaultPipeline, SpecializerPipeline, AutomaticAddressingPipeline

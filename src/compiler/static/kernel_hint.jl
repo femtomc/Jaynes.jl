@@ -20,7 +20,7 @@ function Base.display(kh::KernelHint)
     end
 end
 
-function detect_kernels(ir)
+function detect_kernels(ir::IR)
     loops = detectloops(ir)
     kh = KernelHint(Set{NaturalLoop}([]), Dict{NaturalLoop, Set{Block}}())
     for l in loops
@@ -40,7 +40,7 @@ function detect_kernels(ir)
     kh
 end
 
-function detect_kernels(func, arg_types...)
-    ir = lower_to_ir(func, arg_types...)
+function detect_kernels(fn, arg_types...)
+    ir = lower_to_ir(fn, arg_types...)
     display(detect_kernels(ir))
 end

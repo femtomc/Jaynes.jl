@@ -22,7 +22,7 @@ function Base.display(dah::DynamicAddressingHint)
     end
 end
 
-function detect_dynamic_addresses(ir)
+function detect_dynamic_addresses(ir::IR)
     dynamic_addresses = Variable[]
     ir_map = Dict{Variable, IRTools.Statement}()
     for (v, st) in ir
@@ -48,8 +48,8 @@ function detect_dynamic_addresses(ir)
     dh
 end
 
-function detect_dynamic_addresses(func, arg_types...)
-    ir = lower_to_ir(func, arg_types...)
+function detect_dynamic_addresses(fn, arg_types...)
+    ir = lower_to_ir(fn, arg_types...)
     display(detect_dynamic_addresses(ir))
 end
 

@@ -1,17 +1,26 @@
 # ------------ Trace typing rules ------------ #
 
+abst(args...) = Union{}
+
 # Distributions.
-@abstract TracePrimitives (::D)(args...) where D <: Distributions.Distribution =  D
-@abstract TracePrimitives (::Type{D})(args...) where D <: Distributions.Distribution = D
+abst(::D, args...) where D <: Distributions.Distribution =  D
+abst(::Type{D}, args...) where D <: Distributions.Distribution = D
+
+# Learnables.
+abst(::typeof(learnable), ::Symbol) = Any
 
 # Calls to trace.
-@abstract TracePrimitives trace(::Symbol, ::Normal) = Reals{1}
-@abstract TracePrimitives trace(::Symbol, ::Bernoulli) = Discrete{2}
-@abstract TracePrimitives trace(::Symbol, jfn::JFunction{N, R, T}, args...) where {N, R, T} = get_trace_type(jfn.value)
+abst(::typeof(trace), ::Symbol, ::Type{DiscreteUniform}) = Integers{1}
+abst(::typeof(trace), ::Symbol, ::Type{Gamma}) = PositiveReals{1}
+abst(::typeof(trace), ::Symbol, ::Type{Normal}) = Reals{1}
+abst(::typeof(trace), ::Symbol, ::Type{Bernoulli}) = Discrete{2}
+abst(::typeof(trace), ::Symbol, jfn::JFunction{N, R, T}, args...) where {N, R, T} = get_trace_type(jfn)
 
 # Combinators.
-@abstract TracePrimitives function trace(::Symbol, u::Gen.Unfold, args...)
-    tt = get_trace_type(u.value.kernel)
+function abst(::typeof(trace), ::Symbol, u::Gen.Unfold, args...)
+    tt = get_trace_type(u.kernel)
     List{tt}
 end
-@abstract TracePrimitives trace(::Symbol, u::Gen.Map, args...) = List{get_trace_type(u.value.kernel)}
+function abst(::typeof(trace), ::Symbol, u::Gen.Map, args...)
+    List{get_trace_type(u.value.kernel)}
+end

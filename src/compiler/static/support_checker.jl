@@ -113,13 +113,13 @@ end
 
 # ------------ Pipeline ------------ #
 
-function support_checker(func, arg_types...)
-    ir = lower_to_ir(func, arg_types...)
+function support_checker(fn, arg_types...)
+    ir = lower_to_ir(fn, arg_types...)
     errs = Exception[]
     paths = get_control_flow_paths(ir)
     push!(errs, check_duplicate_symbols(ir, paths))
-    tr = infer_support_types(func, arg_types...)
-    tr isa Missing || push!(errs, check_branch_support(tr))
+    tr = infer_support_types(fn, arg_types...)
+    !(tr isa Missing) ? push!(errs, check_branch_support(tr)) : println("\u001b[33m (SupportChecker): model program could not be traced. Branch support checks cannot run.\u001b[0m")
     any(map(errs) do err
             if isempty(err.violations)
                 false
@@ -127,7 +127,7 @@ function support_checker(func, arg_types...)
                 Base.showerror(stdout, err)
                 true
             end
-        end) && error("SupportError found.")
+        end) ? error("SupportError found.") : println("\u001b[32m ✓ (SupportChecker): no errors found. If branch support checks could not be run, this message indicates that your model program is free from duplicate addresses.\u001b[0m")
     !(tr isa Missing) && begin
         if !control_flow_check(tr)
             @info "Detected control flow in model IR. Static trace typing requires that control flow be extracted into combinators."

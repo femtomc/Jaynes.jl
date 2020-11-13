@@ -2,12 +2,12 @@
 
 function instantiation_pipeline(fn::Function, arg_types::NTuple{N, Type}, ret_type::Type{R}, ::J) where {N, R, J <: DefaultCompilationOptions}
     opt = extract_options(J)
+    ir = lower_to_ir(fn, arg_types...)
     opt.H && begin
         detect_kernels(fn, arg_types...)
         detect_dynamic_addresses(fn, arg_types...)
     end
     opt.S ? tt = support_checker(fn, arg_types...) : tt = missing
-    ir = lower_to_ir(fn, arg_types...)
     tt, ir
 end
 
