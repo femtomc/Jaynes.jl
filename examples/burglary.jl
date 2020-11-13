@@ -12,6 +12,8 @@ jmodel = @jaynes function burglary_model()
     return nothing
 end (DefaultPipeline)
 
+display(jmodel)
+
 # Inference.
 chm = choicemap((:call, true))
 trs, lnws, lmle = importance_sampling(jmodel, (), chm, 5000)

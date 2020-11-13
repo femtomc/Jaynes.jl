@@ -32,6 +32,13 @@ struct Reals{N} <: BaseLebesgue end
 Base.:(<<)(::Type{Reals{N}}, ::Type{Reals{N}}) where N = true
 Base.:(<<)(::Type{Reals}, a) = false
 
+struct RealInterval <: BaseLebesgue
+    a
+    b
+end
+
+struct DiscreteInterval{A, B} <: BaseCounting end
+
 struct PositiveReals{N} <: BaseLebesgue end
 Base.:(<<)(::Type{PositiveReals{N}}, ::Type{PositiveReals{N}}) where N = true
 Base.:(<<)(::Type{PositiveReals}, a) = false
@@ -76,9 +83,11 @@ function trace_type(tr)
         st.expr.args[1] == trace || continue
         st.expr.args[2] isa QuoteNode || continue
         push!(ks, st.expr.args[2].value)
-        if st.type isa Type && st.type <: SupportType
+        if !(st.type isa Type)
+            push!(types, st.type)
+        elseif st.type isa Type && st.type <: SupportType
             push!(types, st.type())
-        elseif st.type <: NamedTuple
+        elseif lift(st.type) <: NamedTuple
             new = NamedTuple{keys(st.type)}(map(value_types(st.type).parameters) do p
                                                 p()
                                             end)

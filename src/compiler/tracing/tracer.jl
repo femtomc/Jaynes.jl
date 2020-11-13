@@ -16,7 +16,7 @@ function infercall!(env, v, st, ir)
     end
     t = abst(args...)
     env[v] = t
-    ir[v] = stmt(st.expr; type = abst(args...))
+    ir[v] = stmt(st.expr; type = t)
 end
 
 function infer!(ir)

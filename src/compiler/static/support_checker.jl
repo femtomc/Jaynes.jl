@@ -35,6 +35,9 @@ function Base.showerror(io::IO, e::MeasureMismatch)
     println(io, "\u001b[32mFix: ensure that base measures match for addresses shared across branches in your model.\u001b[0m")
 end
 
+_lift(t::Type) = t
+_lift(t) = typeof(t)
+
 # Checks that addresses across flow of control paths share the same base measure. 
 # Assumes that the input IR has been inferred (using e.g. the trace type inference).
 function check_branch_support(tr)
@@ -48,7 +51,11 @@ function check_branch_support(tr)
         if haskey(types, addr)
             st.type isa NamedTuple ? push!(types[addr], st.type) : push!(types[addr], supertype(st.type))
         else
-            st.type isa NamedTuple ? Any[st.type] : Any[supertype(st.type)]
+            if st.type isa NamedTuple
+                Any[_lift(st.type)]
+            else
+                Any[supertype(_lift(st.type))]
+            end
         end
     end
     se = MeasureMismatch(types, Set{Symbol}([]))
