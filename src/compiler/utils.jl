@@ -1,3 +1,12 @@
+# Check literals.
+_lit(v::Variable) = false
+_lit(v::Type) = false
+_lit(v) = true
+
+# Lift literals to types.
+_lift(t::Type) = t
+_lift(t) = typeof(t)
+
 # Lower a function signature directly to IR.
 function lower_to_ir(call, argtypes...)
     sig = length(argtypes) == 1 && argtypes[1] == Tuple{} ? begin
@@ -7,9 +16,6 @@ function lower_to_ir(call, argtypes...)
     ir = IR(m)
     return ir
 end
-
-# Check for control flow in IR - if multiple basic blocks, transfer of control is present.
-@inline control_flow_check(ir) = !(length(ir.blocks) > 1)
 
 # Returns the signature of the matching method, specializing types as necessary.
 function signature(fn_type::Type, arg_types::Type...)
@@ -49,3 +55,24 @@ function reparameterize(@nospecialize(T::Type), vars::Vector{TypeVar})
     end
     return T
 end
+
+# Returns a Vector of Tuple{Vararg{Int}} representing all possible combinations of flow of control.
+function get_control_flow_paths(blk::Int, v::Vector{Vector{Int}})
+    isempty(v[blk]) && return [(blk, )]
+    paths = []
+    for tar in filter(b -> b > blk, v[blk]) # prevent looping
+        append!(paths, map(get_control_flow_paths(tar, v)) do p
+                    (blk, p...)
+                end)
+    end
+    paths
+end
+function get_control_flow_paths(cfg::CFG)
+    graph = cfg.graph
+    paths = get_control_flow_paths(1, graph)
+    paths
+end
+@inline get_control_flow_paths(ir::IR) = get_control_flow_paths(CFG(ir))
+
+# Check for control flow in IR - if multiple basic blocks, transfer of control is present.
+@inline control_flow_check(ir) = !(length(ir.blocks) > 1)

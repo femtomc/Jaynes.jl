@@ -8,7 +8,7 @@ model1 = @jaynes (i::Int, x::Float64) -> begin
     y ~ Normal(x, 1.0)
     z ~ Normal(y, 3.0)
     z
-end (DefaultPipeline)
+end (NoPipeline)
 display(model1)
 uc = Gen.Unfold(model1)
 

@@ -7,7 +7,7 @@ function instantiation_pipeline(fn::Function, arg_types::NTuple{N, Type}, ret_ty
         detect_kernels(fn, arg_types...)
         detect_dynamic_addresses(fn, arg_types...)
     end
-    opt.S ? tt = support_checker(fn, arg_types...) : tt = missing
+    opt.S ? tt = support_checker(TraceTypingInterpreter(), fn, arg_types...) : tt = missing
     tt, ir
 end
 

@@ -3,13 +3,13 @@ include("compiler/utils.jl")
 include("compiler/loop_detection.jl")
 include("compiler/reaching.jl")
 include("compiler/address_blanket.jl")
-include("compiler/tracing/tracer.jl")
+include("compiler/absint/absint.jl")
 
 # Kernel detection and dynamic addressing hints.
 include("compiler/hints.jl")
 
 # Trace types system
-include("compiler/tracing/trace_types.jl")
+include("compiler/absint/trace_types.jl")
 
 # Support error checker.
 include("compiler/static/support_checker.jl")

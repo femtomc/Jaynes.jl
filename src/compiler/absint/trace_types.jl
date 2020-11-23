@@ -61,11 +61,11 @@ const TraceType = NamedTuple
 # ------------ Tracer ------------ #
 
 # Type inference.
-function infer_support_types(fn, arg_types...)
+function infer_support_types(ctx, fn, arg_types...)
     ir = lower_to_ir(fn, arg_types...)
     dynamic_address_check(ir) && return missing
     try
-        tr = ir |> prepare_ir! |> infer!
+        tr = ir |> prepare_ir! |> ir -> infer!(ctx, ir)
         tr
     catch e
         @info "Failed to trace $(fn).\nCause: $e\n\nReverting to untyped IR."

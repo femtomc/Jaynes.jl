@@ -27,9 +27,7 @@ using MacroTools
 using IRTools
 using IRTools: @dynamo, IR, xcall, arguments, insertafter!, recurse!, isexpr, self, argument!, Variable, meta, renumber, Pipe, finish, blocks, predecessors, dominators, block, successors, Block, block!, branches, Branch, branch!, CFG, stmt
 using Random
-using Mjolnir
-using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
-using Mjolnir: Defaults
+using Mjolnir: inline_consts!, partials!, ssa!, prune!
 using InteractiveUtils: subtypes
 
 # Static selektor.
@@ -126,16 +124,13 @@ include("core.jl")
 export trace
 
 include("compiler.jl")
-export Δ, Diffed, forward
-export NoChange, Change
-export ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff
-export pushforward, _pushforward
-export generate_graph_ir
-export TraceDefaults
-export prepare_ir!, infer!
+export NoChange, Change, ScalarDiff, IntDiff, DictDiff, SetDiff, VectorDiff, BoolDiff, Diffed
+export Δ, _propagate
+export prepare_ir!, infer!, @abstract, InterpretationContext
+export detect_switches, detect_kernel
 
 include("pipelines.jl")
-export DefaultPipeline, SpecializerPipeline, AutomaticAddressingPipeline
+export NoPipeline, DefaultPipeline, SpecializerPipeline, AutomaticAddressingPipeline
 export record_cached!
 
 include("language_extensions.jl")
@@ -161,7 +156,7 @@ include("gen_fn_interface.jl")
 
 export @jaynes
 export JFunction, JTrace
-export get_analysis, get_ir
+export get_analysis, get_ir, get_fn
 export init_param!, accumulate_param_gradients!, choice_gradients
 export choicemap, select
 export get_value, has_value

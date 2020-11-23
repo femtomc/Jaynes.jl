@@ -9,27 +9,33 @@ struct BoolDiff <: Diff
 end
 
 struct Change <: Diff end
+struct Consumed <: Diff end
 
 @inline tupletype(dfs::Diffed...) = Tuple{map(d -> valtype(d), dfs)...}
 
 valtype(d::Diffed{V, DV}) where {V, DV} = V
 
-function change_check(args)
+# Diff propagation is basically a form of linear typing - Change types get "consumed" when they enter into a trace statement.
+
+function propagate(args...)
     unwrapped = map(args) do a
-        unwrap(a) <: Change
+        _lift(unwrap(a)) <: Change
     end
     any(unwrapped) && return Change
     return NoChange
 end
 
-function propagate(args...)
-    unwrapped = map(args) do a
-        unwrap(a)
+function consume(args...)
+    if any(args) do a
+            a isa Change || _lift(a) <: Change
+        end
+        Consumed
+    else
+        NoChange
     end
-    change_check(args)
 end
 
-struct DiffPrimitives end
+struct DiffInterpreter <: InterpretationContext end
 
 include("lib/numeric.jl")
 include("lib/distributions.jl")

@@ -30,6 +30,7 @@ abstract type CompilationOptions end
 
 struct DefaultCompilationOptions{H, S, Sp, AA} <: CompilationOptions end
 
+const NoPipeline = DefaultCompilationOptions{false, false, false, false}
 const DefaultPipeline= DefaultCompilationOptions{true, true, false, false}
 const SpecializerPipeline = DefaultCompilationOptions{true, true, true, false}
 const AutomaticAddressingPipeline = DefaultCompilationOptions{true, true, false, true}

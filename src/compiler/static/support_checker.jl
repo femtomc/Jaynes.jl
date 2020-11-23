@@ -2,23 +2,6 @@
 
 abstract type SupportException <: Exception end
 
-# Returns a Vector of Tuple{Vararg{Int}} representing all possible combinations of flow of control.
-function get_control_flow_paths(blk::Int, v::Vector{Vector{Int}})
-    isempty(v[blk]) && return [(blk, )]
-    paths = []
-    for tar in filter(b -> b != blk, v[blk]) # prevent looping
-        append!(paths, map(get_control_flow_paths(tar, v)) do p
-                    (blk, p...)
-                end)
-    end
-    paths
-end
-function get_control_flow_paths(cfg::CFG)
-    graph = cfg.graph
-    paths = get_control_flow_paths(1, graph)
-    paths
-end
-@inline get_control_flow_paths(ir::IR) = get_control_flow_paths(CFG(ir))
 
 # ------------ Mismatch measures across flow of control paths ------------ #
 
@@ -34,9 +17,6 @@ function Base.showerror(io::IO, e::MeasureMismatch)
     println(io, " Violations: $(e.violations)")
     println(io, "\u001b[32mFix: ensure that base measures match for addresses shared across branches in your model.\u001b[0m")
 end
-
-_lift(t::Type) = t
-_lift(t) = typeof(t)
 
 # Checks that addresses across flow of control paths share the same base measure. 
 # Assumes that the input IR has been inferred (using e.g. the trace type inference).
@@ -120,12 +100,12 @@ end
 
 # ------------ Pipeline ------------ #
 
-function support_checker(fn, arg_types...)
+function support_checker(absint_ctx::InterpretationContext, fn, arg_types...)
     ir = lower_to_ir(fn, arg_types...)
     errs = Exception[]
     paths = get_control_flow_paths(ir)
     push!(errs, check_duplicate_symbols(ir, paths))
-    tr = infer_support_types(fn, arg_types...)
+    tr = infer_support_types(absint_ctx, fn, arg_types...)
     !(tr isa Missing) ? push!(errs, check_branch_support(tr)) : println("\u001b[33m (SupportChecker): model program could not be traced. Branch support checks cannot run.\u001b[0m")
     any(map(errs) do err
             if isempty(err.violations)

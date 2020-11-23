@@ -2,7 +2,7 @@
 
 struct KernelHint <: ProgramStructureHint
     loops::Set{NaturalLoop}
-    mapped_ir::Dict{NaturalLoop, Set{Block}}
+    mapped_ir::Dict{NaturalLoop, Vector{Block}}
 end
 function Base.display(kh::KernelHint)
     if isempty(kh.loops)
@@ -33,9 +33,9 @@ function detect_kernels(ir::IR)
                 br.block == header && length(br.args) == length(arguments(head_blk))
             end) || continue
         push!(kh.loops, l)
-        kh.mapped_ir[l] = Set(map(collect(l.body)) do ind
-                                  block(ir, ind)
-                              end)
+        kh.mapped_ir[l] = map(sort(collect(l.body))) do ind
+            block(ir, ind)
+        end
     end
     kh
 end

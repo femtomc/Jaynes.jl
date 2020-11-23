@@ -1,14 +1,10 @@
 # ------------ Trace typing rules ------------ #
 
-abst(args...) = Union{}
-
-_lit(v::Variable) = false
-_lit(v::Type) = false
-_lit(v) = true
+struct TraceTypingInterpreter <: InterpretationContext end
 
 # Distributions.
-abst(x::D, args...) where D <: Distributions.Distribution =  x
-function abst(::Type{D}, args...) where D <: Distributions.Distribution
+absint(ctx, x::D, args...) where D <: Distributions.Distribution =  x
+function absint(ctx, ::Type{D}, args...) where D <: Distributions.Distribution
     all(map(args) do a
             _lit(a)
         end) || return D
@@ -16,26 +12,26 @@ function abst(::Type{D}, args...) where D <: Distributions.Distribution
 end
 
 # Learnables.
-abst(::typeof(learnable), ::Symbol) = Any
+@abstract TraceTypingInterpreter learnable(::Symbol) = Any
 
 # Calls to trace.
-abst(::typeof(trace), ::Symbol, ::Type{DiscreteUniform}) = Integers{1}
-abst(::typeof(trace), ::Symbol, d::DiscreteUniform) = DiscreteInterval{d.a, d.b}
-abst(::typeof(trace), ::Symbol, ::Type{Uniform}) = Reals{1}
-abst(::typeof(trace), ::Symbol, d::Uniform) = RealInterval(d.a, d.b)
-abst(::typeof(trace), ::Symbol, ::Type{Gamma}) = PositiveReals{1}
-abst(::typeof(trace), ::Symbol, ::Gamma) = PositiveReals{1}
-abst(::typeof(trace), ::Symbol, ::Type{Normal}) = Reals{1}
-abst(::typeof(trace), ::Symbol, ::Normal) = Reals{1}
-abst(::typeof(trace), ::Symbol, ::Type{Bernoulli}) = Discrete{2}
-abst(::typeof(trace), ::Symbol, ::Bernoulli) = Discrete{2}
-abst(::typeof(trace), ::Symbol, jfn::JFunction{N, R, T}, args...) where {N, R, T} = get_trace_type(jfn)
+@abstract TraceTypingInterpreter trace(::Symbol, ::Type{DiscreteUniform}, args...) = Integers{1}
+@abstract TraceTypingInterpreter trace(::Symbol, d::DiscreteUniform, args...) = DiscreteInterval{d.a, d.b}
+@abstract TraceTypingInterpreter trace(::Symbol, ::Type{Uniform}, args...) = Reals{1}
+@abstract TraceTypingInterpreter trace(::Symbol, d::Uniform, args...) = RealInterval(d.a, d.b)
+@abstract TraceTypingInterpreter trace(::Symbol, ::Type{Gamma}, args...) = PositiveReals{1}
+@abstract TraceTypingInterpreter trace(::Symbol, ::Gamma, args...) = PositiveReals{1}
+@abstract TraceTypingInterpreter trace(::Symbol, ::Type{Normal}, args...) = Reals{1}
+@abstract TraceTypingInterpreter trace(::Symbol, ::Normal, args...) = Reals{1}
+@abstract TraceTypingInterpreter trace(::Symbol, ::Type{Bernoulli}, args...) = Discrete{2}
+@abstract TraceTypingInterpreter trace(::Symbol, ::Bernoulli, args...) = Discrete{2}
+@abstract TraceTypingInterpreter trace(::Symbol, jfn::JFunction{N, R, T}, args...) where {N, R, T} = get_trace_type(jfn)
 
 # Combinators.
-function abst(::typeof(trace), ::Symbol, u::Gen.Unfold, args...)
+@abstract TraceTypingInterpreter function trace(::Symbol, u::Gen.Unfold, args...)
     tt = get_trace_type(u.kernel)
     List{tt}
 end
-function abst(::typeof(trace), ::Symbol, u::Gen.Map, args...)
+@abstract TraceTypingInterpreter function trace(::Symbol, u::Gen.Map, args...)
     List{get_trace_type(u.value.kernel)}
 end
