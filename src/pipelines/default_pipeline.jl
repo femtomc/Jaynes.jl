@@ -5,6 +5,7 @@ function instantiation_pipeline(fn::Function, arg_types::NTuple{N, Type}, ret_ty
     ir = lower_to_ir(fn, arg_types...)
     opt.H && begin
         detect_kernels(fn, arg_types...)
+        detect_switches(fn, arg_types...)
         detect_dynamic_addresses(fn, arg_types...)
     end
     opt.S ? tt = support_checker(TraceTypingInterpreter(), fn, arg_types...) : tt = missing

@@ -17,7 +17,7 @@ function Base.display(dah::DynamicAddressingHint)
         println("________________________\n")
         display(dah.ir_map)
         println("________________________\n")
-        println("\u001b[31m (Warning): This will prevent the compiler from inferring a trace type for your model program, as well as statically checking the support.\u001b[0m")
+        println("\u001b[33m (Warning): This will prevent the compiler from inferring a trace type for your model program, as well as statically checking the support.\u001b[0m")
         println("\u001b[32m (Recommendation): transform control flow constructs into \u001b[3m\u001b[34;1mcombinators\u001b[0m\n\n      \u001b[34;1mhttps://www.gen.dev/dev/ref/combinators/\u001b[0m\n\n\u001b[32mThen, provide static addresses to combinator calls.\u001b[0m")
     end
 end

@@ -2,9 +2,12 @@
 
 struct TraceTypingInterpreter <: InterpretationContext end
 
+# Fallback.
+absint(ctx::TraceTypingInterpreter, args...) = Union{}
+
 # Distributions.
-absint(ctx, x::D, args...) where D <: Distributions.Distribution =  x
-function absint(ctx, ::Type{D}, args...) where D <: Distributions.Distribution
+absint(ctx::TraceTypingInterpreter, x::D, args...) where D <: Distributions.Distribution =  x
+function absint(ctx::TraceTypingInterpreter, ::Type{D}, args...) where D <: Distributions.Distribution
     all(map(args) do a
             _lit(a)
         end) || return D

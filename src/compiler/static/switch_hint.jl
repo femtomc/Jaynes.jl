@@ -1,8 +1,8 @@
 # ------------ Identify if-else patterns ------------ #
 
 struct SwitchHint <: ProgramStructureHint
-    blocks::Set{Tuple{Block, Block}}
-    SwitchHint() = new(Set{Block}([]))
+    blocks::Set
+    SwitchHint() = new(Set([]))
 end
 function Base.display(sh::SwitchHint)
     if isempty(sh.blocks)
@@ -10,11 +10,12 @@ function Base.display(sh::SwitchHint)
     else
         println("\u001b[33m (SwitchHint): Compiler detected the following switch (if-else) patterns in your model code.\u001b[0m")
         println("________________________\n")
-        for (b1, b2) in sh.blocks
-            display(b1)
-            display(b2)
+        for bl in sh.blocks
+            for b in bl
+                display(b)
+            end
+            println("________________________\n")
         end
-        println("________________________\n")
         println("\u001b[32m (Recommendation): extract kernels into a Switch combinator for easier analysis and optimization.")
     end
 end
@@ -27,7 +28,7 @@ function detect_switches(ir::IR)
         length(tars) > 1 || continue
         all(map(tars) do t
                 ind < t
-            end) && push!(sh.blocks, tuple(map(b -> block(ir, b), sort(tars))...))
+            end) && push!(sh.blocks, tuple(block(ir, ind), map(b -> block(ir, b), sort(tars))...))
     end
     sh
 end
