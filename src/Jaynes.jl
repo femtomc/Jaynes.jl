@@ -133,8 +133,8 @@ include("pipelines.jl")
 export NoPipeline, DefaultPipeline, SpecializerPipeline, AutomaticAddressingPipeline
 export record_cached!
 
-include("language_extensions.jl")
-export @primitive
+include("macros.jl")
+export @primitive, @jaynes
 
 # Tracer language features.
 export learnable, fillable, factor
@@ -154,7 +154,6 @@ export compare, update_learnables, merge!, merge
 # Gen compat.
 include("gen_fn_interface.jl")
 
-export @jaynes
 export JFunction, JTrace
 export get_analysis, get_ir, get_fn
 export init_param!, accumulate_param_gradients!, choice_gradients

@@ -1,3 +1,41 @@
+# Get all distributions in Distributions.jl
+distributions = map(subtypes(Distribution)) do t
+    Symbol(t)
+end
+push!(distributions, :Mixture)
+push!(distributions, :Product)
+
+# Desugar "sugared" tilde expressions.
+function _sugar(expr)
+    MacroTools.postwalk(expr) do s
+        if @capture(s, {addr_} ~ fn_(args__))
+            if Symbol("Distributions.$fn") in distributions || fn in distributions
+                k = Expr(:call, :trace, addr, Expr(:call, fn, args...))
+            else
+                k = Expr(:call, :trace, addr, fn, args...)
+            end
+
+        elseif @capture(s, val_ ~ fn_(args__))
+            val isa Expr && error("Raw value assignment ~ for choice requires that value be a variable name (e.g. x, y, z, ...).")
+            addr = QuoteNode(val)
+            if Symbol("Distributions.$fn") in distributions || fn in distributions
+                k = Expr(:(=), val, Expr(:call, :trace, addr, Expr(:call, fn, args...)))
+            else
+                k = Expr(:(=), val, Expr(:call, :trace, addr, fn, args...))
+            end
+
+        elseif @capture(s, val_ <- fn_(args__))
+            k = quote $val = deep($fn, $(args...)) end
+
+        else
+            # Fallthrough.
+            k = s
+        end
+        (unblock ∘ rmlines)(k)
+    end
+end
+
+# Core Jaynes parser.
 function _jaynes(def, opt)
 
     # Matches longdef function definitions.
@@ -60,6 +98,7 @@ function _jaynes(def, opt)
     trans
 end
 
+# @jaynes macro.
 macro jaynes(expr, opt)
     def = _sugar(expr)
     trans = _jaynes(def, opt)

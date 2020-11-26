@@ -2,9 +2,8 @@
 
 function primitive end # Declare for documentation.
 
-include("language_extensions/blackbox.jl")
-include("language_extensions/sugar.jl")
-include("language_extensions/jaynes.jl")
+include("macros/blackbox.jl")
+include("macros/jaynes.jl")
 
 # ------------ Documentation -------------- #
 

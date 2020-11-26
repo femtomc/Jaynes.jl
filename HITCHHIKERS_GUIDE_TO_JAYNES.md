@@ -8,4 +8,4 @@ All the execution contexts and compilation pipelines live in `/pipelines`.
 
 The compiler directory `/compiler` is a highly experimental part of the codebase which deals with ingredients for compiler pipelines/the execution of models when used in contexts. This is highly likely to change in highly variable ways 😸. The compiler directory also deals with other experimental parts of the system - like compiling generic stochastic simulators to probabilistic programs, or type inference on IR representations of generative functions.
 
-The language extension directory `/language_extensions` handles sugar macros and defining primitive calls for the tracers.
+The macros directory `/macros` handles sugar macros and defining primitive calls for the tracers.
