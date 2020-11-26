@@ -4,13 +4,13 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using Gen
 
-jmodel = @jaynes function burglary_model()
+jmodel = @jaynes function burglary_model()::Nothing
     burglary ~ Bernoulli(0.05)
     burglary ? disabled ~ Bernoulli(0.1) : disabled = false
     !disabled ? alarm ~ Bernoulli(burglary ? 0.94 : 0.01) : alarm = false
     call ~ Bernoulli(alarm ? 0.70 : 0.05)
     return nothing
-end (DefaultPipeline)
+end (NoStatic)
 
 display(jmodel)
 
