@@ -1,0 +1,54 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/Jaynes.jl/libs/highlight/github.min.css"> <link rel=stylesheet  href="/Jaynes.jl/css/franklin.css"> <link rel=stylesheet  href="/Jaynes.jl/css/basic.css"> <link rel=icon  href="/Jaynes.jl/assets/favicon-32x32.png"> <title>Implementation architecture</title> <header> <div class=blog-name > <img src="/Jaynes.jl/assets/jaynes.png" style="width: 63%"></div> <nav> <ol> <li><a href="/Jaynes.jl/">About</a> <br> <li><a href="/Jaynes.jl/architecture">Architecture</a> <br> <li><a href="/Jaynes.jl/compilation">Compilation</a> <br> <li><a href="/Jaynes.jl/related_work">Related work</a> </ol> <img src="/Jaynes.jl/assets/hamburger.svg" id=menu-icon > </nav> </header> <div class=franklin-content ><blockquote> <p>This section assumes some level of understanding of <a href="https://julialang.org/">Julia</a> as well as the <a href="https://docs.julialang.org/en/v1/manual/metaprogramming/#Generated-functions">various</a> <a href="https://github.com/jrevels/Cassette.jl">flavors</a> of <a href="https://fluxml.ai/IRTools.jl/latest/dynamo/">staged programming</a> in Julia.</p> </blockquote> <p>Jaynes implements <a href="https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1">the generative function interface</a> for Julia functions. To enable these modelling capabilities for normal Julia functions, Jaynes is organized around a set of <a href="https://github.com/FluxML/IRTools.jl">IRTools</a> <a href="https://fluxml.ai/IRTools.jl/latest/dynamo/">dynamos</a>. Here&#39;s a rough schema &#40;each inheritor of <code>ExecutionContext</code> may have additional specialized transformations available to it&#41;:</p> <pre><code class=language-julia >@dynamo function (mx::ExecutionContext)(a...)
+    ir = IR(a...)
+    ir == nothing && return
+    recur!(ir)
+    return ir
+end</code></pre> <p>which defines how instances of inheritors of <code>ExecutionContext</code> act on function calls. <a href="https://github.com/femtomc/Mixtape.jl">For those who are unfamiliar with dynamos, the call to <code>recur&#33;</code> wraps each function call in the IR representation of the method which the context is applied to with itself.</a> The &quot;wrapping transform&quot; implemented through <code>recur&#33;</code> is customized to ignore certain calls in <code>Base</code> and <code>Core</code> Julia - with the purpose of making the tracer lightweight, as well as preventing some type stability issues.</p> <blockquote> <p>As of <code>v0.1.28</code>, the above is slightly untrue - as Jaynes will now automatically address un-addressed sources of randomness in programs. This requires that it recurses into more calls than the initial version - but it still ignores a large set of primitive calls in <code>Base</code> and <code>Core</code>. In &quot;idiomatic&quot; modelling code, the user is <a href="https://en.wikipedia.org/wiki/Almost_surely">almost surely</a> safe.</p> </blockquote> <p>There are a number of inheritors for <code>ExecutionContext</code> - each generative function interface method gets a context:</p> <pre><code class=language-julia >GenerateContext
+SimulateContext
+ProposalContext
+UpdateContext
+RegenerateContext
+AssessContext
+ChoiceBackpropagateContext
+ParameterBackpropagateContext</code></pre> <p>Each context has a special dispatch definition which allows the dynamo which defines the context to dispatch on <code>trace</code> calls with user-provided addressing. As an example, here&#39;s the interception dispatch inside the <code>GenerateContext</code> &#40;which we just examined in the last section&#41;:</p> <pre><code class=language-julia >@inline function (ctx::GenerateContext)(call::typeof(trace), 
+                                        addr::T, 
+                                        d::Distribution{K}) where {T <: Address, K}
+    visit!(ctx, addr)
+    if has_value(ctx.target, addr)
+        s = getindex(ctx.target, addr)
+        score = logpdf(d, s)
+        add_choice!(ctx, addr, score, s)
+        increment!(ctx, score)
+    else
+        s = rand(d)
+        add_choice!(ctx, addr, logpdf(d, s), s)
+    end
+    return s
+end</code></pre> <p>so this context records the random choice, as well as performs some bookkeeping with the <code>logpdf</code> which we will use for inference programming. Each of the other contexts define unique interception dispatch to implement functionality required for inference over probabilistic program traces. <a href="https://github.com/femtomc/Jaynes.jl/tree/master/src/contexts">These can be found here.</a></p> <h2 id=sugar ><a href="#sugar">Sugar</a></h2> <p>The programmer is not expected to interact with these contexts directly. Instead, the programmer can utilize a set of high-level function calls which construct the contexts, run a function call with some arguments in the context, and return useful information &#40;usually, a return value, a bundled record of the call in a <code>CallSite</code> instance, and some other probabilistic metadata&#41;. These high-level calls match the same high-level calls in <code>Gen.jl</code>:</p> <ul> <li><p><code>simulate</code></p> <li><p><code>propose</code></p> <li><p><code>generate</code></p> <li><p><code>update</code></p> <li><p><code>regenerate</code></p> <li><p><code>assess</code></p> </ul> <p>&#40;roughly, <code>Gen.jl</code> may change their interfaces, these may also change here - but the ideas behind these interfaces will remain the same&#41;</p> <p>If you so choose, you may use these high-level interface calls directly on your model functions e.g.</p> <pre><code class=language-julia >ret, cl = simulate(some_model, args...)</code></pre>
+<p>which takes care of constructing a <code>SimulateContext</code>, executing your model with <code>args...</code> in that context, and bundling up the return and a record of that call for you.</p>
+<h2 id=inference ><a href="#inference">Inference</a></h2>
+<p>Generically, if you&#39;re hoping to perform inference, you&#39;ll use the APIs from <a href="https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1">Gen.jl</a> to do that. The direct calls described above are used to implement these APIs. Of course, this means that programs you write using the DSL provided by Jaynes <em>should</em> be compatible with any inference algorithms you express using the Gen APIs.</p>
+<p>In practice, Jaynes has been tested with examples for the following inference algorithms from the inference library of <code>Gen.jl</code>:</p>
+<ul>
+<li><p>Black box variational inference</p>
+
+<li><p>Importance sampling</p>
+
+<li><p>Involution MCMC</p>
+
+<li><p>Custom kernels synthesized with the <a href="https://www.gen.dev/dev/ref/mcmc/#Composite-Kernel-DSL-1">Composite Kernel DSL</a></p>
+
+<li><p>Metropolis-Hastings with custom proposals</p>
+
+</ul>
+<p><a href="https://github.com/femtomc/Jaynes.jl/tree/master/examples">Examples of usage are available in the examples directory.</a></p>
+<div class=page-foot >
+  <div class=copyright >
+    &copy; McCoy R. Becker. Last modified: November 05, 2020. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a>.
+  </div>
+</div>
+</div>
+    
+    
+        <script src="/Jaynes.jl/libs/highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();hljs.configure({tabReplace: '    '});</script>

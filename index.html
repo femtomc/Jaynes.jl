@@ -1,0 +1,24 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/Jaynes.jl/libs/highlight/github.min.css"> <link rel=stylesheet  href="/Jaynes.jl/css/franklin.css"> <link rel=stylesheet  href="/Jaynes.jl/css/basic.css"> <link rel=icon  href="/Jaynes.jl/assets/favicon-32x32.png"> <title>E.T. Jaynes home phone</title> <header> <div class=blog-name > <img src="/Jaynes.jl/assets/jaynes.png" style="width: 63%"></div> <nav> <ol> <li><a href="/Jaynes.jl/">About</a> <br> <li><a href="/Jaynes.jl/architecture">Architecture</a> <br> <li><a href="/Jaynes.jl/compilation">Compilation</a> <br> <li><a href="/Jaynes.jl/related_work">Related work</a> </ol> <img src="/Jaynes.jl/assets/hamburger.svg" id=menu-icon > </nav> </header> <div class=franklin-content ><p><strong>Jaynes.jl</strong> &#40;Jaynes&#41; is a domain-specific compiler for <a href="https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1">the generative function interface of Gen.jl</a><sup id="fnref:1"><a href="#fndef:1" class=fnref >[1]</a></sup>. The modeling language is &#40;mostly&#41; all of Julia.</p> <pre><code class=language-julia >jmodel = @jaynes function model()
+    z = ({:z} ~ Bernoulli(0.5))
+    if z
+        m1 = ({:m1} ~ Gamma(1, 1))
+        m2 = ({:m2} ~ Gamma(1, 1))
+    else
+        m = ({:m} ~ Gamma(1, 1))
+        (m1, m2) = (m, m)
+    end
+    {:y1} ~ Normal(m1, 0.1)
+    {:y2} ~ Normal(m2, 0.1)
+end</code></pre> <p>The interfaces between Julia code and modeling code is intentionally kept very minimal.</p> <pre><code class=language-julia >function model()
+    z = trace(:z, Bernoulli(0.5))
+    if z
+        m1 = trace(:m1, Gamma(1, 1))
+        m2 = trace(:m2, Gamma(1, 1))
+    else
+        m = trace(:m, Gamma(1, 1))
+        (m1, m2) = (m, m)
+    end
+    y1 = trace(:y1, Normal(m1, 0.1))
+    y2 = trace(:y2, Normal(m2, 0.1))
+end
+jmodel = JFunction(model)</code></pre> <blockquote> <p>This package is in open alpha. Expect some bumps, especially as <a href="https://github.com/Keno/Compiler3.jl">new compiler interfaces</a> stabilize in Julia <code>VERSION</code> &gt; 1.6.</p> </blockquote> <hr /> <table class=fndef  id="fndef:1"> <tr> <td class=fndef-backref ><a href="#fnref:1">[1]</a> <td class=fndef-content >Roughly, this interface describes the set of capabilities which, when implemented for a model class, allows for the construction of customizable sampling-based inference algorithms. This idea originally appeared under <em>stochastic procedure interface</em> in <a href="https://arxiv.org/abs/1404.0099">Venture</a>. </table> <div class=page-foot > <div class=copyright > &copy; McCoy R. Becker. Last modified: November 26, 2020. Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a>. </div> </div> </div> <script src="/Jaynes.jl/libs/highlight/highlight.pack.js"></script> <script>hljs.initHighlightingOnLoad();hljs.configure({tabReplace: ' '});</script>
