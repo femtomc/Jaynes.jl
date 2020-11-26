@@ -343,6 +343,7 @@ function display(jfn::JFunction{C, N, R, T}; show_all = false) where {C, N, R, T
     println("             JFunction\n")
     println(" fn : $(jfn.fn)")
     println(" arg_types : $(jfn.arg_types)")
+    println(" ret_type : $(R)")
     println(" trace_type: $(T)")
     println(" has_argument_grads : $(jfn.has_argument_grads)")
     println(" accepts_output_grad : $(jfn.accepts_output_grad)")

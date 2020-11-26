@@ -1,5 +1,6 @@
 # ------------ Trace typing rules ------------ #
 
+# Define an interpreter - allows multiple dispatch to handle multiple abstract interpretations.
 struct TraceTypingInterpreter <: InterpretationContext end
 
 # Fallback.
@@ -13,6 +14,8 @@ function absint(ctx::TraceTypingInterpreter, ::Type{D}, args...) where D <: Dist
         end) || return D
     return D(args...)
 end
+
+# Note - the usage of the @abstract macro below is strictly equivalent to the longform definitions for absint with ctx::T above.
 
 # Learnables.
 @abstract TraceTypingInterpreter learnable(::Symbol) = Any

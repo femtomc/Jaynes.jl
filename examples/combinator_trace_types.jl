@@ -4,11 +4,11 @@ include("../src/Jaynes.jl")
 using .Jaynes
 using Gen
 
-model1 = @jaynes (i::Int, x::Float64) -> begin
+model1 = @jaynes function foo(i::Int, x::Float64)::Float64
     y ~ Normal(x, 1.0)
     z ~ Normal(y, 3.0)
     z
-end (NoPipeline)
+end (DefaultPipeline)
 display(model1)
 uc = Gen.Unfold(model1)
 

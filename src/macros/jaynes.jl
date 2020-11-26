@@ -39,7 +39,8 @@ end
 function _jaynes(def, opt)
 
     # Matches longdef function definitions.
-    if @capture(def, function decl_(args__) body__ end)
+    R = Any
+    if @capture(def, function decl_(args__) body__ end) || @capture(def, function decl_(args__)::R_ body__ end)
         argtypes = map(args) do a
             if a isa Expr 
                 a.head == :(::) ? eval(a.args[2]) : Any
@@ -54,7 +55,7 @@ function _jaynes(def, opt)
                       tuple($argtypes...), 
                       tuple([false for _ in $argtypes]...), 
                       false, 
-                      Any)
+                      $R)
         end
 
         # Matches thunks.

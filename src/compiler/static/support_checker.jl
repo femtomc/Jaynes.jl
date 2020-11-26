@@ -114,7 +114,7 @@ function support_checker(absint_ctx::InterpretationContext, fn, arg_types...)
                 Base.showerror(stdout, err)
                 true
             end
-        end) ? error("SupportError found.") : println("\u001b[32m ✓ (SupportChecker): no errors found. If branch support checks could not be run, this message indicates that your model program is free from duplicate addresses.\u001b[0m")
+        end) ? error("SupportError found.") : println("\u001b[32m ✓ (SupportChecker): no errors by static checks which were run.\u001b[0m")
     !(tr isa Missing) && begin
         if !control_flow_check(tr)
             @info "Detected control flow in model IR. Static trace typing requires that control flow be extracted into combinators."
