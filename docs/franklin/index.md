@@ -22,16 +22,16 @@ The interfaces between Julia code and modeling code is intentionally kept very m
 
 ```julia
 function model()
-    z = rand(:z, Bernoulli(0.5))
+    z = trace(:z, Bernoulli(0.5))
     if z
-        m1 = rand(:m1, Gamma(1, 1))
-        m2 = rand(:m2, Gamma(1, 1))
+        m1 = trace(:m1, Gamma(1, 1))
+        m2 = trace(:m2, Gamma(1, 1))
     else
-        m = rand(:m, Gamma(1, 1))
+        m = trace(:m, Gamma(1, 1))
         (m1, m2) = (m, m)
     end
-    y1 = rand(:y1, Normal(m1, 0.1))
-    y2 = rand(:y2, Normal(m2, 0.1))
+    y1 = trace(:y1, Normal(m1, 0.1))
+    y2 = trace(:y2, Normal(m2, 0.1))
 end
 jmodel = JFunction(model)
 ```
