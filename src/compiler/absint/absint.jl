@@ -43,7 +43,7 @@ resolve(gr::GlobalRef) = getproperty(gr.mod, gr.name)
 
 function prepare_ir!(ir)
     for (v, st) in ir
-        isexpr(st.expr) || continue 
+        isexpr(st.expr) || continue
         ir[v] = stmt(Expr(st.expr.head, map(resolve, st.expr.args)...); type = Union{})
     end
     ir

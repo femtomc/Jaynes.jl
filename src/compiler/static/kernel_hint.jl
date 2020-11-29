@@ -14,8 +14,8 @@ function Base.display(kh::KernelHint)
             for b in kh.mapped_ir[l]
                 display(b)
             end
+            println("________________________\n")
         end
-        println("________________________\n")
         println("\u001b[32m (Recommendation): extract kernels into a Fold combinator for easier analysis and optimization.")
     end
 end

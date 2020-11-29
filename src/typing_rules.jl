@@ -5,6 +5,7 @@ struct TraceTypingInterpreter <: InterpretationContext end
 
 # Fallback.
 absint(ctx::TraceTypingInterpreter, args...) = Union{}
+absint(ctx::TraceTypingInterpreter, trace, args...) = Missing
 
 # Distributions.
 absint(ctx::TraceTypingInterpreter, x::D, args...) where D <: Distributions.Distribution =  x
@@ -31,7 +32,7 @@ end
 @abstract TraceTypingInterpreter trace(::Symbol, ::Normal, args...) = Reals{1}
 @abstract TraceTypingInterpreter trace(::Symbol, ::Type{Bernoulli}, args...) = Discrete{2}
 @abstract TraceTypingInterpreter trace(::Symbol, ::Bernoulli, args...) = Discrete{2}
-@abstract TraceTypingInterpreter trace(::Symbol, jfn::JFunction{N, R, T}, args...) where {N, R, T} = get_trace_type(jfn)
+@abstract TraceTypingInterpreter trace(::Symbol, jfn::JFunction, args...) = get_trace_type(jfn)
 
 # Combinators.
 @abstract TraceTypingInterpreter function trace(::Symbol, u::Gen.Unfold, args...)

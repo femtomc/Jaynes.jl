@@ -41,22 +41,24 @@ function _jaynes(def, opt)
     # Matches longdef function definitions.
     R = Any
     if @capture(def, function decl_(args__) body__ end) || @capture(def, function decl_(args__)::R_ body__ end)
-        argtypes = map(args) do a
+        argtypes = Expr(:tuple, map(args) do a
             if a isa Expr 
-                a.head == :(::) ? eval(a.args[2]) : Any
+                a.head == :(::) ? a.args[2] : :Any
             else
-                Any
+                :Any
             end
-        end
+        end...)
         trans = quote 
             $def
+            argtypes = $argtypes
             JFunction($opt(),
                       $decl, 
-                      tuple($argtypes...), 
-                      tuple([false for _ in $argtypes]...), 
+                      argtypes,
+                      tuple([false for _ in argtypes]...), 
                       false, 
                       $R)
         end
+        trans
 
         # Matches thunks.
     elseif @capture(def, () -> body__)
@@ -96,7 +98,7 @@ function _jaynes(def, opt)
         error("ParseError (@jaynes): requires a longdef function definition or an anonymous function definition.")
     end
 
-    trans
+    MacroTools.postwalk(unblock ∘ rmlines, trans)
 end
 
 # @jaynes macro.

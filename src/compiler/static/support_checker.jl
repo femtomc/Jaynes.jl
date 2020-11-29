@@ -101,12 +101,13 @@ end
 # ------------ Pipeline ------------ #
 
 function support_checker(absint_ctx::InterpretationContext, fn, arg_types...)
+    println("________________________\n")
     ir = lower_to_ir(fn, arg_types...)
     errs = Exception[]
     paths = get_control_flow_paths(ir)
     push!(errs, check_duplicate_symbols(ir, paths))
     tr = infer_support_types(absint_ctx, fn, arg_types...)
-    !(tr isa Missing) ? push!(errs, check_branch_support(tr)) : println("\u001b[33m (SupportChecker): model program could not be traced. Branch support checks cannot run.\u001b[0m")
+    tr isa Missing ? println("\u001b[33m ? (SupportChecker): model program could not be traced.\n    \e[1mMethod signature:\u001b[0m \u001b[34m$((fn, arg_types...))\u001b[0m.\u001b[33m\n\n    The following checks cannot be run:\n\t* Branch support checks\u001b[0m\n") : push!(errs, check_branch_support(tr))
     any(map(errs) do err
             if isempty(err.violations)
                 false
@@ -114,16 +115,16 @@ function support_checker(absint_ctx::InterpretationContext, fn, arg_types...)
                 Base.showerror(stdout, err)
                 true
             end
-        end) ? error("SupportError found.") : println("\u001b[32m ✓ (SupportChecker): no errors by static checks which were run.\u001b[0m")
+        end) ? error("SupportError found.") : println("\u001b[32m ✓ (SupportChecker): no errors detected by static checks.\n    \e[1mMethod signature:\u001b[0m \u001b[34m$((fn, arg_types...))\u001b[0m\n")
     !(tr isa Missing) && begin
         if !control_flow_check(tr)
-            @info "Detected control flow in model IR. Static trace typing requires that control flow be extracted into combinators."
+            println("\u001b[33m ? (SupportChecker): Detected control flow in model IR. Static trace typing requires that control flow be extracted into combinators. Proceeding to compile with \e[1mMissing\u001b[0m \u001b[33mtrace type.\u001b[0m")
             return missing
         else
             try
                 return trace_type(tr)
             catch e
-                @info "Failed to compute trace type. Caught:\n$e.\n\nProceeding to compile with missing trace type."
+                println("\u001b[33m ? (SupportChecker): Failed to compute trace type. Caught:\n$e.\n\nProceeding to compile with \e[1mMissing\u001b[0m \u001b[33mtrace type.\u001b[0m")
                 return missing
             end
         end

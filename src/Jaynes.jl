@@ -130,7 +130,7 @@ export prepare_ir!, infer!, @abstract, InterpretationContext
 export detect_switches, detect_kernel
 
 include("pipelines.jl")
-export NoStatic, DefaultPipeline, SpecializerPipeline, AutomaticAddressingPipeline
+export NoStatic, DefaultPipeline, StaticWithLints, SpecializerPipeline, AutomaticAddressingPipeline
 export record_cached!
 
 include("macros.jl")

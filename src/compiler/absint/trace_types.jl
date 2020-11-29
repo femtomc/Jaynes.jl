@@ -85,13 +85,15 @@ function trace_type(tr)
         push!(ks, st.expr.args[2].value)
         if !(st.type isa Type)
             push!(types, st.type)
-        elseif st.type isa Type && st.type <: SupportType
+        elseif st.type isa Type && (st.type <: SupportType || st.type <: Missing)
             push!(types, st.type())
-        elseif lift(st.type) <: NamedTuple
+        elseif _lift(st.type) <: NamedTuple
             new = NamedTuple{keys(st.type)}(map(value_types(st.type).parameters) do p
                                                 p()
                                             end)
             push!(types, new)
+        else
+            push!(types, missing)
         end
     end
     NamedTuple{tuple(ks...)}(types)
