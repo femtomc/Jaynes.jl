@@ -63,7 +63,12 @@ const TraceType = NamedTuple
 # Type inference.
 function infer_support_types(ctx, fn, arg_types...)
     ir = lower_to_ir(fn, arg_types...)
-    dynamic_address_check(ir) && return missing
+    dh = detect_dynamic_addresses(ir)
+    !isempty(dh) && begin
+        display(dh)
+        println()
+        return missing
+    end
     try
         tr = ir |> prepare_ir! |> ir -> infer!(ctx, ir)
         tr

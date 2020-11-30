@@ -101,13 +101,14 @@ end
 # ------------ Pipeline ------------ #
 
 function support_checker(absint_ctx::InterpretationContext, fn, arg_types...)
-    println("________________________\n")
-    ir = lower_to_ir(fn, arg_types...)
+    println("\u001b[34m\e[1m   Method name:\u001b[0m \e[4m$(fn)\u001b[0m")
+    println("\u001b[34m\e[1m   Method argument types:\u001b[0m $(arg_types)\u001b[0m\n")
     errs = Exception[]
+    ir = lower_to_ir(fn, arg_types...)
     paths = get_control_flow_paths(ir)
     push!(errs, check_duplicate_symbols(ir, paths))
     tr = infer_support_types(absint_ctx, fn, arg_types...)
-    tr isa Missing ? println("\u001b[33m ? (SupportChecker): model program could not be traced.\n    \e[1mMethod signature:\u001b[0m \u001b[34m$((fn, arg_types...))\u001b[0m.\u001b[33m\n\n    The following checks cannot be run:\n\t* Branch support checks\u001b[0m\n") : push!(errs, check_branch_support(tr))
+    tr isa Missing ? println("\u001b[33m ? (SupportChecker): model program could not be traced.\n    The following checks cannot be run:\n\t* Branch support checks\u001b[0m\n") : push!(errs, check_branch_support(tr))
     any(map(errs) do err
             if isempty(err.violations)
                 false
@@ -115,10 +116,10 @@ function support_checker(absint_ctx::InterpretationContext, fn, arg_types...)
                 Base.showerror(stdout, err)
                 true
             end
-        end) ? error("SupportError found.") : println("\u001b[32m ✓ (SupportChecker): no errors detected by static checks.\n    \e[1mMethod signature:\u001b[0m \u001b[34m$((fn, arg_types...))\u001b[0m\n")
+        end) ? error("SupportError found.") : println("\u001b[32m ✓ (SupportChecker): no errors detected by static checks.\u001b[0m\n")
     !(tr isa Missing) && begin
         if !control_flow_check(tr)
-            println("\u001b[33m ? (SupportChecker): Detected control flow in model IR. Static trace typing requires that control flow be extracted into combinators. Proceeding to compile with \e[1mMissing\u001b[0m \u001b[33mtrace type.\u001b[0m")
+            println("\u001b[33m ? (SupportChecker): Detected control flow in model IR.\n    Static trace typing requires that control flow be extracted into combinators.\n    Proceeding to compile with \e[1mMissing\u001b[0m \u001b[33mtrace type.\u001b[0m\n")
             return missing
         else
             try
@@ -128,6 +129,6 @@ function support_checker(absint_ctx::InterpretationContext, fn, arg_types...)
                 return missing
             end
         end
-        return missing
     end
+    return missing
 end

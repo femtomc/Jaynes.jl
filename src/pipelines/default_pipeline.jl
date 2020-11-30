@@ -8,7 +8,11 @@ function instantiation_pipeline(fn::Function, arg_types::NTuple{N, Type}, ret_ty
         detect_switches(fn, arg_types...)
         detect_dynamic_addresses(fn, arg_types...)
     end
+    println(" ________________________\n")
     opt.S ? tt = support_checker(TraceTypingInterpreter(), fn, arg_types...) : tt = missing
+    println("\u001b[34m\e[1m   Trace type:\u001b[0m $tt")
+    println("\n\e[1m Finished compiling \e[4m$fn\u001b[0m.")
+    println(" ________________________\n")
     tt, ir
 end
 
