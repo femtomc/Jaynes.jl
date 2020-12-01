@@ -3,7 +3,7 @@
 abstract type InterpretationContext end
 
 # Fallback.
-#absint(args...) = Union{}
+absint(args...) = Union{}
 
 # Convenience definitions of abstract interpretations.
 closure_check(e) = isexpr(e, :(::))
