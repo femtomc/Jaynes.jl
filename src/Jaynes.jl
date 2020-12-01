@@ -176,6 +176,7 @@ export constrain
 
 # Typing rules.
 include("typing_rules.jl")
+export absint
 
 # Utilities.
 export display, getindex, haskey, get_score, get_ret, flatten, lineplot
