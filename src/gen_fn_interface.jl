@@ -195,6 +195,7 @@ function generate(jfn::JFunction{C}, args::Tuple, chm::JChoiceMap) where C
     JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false), w
 end
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = generate(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
+@inline generate(jfn::JFunction, args::Tuple, choices::Gen.EmptyChoiceMap) = simulate(jfn, args)
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicMap) = generate(jfn, args, JChoiceMap(choices))
 
 function assess(jfn::JFunction{C}, args::Tuple, choices::JChoiceMap) where C
@@ -355,3 +356,4 @@ function display(jfn::JFunction{C, N, R, T}; show_all = false) where {C, N, R, T
         println(" ___________________________________\n")
     end
 end
+
