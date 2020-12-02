@@ -63,7 +63,7 @@ end
     visit!(ctx, addr)
     ps = get_sub(ctx.params, addr)
     ss = get_sub(ctx.target, addr)
-    tr, w = generate(call, args, ss)
+    tr, w = generate(call, args, JChoiceMap(ss))
     ret = get_retval(tr)
     add_call!(ctx, addr, DynamicCallSite(get_choices(tr), get_score(tr), get_gen_fn(tr), get_args(tr), ret))
     increment!(ctx, w)

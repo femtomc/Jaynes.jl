@@ -27,11 +27,13 @@ struct JChoiceMap{K <: AddressMap} <: ChoiceMap
 end
 unwrap(jcm::JChoiceMap) = jcm.chm
 
-has_value(choices::JChoiceMap, addr) = has_value(unwrap(choices), addr)
-get_value(choices::JChoiceMap, addr) = getindex(unwrap(choices), addr)
-get_submap(choices::JChoiceMap, addr) = get_sub(unwrap(choices), addr)
-get_sub(choices::JChoiceMap, addr) = get_sub(unwrap(choices), addr)
-projection(choices::JChoiceMap, sel) = projection(unwrap(choices), sel)
+@inline has_value(choices::JChoiceMap, addr) = has_value(unwrap(choices), addr)
+@inline get_value(choices::JChoiceMap, addr) = getindex(unwrap(choices), addr)
+@inline get_submap(choices::JChoiceMap, addr) = get_sub(unwrap(choices), addr)
+@inline get_sub(choices::JChoiceMap, addr) = get_sub(unwrap(choices), addr)
+@inline projection(choices::JChoiceMap, sel) = projection(unwrap(choices), sel)
+@inline filter(fn, choices::JChoiceMap) = filter(fn, unwrap(choices))
+@inline filter(fn, tup, choices::JChoiceMap) = filter(fn, tup, unwrap(choices))
 
 # TODO: fix.
 function get_values_shallow(choices::JChoiceMap)
@@ -99,7 +101,7 @@ end
 @inline has_choice(trace::JTrace, addr) = haskey(trace.record, addr) && is_choice(get_sub(trace.record, addr))
 @inline has_value(trace::JTrace, addr) = has_value(get_record(trace), addr)
 @inline get_value(trace::JTrace, addr) = getindex(get_record(trace), addr)
-@inline filter(fn::Function, tr::JTrace) = JChoiceMap(filter(fn, unwrap(get_record(tr))))
+@inline filter(fn::Function, tr::JTrace) = JChoiceMap(filter(fn, convert(DynamicMap{Value}, unwrap(get_record(tr)))))
 
 function get_choice(trace::JTrace, addr)
     ch = get_sub(trace.record, addr)
@@ -195,7 +197,7 @@ function generate(jfn::JFunction{C}, args::Tuple, chm::JChoiceMap) where C
     JTrace(get_trace(cl) |> JChoiceMap, cl.score, jfn, args, ret, false), w
 end
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicChoiceMap) = generate(jfn, args, JChoiceMap(convert(DynamicMap{Value}, choices)))
-@inline generate(jfn::JFunction, args::Tuple, choices::Gen.EmptyChoiceMap) = simulate(jfn, args)
+@inline generate(jfn::JFunction, args::Tuple, choices::Gen.EmptyChoiceMap) = generate(jfn, args, JChoiceMap(Empty()))
 @inline generate(jfn::JFunction, args::Tuple, choices::DynamicMap) = generate(jfn, args, JChoiceMap(choices))
 
 function assess(jfn::JFunction{C}, args::Tuple, choices::JChoiceMap) where C
