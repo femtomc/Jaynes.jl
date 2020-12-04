@@ -52,6 +52,7 @@ include("pipelines/contexts.jl")
 
 const DiffAware = Union{UpdateContext, RegenerateContext}
 const DoesNotCare = Union{SimulateContext, GenerateContext, AssessContext, ProposeContext, ForwardModeContext, BackpropagationContext}
+const AllContexts = Union{SimulateContext, GenerateContext, AssessContext, ProposeContext, ForwardModeContext, BackpropagationContext}
 
 include("pipelines/default_pipeline.jl")
 include("pipelines/gfi/generate.jl")
@@ -81,28 +82,65 @@ end
     ir
 end
 
-# Fixes for Base.
-function (sx::ExecutionContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...)
+# Each context has an associated function.
+get_interface(::Type{SimulateContext}) = simulate
+get_interface(::Type{GenerateContext}) = generate
+get_interface(::Type{ProposeContext}) = propose
+get_interface(::Type{AssessContext}) = assess
+get_interface(::Type{RegenerateContext}) = regenerate
+get_interface(::Type{UpdateContext}) = update
+
+# Fixes for Base. Unfortunately we have to copy definitions for two different branches in the type hierarchy (required by the way we've split dynamos).
+function (sx::ExecutionContext{J, K, T})(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) where {J, K, T <: DiffAware}
     flt = flatten(args)
     addr, rest = flt[1], flt[2 : end]
-    ret, cl = simulate(rest...)
+    ret, cl = get_interface(T)(rest...)
     add_call!(sx, addr, cl)
     ret
 end
 
-function (sx::ExecutionContext)(::typeof(Base.collect), generator::Base.Generator)
+function (sx::ExecutionContext{J, K, T})(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) where {J, K, T <: DoesNotCare}
+    flt = flatten(args)
+    addr, rest = flt[1], flt[2 : end]
+    ret, cl = get_interface(T)(rest...)
+    add_call!(sx, addr, cl)
+    ret
+end
+
+function (sx::ExecutionContext{J, K, T})(::typeof(Base.collect), generator::Base.Generator) where {J, K, T <: DiffAware}
+    map(generator.iter) do i
+        δ = Δ(i, NoChange()) # DiffAware contexts require this Diff arg.
+        sx(generator.f, tupletype(δ), δ)
+    end
+end
+
+function (sx::ExecutionContext{J, K, T})(::typeof(Base.collect), generator::Base.Generator) where {J, K, T <: DoesNotCare}
     map(generator.iter) do i
         sx(generator.f, i)
     end
 end
 
-function (sx::ExecutionContext)(::typeof(Base.map), fn, iter)
+function (sx::ExecutionContext{J, K, T})(::typeof(Base.map), fn, iter) where {J, K, T <: DiffAware}
+    map(iter) do i
+        δ = Δ(i, NoChange()) # DiffAware contexts require this Diff arg.
+        sx(fn, tupletype(δ), δ)
+    end
+end
+
+function (sx::ExecutionContext{J, K, T})(::typeof(Base.map), fn, iter) where {J, K, T <: DoesNotCare}
     map(iter) do i
         sx(fn, i)
     end
 end
 
-function (sx::ExecutionContext)(::typeof(Base.filter), fn, iter)
+function (sx::ExecutionContext{J, K, T})(::typeof(Base.filter), fn, iter) where {J, K, T <: DiffAware}
+    filter(iter) do i
+        δ = Δ(i, NoChange()) # DiffAware contexts require this Diff arg.
+        sx(fn, tupletype(δ), δ)
+    end
+end
+
+function (sx::ExecutionContext{J, K, T})(::typeof(Base.filter), fn, iter) where {J, K, T <: DoesNotCare}
     filter(iter) do i
         sx(fn, i)
     end
