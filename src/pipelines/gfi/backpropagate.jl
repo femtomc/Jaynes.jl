@@ -1,20 +1,3 @@
-# ------------ Staging ------------ #
-
-@dynamo function (bx::BackpropagationContext{J})(a...) where J
-    ir = IR(a...)
-    ir == nothing && return
-    ir = staged_pipeline(ir, BackpropagationContext{J})
-    ir
-end
-
-# Base fixes.
-(bx::BackpropagationContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = bx(c, flatten(args)...)
-function (bx::BackpropagationContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        bx(generator.f, i)
-    end
-end
-
 # ------------ Reading parameters and choices ------------ #
 
 read_parameter(ctx::K, addr::Address) where K <: BackpropagationContext = read_parameter(ctx, ctx.params, addr)

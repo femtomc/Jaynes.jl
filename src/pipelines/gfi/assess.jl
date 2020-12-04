@@ -1,20 +1,3 @@
-# ------------ Staging ------------ #
-
-@dynamo function (sx::AssessContext{J})(a...) where J
-    ir = IR(a...)
-    ir == nothing && return
-    ir = staged_pipeline(ir, AssessContext{J})
-    ir
-end
-
-# Base fixes.
-(sx::AssessContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = sx(c, flatten(args)...)
-function (sx::AssessContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        sx(generator.f, i)
-    end
-end
-
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::AssessContext)(call::typeof(trace), 

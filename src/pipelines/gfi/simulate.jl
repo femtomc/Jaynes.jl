@@ -1,33 +1,3 @@
-# ------------ Staging ------------ #
-
-@dynamo function (sx::SimulateContext{J})(a...) where J
-    ir = IR(a...)
-    ir == nothing && return
-    ir = staged_pipeline(ir, SimulateContext{J})
-    ir
-end
-
-# Fixes for Base.
-function (sx::SimulateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...)
-    flt = flatten(args)
-    addr, rest = flt[1], flt[2 : end]
-    ret, cl = simulate(rest...)
-    add_call!(sx, addr, cl)
-    ret
-end
-
-function (sx::SimulateContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        sx(generator.f, i)
-    end
-end
-
-function simulate(e::E, args...) where E <: ExecutionContext
-    ctx = Simulate(Trace(), Empty())
-    ret = ctx(e, args...)
-    return ret, DynamicCallSite(ctx.tr, ctx.score, e, args, ret)
-end
-
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::SimulateContext)(call::typeof(trace), 

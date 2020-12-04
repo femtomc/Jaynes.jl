@@ -1,20 +1,3 @@
-# ------------ Staging ------------ #
-
-@dynamo function (fx::ForwardModeContext{J})(a...) where J
-    ir = IR(a...)
-    ir == nothing && return
-    ir = staged_pipeline(ir, ForwardModeContext{J})
-    ir
-end
-
-# Base fixes.
-(fx::ForwardModeContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = fx(c, flatten(args)...)
-function (fx::ForwardModeContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        fx(generator.f, i)
-    end
-end
-
 # Utility function which returns a Dual number of the index matches the target.
 @inline function context_getindex(ctx, am, addr)
     if (addr, ) == ctx.target

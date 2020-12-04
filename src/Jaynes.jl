@@ -41,24 +41,6 @@ import Distributions: logpdf
 @reexport using Zygote
 using ForwardDiff
 using ForwardDiff: Dual
-import Zygote.literal_getproperty
-
-# Fix for: https://github.com/FluxML/Zygote.jl/issues/717
-Zygote.@adjoint function literal_getproperty(x, ::Val{f}) where f
-    val = getproperty(x, f)
-    function back(Δ)
-        Zygote.accum_param(__context__, val, Δ) # === nothing && return
-        if isimmutable(x)
-            ((;Zygote.nt_nothing(x)..., Zygote.pair(Val(f), Δ)...), nothing)
-        else
-            dx = Zygote.grad_mut(__context__, x)
-            dx[] = (;dx[]...,Zygote.pair(Val(f), Zygote.accum(getfield(dx[], f), Δ))...)
-            return (dx, nothing)
-        end
-    end
-    unwrap(val), back
-end
-
 using DistributionsAD
 
 # Plotting.
@@ -77,43 +59,7 @@ isless(::Int, ::Pair) = true
 isless(::Pair, ::Int) = false
 
 include("unwrap.jl")
-
-# ------------ Com-pirate fixes ------------ #
-
-# Whitelist includes vectorized calls.
-whitelist = [
-             # Base.
-             :trace, :_apply_iterate, :collect,
-
-             # Interactions with the context.
-             :learnable, :fillable, :factor,
-            ]
-
-# Fix for specialized tracing.
-function recur(ir, to = self)
-    pr = Pipe(ir)
-    for (x, st) in pr
-        isexpr(st.expr, :call) && begin
-            ref = unwrap(st.expr.args[1])
-            ref in whitelist || continue
-            pr[x] = Expr(:call, to, st.expr.args...)
-        end
-    end
-    finish(pr)
-end
-
-# Fix for _apply_iterate (used in contexts).
-function f_push!(arr::Array, t::Tuple{}) end
-f_push!(arr::Array, t::Array) = append!(arr, t)
-f_push!(arr::Array, t::Tuple) = append!(arr, t)
-f_push!(arr, t) = push!(arr, t)
-function flatten(t::Tuple)
-    arr = Any[]
-    for sub in t
-        f_push!(arr, sub)
-    end
-    return arr
-end
+include("kludges.jl")
 
 # Jaynes introduces a new type of generative function.
 abstract type TypedGenerativeFunction{N, R, Tr, T} <: GenerativeFunction{R, Tr} end

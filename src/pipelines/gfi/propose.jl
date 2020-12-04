@@ -1,33 +1,3 @@
-# ------------ Staging ------------ #
-
-@dynamo function (px::ProposeContext{J})(a...) where J
-    ir = IR(a...)
-    ir == nothing && return
-    ir = staged_pipeline(ir, ProposeContext{J})
-    ir
-end
-
-# Base fixes.
-function (px::ProposeContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...)
-    flt = flatten(args)
-    addr, rest = flt[1], flt[2 : end]
-    ret, cl = propose(rest...)
-    add_call!(px, addr, cl)
-    ret
-end
-
-function (px::ProposeContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        px(generator.f, i)
-    end
-end
-
-function propose(e::E, args...) where E <: ExecutionContext
-    ctx = Propose(Trace(), Empty())
-    ret = ctx(e, args...)
-    ret, DynamicCallSite(ctx.tr, ctx.score, e, args, ret)
-end
-
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::ProposeContext)(call::typeof(trace), 

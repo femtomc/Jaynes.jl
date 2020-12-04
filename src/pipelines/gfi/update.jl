@@ -1,35 +1,3 @@
-# ------------ Staging ------------ #
-
-# This uses a "sneaky invoke" hack to allow passage of diffs into user-defined functions whose argtypes do not allow it.
-@dynamo function (mx::UpdateContext{J, C, T, K})(f, ::Type{S}, args...) where {J, S <: Tuple, C, T, K}
-    ir = IR(f, S.parameters...)
-    ir == nothing && return
-    ir = staged_pipeline(ir, UpdateContext{J}, K)
-    ir
-end
-
-# Base fixes.
-function (sx::UpdateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...)
-    flt = flatten(args)
-    addr, rest = flt[1], flt[2 : end]
-    ret, cl = update(rest...)
-    add_call!(sx, addr, cl)
-    ret
-end
-
-function (sx::UpdateContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        δ = Δ(i, NoChange())
-        sx(generator.f, tupletype(δ), δ)
-    end
-end
-
-function update(e::E, args...) where E <: ExecutionContext
-    ctx = Update(Trace(), Empty())
-    ret = ctx(e, args...)
-    return ret, DynamicCallSite(ctx.tr, ctx.score, e, args, ret)
-end
-
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::UpdateContext)(call::typeof(trace), 

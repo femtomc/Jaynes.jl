@@ -1,19 +1,3 @@
-# ------------ Staging ------------ #
-
-@dynamo function (gx::GenerateContext{J})(a...) where J
-    ir = IR(a...)
-    ir == nothing && return
-    ir = staged_pipeline(ir, GenerateContext{J})
-    ir
-end
-
-(gx::GenerateContext)(::typeof(Core._apply_iterate), f, c::typeof(trace), args...) = gx(c, flatten(args)...)
-function (gx::GenerateContext)(::typeof(Base.collect), generator::Base.Generator)
-    map(generator.iter) do i
-        gx(generator.f, i)
-    end
-end
-
 # ------------ Choice sites ------------ #
 
 @inline function (ctx::GenerateContext)(call::typeof(trace), 

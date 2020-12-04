@@ -3,7 +3,7 @@
 mutable struct GenerateContext{J <: CompilationOptions,
                                T <: AddressMap, 
                                K <: AddressMap, 
-                               P <: AddressMap} <: ExecutionContext
+                               P <: AddressMap} <: ExecutionContext{J, K, GenerateContext}
     tr::T
     target::K
     weight::Float64
@@ -26,7 +26,7 @@ end
 
 mutable struct ProposeContext{J <: CompilationOptions,
                               T <: AddressMap, 
-                              P <: AddressMap} <: ExecutionContext
+                              P <: AddressMap} <: ExecutionContext{J, Nothing, ProposeContext}
     map::T
     score::Float64
     visited::Visitor
@@ -48,7 +48,7 @@ mutable struct RegenerateContext{J <: CompilationOptions,
                                  T <: AddressMap, 
                                  K <: AddressMap,
                                  D <: AddressMap,
-                                 P <: AddressMap} <: ExecutionContext
+                                 P <: AddressMap} <: ExecutionContext{J, K, RegenerateContext}
     prev::C
     tr::T
     target::K
@@ -75,7 +75,7 @@ end
 
 mutable struct SimulateContext{J <: CompilationOptions,
                                T <: AddressMap, 
-                               P <: AddressMap} <: ExecutionContext
+                               P <: AddressMap} <: ExecutionContext{J, Nothing, SimulateContext}
     tr::T
     score::Float64
     visited::Visitor
@@ -97,7 +97,7 @@ mutable struct UpdateContext{J <: CompilationOptions,
                              T <: AddressMap,
                              K <: AddressMap, 
                              D <: AddressMap,
-                             P <: AddressMap} <: ExecutionContext
+                             P <: AddressMap} <: ExecutionContext{J, K, UpdateContext}
     prev::C
     tr::T
     target::K
@@ -127,7 +127,7 @@ mutable struct ForwardModeContext{J <: CompilationOptions,
                                   T <: Tuple,
                                   C <: AddressMap,
                                   D,
-                                  P <: AddressMap} <: ExecutionContext
+                                  P <: AddressMap} <: ExecutionContext{J, Nothing, ForwardModeContext}
     target::T
     map::C
     weight::D
@@ -148,7 +148,7 @@ end
 
 mutable struct AssessContext{J <: CompilationOptions,
                              M <: AddressMap,
-                             P <: AddressMap} <: ExecutionContext
+                             P <: AddressMap} <: ExecutionContext{J, Nothing, AssessContext}
     target::M
     weight::Float64
     visited::Visitor
@@ -165,7 +165,7 @@ end
 
 # ------------ Backpropagation compilation contexts ------------ #
 
-abstract type BackpropagationContext{J} <: ExecutionContext end
+abstract type BackpropagationContext{J} <: ExecutionContext{J, Nothing, BackpropagationContext} end
 
 # Learnable parameters
 mutable struct ParameterBackpropagateContext{J <: CompilationOptions,
