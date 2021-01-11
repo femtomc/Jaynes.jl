@@ -42,3 +42,8 @@ end
 @abstract TraceTypingInterpreter function trace(::Symbol, u::Gen.Map, args...)
     List{get_trace_type(u.value.kernel)}
 end
+@abstract TraceTypingInterpreter function trace(::Symbol, u::Gen.Switch, args...)
+    Sum{Tuple(map(u.value.branches) do br
+                  get_trace_type(br)
+              end)}
+end

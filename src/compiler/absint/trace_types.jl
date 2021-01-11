@@ -28,6 +28,7 @@ pretty(::Type{BaseLebesgue}) = :lebesgue
 abstract type BaseCounting <: SupportType end
 pretty(::Type{BaseCounting}) = :counting
 
+# Base types.
 struct Reals{N} <: BaseLebesgue end
 Base.:(<<)(::Type{Reals{N}}, ::Type{Reals{N}}) where N = true
 Base.:(<<)(::Type{Reals}, a) = false
@@ -50,10 +51,18 @@ Base.:(<<)(::Type{Integers}, a) = false
 
 struct Discrete{N} <: BaseCounting end
 
+# Derived types.
 struct List{N} <: SupportType
     tt::N
 end
 List{N}() where N = List{N}(N())
+
+struct Sum{T <: Tuple} <: SupportType
+    tt::T
+end
+Sum{T}() where T <: Tuple = Sum{T}(map(T) do a
+                                       a()
+                                   end)
 
 # Inferred record type is just a NamedTuple.
 const TraceType = NamedTuple
